@@ -295,13 +295,7 @@ function importBatch_(loai, rows, nguoiThucHien) {
 
   rows.forEach(function (row, index) {
     try {
-      var enriched = Object.assign({}, row);
-      if (loai === 'ghi_nhan' && !enriched.ma_ghi_nhan) {
-        enriched.ma_ghi_nhan = generateId_('GN', SHEET_TABS.GhiNhan, 'ma_ghi_nhan');
-      }
-      if (loai === 'ghi_nhan') {
-        enriched.ma_log_import = maLog;
-      }
+      var enriched = prepareImportRow_(loai, row, maLog);
       var line = headers.map(function (h) {
         return enriched[h] !== undefined && enriched[h] !== null ? enriched[h] : '';
       });
@@ -333,6 +327,106 @@ function importBatch_(loai, rows, nguoiThucHien) {
     ghi_chu: logRow.ghi_chu || null,
     duong_dan_file_goc: fileUrl,
   };
+}
+
+function prepareImportRow_(loai, row, maLog) {
+  var enriched = stripPrivateKeys_(row);
+
+  if (loai === 'ghi_nhan') {
+    enriched = prepareGhiNhanImportRow_(enriched, maLog);
+  }
+
+  return enriched;
+}
+
+function prepareGhiNhanImportRow_(row, maLog) {
+  var enriched = Object.assign({}, row);
+  var catalogItem = enriched.ma_danh_muc ? findByKey_(SHEET_TABS.DanhMucDiem, 'ma_danh_muc', enriched.ma_danh_muc) : null;
+  var student = null;
+
+  if (!enriched.ma_hs && enriched.ho_ten) {
+    student = findStudentByFullName_(enriched.ho_ten);
+    enriched.ma_hs = student.ma_hs;
+  } else if (enriched.ma_hs) {
+    student = findByKey_(SHEET_TABS.HocSinh, 'ma_hs', enriched.ma_hs);
+    if (!student) throw new Error('Không tìm thấy ma_hs: ' + enriched.ma_hs);
+  }
+
+  if (student && !enriched.dien_tai_thoi_diem) {
+    enriched.dien_tai_thoi_diem = student.dien;
+  }
+
+  if (!enriched.tuan_so && enriched.ngay) {
+    enriched.tuan_so = findWeekNumberByDate_(enriched.ngay);
+  }
+
+  if (catalogItem && (enriched.diem_cong_tru === undefined || enriched.diem_cong_tru === null || enriched.diem_cong_tru === '')) {
+    enriched.diem_cong_tru = catalogItem.diem;
+  }
+
+  if (!enriched.so_lan) enriched.so_lan = 1;
+  if (enriched.da_xu_ly === null || enriched.da_xu_ly === undefined) enriched.da_xu_ly = false;
+  if (enriched.goi_phu_huynh === null || enriched.goi_phu_huynh === undefined) enriched.goi_phu_huynh = false;
+  if (!enriched.nguon) enriched.nguon = 'phieu_giay';
+  if (!enriched.ma_ghi_nhan) enriched.ma_ghi_nhan = generateId_('GN', SHEET_TABS.GhiNhan, 'ma_ghi_nhan');
+  enriched.ma_log_import = maLog;
+
+  if (catalogItem && catalogItem.pham_vi !== 'ca_nhan') {
+    enriched.ma_hs = null;
+    if (!enriched.trang_thai_xu_ly_tap_the) enriched.trang_thai_xu_ly_tap_the = 'chua_xu_ly';
+  } else if (!enriched.trang_thai_xu_ly_tap_the) {
+    enriched.trang_thai_xu_ly_tap_the = '';
+  }
+
+  return enriched;
+}
+
+function stripPrivateKeys_(row) {
+  var clean = {};
+  Object.keys(row || {}).forEach(function (key) {
+    if (key.charAt(0) !== '_') clean[key] = row[key];
+  });
+  return clean;
+}
+
+function findStudentByFullName_(fullName) {
+  var normalizedName = normalizeText_(fullName);
+  var matches = getSheetObjects_(SHEET_TABS.HocSinh).filter(function (student) {
+    return normalizeText_(student.ho + ' ' + student.ten) === normalizedName;
+  });
+
+  if (matches.length === 0) throw new Error('Không khớp học sinh: ' + fullName);
+  if (matches.length > 1) throw new Error('Trùng tên học sinh: ' + fullName);
+  return matches[0];
+}
+
+function findWeekNumberByDate_(dateText) {
+  var target = new Date(dateText);
+  if (isNaN(target.getTime())) throw new Error('Ngày không hợp lệ: ' + dateText);
+
+  var weeks = getSheetObjects_(SHEET_TABS.CauHinhTuan);
+  for (var i = 0; i < weeks.length; i++) {
+    var start = new Date(weeks[i].tu_ngay);
+    var end = new Date(weeks[i].den_ngay);
+    if (target >= start && target <= end) return weeks[i].tuan_so;
+  }
+
+  throw new Error('Không tìm thấy tuần cho ngày: ' + dateText);
+}
+
+function findByKey_(tabName, keyField, keyValue) {
+  return getSheetObjects_(tabName).filter(function (row) {
+    return String(row[keyField] || '') === String(keyValue || '');
+  })[0] || null;
+}
+
+function normalizeText_(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
 }
 
 function saveImportJsonToDrive_(loai, rows, maLog) {

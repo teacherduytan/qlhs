@@ -242,15 +242,21 @@ function parseJsonRows(jsonText: string): ParseState {
   try {
     const parsed = JSON.parse(trimmed) as unknown
 
-    if (!Array.isArray(parsed)) {
-      return { status: 'invalid', message: 'JSON cần là một array.' }
+    const rows = Array.isArray(parsed)
+      ? parsed
+      : isRecord(parsed) && Array.isArray(parsed.ban_ghi)
+        ? parsed.ban_ghi
+        : null
+
+    if (!rows) {
+      return { status: 'invalid', message: 'JSON cần là array hoặc object có ban_ghi array.' }
     }
 
-    if (!parsed.every(isRecord)) {
+    if (!rows.every(isRecord)) {
       return { status: 'invalid', message: 'Mỗi phần tử trong array cần là object.' }
     }
 
-    return { status: 'valid', rows: parsed }
+    return { status: 'valid', rows }
   } catch (error) {
     return {
       status: 'invalid',
