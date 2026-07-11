@@ -29,8 +29,7 @@
 | — | [PROGRESS](docs/PROGRESS.md) | Theo dõi tiến độ từng commit |
 | — | [Mẫu phiếu ghi nhận](docs/mau-phieu-ghi-nhan.md) | In cho ban cán sự (3 phần) |
 | — | [Bảng tra cứu mã tiêu chí](docs/bang-tra-cuu-ma-diem.md) | In kèm phiếu ghi nhận |
-
-## Tiến độ
+| — | [Hướng dẫn Import](docs/huong-dan-quy-trinh-import.md) | Phiếu → JSON → Sheet |
 
 Xem [docs/PROGRESS.md](docs/PROGRESS.md).
 
