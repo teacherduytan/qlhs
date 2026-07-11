@@ -104,6 +104,7 @@ Nguồn gốc: danh sách Excel gốc anh cung cấp, giữ nguyên các cột c
 | `sdt_2` | text | |
 | `ngay_nhap_hoc` | date | Ngày học sinh chính thức vào lớp. Dùng để tính đúng sĩ số/thành phần lớp tại một tuần cụ thể trong quá khứ — xem tài liệu 01 mục 7. |
 | `ngay_roi_lop` | date | Để trống nếu vẫn đang học. Nếu học sinh chuyển đi, ghi ngày rời lớp — các tuần trước đó vẫn tính em này vào sĩ số, tuần sau đó thì không. |
+| `to` | number | Số tổ (1/2/3) áp dụng cho mọi học sinh; dùng để hiển thị và xử lý sự kiện `to_truc`. |
 | `token_ho_so` | text | Chuỗi ngẫu nhiên dùng làm link riêng, ví dụ `x7fA9k2Q` → `/#/hs/x7fA9k2Q`. |
 | `la_co_do` | boolean | Theo quy chế trường: cờ đỏ vi phạm bị trừ điểm **gấp đôi**. Dùng để nhân hệ số khi tính điểm (tài liệu 03 mục 2). |
 | `anh_dai_dien` | text (URL) | Tuỳ chọn, để sau. |

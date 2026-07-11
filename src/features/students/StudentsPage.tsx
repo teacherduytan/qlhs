@@ -12,6 +12,7 @@ type StudentForm = {
   nu: boolean
   dan_toc: string
   ngay_sinh: string
+  to: string
   sdt_1: string
   sdt_2: string
   la_co_do: boolean
@@ -25,6 +26,7 @@ const EMPTY_FORM: StudentForm = {
   nu: false,
   dan_toc: 'Kinh',
   ngay_sinh: '',
+  to: '',
   sdt_1: '',
   sdt_2: '',
   la_co_do: false,
@@ -271,6 +273,19 @@ export function StudentsPage() {
               onChange={(value) => setForm((current) => ({ ...current, ngay_sinh: value }))}
               type="date"
             />
+            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              Tổ
+              <select
+                value={form.to}
+                onChange={(event) => setForm((current) => ({ ...current, to: event.target.value }))}
+                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">Chưa có</option>
+                <option value="1">Tổ 1</option>
+                <option value="2">Tổ 2</option>
+                <option value="3">Tổ 3</option>
+              </select>
+            </label>
             <TextField
               label="SĐT 1"
               value={form.sdt_1}
@@ -363,6 +378,7 @@ export function StudentsPage() {
                   <th className="px-3 py-3">STT</th>
                   <th className="px-3 py-3">Mã HS</th>
                   <th className="px-3 py-3">Họ tên</th>
+                  <th className="px-3 py-3">Tổ</th>
                   <th className="px-3 py-3">Diện</th>
                   <th className="px-3 py-3">Giới tính</th>
                   <th className="px-3 py-3 text-right">Thao tác</th>
@@ -398,6 +414,9 @@ export function StudentsPage() {
                             {student.ho} {student.ten}
                           </button>
                         </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-slate-700">
+                          {resolveStudentGroup(student) || '-'}
+                        </td>
                         <td className="whitespace-nowrap px-3 py-3 text-slate-700">{student.dien}</td>
                         <td className="whitespace-nowrap px-3 py-3 text-slate-700">
                           {student.nu ? 'Nữ' : 'Nam'}
@@ -424,7 +443,7 @@ export function StudentsPage() {
                       </tr>
                       {expanded ? (
                         <tr>
-                          <td colSpan={6} className="bg-blue-50 px-3 py-4">
+                          <td colSpan={7} className="bg-blue-50 px-3 py-4">
                             <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
                               <div className="grid gap-2 sm:grid-cols-4">
                                 <QuickStat label="CC" value={score.diem_chuyen_can} />
@@ -434,7 +453,7 @@ export function StudentsPage() {
                               </div>
                               <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
                                 <span className="rounded-full bg-white px-3 py-1 font-semibold">
-                                  Tổ {getStudentGroup(student.ma_hs) || '-'}
+                                  Tổ {resolveStudentGroup(student) || '-'}
                                 </span>
                                 <span className="rounded-full bg-white px-3 py-1 font-semibold">
                                   {role}
@@ -523,6 +542,7 @@ function formFromStudent(student: HocSinh): StudentForm {
     nu: student.nu,
     dan_toc: student.dan_toc || 'Kinh',
     ngay_sinh: student.ngay_sinh || '',
+    to: student.to ? String(student.to) : '',
     sdt_1: student.sdt_1 || '',
     sdt_2: student.sdt_2 || '',
     la_co_do: student.la_co_do,
@@ -538,6 +558,7 @@ function formToPatch(form: StudentForm): Partial<HocSinh> {
     nu: form.nu,
     dan_toc: form.dan_toc.trim() || 'Kinh',
     ngay_sinh: nullable(form.ngay_sinh),
+    to: form.to ? Number(form.to) : null,
     sdt_1: nullable(form.sdt_1),
     sdt_2: nullable(form.sdt_2),
     la_co_do: form.la_co_do,
@@ -587,6 +608,10 @@ function normalize(value: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+}
+
+function resolveStudentGroup(student: HocSinh): number | null {
+  return student.to || getStudentGroup(student.ma_hs)
 }
 
 function getLatestWeek(records: GhiNhan[], weekConfig: CauHinhTuan[]): number {

@@ -14,7 +14,7 @@ var SHEET_NAME = 'QLHS_11C5_2025-2026';
 var TAB_SCHEMA = {
   HocSinh: [
     'ma_hs', 'tt', 'ho', 'ten', 'dien', 'nu', 'dan_toc', 'ngay_sinh',
-    'sdt_1', 'sdt_2', 'ngay_nhap_hoc', 'ngay_roi_lop', 'token_ho_so',
+    'sdt_1', 'sdt_2', 'ngay_nhap_hoc', 'ngay_roi_lop', 'to', 'token_ho_so',
     'la_co_do', 'anh_dai_dien', 'ghi_chu'
   ],
   PhuHuynh: ['ma_hs', 'ho_ten_ph', 'quan_he', 'sdt', 'uu_tien_lien_he'],

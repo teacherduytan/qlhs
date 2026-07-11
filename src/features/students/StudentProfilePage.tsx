@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, CauHinhTuan, GhiNhan, HocSinh } from '../../data/types'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
+import { getStudentGroup } from './studentGroups'
 
 type ProfileState =
   | { status: 'loading' }
@@ -294,6 +295,7 @@ function ProfileCard({ role, student }: { role: string; student: HocSinh }) {
       <dl className="grid gap-px bg-slate-200 sm:grid-cols-2">
         <InfoItem label="Số thứ tự" value={String(student.tt)} />
         <InfoItem label="Diện" value={student.dien} />
+        <InfoItem label="Tổ" value={String(resolveStudentGroup(student) || '-')} />
         <InfoItem label="Giới tính" value={student.nu ? 'Nữ' : 'Nam'} />
         <InfoItem label="Dân tộc" value={student.dan_toc || '-'} />
         <InfoItem label="Ngày sinh" value={formatDate(student.ngay_sinh)} />
@@ -324,6 +326,10 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 function getStudentRole(maHs: string, banCanSu: BanCanSu[]): string {
   const role = banCanSu.find((item) => item.ma_hs === maHs)
   return role?.chuc_vu || 'Học sinh'
+}
+
+function resolveStudentGroup(student: HocSinh): number | null {
+  return student.to || getStudentGroup(student.ma_hs)
 }
 
 function formatDate(value: string | null): string {

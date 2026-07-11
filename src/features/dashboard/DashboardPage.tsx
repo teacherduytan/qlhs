@@ -85,7 +85,7 @@ export function DashboardPage() {
       }).map((score) => [score.ma_hs, score]),
     )
     const collectiveEvents = getCollectiveEvents(state.records, state.catalog, state.tuanSo)
-    const missingGroupStudents = state.students.filter((student) => !getStudentGroup(student.ma_hs))
+    const missingGroupStudents = state.students.filter((student) => !resolveStudentGroup(student))
 
     return {
       collectiveEvents,
@@ -447,7 +447,7 @@ function getTargetStudents(
   }
 
   if (catalogItem?.pham_vi === 'to_truc' && record.to_lien_quan) {
-    return students.filter((student) => getStudentGroup(student.ma_hs) === record.to_lien_quan)
+    return students.filter((student) => resolveStudentGroup(student) === record.to_lien_quan)
   }
 
   return []
@@ -469,6 +469,10 @@ function createIndividualRecord(source: GhiNhan, student: HocSinh): GhiNhan {
 
 function eventKey(record: GhiNhan): string {
   return record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc || 'event'}`
+}
+
+function resolveStudentGroup(student: HocSinh): number | null {
+  return student.to || getStudentGroup(student.ma_hs)
 }
 
 function getLatestWeek(records: GhiNhan[], weekConfig: CauHinhTuan[]): number {

@@ -38,6 +38,7 @@ export interface HocSinh {
   sdt_2: string | null
   ngay_nhap_hoc: string | null
   ngay_roi_lop: string | null
+  to: number | null
   token_ho_so: string
   la_co_do: boolean
   anh_dai_dien: string | null
