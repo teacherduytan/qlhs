@@ -88,6 +88,21 @@ function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
 
+    if (body.action === 'add_student' && body.student) {
+      var createdStudent = appendUniqueRow_(SHEET_TABS.HocSinh, body.student, 'ma_hs');
+      return jsonResponse_({ ok: true, data: createdStudent });
+    }
+
+    if (body.action === 'update_student' && body.ma_hs && body.student) {
+      var updatedStudent = updateRowByKey_(SHEET_TABS.HocSinh, 'ma_hs', body.ma_hs, body.student);
+      return jsonResponse_({ ok: true, data: updatedStudent });
+    }
+
+    if (body.action === 'delete_student' && body.ma_hs) {
+      deleteRowByKey_(SHEET_TABS.HocSinh, 'ma_hs', body.ma_hs);
+      return jsonResponse_({ ok: true, data: null });
+    }
+
     if (body.import && body.loai && body.rows) {
       var result = importBatch_(body.loai, body.rows, body.nguoi_thuc_hien || '');
       return jsonResponse_({ ok: true, data: result });
@@ -155,6 +170,67 @@ function appendRow_(tabName, row) {
   });
   sheet.appendRow(line);
   return row;
+}
+
+function appendUniqueRow_(tabName, row, keyField) {
+  var existing = getSheetObjects_(tabName).some(function (item) {
+    return String(item[keyField] || '') === String(row[keyField] || '');
+  });
+  if (existing) throw new Error('Duplicate ' + keyField + ': ' + row[keyField]);
+  return appendRow_(tabName, row);
+}
+
+function updateRowByKey_(tabName, keyField, keyValue, patch) {
+  var sheet = getSpreadsheet_().getSheetByName(tabName);
+  if (!sheet) throw new Error('Tab not found: ' + tabName);
+
+  var values = sheet.getDataRange().getValues();
+  if (values.length < 2) throw new Error('No rows in tab: ' + tabName);
+
+  var headers = values[0];
+  var keyIndex = headers.indexOf(keyField);
+  if (keyIndex === -1) throw new Error('Key field not found: ' + keyField);
+
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][keyIndex]) === String(keyValue)) {
+      var current = {};
+      headers.forEach(function (header, index) {
+        if (header) current[header] = coerceCellValue_(values[i][index]);
+      });
+
+      var updated = Object.assign({}, current, patch);
+      updated[keyField] = keyValue;
+
+      var line = headers.map(function (header) {
+        return updated[header] !== undefined && updated[header] !== null ? updated[header] : '';
+      });
+      sheet.getRange(i + 1, 1, 1, headers.length).setValues([line]);
+      return updated;
+    }
+  }
+
+  throw new Error('Row not found: ' + keyValue);
+}
+
+function deleteRowByKey_(tabName, keyField, keyValue) {
+  var sheet = getSpreadsheet_().getSheetByName(tabName);
+  if (!sheet) throw new Error('Tab not found: ' + tabName);
+
+  var values = sheet.getDataRange().getValues();
+  if (values.length < 2) throw new Error('No rows in tab: ' + tabName);
+
+  var headers = values[0];
+  var keyIndex = headers.indexOf(keyField);
+  if (keyIndex === -1) throw new Error('Key field not found: ' + keyField);
+
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][keyIndex]) === String(keyValue)) {
+      sheet.deleteRow(i + 1);
+      return;
+    }
+  }
+
+  throw new Error('Row not found: ' + keyValue);
 }
 
 // --- Import hàng loạt (C013) ---
