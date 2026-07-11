@@ -74,7 +74,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C043 | ✅ Xong | 11/07/2026 | Dashboard có vùng thống kê tổng quan theo tài liệu 07, chia nhóm hành động ngay và quan sát chung |
 | C044 | ✅ Xong | 11/07/2026 | Thêm nút thu gọn/mở rộng cả khối danh sách trên Dashboard và trang Học sinh |
 | C045 | ✅ Xong | 11/07/2026 | Drill-down cho các thẻ TK02-TK05 ngay trên Dashboard, mở đúng danh sách chi tiết cấu thành |
-| C046 | ☐ Chưa làm | | Màn "Thông tin Tổ" khi bấm sự kiện tổ trực |
+| C046 | ✅ Xong | 11/07/2026 | Bấm sự kiện tổ trực mở Thông tin Tổ: tổ trưởng, danh sách học sinh và lịch sử nhắc tổ gần đây |
 | C047 | ☐ Chưa làm | | Hệ màu nhất quán theo nhóm nội dung (tài liệu 08) |
 | C048 | ☐ Chưa làm | | Sửa ngưỡng xếp loại theo mức tối đa thực tế ~70 |
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type {
+  BanCanSu,
   CauHinhTuan,
   DanhMucDiem,
   GhiNhan,
@@ -18,6 +19,7 @@ type DashboardState =
   | { status: 'error'; message: string }
   | {
       status: 'success'
+      banCanSu: BanCanSu[]
       catalog: DanhMucDiem[]
       records: GhiNhan[]
       students: HocSinh[]
@@ -76,6 +78,7 @@ export function DashboardPage() {
   const [expandedDay, setExpandedDay] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState('')
   const [scoresCollapsed, setScoresCollapsed] = useState(false)
+  const [expandedTeamEventId, setExpandedTeamEventId] = useState<string | null>(null)
   const [selectedStudentByEvent, setSelectedStudentByEvent] = useState<Record<string, string>>({})
   const [processingEventId, setProcessingEventId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -88,8 +91,9 @@ export function DashboardPage() {
       dataSource.getRecords(),
       dataSource.getPointCatalog(),
       dataSource.getWeekConfig(),
+      dataSource.getBanCanSu(),
     ])
-      .then(([students, records, catalog, weekConfig]) => {
+      .then(([students, records, catalog, weekConfig, banCanSu]) => {
         if (!active) {
           return
         }
@@ -97,6 +101,7 @@ export function DashboardPage() {
         const tuanSo = selectDefaultWeek(weekConfig, records)
         setState({
           status: 'success',
+          banCanSu,
           catalog,
           records,
           students,
@@ -159,6 +164,7 @@ export function DashboardPage() {
     return {
       collectiveEvents,
       dailyLogs,
+      banCanSu: state.banCanSu,
       missingGroupStudents,
       overviewStats,
       previousScores,
@@ -269,6 +275,7 @@ export function DashboardPage() {
 
   function selectWeek(tuanSo: number) {
     setExpandedDay(null)
+    setExpandedTeamEventId(null)
     setSelectedDate('')
     setState((current) => (current.status === 'success' ? { ...current, tuanSo } : current))
   }
@@ -441,9 +448,23 @@ export function DashboardPage() {
                   <article key={eventKey(record)} className="space-y-3 p-4">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <p className="text-sm font-bold text-slate-900">
-                          {record.ma_danh_muc} · {catalogItem?.ten_muc || 'Sự kiện tập thể'}
-                        </p>
+                        {catalogItem?.pham_vi === 'to_truc' ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedTeamEventId((current) =>
+                                current === eventKey(record) ? null : eventKey(record),
+                              )
+                            }
+                            className="text-left text-sm font-bold text-blue-700 hover:text-blue-800"
+                          >
+                            {record.ma_danh_muc} · {catalogItem?.ten_muc || 'Sự kiện tổ trực'}
+                          </button>
+                        ) : (
+                          <p className="text-sm font-bold text-slate-900">
+                            {record.ma_danh_muc} · {catalogItem?.ten_muc || 'Sự kiện tập thể'}
+                          </p>
+                        )}
                         <p className="text-sm text-slate-600">
                           {record.noi_dung || record.ly_do || 'Không có mô tả'}
                         </p>
@@ -454,6 +475,16 @@ export function DashboardPage() {
                           : 'Tập thể'}
                       </span>
                     </div>
+                    {catalogItem?.pham_vi === 'to_truc' &&
+                    expandedTeamEventId === eventKey(record) ? (
+                      <TeamInfoPanel
+                        banCanSu={body.banCanSu}
+                        catalog={state.catalog}
+                        records={state.records}
+                        students={state.students}
+                        teamNumber={record.to_lien_quan}
+                      />
+                    ) : null}
                     <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
                       <select
                         value={selectedStudentByEvent[eventKey(record)] || ''}
@@ -803,6 +834,79 @@ function OverviewDrillDownPanel({
   )
 }
 
+function TeamInfoPanel({
+  banCanSu,
+  catalog,
+  records,
+  students,
+  teamNumber,
+}: {
+  banCanSu: BanCanSu[]
+  catalog: DanhMucDiem[]
+  records: GhiNhan[]
+  students: HocSinh[]
+  teamNumber: number | null
+}) {
+  if (!teamNumber) {
+    return (
+      <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        Sự kiện tổ trực này chưa có số tổ liên quan.
+      </div>
+    )
+  }
+
+  const members = students
+    .filter((student) => resolveStudentGroup(student) === teamNumber)
+    .sort((a, b) => a.tt - b.tt)
+  const leader = findTeamLeader(teamNumber, banCanSu, students)
+  const history = getTeamEventHistory(teamNumber, records, catalog)
+
+  return (
+    <section className="rounded-md border border-blue-100 bg-blue-50 p-3">
+      <div className="grid gap-3 lg:grid-cols-[1fr_1.5fr]">
+        <div>
+          <h4 className="text-sm font-bold text-slate-900">Thông tin Tổ {teamNumber}</h4>
+          <p className="mt-1 text-sm text-slate-700">
+            Tổ trưởng: <span className="font-semibold">{leader || 'Chưa có dữ liệu'}</span>
+          </p>
+          <p className="text-sm text-slate-700">Sĩ số tổ: {members.length} học sinh</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {members.map((student) => (
+              <Link
+                key={student.ma_hs}
+                to={`/hs/${student.token_ho_so}`}
+                className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-blue-700 hover:text-blue-800"
+              >
+                {student.ho} {student.ten}
+              </Link>
+            ))}
+          </div>
+        </div>
+        <div>
+          <h5 className="text-sm font-bold text-slate-900">Lịch sử sự kiện tổ trực gần đây</h5>
+          {history.length ? (
+            <div className="mt-2 space-y-2">
+              {history.slice(0, 5).map((item) => (
+                <div key={item.id} className="rounded-md bg-white p-2 text-sm">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="font-semibold text-slate-900">
+                      {item.code} · Tuần {item.week}
+                    </span>
+                    <span className="text-xs font-medium text-slate-500">{formatDate(item.date)}</span>
+                  </div>
+                  <p className="mt-1 text-slate-600">{item.description}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-slate-600">Chưa có lịch sử sự kiện tổ trực.</p>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function needsAttention(score: WeeklyStudentScore): boolean {
   return (
     score.can_canh_bao_ngay ||
@@ -1102,6 +1206,48 @@ function toEventDrillDownItem(
     description: record.noi_dung || record.ly_do || catalogItem?.ten_muc || 'Không có mô tả',
     scope,
   }
+}
+
+function findTeamLeader(
+  teamNumber: number,
+  banCanSu: BanCanSu[],
+  students: HocSinh[],
+): string | null {
+  const leaderRole = banCanSu.find(
+    (role) => role.to === teamNumber && normalizeText(role.chuc_vu).includes('to truong'),
+  )
+  const leader = leaderRole ? students.find((student) => student.ma_hs === leaderRole.ma_hs) : null
+
+  return leader ? `${leader.ho} ${leader.ten}` : null
+}
+
+function getTeamEventHistory(
+  teamNumber: number,
+  records: GhiNhan[],
+  catalog: DanhMucDiem[],
+): Array<{ code: string; date: string; description: string; id: string; week: number }> {
+  const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
+
+  return records
+    .filter((record) => {
+      const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
+      return catalogItem?.pham_vi === 'to_truc' && record.to_lien_quan === teamNumber
+    })
+    .sort((a, b) => new Date(b.ngay).getTime() - new Date(a.ngay).getTime())
+    .map((record, index) => ({
+      code: record.ma_danh_muc || record.loai,
+      date: record.ngay,
+      description: record.noi_dung || record.ly_do || 'Không có mô tả',
+      id: record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc || 'team'}-${index}`,
+      week: record.tuan_so,
+    }))
+}
+
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
 }
 
 function averageComponents(scores: WeeklyStudentScore[]): Record<'CC' | 'VS' | 'NN' | 'KL', string> {
