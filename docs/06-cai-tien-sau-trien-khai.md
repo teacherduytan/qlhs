@@ -74,7 +74,20 @@ Bấm vào tên học sinh hiện tại **không** dẫn sang trang hồ sơ —
 
 ---
 
-## Đợt phát hiện #6 — (để trống, thêm khi phát sinh thêm trong lúc mình trao đổi)
+## Đợt phát hiện #6 — dữ liệu test cá nhân, liên kết chi tiết, hệ màu (11/07/2026)
+
+| ID | Commit | Phạm vi | Tiêu chí hoàn thành |
+|---|---|---|---|
+| C045 | `[C045] feat(dashboard): liên kết chi tiết (drill-down) cho các thẻ thống kê tổng quan` | Theo bảng ánh xạ ở **[tài liệu 08](08-lien-ket-va-mau-sac.md) Phần 1**: mọi thẻ TK02–TK05 phải bấm được, dẫn đúng tới danh sách chi tiết cấu thành con số đó. Không tự thêm hành vi khác ngoài bảng ánh xạ đã chốt. | Bấm từng thẻ TK02, TK03, TK04, TK05 → đúng danh sách chi tiết hiện ra như mô tả tài liệu 08; bấm 1 dòng trong danh sách chi tiết → tới đúng hồ sơ/màn liên quan. |
+| C046 | `[C046] feat(ui): màn "Thông tin Tổ" khi bấm vào sự kiện tổ trực` | Theo **tài liệu 08 Phần 1b**: khi bấm vào 1 sự kiện `pham_vi = to_truc` trong danh sách sự kiện chờ xử lý, mở màn hiển thị: số tổ, tên tổ trưởng (tra `BanCanSu`), danh sách toàn bộ học sinh có `HocSinh.to` khớp, lịch sử các sự kiện tổ trực gần đây của tổ đó. Vẫn giữ 3 nút xử lý nhanh của C021a. | Bấm vào sự kiện tổ trực → đúng thông tin tổ hiện ra (sĩ số tổ, tên từng em, tổ trưởng, lịch sử gần đây); 3 nút xử lý vẫn hoạt động bình thường. |
+| C047 | `[C047] feat(ui): áp dụng hệ màu nhất quán theo nhóm nội dung toàn app` | Theo **tài liệu 08 Phần 2**: áp dụng đúng bảng màu (CC xanh dương, VS xanh lá, NN tím, KL cam/đỏ đậm khi nghiêm trọng, HT vàng, sự kiện tập thể/tổ trực xám xanh) cho mọi nơi hiển thị badge/mã/nhóm — lịch sử ghi nhận, nhật ký theo ngày, hồ sơ học sinh, dashboard, danh sách học sinh. Thẻ thống kê tổng quan dùng đúng quy tắc phối màu riêng (nhóm hành động = đỏ/cam nhạt, nhóm quan sát = xám nhạt, trạng thái rỗng/tích cực = xanh lá nhạt). | Rà toàn bộ màn hình có hiển thị mã/nhóm vi phạm — màu đúng khớp bảng tài liệu 08, nhất quán giữa các màn hình (cùng 1 mã ở 2 chỗ khác nhau phải cùng 1 màu). |
+| C048 | `[C048] fix(scoring): cập nhật ngưỡng xếp loại theo mức tối đa thực tế đã phát hiện (~70, không phải 100)` | **Phát hiện khi kiểm thử**: điểm xếp loại thi đua tối đa thực tế (kể cả học sinh hoàn hảo tuyệt đối) chỉ ~70/100, do "Điểm học tập" trong công thức nằm thang 0–20. Cập nhật ngưỡng xếp loại trong code theo đúng bảng mới ở tài liệu 03 mục 5 (Tốt: 60–70, Khá: 45–59, Trung bình: 30–44, Yếu: dưới 30) — áp dụng cho trường hợp **đã có** dữ liệu điểm học tập trong tuần; trường hợp **chưa có** dữ liệu điểm học tập (theo C031, chia 4 thành phần) vẫn dùng thang 0–100 như cũ. Thêm ghi chú nhỏ trên giao diện: *"Điểm xếp loại chỉ so sánh được giữa các học sinh có cùng trạng thái đã/chưa có điểm học tập trong tuần."* | Học sinh có đủ dữ liệu điểm học tập, đạt tối đa lý thuyết ~70 → hiển thị đúng xếp loại "Tốt" (không phải "Yếu" như ngưỡng cũ sẽ tính nhầm). Có ghi chú giải thích hiển thị rõ trên hồ sơ/dashboard. |
+
+> **Lưu ý**: C048 vẫn là điều chỉnh **tạm thời**, chờ anh xác nhận chính thức với nhà trường (xem README, mục việc cần làm). Nếu trường xác nhận cách hiểu khác, chỉ cần sửa lại ngưỡng ở 1 chỗ.
+
+---
+
+## Đợt phát hiện #7 — (để trống, thêm khi phát sinh thêm trong lúc mình trao đổi)
 
 | ID | Commit | Phạm vi | Tiêu chí hoàn thành |
 |---|---|---|---|

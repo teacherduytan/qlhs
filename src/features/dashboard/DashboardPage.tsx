@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type {
   CauHinhTuan,
@@ -30,11 +31,44 @@ type OverviewStat = {
   label: string
   value: string
   detail: string
+  drillDown?: OverviewDrillDown
 }
 
 type OverviewStatGroups = {
   action: OverviewStat[]
   observation: OverviewStat[]
+}
+
+type OverviewDrillDown =
+  | { kind: 'attention'; items: AttentionDrillDownItem[] }
+  | { kind: 'records'; emptyText: string; items: RecordDrillDownItem[] }
+  | { kind: 'events'; emptyText: string; items: EventDrillDownItem[] }
+
+type AttentionDrillDownItem = {
+  maHs: string
+  name: string
+  token: string
+  lowestComponent: string
+  lowestScore: number
+  totalScore: number
+}
+
+type RecordDrillDownItem = {
+  id: string
+  code: string
+  date: string
+  description: string
+  name: string
+  status: string
+  token?: string
+}
+
+type EventDrillDownItem = {
+  id: string
+  code: string
+  date: string
+  description: string
+  scope: string
 }
 
 export function DashboardPage() {
@@ -545,28 +579,47 @@ function SummaryMetric({ label, value }: { label: string; value: number }) {
 }
 
 function OverviewStats({ stats }: { stats: OverviewStatGroups }) {
+  const [activeCode, setActiveCode] = useState<string | null>(null)
+  const allStats = [...stats.action, ...stats.observation]
+  const activeStat = activeCode ? allStats.find((stat) => stat.code === activeCode) : undefined
+
   return (
     <div className="space-y-3">
       <OverviewGroup
         title="Nhóm cần hành động ngay"
         description="Các tín hiệu nên xử lý hoặc xem trước."
+        activeCode={activeCode}
+        onSelectStat={setActiveCode}
         stats={stats.action}
       />
       <OverviewGroup
         title="Nhóm quan sát chung"
         description="Bối cảnh chung của lớp trong tuần đang xem."
+        activeCode={activeCode}
+        onSelectStat={setActiveCode}
         stats={stats.observation}
       />
+      {activeStat?.drillDown ? (
+        <OverviewDrillDownPanel
+          drillDown={activeStat.drillDown}
+          statLabel={`${activeStat.code} · ${activeStat.label}`}
+          onClose={() => setActiveCode(null)}
+        />
+      ) : null}
     </div>
   )
 }
 
 function OverviewGroup({
+  activeCode,
   description,
+  onSelectStat,
   stats,
   title,
 }: {
+  activeCode: string | null
   description: string
+  onSelectStat: (code: string | null) => void
   stats: OverviewStat[]
   title: string
 }) {
@@ -582,14 +635,27 @@ function OverviewGroup({
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {stats.map((stat) => (
-          <OverviewCard key={stat.code} stat={stat} />
+          <OverviewCard
+            key={stat.code}
+            active={activeCode === stat.code}
+            onSelect={() => onSelectStat(activeCode === stat.code ? null : stat.code)}
+            stat={stat}
+          />
         ))}
       </div>
     </section>
   )
 }
 
-function OverviewCard({ stat }: { stat: OverviewStat }) {
+function OverviewCard({
+  active,
+  onSelect,
+  stat,
+}: {
+  active: boolean
+  onSelect: () => void
+  stat: OverviewStat
+}) {
   const toneClass =
     stat.tone === 'action'
       ? 'border-red-200 bg-red-50 text-red-900'
@@ -602,9 +668,10 @@ function OverviewCard({ stat }: { stat: OverviewStat }) {
       : stat.tone === 'good'
         ? 'text-emerald-700'
         : 'text-blue-700'
-
-  return (
-    <article className={`rounded-lg border p-4 ${toneClass}`}>
+  const activeClass = active ? 'ring-2 ring-blue-300' : ''
+  const interactiveClass = stat.drillDown ? 'cursor-pointer hover:shadow-sm' : ''
+  const content = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase opacity-70">{stat.code}</p>
@@ -613,7 +680,126 @@ function OverviewCard({ stat }: { stat: OverviewStat }) {
         <p className={`text-right text-xl font-bold ${valueClass}`}>{stat.value}</p>
       </div>
       <p className="mt-3 text-sm opacity-80">{stat.detail}</p>
-    </article>
+      {stat.drillDown ? (
+        <p className="mt-3 text-xs font-semibold opacity-70">
+          {active ? 'Đang mở chi tiết' : 'Bấm để xem chi tiết'}
+        </p>
+      ) : null}
+    </>
+  )
+
+  if (!stat.drillDown) {
+    return <article className={`rounded-lg border p-4 ${toneClass}`}>{content}</article>
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`rounded-lg border p-4 text-left transition ${toneClass} ${activeClass} ${interactiveClass}`}
+    >
+      {content}
+    </button>
+  )
+}
+
+function OverviewDrillDownPanel({
+  drillDown,
+  onClose,
+  statLabel,
+}: {
+  drillDown: OverviewDrillDown
+  onClose: () => void
+  statLabel: string
+}) {
+  return (
+    <section className="rounded-lg border border-blue-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-base font-bold text-slate-900">Chi tiết {statLabel}</h3>
+          <p className="text-sm text-slate-600">Danh sách cấu thành đúng con số đang xem.</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          Đóng
+        </button>
+      </div>
+
+      {drillDown.kind === 'attention' ? (
+        drillDown.items.length ? (
+          <div className="mt-3 divide-y divide-slate-100">
+            {drillDown.items.map((item) => (
+              <div
+                key={item.maHs}
+                className="grid gap-2 py-3 text-sm sm:grid-cols-[1fr_auto_auto] sm:items-center"
+              >
+                <Link to={`/hs/${item.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
+                  {item.name}
+                </Link>
+                <span className="text-slate-600">
+                  Thấp nhất: {item.lowestComponent} {item.lowestScore}
+                </span>
+                <span className="font-semibold text-slate-900">Tổng {item.totalScore}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-slate-600">Không có học sinh nào cần chú ý tuần này.</p>
+        )
+      ) : null}
+
+      {drillDown.kind === 'records' ? (
+        drillDown.items.length ? (
+          <div className="mt-3 divide-y divide-slate-100">
+            {drillDown.items.map((item) => (
+              <div
+                key={item.id}
+                className="grid gap-2 py-3 text-sm lg:grid-cols-[8rem_1fr_9rem_8rem] lg:items-center"
+              >
+                <span className="font-semibold text-slate-900">{item.code}</span>
+                <div>
+                  {item.token ? (
+                    <Link to={`/hs/${item.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
+                      {item.name}
+                    </Link>
+                  ) : (
+                    <span className="font-semibold text-slate-900">{item.name}</span>
+                  )}
+                  <p className="text-slate-600">{item.description}</p>
+                </div>
+                <span className="text-slate-600">{formatDate(item.date)}</span>
+                <span className="font-medium text-slate-700">{item.status}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-slate-600">{drillDown.emptyText}</p>
+        )
+      ) : null}
+
+      {drillDown.kind === 'events' ? (
+        drillDown.items.length ? (
+          <div className="mt-3 divide-y divide-slate-100">
+            {drillDown.items.map((item) => (
+              <div
+                key={item.id}
+                className="grid gap-2 py-3 text-sm lg:grid-cols-[8rem_8rem_1fr_9rem] lg:items-center"
+              >
+                <span className="font-semibold text-slate-900">{item.code}</span>
+                <span className="font-medium text-blue-700">{item.scope}</span>
+                <span className="text-slate-600">{item.description}</span>
+                <span className="text-slate-600">{formatDate(item.date)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-slate-600">{drillDown.emptyText}</p>
+        )
+      ) : null}
+    </section>
   )
 }
 
@@ -700,6 +886,7 @@ function buildOverviewStats({
   tuanSo: number
 }): OverviewStatGroups {
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
+  const studentById = new Map(students.map((student) => [student.ma_hs, student]))
   const activeStudents = students.filter(isActiveStudent)
   const weekRecords = records.filter((record) => record.tuan_so === tuanSo)
   const personalWeekRecords = weekRecords.filter((record) => record.ma_hs)
@@ -711,6 +898,10 @@ function buildOverviewStats({
     return Boolean(item?.nghiem_trong)
   })
   const topViolations = getTopViolations(weekRecords, catalogByCode)
+  const topViolationCode = topViolations[0]?.code
+  const topViolationRecords = topViolationCode
+    ? weekRecords.filter((record) => record.ma_danh_muc === topViolationCode)
+    : []
   const componentAverages = averageComponents(currentScores)
   const currentAverage = average(currentScores.map((score) => score.diem_xep_loai_thi_dua))
   const hasPreviousWeek = tuanSo > 1
@@ -742,6 +933,10 @@ function buildOverviewStats({
         detail:
           attentionScores.slice(0, 3).map((score) => getStudentName(students, score.ma_hs)).join(', ') ||
           'Không có học sinh nào cần chú ý tuần này',
+        drillDown: {
+          kind: 'attention',
+          items: attentionScores.map((score) => toAttentionDrillDownItem(score, studentById)),
+        },
       },
       {
         code: 'TK03',
@@ -751,6 +946,13 @@ function buildOverviewStats({
         detail:
           severeRecords.slice(0, 2).map((record) => describeRecord(record, students)).join(' · ') ||
           'Không có vi phạm nghiêm trọng trong tuần',
+        drillDown: {
+          kind: 'records',
+          emptyText: 'Không có vi phạm nghiêm trọng trong tuần.',
+          items: severeRecords.map((record, index) =>
+            toRecordDrillDownItem(record, index, studentById),
+          ),
+        },
       },
       {
         code: 'TK04',
@@ -758,6 +960,13 @@ function buildOverviewStats({
         label: 'Sự kiện chờ xử lý',
         value: collectiveEventsCount ? String(collectiveEventsCount) : '0',
         detail: collectiveEventsCount ? 'Cần xử lý tập thể/tổ trực' : 'Không có sự kiện tập thể/tổ trực đang chờ',
+        drillDown: {
+          kind: 'events',
+          emptyText: 'Không có sự kiện tập thể/tổ trực đang chờ.',
+          items: getCollectiveEvents(weekRecords, catalog, tuanSo).map(({ catalogItem, record }, index) =>
+            toEventDrillDownItem(record, catalogItem, index),
+          ),
+        },
       },
     ],
     observation: [
@@ -774,6 +983,13 @@ function buildOverviewStats({
         label: 'Vi phạm phổ biến',
         value: topViolations[0]?.count ? String(topViolations[0].count) : '0',
         detail: topViolations.map((item) => `${item.label}: ${item.count}`).join(' · ') || 'Chưa có vi phạm trong tuần',
+        drillDown: {
+          kind: 'records',
+          emptyText: 'Chưa có vi phạm phổ biến trong tuần.',
+          items: topViolationRecords.map((record, index) =>
+            toRecordDrillDownItem(record, index, studentById),
+          ),
+        },
       },
       {
         code: 'TK06',
@@ -805,7 +1021,7 @@ function isActiveStudent(student: HocSinh): boolean {
 function getTopViolations(
   records: GhiNhan[],
   catalogByCode: Map<string, DanhMucDiem>,
-): Array<{ label: string; count: number }> {
+): Array<{ code: string; label: string; count: number }> {
   const counts = new Map<string, number>()
 
   records.forEach((record) => {
@@ -820,9 +1036,72 @@ function getTopViolations(
     .sort((left, right) => right[1] - left[1])
     .slice(0, 3)
     .map(([code, count]) => ({
+      code,
       label: catalogByCode.get(code)?.ten_muc || code,
       count,
     }))
+}
+
+function toAttentionDrillDownItem(
+  score: WeeklyStudentScore,
+  studentById: Map<string, HocSinh>,
+): AttentionDrillDownItem {
+  const student = studentById.get(score.ma_hs)
+  const components = [
+    { label: 'CC', value: score.diem_chuyen_can },
+    { label: 'VS', value: score.diem_ve_sinh },
+    { label: 'NN', value: score.diem_ne_nep },
+    { label: 'KL', value: score.diem_ky_luat },
+  ].sort((left, right) => left.value - right.value)
+  const lowest = components[0]
+
+  return {
+    maHs: score.ma_hs,
+    name: student ? `${student.ho} ${student.ten}` : score.ma_hs,
+    token: student?.token_ho_so || '',
+    lowestComponent: lowest.label,
+    lowestScore: lowest.value,
+    totalScore: score.diem_xep_loai_thi_dua,
+  }
+}
+
+function toRecordDrillDownItem(
+  record: GhiNhan,
+  index: number,
+  studentById: Map<string, HocSinh>,
+): RecordDrillDownItem {
+  const student = record.ma_hs ? studentById.get(record.ma_hs) : undefined
+
+  return {
+    id: record.ma_ghi_nhan || `${record.ngay}-${record.ma_hs || record.ma_danh_muc}-${index}`,
+    code: record.ma_danh_muc || record.loai,
+    date: record.ngay,
+    description: record.noi_dung || record.ly_do || 'Không có mô tả',
+    name: student
+      ? `${student.ho} ${student.ten}`
+      : record.ma_hs || `Tổ ${record.to_lien_quan || 'tập thể'}`,
+    status: record.da_xu_ly ? 'Đã xử lý' : 'Chưa xử lý',
+    token: student?.token_ho_so,
+  }
+}
+
+function toEventDrillDownItem(
+  record: GhiNhan,
+  catalogItem: DanhMucDiem | undefined,
+  index: number,
+): EventDrillDownItem {
+  const scope =
+    catalogItem?.pham_vi === 'to_truc'
+      ? `Tổ ${record.to_lien_quan || '-'}`
+      : 'Tập thể'
+
+  return {
+    id: record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc || 'event'}-${index}`,
+    code: record.ma_danh_muc || record.loai,
+    date: record.ngay,
+    description: record.noi_dung || record.ly_do || catalogItem?.ten_muc || 'Không có mô tả',
+    scope,
+  }
 }
 
 function averageComponents(scores: WeeklyStudentScore[]): Record<'CC' | 'VS' | 'NN' | 'KL', string> {
