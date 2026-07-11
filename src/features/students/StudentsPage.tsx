@@ -1,6 +1,9 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { Fragment, type FormEvent, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { DienHocSinh, HocSinh } from '../../data/types'
+import type { BanCanSu, CauHinhTuan, DanhMucDiem, DienHocSinh, GhiNhan, HocSinh } from '../../data/types'
+import { calculateWeeklyStudentScore } from '../scoring/scoring'
+import { getStudentGroup } from './studentGroups'
 
 type StudentForm = {
   ho: string
@@ -30,9 +33,15 @@ const EMPTY_FORM: StudentForm = {
 
 export function StudentsPage() {
   const [students, setStudents] = useState<HocSinh[]>([])
+  const [records, setRecords] = useState<GhiNhan[]>([])
+  const [catalog, setCatalog] = useState<DanhMucDiem[]>([])
+  const [weekConfig, setWeekConfig] = useState<CauHinhTuan[]>([])
+  const [banCanSu, setBanCanSu] = useState<BanCanSu[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [expandedMaHs, setExpandedMaHs] = useState<string | null>(null)
+  const [copyMessage, setCopyMessage] = useState<string | null>(null)
   const [formMode, setFormMode] = useState<'add' | 'edit' | null>(null)
   const [editingStudent, setEditingStudent] = useState<HocSinh | null>(null)
   const [form, setForm] = useState<StudentForm>(EMPTY_FORM)
@@ -43,11 +52,20 @@ export function StudentsPage() {
   useEffect(() => {
     let active = true
 
-    dataSource
-      .getStudents()
-      .then((rows) => {
+    Promise.all([
+      dataSource.getStudents(),
+      dataSource.getRecords(),
+      dataSource.getPointCatalog(),
+      dataSource.getWeekConfig(),
+      dataSource.getBanCanSu(),
+    ])
+      .then(([studentRows, recordRows, catalogRows, weekRows, banCanSuRows]) => {
         if (active) {
-          setStudents(rows)
+          setStudents(studentRows)
+          setRecords(recordRows)
+          setCatalog(catalogRows)
+          setWeekConfig(weekRows)
+          setBanCanSu(banCanSuRows)
           setLoadError(null)
         }
       })
@@ -82,6 +100,8 @@ export function StudentsPage() {
       return haystack.includes(keyword)
     })
   }, [query, students])
+
+  const currentWeek = useMemo(() => getLatestWeek(records, weekConfig), [records, weekConfig])
 
   function openAddForm() {
     setFormMode('add')
@@ -153,6 +173,13 @@ export function StudentsPage() {
     } finally {
       setDeletingMaHs(null)
     }
+  }
+
+  async function copyProfileLink(student: HocSinh) {
+    const url = `${window.location.origin}${window.location.pathname}#/hs/${student.token_ho_so}`
+    await window.navigator.clipboard.writeText(url)
+    setCopyMessage(`Đã copy link hồ sơ của ${student.ho} ${student.ten}.`)
+    window.setTimeout(() => setCopyMessage(null), 2500)
   }
 
   return (
@@ -321,6 +348,12 @@ export function StudentsPage() {
         </div>
       ) : null}
 
+      {copyMessage ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+          {copyMessage}
+        </div>
+      ) : null}
+
       {!loading && !loadError ? (
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
           <div className="overflow-x-auto">
@@ -336,40 +369,102 @@ export function StudentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {visibleStudents.map((student) => (
-                  <tr key={student.ma_hs} className="hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-3 py-3 text-slate-500">{student.tt}</td>
-                    <td className="whitespace-nowrap px-3 py-3 font-medium text-slate-700">
-                      {student.ma_hs}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3 font-semibold text-slate-900">
-                      {student.ho} {student.ten}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3 text-slate-700">{student.dien}</td>
-                    <td className="whitespace-nowrap px-3 py-3 text-slate-700">
-                      {student.nu ? 'Nữ' : 'Nam'}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openEditForm(student)}
-                          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                        >
-                          Sửa
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void deleteStudent(student)}
-                          disabled={deletingMaHs === student.ma_hs}
-                          className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
-                        >
-                          {deletingMaHs === student.ma_hs ? 'Đang xoá' : 'Xoá'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {visibleStudents.map((student) => {
+                  const expanded = expandedMaHs === student.ma_hs
+                  const role = banCanSu.find((item) => item.ma_hs === student.ma_hs)?.chuc_vu || 'Học sinh'
+                  const score = calculateWeeklyStudentScore({
+                    catalog,
+                    records,
+                    student,
+                    tuanSo: currentWeek,
+                  })
+                  const weekRecords = records.filter(
+                    (record) => record.ma_hs === student.ma_hs && record.tuan_so === currentWeek,
+                  )
+
+                  return (
+                    <Fragment key={student.ma_hs}>
+                      <tr className={expanded ? 'bg-blue-50' : 'hover:bg-slate-50'}>
+                        <td className="whitespace-nowrap px-3 py-3 text-slate-500">{student.tt}</td>
+                        <td className="whitespace-nowrap px-3 py-3 font-medium text-slate-700">
+                          {student.ma_hs}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedMaHs(expanded ? null : student.ma_hs)}
+                            className="text-left font-semibold text-slate-900 hover:text-blue-700"
+                          >
+                            {student.ho} {student.ten}
+                          </button>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-slate-700">{student.dien}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-slate-700">
+                          {student.nu ? 'Nữ' : 'Nam'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openEditForm(student)}
+                              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                            >
+                              Sửa
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void deleteStudent(student)}
+                              disabled={deletingMaHs === student.ma_hs}
+                              className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                            >
+                              {deletingMaHs === student.ma_hs ? 'Đang xoá' : 'Xoá'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {expanded ? (
+                        <tr>
+                          <td colSpan={6} className="bg-blue-50 px-3 py-4">
+                            <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+                              <div className="grid gap-2 sm:grid-cols-4">
+                                <QuickStat label="CC" value={score.diem_chuyen_can} />
+                                <QuickStat label="VS" value={score.diem_ve_sinh} />
+                                <QuickStat label="NN" value={score.diem_ne_nep} />
+                                <QuickStat label="KL" value={score.diem_ky_luat} />
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                                <span className="rounded-full bg-white px-3 py-1 font-semibold">
+                                  Tổ {getStudentGroup(student.ma_hs) || '-'}
+                                </span>
+                                <span className="rounded-full bg-white px-3 py-1 font-semibold">
+                                  {role}
+                                </span>
+                                <span className="rounded-full bg-white px-3 py-1 font-semibold">
+                                  {weekRecords.length} ghi nhận tuần này
+                                </span>
+                              </div>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <Link
+                                to={`/hs/${student.token_ho_so}`}
+                                className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                              >
+                                Xem hồ sơ đầy đủ
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => void copyProfileLink(student)}
+                                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                Copy link hồ sơ
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -408,6 +503,15 @@ function TextField({
         className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
       />
     </label>
+  )
+}
+
+function QuickStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md bg-white p-3">
+      <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
+      <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
+    </div>
   )
 }
 
@@ -483,4 +587,13 @@ function normalize(value: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+}
+
+function getLatestWeek(records: GhiNhan[], weekConfig: CauHinhTuan[]): number {
+  const latestRecordWeek = Math.max(0, ...records.map((record) => record.tuan_so || 0))
+  if (latestRecordWeek > 0) {
+    return latestRecordWeek
+  }
+
+  return Math.max(1, ...weekConfig.map((week) => week.tuan_so || 0))
 }
