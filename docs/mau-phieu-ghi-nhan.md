@@ -1,14 +1,16 @@
 # Mẫu phiếu ghi nhận giấy — In và phát cho ban cán sự lớp
 
-> Mục đích: dùng ngay Thứ Hai 13/07/2026, trước khi web app hoàn thiện. Mỗi ô khớp trực tiếp với cột trong tab `GhiNhan` (tài liệu 02) để việc chuyển dữ liệu qua AI sau này chính xác, nhanh gọn.
+> Dùng ngay **Thứ Hai 13/07/2026**. In **2 tờ**: phiếu này + [bảng tra cứu mã](bang-tra-cuu-ma-diem.md). Mỗi ô khớp tab `GhiNhan` (tài liệu 02).
+
+**Lớp 11C5** · Năm học 2025–2026
 
 ---
 
-## PHIẾU GHI NHẬN HỌC SINH — LỚP 11...
+## PHẦN 1 — Ghi nhận theo tiết / theo học sinh
 
-**Ngày ghi nhận:** ____ / ____ / 2026  &nbsp;&nbsp;&nbsp; **Người ghi nhận (chức vụ):** ______________________
+**Ngày:** ____ / ____ / 2026 &nbsp;&nbsp; **Người ghi (chức vụ):** ______________________
 
-| STT | Họ tên HS | Tiết | Môn | Loại* | Nội dung / Lý do | Số lần | Đã xử lý? (C/K) | Hình thức xử lý | Gọi PH? (C/K) | Ghi sổ đầu bài | Điểm miệng/15p |
+| STT | Họ tên HS | Tiết | Môn | Mã* | Nội dung / Lý do | Số lần | Xử lý? (C/K) | Hình thức xử lý | Gọi PH? (C/K) | Ghi sổ đầu bài | Điểm miệng/15p |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 1 |  |  |  |  |  |  |  |  |  |  |  |
 | 2 |  |  |  |  |  |  |  |  |  |  |  |
@@ -21,32 +23,47 @@
 | 9 |  |  |  |  |  |  |  |  |  |  |  |
 | 10 |  |  |  |  |  |  |  |  |  |  |  |
 
-**\* Loại** — ghi 1 trong các mã sau, đúng theo quy chế thi đua của trường (xem chi tiết ở tài liệu 03):
-`CC` = Chuyên cần &nbsp;|&nbsp; `VS` = Vệ sinh &nbsp;|&nbsp; `NN` = Nề nếp - Tác phong &nbsp;|&nbsp; `KL` = Trật tự - Kỷ luật &nbsp;|&nbsp; `HT` = Học tập (chỉ ghi điểm số môn, không trừ điểm)
+**\* Mã** — tra bảng kèm theo, ví dụ `CC01`, `NN04`, `KL08`. Học tập: ghi `HT` và điểm số ở cột cuối (không dùng mã trừ).
 
 ---
 
-### Phần riêng: Nề nếp tổng quát đầu ngày (không theo tiết cụ thể)
+## PHẦN 2 — Nề nếp đầu buổi (không theo tiết)
 
-| STT | Họ tên HS | Đầu tóc gọn gàng? (C/K) | Đồng phục đúng quy định? (C/K) | Ghi chú khác |
-|---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
+| STT | Họ tên HS | Mã (nếu có) | Đầu tóc (C/K) | Đồng phục (C/K) | Giày dép (C/K) | Khăn quàng (C/K) | Ghi chú |
+|---|---|---|---|---|---|---|---|
+| 1 |  |  |  |  |  |  |  |
+| 2 |  |  |  |  |  |  |  |
+| 3 |  |  |  |  |  |  |  |
+| 4 |  |  |  |  |  |  |  |
+| 5 |  |  |  |  |  |  |  |
+
+*Gợi ý mã: tóc `NN04` · đồng phục `NN01` · giày dép `NN03` · khăn quàng `NN05`.*
+
+---
+
+## PHẦN 3 — Sự kiện tập thể / tổ trực (không ghi tên học sinh)
+
+| STT | Mã | Mô tả sự kiện | Tổ trực (1/2/3) hoặc Cả lớp | Số lần | Người ghi |
+|---|---|---|---|---|---|
+| 1 |  |  |  |  |  |
+| 2 |  |  |  |  |  |
+| 3 |  |  |  |  |  |
+
+*Ví dụ: `KL02` lớp ồn chào cờ · `VS06` bán trú không vệ sinh · `VS01` + Tổ 2 tổ trực muộn.*
 
 ---
 
 ### Hướng dẫn nhanh cho ban cán sự
 
-1. Chỉ ghi tên học sinh có phát sinh nội dung cần ghi nhận — **không cần ghi hết sĩ số mỗi ngày**.
-2. Cột "Loại" ghi đúng 1 trong 5 mã ở trên để việc nhập liệu sau này chuẩn xác.
-3. Cuối buổi, nộp phiếu cho giáo viên chủ nhiệm hoặc lớp phó phụ trách tổng hợp.
-4. Chữ viết rõ ràng — phiếu này sẽ được chụp ảnh và chuyển thành dữ liệu số ngay trong ngày.
+1. Chỉ ghi học sinh/sự kiện **có phát sinh**.
+2. Phần 1–2: **có họ tên**. Phần 3: **không** ghi tên ai.
+3. Ghi **mã** đúng bảng tra cứu.
+4. Cuối ngày nộp phiếu cho GVCN.
 
 ---
 
-### Ghi chú cho giáo viên (không in phần này)
+### Ghi chú cho giáo viên (không in)
 
-Sau khi thu phiếu, chụp ảnh phiếu, đưa vào Claude kèm yêu cầu **xuất ra JSON** đúng cấu trúc cột của tab `GhiNhan` (tài liệu 02) — **không dán tay vào Google Sheet nữa**. Mở web app, vào màn hình **Import**, dán/tải JSON đó vào, bấm xác nhận — hệ thống tự ghi vào Sheet, lưu file gốc và ghi log (xem tài liệu 02, Tab `NhatKyImport`).
+Chụp ảnh phiếu → Claude xuất JSON `GhiNhan` → Import trên web app (xem huong-dan-quy-trinh-import.md).
 
-> Lưu ý: mẫu phiếu này dùng để **in tay ngay bây giờ** cho thứ Hai 13/07. Từ Giai đoạn 1 phần sau (xem tài liệu 04, commit tải mẫu phiếu), web app sẽ có nút tải mẫu phiếu này trực tiếp — không cần quay lại file markdown này nữa.
+Sự kiện Phần 3: dashboard giáo viên xử lý Gán 1 HS / Áp dụng tất cả / Bỏ qua.

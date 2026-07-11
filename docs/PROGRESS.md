@@ -10,7 +10,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C002 | ✅ Xong | 11/07/2026 | |
 | C003 | ✅ Xong | 11/07/2026 | Script SetupSheet.gs + seed DanhMucDiem |
 | C004 | ✅ Xong | 11/07/2026 | 36 HS + 2 tuần trong du-lieu-mau/ |
-| C005 | ☐ Chưa làm | | |
+| C005 | ✅ Xong | 11/07/2026 | Phiếu 3 phần + bảng tra cứu mã |
 | C006 | ☐ Chưa làm | | |
 
 ## Nhóm B — Khung sườn ứng dụng web

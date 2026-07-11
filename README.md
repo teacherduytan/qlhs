@@ -27,6 +27,8 @@
 | 04 | [Lộ trình & Commit](docs/04-lo-trinh-giai-doan-1.md) | Roadmap C001–C027 |
 | 05 | [Quy tắc AI Agent](docs/05-quy-tac-ai-agent.md) | Luật làm việc cho Cursor/Claude Code |
 | — | [PROGRESS](docs/PROGRESS.md) | Theo dõi tiến độ từng commit |
+| — | [Mẫu phiếu ghi nhận](docs/mau-phieu-ghi-nhan.md) | In cho ban cán sự (3 phần) |
+| — | [Bảng tra cứu mã tiêu chí](docs/bang-tra-cuu-ma-diem.md) | In kèm phiếu ghi nhận |
 
 ## Tiến độ
 
