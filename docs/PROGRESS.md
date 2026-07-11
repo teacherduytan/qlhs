@@ -17,7 +17,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 
 | ID | Trạng thái | Ngày xong | Ghi chú |
 |---|---|---|---|
-| C007 | ☐ Chưa làm | | |
+| C007 | ✅ Xong | 11/07/2026 | Vite + React + TS strict |
 | C008 | ☐ Chưa làm | | |
 | C009 | ☐ Chưa làm | | |
 | C010 | ☐ Chưa làm | | |
