@@ -35,6 +35,7 @@ export function DashboardPage() {
   const [state, setState] = useState<DashboardState>({ status: 'loading' })
   const [expandedDay, setExpandedDay] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState('')
+  const [scoresCollapsed, setScoresCollapsed] = useState(false)
   const [selectedStudentByEvent, setSelectedStudentByEvent] = useState<Record<string, string>>({})
   const [processingEventId, setProcessingEventId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -299,76 +300,92 @@ export function DashboardPage() {
           ) : null}
 
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 p-4">
-              <h3 className="text-base font-bold text-slate-900">Điểm thi đua học sinh</h3>
+            <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Điểm thi đua học sinh</h3>
+                <p className="text-sm text-slate-600">{body.sortedScores.length} học sinh</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setScoresCollapsed((current) => !current)}
+                className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {scoresCollapsed ? 'Mở rộng danh sách' : 'Thu gọn danh sách'}
+              </button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
-                  <tr>
-                    <th className="px-3 py-3">Học sinh</th>
-                    <th className="px-3 py-3">CC</th>
-                    <th className="px-3 py-3">VS</th>
-                    <th className="px-3 py-3">NN</th>
-                    <th className="px-3 py-3">KL</th>
-                    <th className="px-3 py-3">HT</th>
-                    <th className="px-3 py-3">Tổng</th>
-                    <th className="px-3 py-3">Xếp loại</th>
-                    <th className="px-3 py-3">Gợi ý</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {body.sortedScores.map((score) => {
-                    const student = body.studentById.get(score.ma_hs)
-                    const suggestions = buildPedagogySuggestions({
-                      currentWeekRecords: getStudentRecords(state.records, score.ma_hs, [
-                        state.tuanSo,
-                      ]),
-                      previousScore: body.previousScores.get(score.ma_hs),
-                      score,
-                      twoWeekRecords: getStudentRecords(state.records, score.ma_hs, [
-                        state.tuanSo,
-                        Math.max(1, state.tuanSo - 1),
-                      ]),
-                    })
-                    return (
-                      <tr
-                        key={score.ma_hs}
-                        className={needsAttention(score) ? 'bg-red-50' : 'hover:bg-slate-50'}
-                      >
-                        <td className="whitespace-nowrap px-3 py-3 font-semibold text-slate-900">
-                          {student ? `${student.ho} ${student.ten}` : score.ma_hs}
-                        </td>
-                        <td className="px-3 py-3">{score.diem_chuyen_can}</td>
-                        <td className="px-3 py-3">{score.diem_ve_sinh}</td>
-                        <td className="px-3 py-3">{score.diem_ne_nep}</td>
-                        <td className="px-3 py-3">{score.diem_ky_luat}</td>
-                        <td className="px-3 py-3">{formatStudyScore(score.diem_hoc_tap)}</td>
-                        <td className="px-3 py-3 font-bold text-slate-900">
-                          {score.diem_xep_loai_thi_dua}
-                        </td>
-                        <td className="px-3 py-3">
-                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-                            {score.xep_loai}
-                          </span>
-                        </td>
-                        <td className="max-w-80 px-3 py-3">
-                          {suggestions.length ? (
-                            <ul className="space-y-1 text-xs text-slate-700">
-                              {suggestions.map((suggestion) => (
-                                <li key={suggestion}>{suggestion}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <span className="text-xs text-slate-400">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+            {scoresCollapsed ? (
+              <div className="p-4 text-sm text-slate-600">
+                Danh sách đang thu gọn. Mở rộng để xem từng học sinh.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                    <tr>
+                      <th className="px-3 py-3">Học sinh</th>
+                      <th className="px-3 py-3">CC</th>
+                      <th className="px-3 py-3">VS</th>
+                      <th className="px-3 py-3">NN</th>
+                      <th className="px-3 py-3">KL</th>
+                      <th className="px-3 py-3">HT</th>
+                      <th className="px-3 py-3">Tổng</th>
+                      <th className="px-3 py-3">Xếp loại</th>
+                      <th className="px-3 py-3">Gợi ý</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {body.sortedScores.map((score) => {
+                      const student = body.studentById.get(score.ma_hs)
+                      const suggestions = buildPedagogySuggestions({
+                        currentWeekRecords: getStudentRecords(state.records, score.ma_hs, [
+                          state.tuanSo,
+                        ]),
+                        previousScore: body.previousScores.get(score.ma_hs),
+                        score,
+                        twoWeekRecords: getStudentRecords(state.records, score.ma_hs, [
+                          state.tuanSo,
+                          Math.max(1, state.tuanSo - 1),
+                        ]),
+                      })
+                      return (
+                        <tr
+                          key={score.ma_hs}
+                          className={needsAttention(score) ? 'bg-red-50' : 'hover:bg-slate-50'}
+                        >
+                          <td className="whitespace-nowrap px-3 py-3 font-semibold text-slate-900">
+                            {student ? `${student.ho} ${student.ten}` : score.ma_hs}
+                          </td>
+                          <td className="px-3 py-3">{score.diem_chuyen_can}</td>
+                          <td className="px-3 py-3">{score.diem_ve_sinh}</td>
+                          <td className="px-3 py-3">{score.diem_ne_nep}</td>
+                          <td className="px-3 py-3">{score.diem_ky_luat}</td>
+                          <td className="px-3 py-3">{formatStudyScore(score.diem_hoc_tap)}</td>
+                          <td className="px-3 py-3 font-bold text-slate-900">
+                            {score.diem_xep_loai_thi_dua}
+                          </td>
+                          <td className="px-3 py-3">
+                            <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                              {score.xep_loai}
+                            </span>
+                          </td>
+                          <td className="max-w-80 px-3 py-3">
+                            {suggestions.length ? (
+                              <ul className="space-y-1 text-xs text-slate-700">
+                                {suggestions.map((suggestion) => (
+                                  <li key={suggestion}>{suggestion}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <span className="text-xs text-slate-400">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white">
