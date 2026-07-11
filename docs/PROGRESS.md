@@ -7,7 +7,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | ID | Trạng thái | Ngày xong | Ghi chú |
 |---|---|---|---|
 | C001 | ✅ Xong | 11/07/2026 | |
-| C002 | ☐ Chưa làm | | |
+| C002 | ✅ Xong | 11/07/2026 | |
 | C003 | ☐ Chưa làm | | |
 | C004 | ☐ Chưa làm | | |
 | C005 | ☐ Chưa làm | | |

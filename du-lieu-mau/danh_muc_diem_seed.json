@@ -1,0 +1,36 @@
+[
+  {"ma_danh_muc": "CC01", "nhom": "CC", "ten_muc": "Đi học trễ / 1 trường hợp", "diem": -2, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "CC02", "nhom": "CC", "ten_muc": "Nghỉ học có phép; không phép / 1 trường hợp", "diem": -3, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "CC03", "nhom": "CC", "ten_muc": "Không tham gia chào cờ / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "CC04", "nhom": "CC", "ten_muc": "Cờ đỏ bỏ trực ban, vắng họp / 1 trường hợp", "diem": -10, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+
+  {"ma_danh_muc": "VS01", "nhom": "VS", "ten_muc": "Vệ sinh lớp không đúng giờ / buổi", "diem": -10, "nghiem_trong": false, "pham_vi": "to_truc"},
+  {"ma_danh_muc": "VS02", "nhom": "VS", "ten_muc": "Bàn ghế không ngay ngắn, lớp bẩn, để lại tài liệu đồ dùng sau giờ học / lần", "diem": -10, "nghiem_trong": false, "pham_vi": "to_truc"},
+  {"ma_danh_muc": "VS03", "nhom": "VS", "ten_muc": "Đem đồ ăn, nước uống vào trường, khu vực học, lớp học / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "VS04", "nhom": "VS", "ten_muc": "Hành lang lớp còn bẩn / 1 lần", "diem": -10, "nghiem_trong": false, "pham_vi": "to_truc"},
+  {"ma_danh_muc": "VS05", "nhom": "VS", "ten_muc": "Xả rác bừa bãi không đúng nơi quy định / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "VS06", "nhom": "VS", "ten_muc": "Bán trú lớp ăn trưa không vệ sinh, xả rác, không xếp ghế ngay ngắn / 1 lần", "diem": -10, "nghiem_trong": false, "pham_vi": "tap_the"},
+
+  {"ma_danh_muc": "NN01", "nhom": "NN", "ten_muc": "Sai đồng phục (quần, áo, giày dép), nữ sinh cắt ngắn quần quá ngắn, bó nhỏ ống quần / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "NN02", "nhom": "NN", "ten_muc": "Không bảng tên / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "NN03", "nhom": "NN", "ten_muc": "Không đúng quy định về giày, dép / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "NN04", "nhom": "NN", "ten_muc": "Không đúng quy định về tóc / 1 trường hợp", "diem": -10, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "NN05", "nhom": "NN", "ten_muc": "Không khăn quàng (cấp II) / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "NN06", "nhom": "NN", "ten_muc": "Nữ son môi, sơn móng tay, móng chân, đeo khuyên mũi / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+
+  {"ma_danh_muc": "KL01", "nhom": "KL", "ten_muc": "Tập trung giờ chào cờ: muộn, lộn xộn, không thẳng hàng / tập thể", "diem": -10, "nghiem_trong": false, "pham_vi": "tap_the"},
+  {"ma_danh_muc": "KL02", "nhom": "KL", "ten_muc": "Lớp gây mất trật tự giờ chào cờ, đầu giờ nghe TVAV / 1 tập thể", "diem": -10, "nghiem_trong": false, "pham_vi": "tap_the"},
+  {"ma_danh_muc": "KL03", "nhom": "KL", "ten_muc": "Giờ nghe TVAV: ngủ gục, đi lung tung, nói chuyện, làm việc riêng / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL04", "nhom": "KL", "ten_muc": "Đi vào lối đi cấm / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL05", "nhom": "KL", "ten_muc": "Đùa giỡn, la hét làm mất trật tự, nói tục, chửi thề / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL06", "nhom": "KL", "ten_muc": "Mang, hút thuốc lá - thuốc lá điện tử, các loại hung khí vào trường / 1 trường hợp", "diem": -20, "nghiem_trong": true, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL07", "nhom": "KL", "ten_muc": "Mang chất dễ gây cháy nổ, hộp quẹt, đồ trang điểm vào trường / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL08", "nhom": "KL", "ten_muc": "Đem điện thoại, máy nghe nhạc vào trường/lớp không sử dụng, hoặc sử dụng / 1 trường hợp", "diem": -10, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL09", "nhom": "KL", "ten_muc": "Vô lễ với giáo viên, nhân viên / 1 trường hợp", "diem": -20, "nghiem_trong": true, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL10", "nhom": "KL", "ten_muc": "Đem ấn phẩm, sách báo, phim ảnh cấm / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL11", "nhom": "KL", "ten_muc": "Gây gổ, đánh nhau, làm mất trật tự lớp học, trường học / 1 trường hợp", "diem": -20, "nghiem_trong": true, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL12", "nhom": "KL", "ten_muc": "Uống rượu, bia, đánh bạc (bất kỳ hình thức nào) / 1 trường hợp", "diem": -20, "nghiem_trong": true, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL13", "nhom": "KL", "ten_muc": "Ăn cắp, phá hoại tài sản của người khác, của công / 1 trường hợp", "diem": -20, "nghiem_trong": true, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL14", "nhom": "KL", "ten_muc": "Vào lớp chậm trong giờ ra chơi / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KL15", "nhom": "KL", "ten_muc": "Nhận cơm không đúng giờ quy định / tập thể", "diem": -10, "nghiem_trong": false, "pham_vi": "tap_the"}
+]
