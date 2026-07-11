@@ -105,6 +105,11 @@ Schema mỗi object:
 4. Xem trước → **Xác nhận**.
 5. Kiểm tra tab `GhiNhan` và `NhatKyImport` trên Sheet.
 
+Mẫu dùng nhanh:
+
+- [`du-lieu-mau/mau-prompt-chuyen-doi-json.md`](../du-lieu-mau/mau-prompt-chuyen-doi-json.md) — prompt copy-dán cho AI khi gửi ảnh phiếu.
+- [`du-lieu-mau/mau-import-ghinhan.json`](../du-lieu-mau/mau-import-ghinhan.json) — cấu trúc JSON mẫu để đối chiếu trước khi import.
+
 ### Tạm thời (trước C016)
 
 - Dán thủ công vào tab `GhiNhan` trên Sheet (chỉ tuần đầu nếu cần gấp), hoặc

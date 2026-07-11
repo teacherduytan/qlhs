@@ -61,7 +61,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C032 | ✅ Xong | 11/07/2026 | Thêm trường to cho HocSinh, hiển thị tổ trên danh sách/hồ sơ và xử lý tổ trực |
 | C033 | ✅ Xong | 11/07/2026 | Dashboard có nhật ký theo ngày trong tuần, kể cả ngày chưa có ghi nhận |
 | C034 | ✅ Xong | 11/07/2026 | Import GhiNhan tự khớp ho_ten sang ma_hs, tự điền tuần/diện/điểm và log lỗi từng dòng |
-| C035 | ☐ Chưa làm | | |
+| C035 | ✅ Xong | 11/07/2026 | Thêm mẫu JSON và prompt chuyển ảnh phiếu sang JSON vào du-lieu-mau |
 
 ---
 

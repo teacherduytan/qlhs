@@ -39,6 +39,7 @@ Khi cập nhật Apps Script, dùng **Deploy → Manage deployments → Edit →
 - Dashboard giáo viên: điểm thi đua, cảnh báo, gợi ý xử lý, sự kiện lớp/tổ.
 - Xử lý sự kiện tập thể: gán cho 1 học sinh, áp dụng cả lớp/tổ, hoặc bỏ qua.
 - Tải mẫu phiếu ghi nhận HTML in được từ giao diện.
+- Mẫu import: [JSON ghi nhận](du-lieu-mau/mau-import-ghinhan.json) và [prompt chuyển ảnh phiếu sang JSON](du-lieu-mau/mau-prompt-chuyen-doi-json.md).
 
 ## Tài liệu
 
