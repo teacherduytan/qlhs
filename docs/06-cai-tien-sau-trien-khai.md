@@ -58,7 +58,32 @@ Bấm vào tên học sinh hiện tại **không** dẫn sang trang hồ sơ —
 
 ---
 
-## Đợt phát hiện #5 — (để trống, thêm khi phát sinh thêm trong lúc mình trao đổi)
+## Đợt phát hiện #5 — sau khi xem dữ liệu giả thật trên giao diện (11/07/2026)
+
+| ID | Commit | Phạm vi | Tiêu chí hoàn thành |
+|---|---|---|---|
+| C040 | `[C040] feat(ui): bộ chọn ngày cụ thể (không chỉ tuần) cho các màn hình báo cáo` | Bên cạnh bộ chọn tuần (C037), thêm khả năng chọn **1 ngày cụ thể** (date picker) để xem đúng dữ liệu ngày đó — áp dụng cho khu vực "Nhật ký theo ngày" (C033, hiện đang chỉ hiện cả tuần cùng lúc) và bộ lọc trên lịch sử ghi nhận của hồ sơ học sinh (C038). Chọn tuần trước → date picker chỉ cho chọn trong đúng khoảng ngày của tuần đó. | Chọn 1 ngày bất kỳ trong tuần đang xem → nhật ký/lịch sử lọc đúng, chỉ hiện dữ liệu của riêng ngày đó; bỏ chọn (về "xem cả tuần") → hiện lại đầy đủ như cũ. |
+| C041 | `[C041] fix(verify): kiểm tra lại thực tế và hoàn thiện hiệu ứng thu gọn/mở rộng TỪNG DÒNG danh sách học sinh` | **C030 đã đánh dấu Xong nhưng thực tế không thấy trên giao diện.** Lưu ý: đây là hiệu ứng cho **từng dòng học sinh** (bấm vào 1 em → dòng đó mở rộng xem nhanh chi tiết), **khác** với C044 bên dưới (thu gọn cả khối danh sách). AI agent bắt buộc phải tự mở trình duyệt, vào đúng **trang Danh sách học sinh** (không phải trang Tổng quan), xác nhận bằng mắt: bấm vào 1 dòng học sinh có mở rộng ra không, có nút "Xem hồ sơ đầy đủ" và "Copy link hồ sơ" không. Nếu thiếu, hoàn thiện lại đúng theo mô tả gốc của C030 (xem tài liệu 06 phần Đợt #1). | Vào đúng trang danh sách học sinh, bấm 1 dòng → thấy rõ mở rộng, đủ 2 nút; bấm lại → thu gọn. |
+| C042 | `[C042] fix(verify): kiểm tra lại thực tế và hoàn thiện nút xoá dữ liệu theo lần import` | **C036 đã đánh dấu Xong nhưng thực tế không thấy trên giao diện.** AI agent bắt buộc phải tự mở đúng **màn hình Import**, xác nhận bằng mắt: có khu vực "Lịch sử import" liệt kê các lần import gần đây không, mỗi dòng có nút xoá không. Nếu thiếu, hoàn thiện lại đúng theo mô tả gốc của C036. | Vào màn hình Import, thấy danh sách các lần import gần đây kèm nút xoá; bấm xoá đúng 1 lần import dữ liệu giả → toàn bộ dữ liệu của lần đó biến mất khỏi mọi màn hình. |
+| C043 | `[C043] feat(dashboard): thêm "Vùng thống kê tổng quan" theo danh mục chỉ số quản lý lớp` | Thêm 1 dải thẻ (card) ở đầu trang Dashboard, hiển thị ngay các chỉ số quan trọng nhất mà giáo viên chủ nhiệm cần thấy trong nháy mắt, theo đúng danh mục dưới đây. Không làm dạng bảng dài — dạng thẻ nhỏ, số to, dễ quét mắt. | Mở Dashboard, thấy ngay dải thẻ ở đầu trang đủ 8 chỉ số theo danh mục TK01–TK08, số liệu khớp đúng với dữ liệu giả đã import. |
+| C044 | `[C044] feat(ui): nút thu gọn/mở rộng cho TOÀN BỘ khối danh sách học sinh` | **Yêu cầu mới, khác với C030/C041** (thu gọn từng dòng): thêm 1 nút/toggle đặt ở đầu mỗi khu vực đang hiển thị danh sách học sinh — trên tab **Tổng quan** (mọi khối liệt kê nhiều học sinh, ví dụ danh sách xếp theo điểm) và trên tab **Học sinh** (trang danh sách chính). Bấm vào → toàn bộ danh sách thu gọn lại chỉ còn 1 dòng tiêu đề (ví dụ "Danh sách học sinh (36) ▼"), ẩn hết các dòng bên trong. Bấm lại → mở ra đầy đủ như cũ. Đây là thu gọn **cả khối**, không phải từng dòng — 2 tính năng cùng tồn tại song song, không thay thế nhau: sau khi mở khối ra, từng dòng bên trong vẫn bấm được để xem nhanh chi tiết như C030. | Trên tab Tổng quan, bấm nút thu gọn ở đầu khu vực danh sách → toàn bộ ẩn, chỉ còn dòng tiêu đề; bấm lại → hiện đầy đủ. Làm đúng như vậy trên tab Học sinh. Sau khi mở lại, bấm từng dòng vẫn thấy hiệu ứng mở rộng chi tiết của C030 hoạt động bình thường. |
+
+### Danh mục chỉ số Tổng quan (dùng cho C043)
+
+| Mã | Chỉ số | Cách tính | Ví dụ hiển thị |
+|---|---|---|---|
+| TK01 | Sĩ số & học sinh "sạch" | Tổng số HS đang học (theo `ngay_nhap_hoc`/`ngay_roi_lop`) / số HS không có `GhiNhan` nào trong tuần đang xem | "36 học sinh — 22 em không có ghi nhận tuần này" |
+| TK02 | Học sinh cần chú ý | Đếm HS có ≥1 trong 4 thành phần < 50 điểm | "3 học sinh cần chú ý" + danh sách tên rút gọn, bấm vào xem nhanh |
+| TK03 | Vi phạm nghiêm trọng trong tuần | Đếm `GhiNhan` có `nghiem_trong = true` (mức −20) trong tuần đang xem | "2 vi phạm nghiêm trọng" + danh sách |
+| TK04 | Sự kiện tập thể/tổ trực chờ xử lý | Đếm `GhiNhan` có `pham_vi ≠ ca_nhan` và `trang_thai_xu_ly_tap_the = chua_xu_ly` | "5 sự kiện đang chờ xử lý" — bấm để đi thẳng tới khu xử lý (C021a) |
+| TK05 | Vi phạm phổ biến nhất tuần | Nhóm theo `ma_danh_muc`, đếm số lần, lấy top 3 | "CC01 (đi trễ): 3 lần — nhiều nhất tuần" |
+| TK06 | Điểm trung bình lớp theo từng nhóm | Trung bình cộng của cả lớp cho từng thành phần CC/VS/NN/KL | "CC: 96 · VS: 98 · NN: 97 · KL: 85" |
+| TK07 | Xu hướng so với tuần trước | So điểm xếp loại trung bình cả lớp tuần đang xem với tuần liền trước | "↓ giảm 4 điểm so với Tuần 1" (nếu là tuần đầu tiên thì ẩn chỉ số này) |
+| TK08 | Nhịp độ ghi nhận | Ngày gần nhất có ghi nhận + số ngày trong tuần có ít nhất 1 dòng dữ liệu | "Ghi nhận gần nhất: 17/07 — 4/5 ngày có dữ liệu" |
+
+---
+
+## Đợt phát hiện #6 — (để trống, thêm khi phát sinh thêm trong lúc mình trao đổi)
 
 | ID | Commit | Phạm vi | Tiêu chí hoàn thành |
 |---|---|---|---|

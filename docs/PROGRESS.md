@@ -65,9 +65,14 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C034 | ✅ Xong | 11/07/2026 | Import GhiNhan tự khớp ho_ten sang ma_hs, tự điền tuần/diện/điểm và log lỗi từng dòng |
 | C035 | ✅ Xong | 11/07/2026 | Thêm mẫu JSON và prompt chuyển ảnh phiếu sang JSON vào du-lieu-mau |
 | C036 | ✅ Xong | 11/07/2026 | Xoá dữ liệu theo lần import: nút xoá trên lịch sử import, Apps Script xoá GhiNhan theo ma_log_import và đánh dấu log da_xoa |
-| C037 | ☐ Chưa làm | | Bộ chọn tuần — nghi là nguyên nhân dashboard/hồ sơ trống |
+| C037 | ✅ Xong | 11/07/2026 | Bộ chọn tuần dùng chung cho Dashboard và hồ sơ học sinh, mặc định chọn theo CauHinhTuan |
 | C038 | ☐ Chưa làm | | Lịch sử ghi nhận hiện toàn bộ, không phụ thuộc tuần |
 | C039 | ✅ Xong | 11/07/2026 | Apps Script tự tính tuan_so khi import, cảnh báo nếu ngoài CauHinhTuan và thêm vaLaiTuanSoChoGhiNhan() để vá dữ liệu cũ |
+| C040 | ☐ Chưa làm | | Bộ chọn ngày cụ thể (kèm C037) |
+| C041 | ☐ Chưa làm | | ⚠️ Xác minh lại C030 — không thấy trên giao diện dù đã đánh dấu Xong |
+| C042 | ☐ Chưa làm | | ⚠️ Xác minh lại C036 — không thấy trên giao diện dù đã đánh dấu Xong |
+| C043 | ☐ Chưa làm | | Vùng thống kê tổng quan (TK01-TK08) |
+| C044 | ☐ Chưa làm | | Thu gọn/mở rộng CẢ KHỐI danh sách — khác với C030 (từng dòng) |
 
 ---
 

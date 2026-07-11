@@ -10,6 +10,7 @@ import type {
 import { calculateClassWeeklyScores, type WeeklyStudentScore } from '../scoring/scoring'
 import { buildPedagogySuggestions } from '../scoring/suggestions'
 import { getStudentGroup } from '../students/studentGroups'
+import { selectDefaultWeek, WeekSelector } from '../time/WeekSelector'
 
 type DashboardState =
   | { status: 'loading' }
@@ -18,7 +19,6 @@ type DashboardState =
       status: 'success'
       catalog: DanhMucDiem[]
       records: GhiNhan[]
-      scores: WeeklyStudentScore[]
       students: HocSinh[]
       tuanSo: number
       weekConfig: CauHinhTuan[]
@@ -45,12 +45,11 @@ export function DashboardPage() {
           return
         }
 
-        const tuanSo = getLatestWeek(records, weekConfig)
+        const tuanSo = selectDefaultWeek(weekConfig, records)
         setState({
           status: 'success',
           catalog,
           records,
-          scores: calculateClassWeeklyScores({ catalog, records, students, tuanSo }),
           students,
           tuanSo,
           weekConfig,
@@ -76,7 +75,13 @@ export function DashboardPage() {
     }
 
     const studentById = new Map(state.students.map((student) => [student.ma_hs, student]))
-    const sortedScores = [...state.scores].sort(
+    const currentScores = calculateClassWeeklyScores({
+      catalog: state.catalog,
+      records: state.records,
+      students: state.students,
+      tuanSo: state.tuanSo,
+    })
+    const sortedScores = [...currentScores].sort(
       (a, b) => a.diem_xep_loai_thi_dua - b.diem_xep_loai_thi_dua,
     )
     const previousScores = new Map(
@@ -142,12 +147,6 @@ export function DashboardPage() {
         return {
           ...current,
           records,
-          scores: calculateClassWeeklyScores({
-            catalog: current.catalog,
-            records,
-            students: current.students,
-            tuanSo: current.tuanSo,
-          }),
         }
       })
     } catch (error) {
@@ -206,6 +205,11 @@ export function DashboardPage() {
     await processCollectiveEvent(record, 'bo_qua', [])
   }
 
+  function selectWeek(tuanSo: number) {
+    setExpandedDay(null)
+    setState((current) => (current.status === 'success' ? { ...current, tuanSo } : current))
+  }
+
   return (
     <section className="space-y-4">
       <div>
@@ -236,6 +240,16 @@ export function DashboardPage() {
               label="Cần chú ý"
               value={body.sortedScores.filter(needsAttention).length}
             />
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <div className="max-w-xs">
+              <WeekSelector
+                value={state.tuanSo}
+                weeks={state.weekConfig}
+                onChange={selectWeek}
+              />
+            </div>
           </div>
 
           {body.missingGroupStudents.length ? (
@@ -530,15 +544,6 @@ function eventKey(record: GhiNhan): string {
 
 function resolveStudentGroup(student: HocSinh): number | null {
   return student.to || getStudentGroup(student.ma_hs)
-}
-
-function getLatestWeek(records: GhiNhan[], weekConfig: CauHinhTuan[]): number {
-  const latestRecordWeek = Math.max(0, ...records.map((record) => record.tuan_so || 0))
-  if (latestRecordWeek > 0) {
-    return latestRecordWeek
-  }
-
-  return Math.max(1, ...weekConfig.map((week) => week.tuan_so || 0))
 }
 
 function buildDailyLogs(records: GhiNhan[], weekConfig: CauHinhTuan[], tuanSo: number) {

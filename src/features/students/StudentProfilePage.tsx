@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { BanCanSu, CauHinhTuan, GhiNhan, HocSinh } from '../../data/types'
+import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh } from '../../data/types'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
+import { selectDefaultWeek, WeekSelector } from '../time/WeekSelector'
 import { getStudentGroup } from './studentGroups'
 
 type ProfileState =
@@ -11,15 +12,30 @@ type ProfileState =
   | { status: 'error'; message: string }
   | {
       status: 'success'
+      catalog: DanhMucDiem[]
       records: GhiNhan[]
-      score: WeeklyStudentScore
       student: HocSinh
       role: string
+      tuanSo: number
+      weekConfig: CauHinhTuan[]
     }
 
 export function StudentProfilePage() {
   const { token } = useParams()
   const [state, setState] = useState<ProfileState>({ status: 'loading' })
+
+  const score = useMemo(() => {
+    if (state.status !== 'success') {
+      return null
+    }
+
+    return calculateWeeklyStudentScore({
+      catalog: state.catalog,
+      records: state.records,
+      student: state.student,
+      tuanSo: state.tuanSo,
+    })
+  }, [state])
 
   useEffect(() => {
     let active = true
@@ -50,18 +66,15 @@ export function StudentProfilePage() {
           return
         }
 
-        const tuanSo = getLatestWeek(records, weekConfig)
+        const tuanSo = selectDefaultWeek(weekConfig, records)
         setState({
           status: 'success',
+          catalog,
           records,
-          score: calculateWeeklyStudentScore({
-            catalog,
-            records,
-            student,
-            tuanSo,
-          }),
           student,
           role: getStudentRole(student.ma_hs, banCanSu),
+          tuanSo,
+          weekConfig,
         })
       })
       .catch((error: unknown) => {
@@ -115,11 +128,25 @@ export function StudentProfilePage() {
           </div>
         ) : null}
 
-        {state.status === 'success' ? (
+        {state.status === 'success' && score ? (
           <>
             <ProfileCard student={state.student} role={state.role} />
             <TodayRecords records={state.records} />
-            <ScoreSummary score={state.score} />
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="max-w-xs">
+                <WeekSelector
+                  label="Tuần tính điểm"
+                  value={state.tuanSo}
+                  weeks={state.weekConfig}
+                  onChange={(tuanSo) =>
+                    setState((current) =>
+                      current.status === 'success' ? { ...current, tuanSo } : current,
+                    )
+                  }
+                />
+              </div>
+            </div>
+            <ScoreSummary score={score} />
             <RecordHistory records={state.records} />
           </>
         ) : null}
@@ -343,15 +370,6 @@ function formatDate(value: string | null): string {
   }
 
   return new Intl.DateTimeFormat('vi-VN').format(date)
-}
-
-function getLatestWeek(records: GhiNhan[], weekConfig: CauHinhTuan[]): number {
-  const latestRecordWeek = Math.max(0, ...records.map((record) => record.tuan_so || 0))
-  if (latestRecordWeek > 0) {
-    return latestRecordWeek
-  }
-
-  return Math.max(1, ...weekConfig.map((week) => week.tuan_so || 0))
 }
 
 function groupRecordsByWeek(records: GhiNhan[]): Array<{ tuanSo: number; records: GhiNhan[] }> {
