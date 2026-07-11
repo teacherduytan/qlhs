@@ -32,7 +32,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C014 | ✅ Xong | 11/07/2026 | GoogleSheetsDataSource đọc dữ liệu + trang học sinh kiểm chứng getStudents |
 | C015 | ✅ Xong | 11/07/2026 | Trang học sinh có tìm kiếm + thêm/sửa/xoá qua GoogleSheetsDataSource |
 | C016 | ✅ Xong | 11/07/2026 | Màn hình Import JSON chung: chọn loại, dán/tải file, preview, xác nhận import |
-| C017 | ☐ Chưa làm | | |
+| C017 | ✅ Xong | 11/07/2026 | Hồ sơ theo token + vai trò BanCanSu, không hiển thị SĐT phụ huynh |
 | C018 | ☐ Chưa làm | | |
 | C019 | ☐ Chưa làm | | |
 | C020 | ☐ Chưa làm | | |
