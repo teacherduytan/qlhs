@@ -19,11 +19,11 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 |---|---|---|---|
 | C007 | ✅ Xong | 11/07/2026 | Vite + React + TS strict |
 | C008 | ✅ Xong | 11/07/2026 | Tailwind v4 + ResponsiveDemo |
-| C009 | ☐ Chưa làm | | |
-| C010 | ☐ Chưa làm | | |
-| C011 | ☐ Chưa làm | | |
-| C012 | ☐ Chưa làm | | |
-| C013 | ☐ Chưa làm | | |
+| C009 | ✅ Xong | 11/07/2026 | GitHub Actions deploy-pages |
+| C010 | ✅ Xong | 11/07/2026 | HashRouter + Layout |
+| C011 | ✅ Xong | 11/07/2026 | DataSource + types |
+| C012 | ✅ Xong | 11/07/2026 | Code.gs doGet/doPost |
+| C013 | ✅ Xong | 11/07/2026 | Import batch + Drive + log |
 
 ## Nhóm C — Tính năng cốt lõi
 
