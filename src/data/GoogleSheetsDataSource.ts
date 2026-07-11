@@ -2,6 +2,7 @@ import type { DataSource } from './DataSource'
 import type {
   BanCanSu,
   CauHinhTuan,
+  DeleteImportResult,
   DanhMucDiem,
   GhiNhan,
   HocSinh,
@@ -106,6 +107,13 @@ export class GoogleSheetsDataSource implements DataSource {
       loai,
       rows: jsonData,
       nguoi_thuc_hien: nguoiThucHien,
+    })
+  }
+
+  deleteImport(maLog: string): Promise<DeleteImportResult> {
+    return this.post<DeleteImportResult>({
+      action: 'delete_import',
+      ma_log: maLog,
     })
   }
 

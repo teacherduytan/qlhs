@@ -114,6 +114,11 @@ function doPost(e) {
       return jsonResponse_({ ok: true, data: generated });
     }
 
+    if (body.action === 'delete_import' && body.ma_log) {
+      var deleteResult = deleteImport_(body.ma_log);
+      return jsonResponse_({ ok: true, data: deleteResult });
+    }
+
     if (body.import && body.loai && body.rows) {
       var result = importBatch_(body.loai, body.rows, body.nguoi_thuc_hien || '');
       return jsonResponse_({ ok: true, data: result });
@@ -260,6 +265,51 @@ function deleteRowByKey_(tabName, keyField, keyValue) {
   }
 
   throw new Error('Row not found: ' + keyValue);
+}
+
+function deleteRowsByField_(tabName, keyField, keyValue) {
+  var sheet = getSpreadsheet_().getSheetByName(tabName);
+  if (!sheet) throw new Error('Tab not found: ' + tabName);
+
+  var values = sheet.getDataRange().getValues();
+  if (values.length < 2) return 0;
+
+  var headers = values[0];
+  var keyIndex = headers.indexOf(keyField);
+  if (keyIndex === -1) throw new Error('Key field not found: ' + keyField);
+
+  var deleted = 0;
+  for (var i = values.length - 1; i >= 1; i--) {
+    if (String(values[i][keyIndex] || '') === String(keyValue || '')) {
+      sheet.deleteRow(i + 1);
+      deleted++;
+    }
+  }
+
+  return deleted;
+}
+
+function deleteImport_(maLog) {
+  var importLog = findByKey_(SHEET_TABS.NhatKyImport, 'ma_log', maLog);
+  if (!importLog) throw new Error('Import log not found: ' + maLog);
+
+  if (importLog.loai_du_lieu !== 'ghi_nhan') {
+    throw new Error('Chi ho tro xoa du lieu import GhiNhan: ' + maLog);
+  }
+
+  var deleted = deleteRowsByField_(SHEET_TABS.GhiNhan, 'ma_log_import', maLog);
+  var note = 'Da xoa ' + deleted + ' dong GhiNhan lien quan.';
+  updateRowByKey_(SHEET_TABS.NhatKyImport, 'ma_log', maLog, {
+    trang_thai: 'da_xoa',
+    ghi_chu: note,
+  });
+
+  return {
+    ma_log: maLog,
+    so_dong_da_xoa: deleted,
+    trang_thai: 'da_xoa',
+    ghi_chu: note,
+  };
 }
 
 function processCollectiveEvent_(sourceRecordId, status, generatedRecords) {

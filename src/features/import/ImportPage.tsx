@@ -1,6 +1,6 @@
-import { type ChangeEvent, useMemo, useState } from 'react'
+import { type ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { dataSource } from '../../data/client'
-import type { ImportResult, LoaiDuLieuImport } from '../../data/types'
+import type { ImportResult, LoaiDuLieuImport, NhatKyImport, TrangThaiImport } from '../../data/types'
 
 type ParseState =
   | { status: 'empty' }
@@ -16,6 +16,13 @@ const IMPORT_OPTIONS: Array<{ value: LoaiDuLieuImport; label: string }> = [
 
 const PREVIEW_LIMIT = 8
 
+const STATUS_LABELS: Record<TrangThaiImport, string> = {
+  thanh_cong: 'Thành công',
+  loi_mot_phan: 'Lỗi một phần',
+  that_bai: 'Thất bại',
+  da_xoa: 'Đã xoá',
+}
+
 export function ImportPage() {
   const [loai, setLoai] = useState<LoaiDuLieuImport>('ghi_nhan')
   const [nguoiThucHien, setNguoiThucHien] = useState('GVCN')
@@ -24,6 +31,11 @@ export function ImportPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
+  const [importLogs, setImportLogs] = useState<NhatKyImport[]>([])
+  const [logsLoading, setLogsLoading] = useState(false)
+  const [logsError, setLogsError] = useState<string | null>(null)
+  const [deletingLog, setDeletingLog] = useState<string | null>(null)
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
 
   const parseState = useMemo(() => parseJsonRows(jsonText), [jsonText])
   const previewColumns = useMemo(() => {
@@ -33,6 +45,27 @@ export function ImportPage() {
 
     return collectPreviewColumns(parseState.rows)
   }, [parseState])
+  const sortedImportLogs = useMemo(
+    () => [...importLogs].sort((a, b) => sortDateDesc(a.thoi_gian, b.thoi_gian)),
+    [importLogs],
+  )
+
+  useEffect(() => {
+    void loadImportLogs()
+  }, [])
+
+  async function loadImportLogs() {
+    setLogsLoading(true)
+    setLogsError(null)
+
+    try {
+      setImportLogs(await dataSource.getImportLogs())
+    } catch (error) {
+      setLogsError(error instanceof Error ? error.message : 'Không tải được lịch sử import.')
+    } finally {
+      setLogsLoading(false)
+    }
+  }
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -60,10 +93,41 @@ export function ImportPage() {
     try {
       const importResult = await dataSource.importJson(loai, parseState.rows, nguoiThucHien.trim())
       setResult(importResult)
+      setDeleteMessage(null)
+      await loadImportLogs()
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Import không thành công.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function deleteImport(log: NhatKyImport) {
+    if (log.trang_thai === 'da_xoa') {
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Xoá toàn bộ dữ liệu GhiNhan của lần import ${log.ma_log}? Log import vẫn được giữ lại.`,
+    )
+    if (!confirmed) {
+      return
+    }
+
+    setDeletingLog(log.ma_log)
+    setLogsError(null)
+    setDeleteMessage(null)
+
+    try {
+      const deleteResult = await dataSource.deleteImport(log.ma_log)
+      setDeleteMessage(
+        `Đã xoá ${deleteResult.so_dong_da_xoa} dòng GhiNhan của lần import ${deleteResult.ma_log}.`,
+      )
+      await loadImportLogs()
+    } catch (error) {
+      setLogsError(error instanceof Error ? error.message : 'Không xoá được dữ liệu import.')
+    } finally {
+      setDeletingLog(null)
     }
   }
 
@@ -229,6 +293,107 @@ export function ImportPage() {
           Xoá nội dung
         </button>
       </div>
+
+      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Lịch sử import</h3>
+            <p className="text-sm text-slate-600">
+              Xoá nhanh dữ liệu GhiNhan theo đúng lần import, log vẫn được giữ để đối chiếu.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadImportLogs()}
+            disabled={logsLoading}
+            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          >
+            {logsLoading ? 'Đang tải...' : 'Tải lại'}
+          </button>
+        </div>
+
+        {logsError ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+            {logsError}
+          </div>
+        ) : null}
+
+        {deleteMessage ? (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            {deleteMessage}
+          </div>
+        ) : null}
+
+        {sortedImportLogs.length === 0 ? (
+          <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-6 text-center text-sm text-slate-500">
+            {logsLoading ? 'Đang tải lịch sử import...' : 'Chưa có lịch sử import.'}
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-md border border-slate-200">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                  <tr>
+                    <th className="px-3 py-3">Log</th>
+                    <th className="px-3 py-3">Thời gian</th>
+                    <th className="px-3 py-3">Loại</th>
+                    <th className="px-3 py-3">Số dòng</th>
+                    <th className="px-3 py-3">Trạng thái</th>
+                    <th className="px-3 py-3">Ghi chú</th>
+                    <th className="px-3 py-3 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {sortedImportLogs.map((log) => {
+                    const isDeleting = deletingLog === log.ma_log
+                    const canDelete = canDeleteImportLog(log)
+
+                    return (
+                      <tr key={log.ma_log}>
+                        <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-slate-700">
+                          {log.ma_log}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-slate-700">
+                          {formatDateTime(log.thoi_gian)}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-slate-700">
+                          {log.loai_du_lieu}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-slate-700">{log.so_dong}</td>
+                        <td className="whitespace-nowrap px-3 py-3">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${getStatusClass(log.trang_thai)}`}
+                          >
+                            {STATUS_LABELS[log.trang_thai] ?? log.trang_thai}
+                          </span>
+                        </td>
+                        <td className="max-w-72 truncate px-3 py-3 text-slate-600" title={log.ghi_chu ?? ''}>
+                          {log.ghi_chu || '-'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => void deleteImport(log)}
+                            disabled={!canDelete || isDeleting}
+                            className="inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-white"
+                            title={
+                              canDelete
+                                ? 'Xoá dữ liệu GhiNhan của lần import này'
+                                : 'Chỉ xoá được import GhiNhan chưa bị xoá'
+                            }
+                          >
+                            {isDeleting ? 'Đang xoá...' : 'Xoá dữ liệu của lần này'}
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   )
 }
@@ -289,4 +454,47 @@ function formatCell(value: unknown): string {
   }
 
   return String(value)
+}
+
+function canDeleteImportLog(log: NhatKyImport): boolean {
+  return log.loai_du_lieu === 'ghi_nhan' && log.trang_thai !== 'da_xoa'
+}
+
+function sortDateDesc(left: string, right: string): number {
+  const leftTime = new Date(left).getTime()
+  const rightTime = new Date(right).getTime()
+
+  if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) {
+    return String(right).localeCompare(String(left))
+  }
+
+  return rightTime - leftTime
+}
+
+function formatDateTime(value: string): string {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return value || '-'
+  }
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    dateStyle: 'short',
+    timeStyle: value.includes(':') ? 'short' : undefined,
+  }).format(parsed)
+}
+
+function getStatusClass(status: TrangThaiImport): string {
+  if (status === 'da_xoa') {
+    return 'bg-slate-100 text-slate-700'
+  }
+
+  if (status === 'thanh_cong') {
+    return 'bg-emerald-100 text-emerald-800'
+  }
+
+  if (status === 'loi_mot_phan') {
+    return 'bg-amber-100 text-amber-800'
+  }
+
+  return 'bg-red-100 text-red-800'
 }

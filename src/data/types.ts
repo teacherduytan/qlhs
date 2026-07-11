@@ -16,7 +16,7 @@ export type NhomDiem = 'CC' | 'VS' | 'NN' | 'KL' | 'KT'
 
 export type LoaiDuLieuImport = 'hoc_sinh' | 'ghi_nhan' | 'phu_huynh' | 'ban_can_su'
 
-export type TrangThaiImport = 'thanh_cong' | 'loi_mot_phan' | 'that_bai'
+export type TrangThaiImport = 'thanh_cong' | 'loi_mot_phan' | 'that_bai' | 'da_xoa'
 
 export type TrangThaiXuLyTapThe =
   | 'chua_xu_ly'
@@ -119,5 +119,12 @@ export interface ImportResult {
   trang_thai: TrangThaiImport
   so_dong_thanh_cong: number
   so_dong_loi: number
+  ghi_chu: string | null
+}
+
+export interface DeleteImportResult {
+  ma_log: string
+  so_dong_da_xoa: number
+  trang_thai: TrangThaiImport
   ghi_chu: string | null
 }

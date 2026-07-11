@@ -1,6 +1,7 @@
 import type {
   BanCanSu,
   CauHinhTuan,
+  DeleteImportResult,
   DanhMucDiem,
   GhiNhan,
   HocSinh,
@@ -37,4 +38,5 @@ export interface DataSource {
     jsonData: unknown[],
     nguoiThucHien?: string,
   ): Promise<ImportResult>
+  deleteImport(maLog: string): Promise<DeleteImportResult>
 }
