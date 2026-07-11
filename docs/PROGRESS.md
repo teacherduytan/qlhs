@@ -69,8 +69,8 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C038 | ✅ Xong | 11/07/2026 | Hồ sơ mặc định hiển thị toàn bộ lịch sử, có bộ lọc tuần đang chọn và ngày cụ thể |
 | C039 | ✅ Xong | 11/07/2026 | Apps Script tự tính tuan_so khi import, cảnh báo nếu ngoài CauHinhTuan và thêm vaLaiTuanSoChoGhiNhan() để vá dữ liệu cũ |
 | C040 | ✅ Xong | 11/07/2026 | Thêm bộ chọn ngày cụ thể cho Nhật ký theo ngày và lịch sử ghi nhận hồ sơ |
-| C041 | ☐ Chưa làm | | ⚠️ Xác minh lại C030 — không thấy trên giao diện dù đã đánh dấu Xong |
-| C042 | ☐ Chưa làm | | ⚠️ Xác minh lại C036 — không thấy trên giao diện dù đã đánh dấu Xong |
+| C041 | ✅ Xong | 11/07/2026 | Xác minh danh sách học sinh; thêm nút Chi tiết/Thu gọn rõ ràng cho từng dòng |
+| C042 | ✅ Xong | 11/07/2026 | Xác minh màn Import bằng Chrome headless: có Lịch sử import và nút Xoá dữ liệu của lần này |
 | C043 | ☐ Chưa làm | | Vùng thống kê tổng quan (TK01-TK08) |
 | C044 | ☐ Chưa làm | | Thu gọn/mở rộng CẢ KHỐI danh sách — khác với C030 (từng dòng) |
 

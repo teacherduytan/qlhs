@@ -425,6 +425,13 @@ export function StudentsPage() {
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"
+                              onClick={() => setExpandedMaHs(expanded ? null : student.ma_hs)}
+                              className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                            >
+                              {expanded ? 'Thu gọn' : 'Chi tiết'}
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => openEditForm(student)}
                               className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                             >
