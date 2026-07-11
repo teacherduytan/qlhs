@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh } from '../../data/types'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
+import { getBadgeClassForRecord } from '../scoring/scoreStyles'
 import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
 import { getStudentGroup } from './studentGroups'
 
@@ -131,7 +132,7 @@ export function StudentProfilePage() {
         {state.status === 'success' && score ? (
           <>
             <ProfileCard student={state.student} role={state.role} />
-            <TodayRecords records={state.records} />
+            <TodayRecords catalog={state.catalog} records={state.records} />
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="max-w-xs">
                 <WeekSelector
@@ -148,6 +149,7 @@ export function StudentProfilePage() {
             </div>
             <ScoreSummary score={score} />
             <RecordHistory
+              catalog={state.catalog}
               records={state.records}
               selectedWeek={findWeek(state.weekConfig, state.tuanSo)}
               tuanSo={state.tuanSo}
@@ -159,9 +161,10 @@ export function StudentProfilePage() {
   )
 }
 
-function TodayRecords({ records }: { records: GhiNhan[] }) {
+function TodayRecords({ catalog, records }: { catalog: DanhMucDiem[]; records: GhiNhan[] }) {
   const today = getTodayIsoDate()
   const todayRecords = records.filter((record) => record.ngay === today)
+  const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
 
   return (
     <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
@@ -181,7 +184,11 @@ function TodayRecords({ records }: { records: GhiNhan[] }) {
               className="rounded-md border border-blue-100 bg-white p-3"
             >
               <p className="text-sm font-semibold text-slate-900">
+                <span
+                  className={`rounded-full border px-2 py-1 text-xs ${getBadgeClassForRecord(record, catalogByCode)}`}
+                >
                 {record.ma_danh_muc || labelRecordType(record.loai)}
+                </span>
               </p>
               <p className="mt-1 text-sm text-slate-600">
                 {record.noi_dung || record.ly_do || 'Không có mô tả'}
@@ -241,10 +248,12 @@ function ScoreSummary({ score }: { score: WeeklyStudentScore }) {
 }
 
 function RecordHistory({
+  catalog,
   records,
   selectedWeek,
   tuanSo,
 }: {
+  catalog: DanhMucDiem[]
   records: GhiNhan[]
   selectedWeek?: CauHinhTuan
   tuanSo: number
@@ -253,6 +262,7 @@ function RecordHistory({
   const [selectedDate, setSelectedDate] = useState('')
   const filteredRecords = filterHistoryRecords(records, filterMode, tuanSo, selectedDate)
   const groupedRecords = groupRecordsByWeek(filteredRecords)
+  const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -307,7 +317,11 @@ function RecordHistory({
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">
+                          <span
+                            className={`rounded-full border px-2 py-1 text-xs ${getBadgeClassForRecord(record, catalogByCode)}`}
+                          >
                           {record.ma_danh_muc || labelRecordType(record.loai)}
+                          </span>
                         </p>
                         <p className="text-sm text-slate-600">
                           {record.noi_dung || record.ly_do || 'Không có mô tả'}
@@ -318,7 +332,9 @@ function RecordHistory({
                       </p>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
-                      <Badge>{labelRecordType(record.loai)}</Badge>
+                      <Badge className={getBadgeClassForRecord(record, catalogByCode)}>
+                        {labelRecordType(record.loai)}
+                      </Badge>
                       {record.tiet ? <Badge>{`Tiết ${record.tiet}`}</Badge> : null}
                       {record.mon_hoc ? <Badge>{record.mon_hoc}</Badge> : null}
                       {typeof record.diem_cong_tru === 'number' ? (
@@ -338,9 +354,9 @@ function RecordHistory({
   )
 }
 
-function Badge({ children }: { children: string }) {
+function Badge({ children, className = 'bg-slate-100 text-slate-700 border-slate-200' }: { children: string; className?: string }) {
   return (
-    <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">
+    <span className={`rounded-full border px-2 py-1 ${className}`}>
       {children}
     </span>
   )

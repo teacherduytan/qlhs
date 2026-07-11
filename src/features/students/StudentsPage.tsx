@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, CauHinhTuan, DanhMucDiem, DienHocSinh, GhiNhan, HocSinh } from '../../data/types'
 import { calculateWeeklyStudentScore } from '../scoring/scoring'
+import { getBadgeClassForGroup } from '../scoring/scoreStyles'
 import { getStudentGroup } from './studentGroups'
 
 type StudentForm = {
@@ -558,8 +559,8 @@ function TextField({
 
 function QuickStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-md bg-white p-3">
-      <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
+    <div className={`rounded-md border bg-white p-3 ${getBadgeClassForGroup(label)}`}>
+      <p className="text-xs font-semibold uppercase opacity-70">{label}</p>
       <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
     </div>
   )

@@ -10,6 +10,11 @@ import type {
   TrangThaiXuLyTapThe,
 } from '../../data/types'
 import { calculateClassWeeklyScores, type WeeklyStudentScore } from '../scoring/scoring'
+import {
+  getBadgeClassForCatalog,
+  getBadgeClassForGroup,
+  getBadgeClassForRecord,
+} from '../scoring/scoreStyles'
 import { buildPedagogySuggestions } from '../scoring/suggestions'
 import { getStudentGroup } from '../students/studentGroups'
 import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
@@ -56,6 +61,7 @@ type AttentionDrillDownItem = {
 }
 
 type RecordDrillDownItem = {
+  badgeClass: string
   id: string
   code: string
   date: string
@@ -66,6 +72,7 @@ type RecordDrillDownItem = {
 }
 
 type EventDrillDownItem = {
+  badgeClass: string
   id: string
   code: string
   date: string
@@ -129,6 +136,7 @@ export function DashboardPage() {
     }
 
     const studentById = new Map(state.students.map((student) => [student.ma_hs, student]))
+    const catalogByCode = new Map(state.catalog.map((item) => [item.ma_danh_muc, item]))
     const currentScores = calculateClassWeeklyScores({
       catalog: state.catalog,
       records: state.records,
@@ -162,6 +170,7 @@ export function DashboardPage() {
     })
 
     return {
+      catalogByCode,
       collectiveEvents,
       dailyLogs,
       banCanSu: state.banCanSu,
@@ -469,7 +478,9 @@ export function DashboardPage() {
                           {record.noi_dung || record.ly_do || 'Không có mô tả'}
                         </p>
                       </div>
-                      <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
+                      <span
+                        className={`rounded-full border px-2 py-1 text-xs font-semibold ${getBadgeClassForCatalog(catalogItem)}`}
+                      >
                         {catalogItem?.pham_vi === 'to_truc'
                           ? `Tổ ${record.to_lien_quan || '-'}`
                           : 'Tập thể'}
@@ -566,7 +577,10 @@ export function DashboardPage() {
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
                       {day.summary.map((item) => (
-                        <span key={item.label} className="rounded-full bg-slate-100 px-2 py-1">
+                        <span
+                          key={item.label}
+                          className={`rounded-full border px-2 py-1 ${getBadgeClassForGroup(item.label)}`}
+                        >
                           {item.label}: {item.count}
                         </span>
                       ))}
@@ -581,7 +595,11 @@ export function DashboardPage() {
                         >
                           <p className="font-semibold text-slate-900">
                             {record.ma_hs || `Tổ ${record.to_lien_quan || 'tập thể'}`} ·{' '}
-                            {record.ma_danh_muc || record.loai}
+                            <span
+                              className={`rounded-full border px-2 py-0.5 text-xs ${getBadgeClassForRecord(record, body.catalogByCode)}`}
+                            >
+                              {record.ma_danh_muc || record.loai}
+                            </span>
                           </p>
                           <p className="text-slate-600">
                             {record.noi_dung || record.ly_do || 'Không có mô tả'}
@@ -790,7 +808,9 @@ function OverviewDrillDownPanel({
                 key={item.id}
                 className="grid gap-2 py-3 text-sm lg:grid-cols-[8rem_1fr_9rem_8rem] lg:items-center"
               >
-                <span className="font-semibold text-slate-900">{item.code}</span>
+                <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${item.badgeClass}`}>
+                  {item.code}
+                </span>
                 <div>
                   {item.token ? (
                     <Link to={`/hs/${item.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
@@ -819,7 +839,9 @@ function OverviewDrillDownPanel({
                 key={item.id}
                 className="grid gap-2 py-3 text-sm lg:grid-cols-[8rem_8rem_1fr_9rem] lg:items-center"
               >
-                <span className="font-semibold text-slate-900">{item.code}</span>
+                <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${item.badgeClass}`}>
+                  {item.code}
+                </span>
                 <span className="font-medium text-blue-700">{item.scope}</span>
                 <span className="text-slate-600">{item.description}</span>
                 <span className="text-slate-600">{formatDate(item.date)}</span>
@@ -890,7 +912,10 @@ function TeamInfoPanel({
                 <div key={item.id} className="rounded-md bg-white p-2 text-sm">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <span className="font-semibold text-slate-900">
-                      {item.code} · Tuần {item.week}
+                      <span className={`rounded-full border px-2 py-0.5 text-xs ${item.badgeClass}`}>
+                        {item.code}
+                      </span>{' '}
+                      Tuần {item.week}
                     </span>
                     <span className="text-xs font-medium text-slate-500">{formatDate(item.date)}</span>
                   </div>
@@ -1054,7 +1079,7 @@ function buildOverviewStats({
           kind: 'records',
           emptyText: 'Không có vi phạm nghiêm trọng trong tuần.',
           items: severeRecords.map((record, index) =>
-            toRecordDrillDownItem(record, index, studentById),
+            toRecordDrillDownItem(record, index, studentById, catalogByCode),
           ),
         },
       },
@@ -1091,7 +1116,7 @@ function buildOverviewStats({
           kind: 'records',
           emptyText: 'Chưa có vi phạm phổ biến trong tuần.',
           items: topViolationRecords.map((record, index) =>
-            toRecordDrillDownItem(record, index, studentById),
+            toRecordDrillDownItem(record, index, studentById, catalogByCode),
           ),
         },
       },
@@ -1173,10 +1198,12 @@ function toRecordDrillDownItem(
   record: GhiNhan,
   index: number,
   studentById: Map<string, HocSinh>,
+  catalogByCode: Map<string, DanhMucDiem>,
 ): RecordDrillDownItem {
   const student = record.ma_hs ? studentById.get(record.ma_hs) : undefined
 
   return {
+    badgeClass: getBadgeClassForRecord(record, catalogByCode),
     id: record.ma_ghi_nhan || `${record.ngay}-${record.ma_hs || record.ma_danh_muc}-${index}`,
     code: record.ma_danh_muc || record.loai,
     date: record.ngay,
@@ -1200,6 +1227,7 @@ function toEventDrillDownItem(
       : 'Tập thể'
 
   return {
+    badgeClass: getBadgeClassForCatalog(catalogItem),
     id: record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc || 'event'}-${index}`,
     code: record.ma_danh_muc || record.loai,
     date: record.ngay,
@@ -1225,7 +1253,7 @@ function getTeamEventHistory(
   teamNumber: number,
   records: GhiNhan[],
   catalog: DanhMucDiem[],
-): Array<{ code: string; date: string; description: string; id: string; week: number }> {
+): Array<{ badgeClass: string; code: string; date: string; description: string; id: string; week: number }> {
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
 
   return records
@@ -1235,6 +1263,7 @@ function getTeamEventHistory(
     })
     .sort((a, b) => new Date(b.ngay).getTime() - new Date(a.ngay).getTime())
     .map((record, index) => ({
+      badgeClass: getBadgeClassForRecord(record, catalogByCode),
       code: record.ma_danh_muc || record.loai,
       date: record.ngay,
       description: record.noi_dung || record.ly_do || 'Không có mô tả',
