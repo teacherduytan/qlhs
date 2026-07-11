@@ -36,7 +36,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C018 | ✅ Xong | 11/07/2026 | Hồ sơ hiển thị lịch sử GhiNhan theo học sinh, sắp xếp mới nhất và gom theo tuần |
 | C019 | ✅ Xong | 11/07/2026 | Logic tính điểm thi đua: 4 thành phần, học tập, tổng hợp chia 6, bỏ qua tập thể/tổ trực |
 | C020 | ✅ Xong | 11/07/2026 | Hồ sơ hiển thị điểm thi đua, điểm học tập, tổng hợp và xếp loại |
-| C021 | ☐ Chưa làm | | |
+| C021 | ✅ Xong | 11/07/2026 | Dashboard giáo viên: điểm thi đua, cảnh báo, sự kiện tập thể/tổ trực |
 | C021a | ☐ Chưa làm | | |
 | C022 | ☐ Chưa làm | | |
 | C023 | ☐ Chưa làm | | |
