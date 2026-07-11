@@ -1,0 +1,17 @@
+{
+  "loai_du_lieu": "ghi_nhan",
+  "ban_ghi": [
+    { "ho_ten": "Nguyễn Đăng Khoa", "ngay": "2026-07-13", "tiet": "1", "mon_hoc": null, "loai": "chuyen_can", "ma_danh_muc": "CC01", "noi_dung": "Đi trễ 10 phút", "so_lan": 1, "da_xu_ly": false, "hinh_thuc_xu_ly": null, "goi_phu_huynh": false, "ghi_so_dau_bai": null, "diem_so_mon": null, "nguoi_ghi": "Lớp trưởng" },
+    { "ho_ten": "Nguyễn Đăng Khoa", "ngay": "2026-07-14", "tiet": null, "mon_hoc": null, "loai": "ne_nep", "ma_danh_muc": "NN03", "noi_dung": "Giày dép không đúng quy định", "so_lan": 1, "da_xu_ly": false, "hinh_thuc_xu_ly": null, "goi_phu_huynh": false, "ghi_so_dau_bai": null, "diem_so_mon": null, "nguoi_ghi": "Lớp trưởng" },
+    { "ho_ten": "Nguyễn Đăng Khoa", "ngay": "2026-07-15", "tiet": "3", "mon_hoc": "Hoá học", "loai": "ve_sinh", "ma_danh_muc": "VS05", "noi_dung": "Xả rác không đúng nơi quy định — xác định rõ cá nhân", "so_lan": 1, "da_xu_ly": false, "hinh_thuc_xu_ly": null, "goi_phu_huynh": false, "ghi_so_dau_bai": null, "diem_so_mon": null, "nguoi_ghi": "Tổ trưởng tổ 1" },
+    { "ho_ten": "Nguyễn Đăng Khoa", "ngay": "2026-07-16", "tiet": "2", "mon_hoc": "Toán", "loai": "hoc_tap", "ma_danh_muc": null, "noi_dung": null, "so_lan": null, "da_xu_ly": null, "hinh_thuc_xu_ly": null, "goi_phu_huynh": null, "ghi_so_dau_bai": null, "diem_so_mon": 8.0, "nguoi_ghi": "Lớp phó học tập" },
+    { "ho_ten": "Nguyễn Đăng Khoa", "ngay": "2026-07-17", "tiet": null, "mon_hoc": null, "loai": "trat_tu_ky_luat", "ma_danh_muc": "KL04", "noi_dung": "Đi vào lối đi cấm", "so_lan": 1, "da_xu_ly": false, "hinh_thuc_xu_ly": null, "goi_phu_huynh": false, "ghi_so_dau_bai": null, "diem_so_mon": null, "nguoi_ghi": "Lớp phó kỷ luật" },
+
+    { "ho_ten": "Trần Phạm Anh Thư", "ngay": "2026-07-14", "tiet": "4", "mon_hoc": "Ngữ văn", "loai": "trat_tu_ky_luat", "ma_danh_muc": "KL09", "noi_dung": "Vô lễ với giáo viên bộ môn", "so_lan": 1, "da_xu_ly": true, "hinh_thuc_xu_ly": "Mời phụ huynh làm việc", "goi_phu_huynh": true, "ghi_so_dau_bai": "Vô lễ giờ Văn", "diem_so_mon": null, "nguoi_ghi": "Giáo viên bộ môn" },
+    { "ho_ten": "Trần Phạm Anh Thư", "ngay": "2026-07-16", "tiet": "4", "mon_hoc": "Ngữ văn", "loai": "hoc_tap", "ma_danh_muc": null, "noi_dung": null, "so_lan": null, "da_xu_ly": null, "hinh_thuc_xu_ly": null, "goi_phu_huynh": null, "ghi_so_dau_bai": null, "diem_so_mon": 9.5, "nguoi_ghi": "Lớp phó học tập" },
+
+    { "ho_ten": "Vũ Thị Hoài Như", "ngay": "2026-07-13", "tiet": "1", "mon_hoc": "Tiếng Anh", "loai": "hoc_tap", "ma_danh_muc": null, "noi_dung": null, "so_lan": null, "da_xu_ly": null, "hinh_thuc_xu_ly": null, "goi_phu_huynh": null, "ghi_so_dau_bai": null, "diem_so_mon": 9.0, "nguoi_ghi": "Lớp phó học tập" },
+    { "ho_ten": "Vũ Thị Hoài Như", "ngay": "2026-07-15", "tiet": "3", "mon_hoc": "Toán", "loai": "hoc_tap", "ma_danh_muc": null, "noi_dung": null, "so_lan": null, "da_xu_ly": null, "hinh_thuc_xu_ly": null, "goi_phu_huynh": null, "ghi_so_dau_bai": null, "diem_so_mon": 8.5, "nguoi_ghi": "Lớp phó học tập" },
+    { "ho_ten": "Vũ Thị Hoài Như", "ngay": "2026-07-17", "tiet": "5", "mon_hoc": "Vật lý", "loai": "hoc_tap", "ma_danh_muc": null, "noi_dung": null, "so_lan": null, "da_xu_ly": null, "hinh_thuc_xu_ly": null, "goi_phu_huynh": null, "ghi_so_dau_bai": null, "diem_so_mon": 9.5, "nguoi_ghi": "Lớp phó học tập" }
+  ]
+}

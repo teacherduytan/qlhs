@@ -76,7 +76,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C045 | ✅ Xong | 11/07/2026 | Drill-down cho các thẻ TK02-TK05 ngay trên Dashboard, mở đúng danh sách chi tiết cấu thành |
 | C046 | ✅ Xong | 11/07/2026 | Bấm sự kiện tổ trực mở Thông tin Tổ: tổ trưởng, danh sách học sinh và lịch sử nhắc tổ gần đây |
 | C047 | ✅ Xong | 11/07/2026 | Thêm helper màu chung và áp dụng cho Dashboard, hồ sơ, lịch sử ghi nhận, nhật ký ngày, danh sách học sinh |
-| C048 | ☐ Chưa làm | | Sửa ngưỡng xếp loại theo mức tối đa thực tế ~70 |
+| C048 | ✅ Xong | 11/07/2026 | Sửa ngưỡng xếp loại theo trạng thái có/chưa có điểm học tập, thêm ghi chú so sánh điểm và dữ liệu đối chiếu cá nhân |
 
 ---
 

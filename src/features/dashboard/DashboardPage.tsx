@@ -360,6 +360,10 @@ export function DashboardPage() {
               <div>
                 <h3 className="text-base font-bold text-slate-900">Điểm thi đua học sinh</h3>
                 <p className="text-sm text-slate-600">{body.sortedScores.length} học sinh</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Điểm xếp loại chỉ so sánh được giữa các học sinh có cùng trạng thái đã/chưa có
+                  điểm học tập trong tuần.
+                </p>
               </div>
               <button
                 type="button"

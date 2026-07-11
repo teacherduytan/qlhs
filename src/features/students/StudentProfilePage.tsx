@@ -218,6 +218,10 @@ function ScoreSummary({ score }: { score: WeeklyStudentScore }) {
         <div>
           <h2 className="text-lg font-bold text-slate-900">Điểm thi đua tuần {score.tuan_so}</h2>
           <p className="text-sm text-slate-600">Tính theo quy chế thi đua của trường</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Điểm xếp loại chỉ so sánh được giữa các học sinh có cùng trạng thái đã/chưa có điểm học
+            tập trong tuần.
+          </p>
         </div>
         <div className="rounded-md bg-blue-600 px-4 py-3 text-white">
           <p className="text-xs font-semibold uppercase">Xếp loại</p>

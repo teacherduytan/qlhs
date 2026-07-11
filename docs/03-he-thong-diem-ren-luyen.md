@@ -4,6 +4,8 @@
 
 ## 1. Cấu trúc điểm tổng quát
 
+> **Đã xác nhận với giáo viên (11/07/2026)**: hệ thống điểm này tính **theo tuần**, đúng nguyên văn quy chế thi đua thật của trường — không đổi sang điểm luỹ kế cả năm. Mỗi tuần các thành phần đều reset về 100. Nếu sau này cần thêm 1 lớp điểm luỹ kế cả năm cho mục đích cảnh báo riêng của giáo viên, đây sẽ là 1 hệ thống **bổ sung tách biệt**, không thay thế hệ thống theo tuần này.
+
 Khác với bản đề xuất ban đầu (1 cột điểm rèn luyện duy nhất), quy chế thật của trường có **5 thành phần điểm riêng biệt mỗi tuần**:
 
 | Thành phần | Điểm khởi đầu | Cách tính |
@@ -125,18 +127,30 @@ Không có "danh mục vi phạm" cho học tập. Thay vào đó, điểm học
 Điểm xếp loại thi đua = ( Điểm Chuyên cần + Điểm Vệ sinh + Điểm Nề nếp + Điểm Trật tự kỷ luật + Điểm học tập ) ÷ 6
 ```
 
+**Ngoại lệ (sửa sau khi chạy thật)**: nếu tuần đó **chưa có điểm số môn nào được ghi** (chưa có dữ liệu Điểm học tập), công thức trên sẽ tự động cộng "0" vào, khiến điểm bị kéo xuống giả tạo (400÷6 = 66,67 cho học sinh chưa hề vi phạm gì). Khi đó chỉ tính trung bình 4 nội dung đầu: `(CC+VS+NN+KL) ÷ 4`, và hiển thị "Điểm học tập: chưa có dữ liệu" thay vì 0.
+
 Ghi chú cách hiểu công thức (suy ra từ văn bản gốc, vì văn bản ghi "chia 6" nhưng tiêu đề nói "bình quân của 5 nội dung"): 4 nội dung đầu (Chuyên cần, Vệ sinh, Nề nếp, Trật tự kỷ luật) mỗi nội dung có **trọng số 1**, riêng **Điểm học tập có trọng số 2** (vì đã được nhân 2 sẵn trong công thức ở mục 3) → tổng trọng số = 1+1+1+1+2 = **6**, khớp với mẫu số trong công thức xếp loại. Đây là cách hiểu hợp lý nhất để code đúng; nếu nhà trường xác nhận khác, chỉ cần sửa hằng số `6` này ở một chỗ duy nhất trong code.
 
 ## 5. Ngưỡng xếp loại
 
-Văn bản gốc của trường **chưa nêu rõ mốc điểm** để xếp loại Tốt/Khá/Trung bình/Yếu — chỉ có công thức tính điểm bình quân. Em tạm đề xuất ngưỡng phổ biến sau, **cần anh xác nhận lại với Ban Thi đua Khen thưởng của trường**:
+> ⚠️ **Phát hiện quan trọng khi kiểm thử bằng dữ liệu thật (11/07/2026)**: theo đúng công thức gốc ở mục 4, **điểm xếp loại thi đua tối đa mà một học sinh hoàn hảo tuyệt đối (không vi phạm gì + điểm 10 tất cả các môn) có thể đạt được chỉ là 70/100**, không phải 100 — vì "Điểm học tập" trong công thức nằm trên thang 0–20 (điểm trung bình thang 10 × 2), trong khi 4 thành phần còn lại trên thang 0–100, rồi cộng chung chia 6. Ngưỡng bên dưới ban đầu giả định thang điểm 0–100 đạt được trong thực tế — **điều này sai**, cần điều chỉnh lại. Bảng dưới đã được tính lại theo tỷ lệ so với mức tối đa thực tế ~70, nhưng vẫn là **ước lượng tạm**, cần xác nhận chính thức với Ban Thi đua Khen thưởng của trường trước khi dùng để đánh giá học sinh nghiêm túc.
 
-| Điểm xếp loại thi đua | Xếp loại (tạm đề xuất) | Hành động đề xuất |
+| Điểm xếp loại thi đua | Xếp loại (tạm điều chỉnh theo mức tối đa thực tế ~70) | Hành động đề xuất |
 |---|---|---|
-| 90 – 100 | Tốt | Không cần can thiệp, có thể tuyên dương |
-| 70 – 89 | Khá | Theo dõi bình thường |
-| 50 – 69 | Trung bình | Giáo viên trao đổi riêng, nhắc nhở |
-| Dưới 50 | Yếu | Cảnh báo trên giao diện, đề xuất mời phụ huynh |
+| 60 – 70 | Tốt | Không cần can thiệp, có thể tuyên dương |
+| 45 – 59 | Khá | Theo dõi bình thường |
+| 30 – 44 | Trung bình | Giáo viên trao đổi riêng, nhắc nhở |
+| Dưới 30 | Yếu | Cảnh báo trên giao diện, đề xuất mời phụ huynh |
+
+> **Lưu ý riêng cho trường hợp chưa có dữ liệu học tập** (theo C031): khi đó công thức chỉ chia 4 thành phần (không có "trần 70"), nên 1 học sinh không vi phạm gì nhưng CHƯA CÓ điểm học tập sẽ hiện đúng **100**, cao hơn hẳn 1 học sinh cũng không vi phạm gì nhưng ĐÃ có điểm học tập đầy đủ (tối đa ~70). Đây là hệ quả trực tiếp của công thức gốc, không phải lỗi — nhưng dễ gây hiểu lầm khi so sánh 2 học sinh với nhau. Nên hiển thị rõ trên giao diện: *"Điểm xếp loại chỉ so sánh được giữa các học sinh có cùng trạng thái đã/chưa có điểm học tập trong tuần."*
+
+### Vì sao trường lại thiết kế công thức như vậy? (không chắc chắn, chỉ là suy luận hợp lý)
+
+Tên gọi chính xác trong văn bản gốc là **"XẾP THI ĐUA theo điểm bình quân"** — chữ "xếp" gợi ý đây là điểm dùng để **xếp hạng tương đối** (so lớp/tuần này với lớp/tuần khác), không phải điểm chất lượng tuyệt đối kiểu "học lực/hạnh kiểm" cần đạt mốc cố định. Với mục đích xếp hạng tương đối, mức trần thực tế không cần chạm 100 — chỉ cần nhất quán cho mọi người là đủ để so sánh công bằng.
+
+Cách chia trọng số (4 mảng Chuyên cần/Vệ sinh/Nề nếp/Kỷ luật chiếm 4/6 ≈ 67%, Học tập chỉ 2/6 ≈ 33%) cũng khá khớp với việc hệ "thi đua tuần" này thường do **đội cờ đỏ** (đội giám sát nề nếp) chấm, nên thiên về đánh giá kỷ luật/nề nếp là chính, điểm học tập chỉ mang tính khích lệ thêm, không phải trọng tâm.
+
+**Tuy nhiên không loại trừ khả năng đây là sơ suất khi soạn thảo** (nhân đôi cho "có trọng số hơn" mà không tính kỹ hệ quả nén thang điểm) — không có cách nào khẳng định chắc chắn ý đồ thật từ 1 văn bản hành chính. **Cách xử lý đúng đắn nhất: hỏi thẳng Ban Thi đua Khen thưởng của trường** câu hỏi cụ thể ở mục README "việc cần làm ngay", thay vì tự suy đoán mãi.
 
 ## 6. (Tuỳ chọn — KHÔNG có trong quy chế trường) Nhóm điểm cộng khích lệ
 
@@ -171,9 +185,16 @@ diem_thanh_phan(hoc_sinh, nhom, tuan) =
     × 2
 
 diem_xep_loai_thi_dua(hoc_sinh, tuan) =
-    ( diem_thanh_phan(CC) + diem_thanh_phan(VS) + diem_thanh_phan(NN)
-      + diem_thanh_phan(KL) + diem_hoc_tap ) ÷ 6
+    NEU co_du_lieu_hoc_tap(hoc_sinh, tuan):     // có ít nhất 1 dòng diem_so_mon trong tuần
+        ( diem_thanh_phan(CC) + diem_thanh_phan(VS) + diem_thanh_phan(NN)
+          + diem_thanh_phan(KL) + diem_hoc_tap ) ÷ 6
+    NGUOC LAI (chưa có tiết nào ghi điểm số trong tuần):
+        ( diem_thanh_phan(CC) + diem_thanh_phan(VS) + diem_thanh_phan(NN)
+          + diem_thanh_phan(KL) ) ÷ 4
+        // hiển thị "Điểm học tập: chưa có dữ liệu" thay vì số 0
 ```
+
+> **Sửa lỗi quan trọng (phát hiện khi chạy thật)**: bản công thức trước luôn chia cho 6 kể cả khi `diem_hoc_tap = 0` do chưa có điểm số nào được ghi — khiến MỌI học sinh mặc định hiện **66,67 điểm** dù chưa hề có vi phạm gì (100+100+100+100+0=400, 400÷6=66,67), gây hiểu lầm nghiêm trọng. Bản sửa: khi tuần đó chưa có dữ liệu điểm học tập, chỉ tính trung bình 4 thành phần còn lại (chia 4), và hiển thị rõ "chưa có dữ liệu" thay vì coi là 0. Xem commit sửa ở tài liệu 06, mục C031.
 
 Vi phạm nhóm KL nghiêm trọng (KL06, KL09, KL11, KL12, KL13 — mức trừ 20 điểm) luôn kèm cờ `can_canh_bao_ngay = true`, hiển thị cảnh báo ngay trên giao diện giáo viên bất kể tổng điểm tuần còn cao, đúng tinh thần "không chờ tổng kết tuần mới xử lý".
 

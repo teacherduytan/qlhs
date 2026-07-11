@@ -41,10 +41,11 @@ export function calculateWeeklyStudentScore({
     ]),
   ) as Record<ScoreComponent, number>
   const diemHocTap = calculateStudyScore(studentRecords)
+  const hasStudyScore = diemHocTap !== null
   const diemTongHop =
-    diemHocTap === null
-      ? (components.CC + components.VS + components.NN + components.KL) / 4
-      : (components.CC + components.VS + components.NN + components.KL + diemHocTap) / 6
+    hasStudyScore
+      ? (components.CC + components.VS + components.NN + components.KL + diemHocTap) / 6
+      : (components.CC + components.VS + components.NN + components.KL) / 4
 
   return {
     ma_hs: student.ma_hs,
@@ -55,7 +56,7 @@ export function calculateWeeklyStudentScore({
     diem_ky_luat: components.KL,
     diem_hoc_tap: diemHocTap === null ? null : roundScore(diemHocTap),
     diem_xep_loai_thi_dua: roundScore(diemTongHop),
-    xep_loai: classifyScore(diemTongHop),
+    xep_loai: classifyScore(diemTongHop, hasStudyScore),
     can_canh_bao_ngay: hasSeverePersonalRecord(studentRecords, catalogByCode),
   }
 }
@@ -137,7 +138,23 @@ function scoreDelta(record: GhiNhan, catalogItem: DanhMucDiem, laCoDo: boolean):
   return baseScore * occurrenceCount * multiplier
 }
 
-function classifyScore(score: number): XepLoai {
+function classifyScore(score: number, hasStudyScore: boolean): XepLoai {
+  if (hasStudyScore) {
+    if (score >= 60) {
+      return 'Tốt'
+    }
+
+    if (score >= 45) {
+      return 'Khá'
+    }
+
+    if (score >= 30) {
+      return 'Trung bình'
+    }
+
+    return 'Yếu'
+  }
+
   if (score >= 90) {
     return 'Tốt'
   }
