@@ -55,7 +55,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | ID | Trạng thái | Ngày xong | Ghi chú |
 |---|---|---|---|
 | C028 | ✅ Xong | 11/07/2026 | doPost yêu cầu write_secret khớp Script Property QLHS_WRITE_SECRET |
-| C029 | ☐ Chưa làm | | |
+| C029 | ✅ Xong | 11/07/2026 | README/hướng dẫn deploy ghi rõ Execute as Me, Anyone, Manage deployments và write secret |
 | C030 | ☐ Chưa làm | | |
 | C031 | ☐ Chưa làm | | |
 | C032 | ☐ Chưa làm | | |

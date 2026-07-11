@@ -13,6 +13,7 @@ Tạo `.env` từ `.env.example` và điền URL Apps Script:
 
 ```env
 VITE_APPS_SCRIPT_URL=https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec
+VITE_APPS_SCRIPT_WRITE_SECRET=CHANGE_ME_TO_A_LONG_RANDOM_STRING
 ```
 
 Build kiểm tra trước khi deploy:
@@ -25,8 +26,10 @@ npm run build
 
 1. Tạo Google Sheet bằng `apps-script/SetupSheet.gs`.
 2. Nạp dữ liệu ban đầu bằng `apps-script/SeedData.gs`.
-3. Deploy `apps-script/Code.gs` thành Web App.
+3. Deploy `apps-script/Code.gs` thành Web App: **Execute as = Me**, **Who has access = Anyone**.
 4. Mở web app React để quản lý học sinh, import JSON, xem dashboard và hồ sơ học sinh.
+
+Khi cập nhật Apps Script, dùng **Deploy → Manage deployments → Edit → New version** để giữ nguyên URL web app. Không tạo deployment mới trừ khi muốn đổi URL.
 
 ## Tính năng giai đoạn 1
 
@@ -50,5 +53,6 @@ npm run build
 ## Bảo mật
 
 - Không commit `.env` hoặc secret.
+- `doPost` yêu cầu `write_secret`; đặt Script Property `QLHS_WRITE_SECRET` trong Apps Script và dùng cùng giá trị cho `VITE_APPS_SCRIPT_WRITE_SECRET`.
 - Hồ sơ học sinh public theo token không hiển thị SĐT phụ huynh.
 - Apps Script cần deploy đúng quyền theo hướng dẫn trong `docs/huong-dan-deploy-apps-script.md`.
