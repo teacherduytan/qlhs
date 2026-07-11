@@ -1,38 +1,54 @@
-# Phần mềm Quản lý Học sinh Lớp Chủ nhiệm (QLHS-11C5)
+# Phần mềm Quản lý Học sinh Lớp Chủ nhiệm 11C5
 
-> Lấy học sinh làm trung tâm. Bắt đầu đơn giản — mở rộng không phá vỡ cấu trúc.
+Trường THCS & THPT Lạc Hồng · Năm học 2025-2026 · Sĩ số 36
 
-**Lớp 11C5** · Trường THCS & THPT Lạc Hồng · Năm học 2025–2026 · Sĩ số 36
+## Chạy web app
 
-## Cấu trúc dự án
-
-```
-├── src/              # Web app (Vite + React + TypeScript)
-│   ├── data/         # DataSource interface & adapters
-│   ├── features/     # students, records, scoring, dashboard
-│   └── components/   # UI dùng chung
-├── apps-script/      # Google Apps Script API trung gian
-├── docs/             # Tài liệu kiến trúc & nghiệp vụ
-└── du-lieu-mau/      # Dữ liệu seed (36 học sinh thật)
+```bash
+npm install
+npm run dev
 ```
 
-## Bộ tài liệu
+Tạo `.env` từ `.env.example` và điền URL Apps Script:
 
-| # | Tài liệu | Nội dung |
-|---|----------|----------|
-| 00 | [Bối cảnh & Tầm nhìn](docs/00-boi-canh-va-tam-nhin.md) | Mục tiêu, nguyên tắc, phạm vi giai đoạn 1 |
-| 01 | [Kiến trúc & Công nghệ](docs/01-kien-truc-cong-nghe.md) | Stack, sơ đồ hệ thống, bảo mật |
-| 02 | [Mô hình dữ liệu](docs/02-mo-hinh-du-lieu.md) | Schema Google Sheets (7 tab) |
-| 03 | [Hệ thống điểm thi đua](docs/03-he-thong-diem-ren-luyen.md) | Quy chế trường, công thức tính điểm |
-| 04 | [Lộ trình & Commit](docs/04-lo-trinh-giai-doan-1.md) | Roadmap C001–C027 |
-| 05 | [Quy tắc AI Agent](docs/05-quy-tac-ai-agent.md) | Luật làm việc cho Cursor/Claude Code |
-| — | [PROGRESS](docs/PROGRESS.md) | Theo dõi tiến độ từng commit |
-| — | [Mẫu phiếu ghi nhận](docs/mau-phieu-ghi-nhan.md) | In cho ban cán sự (3 phần) |
-| — | [Bảng tra cứu mã tiêu chí](docs/bang-tra-cuu-ma-diem.md) | In kèm phiếu ghi nhận |
-| — | [Hướng dẫn Import](docs/huong-dan-quy-trinh-import.md) | Phiếu → JSON → Sheet |
+```env
+VITE_APPS_SCRIPT_URL=https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec
+```
 
-Xem [docs/PROGRESS.md](docs/PROGRESS.md).
+Build kiểm tra trước khi deploy:
 
-## Deadline gần nhất
+```bash
+npm run build
+```
 
-**Thứ Hai 13/07/2026** — Google Sheet chuẩn hóa + phiếu giấy in được (Nhóm A, commit C003–C005).
+## Luồng sử dụng chính
+
+1. Tạo Google Sheet bằng `apps-script/SetupSheet.gs`.
+2. Nạp dữ liệu ban đầu bằng `apps-script/SeedData.gs`.
+3. Deploy `apps-script/Code.gs` thành Web App.
+4. Mở web app React để quản lý học sinh, import JSON, xem dashboard và hồ sơ học sinh.
+
+## Tính năng giai đoạn 1
+
+- Danh sách học sinh: tìm kiếm, thêm, sửa, xoá.
+- Import JSON: dán hoặc tải file JSON, xem trước, ghi vào Sheet, lưu Drive và log import.
+- Hồ sơ học sinh theo token: vai trò cán sự, ghi nhận hôm nay, lịch sử ghi nhận, điểm thi đua.
+- Dashboard giáo viên: điểm thi đua, cảnh báo, gợi ý xử lý, sự kiện lớp/tổ.
+- Xử lý sự kiện tập thể: gán cho 1 học sinh, áp dụng cả lớp/tổ, hoặc bỏ qua.
+- Tải mẫu phiếu ghi nhận HTML in được từ giao diện.
+
+## Tài liệu
+
+- [Bối cảnh & tầm nhìn](docs/00-boi-canh-va-tam-nhin.md)
+- [Kiến trúc & công nghệ](docs/01-kien-truc-cong-nghe.md)
+- [Mô hình dữ liệu](docs/02-mo-hinh-du-lieu.md)
+- [Hệ thống điểm thi đua](docs/03-he-thong-diem-ren-luyen.md)
+- [Lộ trình giai đoạn 1](docs/04-lo-trinh-giai-doan-1.md)
+- [Tiến độ](docs/PROGRESS.md)
+- [Hướng dẫn import](docs/huong-dan-quy-trinh-import.md)
+
+## Bảo mật
+
+- Không commit `.env` hoặc secret.
+- Hồ sơ học sinh public theo token không hiển thị SĐT phụ huynh.
+- Apps Script cần deploy đúng quyền theo hướng dẫn trong `docs/huong-dan-deploy-apps-script.md`.
