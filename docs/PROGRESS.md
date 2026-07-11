@@ -8,8 +8,8 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 |---|---|---|---|
 | C001 | ✅ Xong | 11/07/2026 | |
 | C002 | ✅ Xong | 11/07/2026 | |
-| C003 | ☐ Chưa làm | | |
-| C004 | ☐ Chưa làm | | |
+| C003 | ✅ Xong | 11/07/2026 | Script SetupSheet.gs + seed DanhMucDiem |
+| C004 | ✅ Xong | 11/07/2026 | 36 HS + 2 tuần trong du-lieu-mau/ |
 | C005 | ☐ Chưa làm | | |
 | C006 | ☐ Chưa làm | | |
 

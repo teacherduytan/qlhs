@@ -34,4 +34,4 @@ Kết quả mong đợi:
 
 ## Bước tiếp theo
 
-- **C004**: Nạp 36 học sinh từ `du-lieu-mau/hocsinh_seed.json` + cấu hình 2 tuần đầu vào `CauHinhTuan`.
+- **C004**: Chạy `seedInitialData(spreadsheetId)` sau `setupQLHSSheet` — nạp 36 học sinh + 2 tuần. Xem `apps-script/SeedData.gs` và `du-lieu-mau/`.
