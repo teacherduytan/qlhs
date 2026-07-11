@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh } from '../../data/types'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
-import { selectDefaultWeek, WeekSelector } from '../time/WeekSelector'
+import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
 import { getStudentGroup } from './studentGroups'
 
 type ProfileState =
@@ -147,7 +147,11 @@ export function StudentProfilePage() {
               </div>
             </div>
             <ScoreSummary score={score} />
-            <RecordHistory records={state.records} />
+            <RecordHistory
+              records={state.records}
+              selectedWeek={findWeek(state.weekConfig, state.tuanSo)}
+              tuanSo={state.tuanSo}
+            />
           </>
         ) : null}
       </section>
@@ -236,16 +240,57 @@ function ScoreSummary({ score }: { score: WeeklyStudentScore }) {
   )
 }
 
-function RecordHistory({ records }: { records: GhiNhan[] }) {
-  const groupedRecords = groupRecordsByWeek(records)
+function RecordHistory({
+  records,
+  selectedWeek,
+  tuanSo,
+}: {
+  records: GhiNhan[]
+  selectedWeek?: CauHinhTuan
+  tuanSo: number
+}) {
+  const [filterMode, setFilterMode] = useState<'all' | 'week'>('all')
+  const [selectedDate, setSelectedDate] = useState('')
+  const filteredRecords = filterHistoryRecords(records, filterMode, tuanSo, selectedDate)
+  const groupedRecords = groupRecordsByWeek(filteredRecords)
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 p-4">
-        <h2 className="text-lg font-bold text-slate-900">Lịch sử ghi nhận</h2>
-        <p className="text-sm text-slate-600">
-          {records.length ? `${records.length} dòng ghi nhận` : 'Chưa có ghi nhận nào'}
-        </p>
+      <div className="space-y-3 border-b border-slate-200 p-4">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">Lịch sử ghi nhận</h2>
+          <p className="text-sm text-slate-600">
+            {filteredRecords.length
+              ? `${filteredRecords.length}/${records.length} dòng ghi nhận`
+              : 'Không có ghi nhận trong bộ lọc hiện tại'}
+          </p>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+            Phạm vi lịch sử
+            <select
+              value={filterMode}
+              onChange={(event) => {
+                setFilterMode(event.target.value as 'all' | 'week')
+                setSelectedDate('')
+              }}
+              className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="all">Toàn bộ lịch sử</option>
+              <option value="week">Tuần đang chọn</option>
+            </select>
+          </label>
+          <WeekDatePicker
+            disabled={filterMode !== 'week'}
+            selectedWeek={selectedWeek}
+            value={selectedDate}
+            onChange={(date) => {
+              setFilterMode('week')
+              setSelectedDate(date)
+            }}
+          />
+        </div>
       </div>
 
       {groupedRecords.length ? (
@@ -287,7 +332,7 @@ function RecordHistory({ records }: { records: GhiNhan[] }) {
           ))}
         </div>
       ) : (
-        <div className="p-4 text-sm text-slate-600">Hồ sơ này chưa có lịch sử ghi nhận.</div>
+        <div className="p-4 text-sm text-slate-600">Không có lịch sử ghi nhận phù hợp.</div>
       )}
     </div>
   )
@@ -392,6 +437,23 @@ function groupRecordsByWeek(records: GhiNhan[]): Array<{ tuanSo: number; records
 
     return groups
   }, [])
+}
+
+function filterHistoryRecords(
+  records: GhiNhan[],
+  filterMode: 'all' | 'week',
+  tuanSo: number,
+  selectedDate: string,
+): GhiNhan[] {
+  if (selectedDate) {
+    return records.filter((record) => record.ngay === selectedDate)
+  }
+
+  if (filterMode === 'week') {
+    return records.filter((record) => record.tuan_so === tuanSo)
+  }
+
+  return records
 }
 
 function labelRecordType(loai: GhiNhan['loai']): string {

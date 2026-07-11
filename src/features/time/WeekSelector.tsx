@@ -7,6 +7,14 @@ type WeekSelectorProps = {
   onChange: (tuanSo: number) => void
 }
 
+type WeekDatePickerProps = {
+  disabled?: boolean
+  label?: string
+  selectedWeek?: CauHinhTuan
+  value: string
+  onChange: (date: string) => void
+}
+
 export function WeekSelector({ label = 'Tuần', onChange, value, weeks }: WeekSelectorProps) {
   const sortedWeeks = sortWeeks(weeks)
 
@@ -28,6 +36,39 @@ export function WeekSelector({ label = 'Tuần', onChange, value, weeks }: WeekS
           <option value={value}>Tuần {value}</option>
         )}
       </select>
+    </label>
+  )
+}
+
+export function WeekDatePicker({
+  disabled,
+  label = 'Ngày cụ thể',
+  onChange,
+  selectedWeek,
+  value,
+}: WeekDatePickerProps) {
+  return (
+    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+      {label}
+      <div className="flex gap-2">
+        <input
+          type="date"
+          value={value}
+          min={selectedWeek?.tu_ngay || undefined}
+          max={selectedWeek?.den_ngay || undefined}
+          disabled={disabled || !selectedWeek}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-10 min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        />
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          disabled={!value}
+          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+        >
+          Cả tuần
+        </button>
+      </div>
     </label>
   )
 }
@@ -70,6 +111,10 @@ export function sortWeeks(weeks: CauHinhTuan[]): CauHinhTuan[] {
 
     return left.tuan_so - right.tuan_so
   })
+}
+
+export function findWeek(weeks: CauHinhTuan[], tuanSo: number): CauHinhTuan | undefined {
+  return weeks.find((week) => week.tuan_so === tuanSo)
 }
 
 export function formatWeekLabel(week: CauHinhTuan): string {

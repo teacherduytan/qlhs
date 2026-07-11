@@ -10,7 +10,7 @@ import type {
 import { calculateClassWeeklyScores, type WeeklyStudentScore } from '../scoring/scoring'
 import { buildPedagogySuggestions } from '../scoring/suggestions'
 import { getStudentGroup } from '../students/studentGroups'
-import { selectDefaultWeek, WeekSelector } from '../time/WeekSelector'
+import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
 
 type DashboardState =
   | { status: 'loading' }
@@ -27,6 +27,7 @@ type DashboardState =
 export function DashboardPage() {
   const [state, setState] = useState<DashboardState>({ status: 'loading' })
   const [expandedDay, setExpandedDay] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState('')
   const [selectedStudentByEvent, setSelectedStudentByEvent] = useState<Record<string, string>>({})
   const [processingEventId, setProcessingEventId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -94,17 +95,19 @@ export function DashboardPage() {
     )
     const collectiveEvents = getCollectiveEvents(state.records, state.catalog, state.tuanSo)
     const missingGroupStudents = state.students.filter((student) => !resolveStudentGroup(student))
-    const dailyLogs = buildDailyLogs(state.records, state.weekConfig, state.tuanSo)
+    const selectedWeek = findWeek(state.weekConfig, state.tuanSo)
+    const dailyLogs = buildDailyLogs(state.records, state.weekConfig, state.tuanSo, selectedDate)
 
     return {
       collectiveEvents,
       dailyLogs,
       missingGroupStudents,
       previousScores,
+      selectedWeek,
       sortedScores,
       studentById,
     }
-  }, [state])
+  }, [selectedDate, state])
 
   async function processCollectiveEvent(
     record: GhiNhan,
@@ -207,7 +210,13 @@ export function DashboardPage() {
 
   function selectWeek(tuanSo: number) {
     setExpandedDay(null)
+    setSelectedDate('')
     setState((current) => (current.status === 'success' ? { ...current, tuanSo } : current))
+  }
+
+  function selectDate(date: string) {
+    setExpandedDay(date || null)
+    setSelectedDate(date)
   }
 
   return (
@@ -243,11 +252,16 @@ export function DashboardPage() {
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="max-w-xs">
+            <div className="grid gap-3 md:grid-cols-2">
               <WeekSelector
                 value={state.tuanSo}
                 weeks={state.weekConfig}
                 onChange={selectWeek}
+              />
+              <WeekDatePicker
+                selectedWeek={body.selectedWeek}
+                value={selectedDate}
+                onChange={selectDate}
               />
             </div>
           </div>
@@ -420,7 +434,11 @@ export function DashboardPage() {
           <div className="rounded-lg border border-slate-200 bg-white">
             <div className="border-b border-slate-200 p-4">
               <h3 className="text-base font-bold text-slate-900">Nhật ký theo ngày</h3>
-              <p className="text-sm text-slate-600">Tất cả các ngày trong tuần {state.tuanSo}.</p>
+              <p className="text-sm text-slate-600">
+                {selectedDate
+                  ? `Đang xem riêng ngày ${formatDate(selectedDate)}.`
+                  : `Tất cả các ngày trong tuần ${state.tuanSo}.`}
+              </p>
             </div>
             <div className="divide-y divide-slate-100">
               {body.dailyLogs.map((day) => (
@@ -546,9 +564,18 @@ function resolveStudentGroup(student: HocSinh): number | null {
   return student.to || getStudentGroup(student.ma_hs)
 }
 
-function buildDailyLogs(records: GhiNhan[], weekConfig: CauHinhTuan[], tuanSo: number) {
+function buildDailyLogs(
+  records: GhiNhan[],
+  weekConfig: CauHinhTuan[],
+  tuanSo: number,
+  selectedDate = '',
+) {
   const week = weekConfig.find((item) => item.tuan_so === tuanSo)
-  const dates = week ? datesBetween(week.tu_ngay, week.den_ngay) : uniqueRecordDates(records, tuanSo)
+  const dates = selectedDate
+    ? [selectedDate]
+    : week
+      ? datesBetween(week.tu_ngay, week.den_ngay)
+      : uniqueRecordDates(records, tuanSo)
 
   return dates.map((date) => {
     const dayRecords = records.filter((record) => record.tuan_so === tuanSo && record.ngay === date)
