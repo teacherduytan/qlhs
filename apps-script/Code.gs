@@ -49,6 +49,7 @@ function doGet(e) {
         data = getSheetObjects_(SHEET_TABS.HocSinh).filter(function (row) {
           return row.token_ho_so === params.token;
         })[0] || null;
+        if (data) data = sanitizePublicStudent_(data);
         break;
       case 'records':
         data = getSheetObjects_(SHEET_TABS.GhiNhan);
@@ -165,6 +166,13 @@ function coerceCellValue_(val) {
     return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
   }
   return val;
+}
+
+function sanitizePublicStudent_(student) {
+  var safe = Object.assign({}, student);
+  safe.sdt_1 = null;
+  safe.sdt_2 = null;
+  return safe;
 }
 
 // --- Ghi 1 dòng (C012) ---

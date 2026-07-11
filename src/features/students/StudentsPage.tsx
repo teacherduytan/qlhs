@@ -332,7 +332,6 @@ export function StudentsPage() {
                   <th className="px-3 py-3">Họ tên</th>
                   <th className="px-3 py-3">Diện</th>
                   <th className="px-3 py-3">Giới tính</th>
-                  <th className="px-3 py-3">SĐT</th>
                   <th className="px-3 py-3 text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -349,9 +348,6 @@ export function StudentsPage() {
                     <td className="whitespace-nowrap px-3 py-3 text-slate-700">{student.dien}</td>
                     <td className="whitespace-nowrap px-3 py-3 text-slate-700">
                       {student.nu ? 'Nữ' : 'Nam'}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3 text-slate-700">
-                      {[student.sdt_1, student.sdt_2].filter(Boolean).join(' / ') || '-'}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3">
                       <div className="flex justify-end gap-2">

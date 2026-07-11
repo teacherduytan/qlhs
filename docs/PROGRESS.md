@@ -46,7 +46,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 
 | ID | Trạng thái | Ngày xong | Ghi chú |
 |---|---|---|---|
-| C025 | ☐ Chưa làm | | |
+| C025 | ✅ Xong | 11/07/2026 | Ẩn SĐT khỏi giao diện và response hồ sơ public theo token |
 | C026 | ☐ Chưa làm | | |
 | C027 | ☐ Chưa làm | | |
 
