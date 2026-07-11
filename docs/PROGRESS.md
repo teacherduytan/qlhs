@@ -47,7 +47,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | ID | Trạng thái | Ngày xong | Ghi chú |
 |---|---|---|---|
 | C025 | ✅ Xong | 11/07/2026 | Ẩn SĐT khỏi giao diện và response hồ sơ public theo token |
-| C026 | ☐ Chưa làm | | |
+| C026 | ✅ Xong | 11/07/2026 | Rà responsive: header/nav tối ưu mobile và laptop |
 | C027 | ☐ Chưa làm | | |
 
 ---
