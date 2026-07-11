@@ -20,6 +20,11 @@ export interface DataSource {
 
   getRecords(maHs?: string): Promise<GhiNhan[]>
   addRecord(record: GhiNhan): Promise<GhiNhan>
+  processCollectiveEvent(
+    sourceRecordId: string,
+    status: GhiNhan['trang_thai_xu_ly_tap_the'],
+    generatedRecords: GhiNhan[],
+  ): Promise<GhiNhan[]>
 
   getPointCatalog(): Promise<DanhMucDiem[]>
   getWeekConfig(): Promise<CauHinhTuan[]>

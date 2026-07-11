@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { dataSource } from '../../data/client'
-import type { CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh } from '../../data/types'
+import type {
+  CauHinhTuan,
+  DanhMucDiem,
+  GhiNhan,
+  HocSinh,
+  TrangThaiXuLyTapThe,
+} from '../../data/types'
 import { calculateClassWeeklyScores, type WeeklyStudentScore } from '../scoring/scoring'
+import { getStudentGroup } from '../students/studentGroups'
 
 type DashboardState =
   | { status: 'loading' }
@@ -17,6 +24,9 @@ type DashboardState =
 
 export function DashboardPage() {
   const [state, setState] = useState<DashboardState>({ status: 'loading' })
+  const [selectedStudentByEvent, setSelectedStudentByEvent] = useState<Record<string, string>>({})
+  const [processingEventId, setProcessingEventId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -66,13 +76,120 @@ export function DashboardPage() {
       (a, b) => a.diem_xep_loai_thi_dua - b.diem_xep_loai_thi_dua,
     )
     const collectiveEvents = getCollectiveEvents(state.records, state.catalog, state.tuanSo)
+    const missingGroupStudents = state.students.filter((student) => !getStudentGroup(student.ma_hs))
 
     return {
       collectiveEvents,
+      missingGroupStudents,
       sortedScores,
       studentById,
     }
   }, [state])
+
+  async function processCollectiveEvent(
+    record: GhiNhan,
+    status: TrangThaiXuLyTapThe,
+    generatedRecords: GhiNhan[],
+  ) {
+    if (state.status !== 'success') {
+      return
+    }
+
+    if (!record.ma_ghi_nhan) {
+      setActionError('Sự kiện này chưa có ma_ghi_nhan nên chưa thể xử lý tự động.')
+      return
+    }
+
+    setProcessingEventId(record.ma_ghi_nhan)
+    setActionError(null)
+
+    try {
+      const createdRecords = await dataSource.processCollectiveEvent(
+        record.ma_ghi_nhan,
+        status,
+        generatedRecords,
+      )
+
+      setState((current) => {
+        if (current.status !== 'success') {
+          return current
+        }
+
+        const records = [
+          ...current.records.map((item) =>
+            item.ma_ghi_nhan === record.ma_ghi_nhan
+              ? { ...item, trang_thai_xu_ly_tap_the: status }
+              : item,
+          ),
+          ...createdRecords,
+        ]
+
+        return {
+          ...current,
+          records,
+          scores: calculateClassWeeklyScores({
+            catalog: current.catalog,
+            records,
+            students: current.students,
+            tuanSo: current.tuanSo,
+          }),
+        }
+      })
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Không xử lý được sự kiện tập thể.')
+    } finally {
+      setProcessingEventId(null)
+    }
+  }
+
+  async function assignToStudent(record: GhiNhan) {
+    if (state.status !== 'success') {
+      return
+    }
+
+    const eventId = eventKey(record)
+    const student = state.students.find((item) => item.ma_hs === selectedStudentByEvent[eventId])
+    if (!student) {
+      setActionError('Cần chọn học sinh để gán sự kiện.')
+      return
+    }
+
+    await processCollectiveEvent(record, 'da_gan_ca_nhan', [
+      createIndividualRecord(record, student),
+    ])
+  }
+
+  async function applyToTargets(record: GhiNhan, catalogItem: DanhMucDiem | undefined) {
+    if (state.status !== 'success') {
+      return
+    }
+
+    const targetStudents = getTargetStudents(record, catalogItem, state.students)
+    if (targetStudents.length === 0) {
+      setActionError('Không tìm thấy học sinh thuộc phạm vi áp dụng của sự kiện này.')
+      return
+    }
+
+    const ok = window.confirm(`Tạo ${targetStudents.length} dòng ghi nhận cá nhân từ sự kiện này?`)
+    if (!ok) {
+      return
+    }
+
+    await processCollectiveEvent(
+      record,
+      'da_ap_dung_ca_lop',
+      targetStudents.map((student) => createIndividualRecord(record, student)),
+    )
+  }
+
+  async function skipEvent(record: GhiNhan) {
+    const ok = window.confirm('Bỏ qua sự kiện này và không tạo dòng trừ điểm cá nhân?')
+    if (!ok) {
+      return
+    }
+
+    await processCollectiveEvent(record, 'bo_qua', [])
+  }
 
   return (
     <section className="space-y-4">
@@ -105,6 +222,18 @@ export function DashboardPage() {
               value={body.sortedScores.filter(needsAttention).length}
             />
           </div>
+
+          {body.missingGroupStudents.length ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              {body.missingGroupStudents.length} học sinh chưa có tổ trong danh sách hiện tại.
+            </div>
+          ) : null}
+
+          {actionError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              {actionError}
+            </div>
+          ) : null}
 
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <div className="border-b border-slate-200 p-4">
@@ -166,7 +295,7 @@ export function DashboardPage() {
             {body.collectiveEvents.length ? (
               <div className="divide-y divide-slate-100">
                 {body.collectiveEvents.map(({ catalogItem, record }) => (
-                  <article key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc}`} className="p-4">
+                  <article key={eventKey(record)} className="space-y-3 p-4">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="text-sm font-bold text-slate-900">
@@ -181,6 +310,52 @@ export function DashboardPage() {
                           ? `Tổ ${record.to_lien_quan || '-'}`
                           : 'Tập thể'}
                       </span>
+                    </div>
+                    <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+                      <select
+                        value={selectedStudentByEvent[eventKey(record)] || ''}
+                        onChange={(event) =>
+                          setSelectedStudentByEvent((current) => ({
+                            ...current,
+                            [eventKey(record)]: event.target.value,
+                          }))
+                        }
+                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="">Chọn học sinh để gán</option>
+                        {state.students
+                          .slice()
+                          .sort((a, b) => a.tt - b.tt)
+                          .map((student) => (
+                            <option key={student.ma_hs} value={student.ma_hs}>
+                              {student.tt}. {student.ho} {student.ten}
+                            </option>
+                          ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => void assignToStudent(record)}
+                        disabled={processingEventId === record.ma_ghi_nhan}
+                        className="h-10 rounded-md bg-blue-600 px-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      >
+                        Gán cho 1 học sinh
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void applyToTargets(record, catalogItem)}
+                        disabled={processingEventId === record.ma_ghi_nhan}
+                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                      >
+                        Áp dụng cho tất cả
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void skipEvent(record)}
+                        disabled={processingEventId === record.ma_ghi_nhan}
+                        className="h-10 rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                      >
+                        Bỏ qua
+                      </button>
                     </div>
                   </article>
                 ))}
@@ -218,12 +393,49 @@ function getCollectiveEvents(records: GhiNhan[], catalog: DanhMucDiem[], tuanSo:
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
 
   return records
-    .filter((record) => record.tuan_so === tuanSo)
+    .filter(
+      (record) =>
+        record.tuan_so === tuanSo && record.trang_thai_xu_ly_tap_the === 'chua_xu_ly',
+    )
     .map((record) => ({
       catalogItem: record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined,
       record,
     }))
     .filter(({ catalogItem }) => catalogItem?.pham_vi === 'tap_the' || catalogItem?.pham_vi === 'to_truc')
+}
+
+function getTargetStudents(
+  record: GhiNhan,
+  catalogItem: DanhMucDiem | undefined,
+  students: HocSinh[],
+): HocSinh[] {
+  if (catalogItem?.pham_vi === 'tap_the') {
+    return students
+  }
+
+  if (catalogItem?.pham_vi === 'to_truc' && record.to_lien_quan) {
+    return students.filter((student) => getStudentGroup(student.ma_hs) === record.to_lien_quan)
+  }
+
+  return []
+}
+
+function createIndividualRecord(source: GhiNhan, student: HocSinh): GhiNhan {
+  return {
+    ...source,
+    ma_ghi_nhan: undefined,
+    ma_hs: student.ma_hs,
+    to_lien_quan: null,
+    dien_tai_thoi_diem: student.dien,
+    nguon: 'web',
+    ma_log_import: null,
+    trang_thai_xu_ly_tap_the: '',
+    su_kien_goc: source.ma_ghi_nhan || null,
+  }
+}
+
+function eventKey(record: GhiNhan): string {
+  return record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc || 'event'}`
 }
 
 function getLatestWeek(records: GhiNhan[], weekConfig: CauHinhTuan[]): number {

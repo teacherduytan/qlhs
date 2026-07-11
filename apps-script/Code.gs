@@ -103,6 +103,15 @@ function doPost(e) {
       return jsonResponse_({ ok: true, data: null });
     }
 
+    if (body.action === 'process_collective_event' && body.source_record_id && body.status) {
+      var generated = processCollectiveEvent_(
+        body.source_record_id,
+        body.status,
+        body.generated_records || []
+      );
+      return jsonResponse_({ ok: true, data: generated });
+    }
+
     if (body.import && body.loai && body.rows) {
       var result = importBatch_(body.loai, body.rows, body.nguoi_thuc_hien || '');
       return jsonResponse_({ ok: true, data: result });
@@ -231,6 +240,22 @@ function deleteRowByKey_(tabName, keyField, keyValue) {
   }
 
   throw new Error('Row not found: ' + keyValue);
+}
+
+function processCollectiveEvent_(sourceRecordId, status, generatedRecords) {
+  updateRowByKey_(SHEET_TABS.GhiNhan, 'ma_ghi_nhan', sourceRecordId, {
+    trang_thai_xu_ly_tap_the: status,
+  });
+
+  return generatedRecords.map(function (record) {
+    var enriched = Object.assign({}, record);
+    if (!enriched.ma_ghi_nhan) {
+      enriched.ma_ghi_nhan = generateId_('GN', SHEET_TABS.GhiNhan, 'ma_ghi_nhan');
+    }
+    enriched.trang_thai_xu_ly_tap_the = '';
+    enriched.su_kien_goc = sourceRecordId;
+    return appendRow_(SHEET_TABS.GhiNhan, enriched);
+  });
 }
 
 // --- Import hàng loạt (C013) ---

@@ -60,6 +60,19 @@ export class GoogleSheetsDataSource implements DataSource {
     return this.post<GhiNhan>({ tab: 'GhiNhan', row: record })
   }
 
+  processCollectiveEvent(
+    sourceRecordId: string,
+    status: GhiNhan['trang_thai_xu_ly_tap_the'],
+    generatedRecords: GhiNhan[],
+  ): Promise<GhiNhan[]> {
+    return this.post<GhiNhan[]>({
+      action: 'process_collective_event',
+      source_record_id: sourceRecordId,
+      status,
+      generated_records: generatedRecords,
+    })
+  }
+
   getPointCatalog(): Promise<DanhMucDiem[]> {
     return this.get<DanhMucDiem[]>('danh_muc_diem')
   }
