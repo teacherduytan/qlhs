@@ -26,9 +26,15 @@ type DashboardState =
 
 type OverviewStat = {
   code: string
+  tone: 'action' | 'neutral' | 'good'
   label: string
   value: string
   detail: string
+}
+
+type OverviewStatGroups = {
+  action: OverviewStat[]
+  observation: OverviewStat[]
 }
 
 export function DashboardPage() {
@@ -538,22 +544,76 @@ function SummaryMetric({ label, value }: { label: string; value: number }) {
   )
 }
 
-function OverviewStats({ stats }: { stats: OverviewStat[] }) {
+function OverviewStats({ stats }: { stats: OverviewStatGroups }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {stats.map((stat) => (
-        <article key={stat.code} className="rounded-lg border border-slate-200 bg-white p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase text-slate-500">{stat.code}</p>
-              <h3 className="mt-1 text-sm font-bold text-slate-900">{stat.label}</h3>
-            </div>
-            <p className="text-right text-xl font-bold text-blue-700">{stat.value}</p>
-          </div>
-          <p className="mt-3 text-sm text-slate-600">{stat.detail}</p>
-        </article>
-      ))}
+    <div className="space-y-3">
+      <OverviewGroup
+        title="Nhóm cần hành động ngay"
+        description="Các tín hiệu nên xử lý hoặc xem trước."
+        stats={stats.action}
+      />
+      <OverviewGroup
+        title="Nhóm quan sát chung"
+        description="Bối cảnh chung của lớp trong tuần đang xem."
+        stats={stats.observation}
+      />
     </div>
+  )
+}
+
+function OverviewGroup({
+  description,
+  stats,
+  title,
+}: {
+  description: string
+  stats: OverviewStat[]
+  title: string
+}) {
+  if (!stats.length) {
+    return null
+  }
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="mb-3">
+        <h3 className="text-base font-bold text-slate-900">{title}</h3>
+        <p className="text-sm text-slate-600">{description}</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {stats.map((stat) => (
+          <OverviewCard key={stat.code} stat={stat} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function OverviewCard({ stat }: { stat: OverviewStat }) {
+  const toneClass =
+    stat.tone === 'action'
+      ? 'border-red-200 bg-red-50 text-red-900'
+      : stat.tone === 'good'
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+        : 'border-slate-200 bg-white text-slate-900'
+  const valueClass =
+    stat.tone === 'action'
+      ? 'text-red-700'
+      : stat.tone === 'good'
+        ? 'text-emerald-700'
+        : 'text-blue-700'
+
+  return (
+    <article className={`rounded-lg border p-4 ${toneClass}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase opacity-70">{stat.code}</p>
+          <h4 className="mt-1 text-sm font-bold">{stat.label}</h4>
+        </div>
+        <p className={`text-right text-xl font-bold ${valueClass}`}>{stat.value}</p>
+      </div>
+      <p className="mt-3 text-sm opacity-80">{stat.detail}</p>
+    </article>
   )
 }
 
@@ -638,7 +698,7 @@ function buildOverviewStats({
   selectedWeek?: CauHinhTuan
   students: HocSinh[]
   tuanSo: number
-}): OverviewStat[] {
+}): OverviewStatGroups {
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
   const activeStudents = students.filter(isActiveStudent)
   const weekRecords = records.filter((record) => record.tuan_so === tuanSo)
@@ -653,62 +713,85 @@ function buildOverviewStats({
   const topViolations = getTopViolations(weekRecords, catalogByCode)
   const componentAverages = averageComponents(currentScores)
   const currentAverage = average(currentScores.map((score) => score.diem_xep_loai_thi_dua))
+  const hasPreviousWeek = tuanSo > 1
   const previousAverage = average(Array.from(previousScores.values()).map((score) => score.diem_xep_loai_thi_dua))
-  const trend = previousScores.size ? roundNumber(currentAverage - previousAverage) : null
+  const trend = hasPreviousWeek ? roundNumber(currentAverage - previousAverage) : null
   const recordDates = Array.from(new Set(weekRecords.map((record) => record.ngay))).sort()
   const latestDate = recordDates.at(-1)
   const weekDayCount = selectedWeek ? datesBetween(selectedWeek.tu_ngay, selectedWeek.den_ngay).length : recordDates.length
+  const tk07: OverviewStat[] =
+    trend === null
+      ? []
+      : [
+          {
+            code: 'TK07',
+            tone: 'neutral',
+            label: 'Xu hướng tuần trước',
+            value: `${trend > 0 ? '+' : ''}${trend}`,
+            detail: `${trend >= 0 ? 'Tăng' : 'Giảm'} so với tuần liền trước`,
+          },
+        ]
 
-  return [
-    {
-      code: 'TK01',
-      label: 'Sĩ số & học sinh sạch',
-      value: `${activeStudents.length} HS`,
-      detail: `${cleanStudents.length} em không có ghi nhận tuần này`,
-    },
-    {
-      code: 'TK02',
-      label: 'Học sinh cần chú ý',
-      value: String(attentionScores.length),
-      detail: attentionScores.slice(0, 3).map((score) => getStudentName(students, score.ma_hs)).join(', ') || 'Chưa có',
-    },
-    {
-      code: 'TK03',
-      label: 'Vi phạm nghiêm trọng',
-      value: String(severeRecords.length),
-      detail: severeRecords.slice(0, 2).map((record) => record.ma_danh_muc || record.loai).join(', ') || 'Chưa có',
-    },
-    {
-      code: 'TK04',
-      label: 'Sự kiện chờ xử lý',
-      value: String(collectiveEventsCount),
-      detail: collectiveEventsCount ? 'Cần xử lý tập thể/tổ trực' : 'Không có sự kiện chờ',
-    },
-    {
-      code: 'TK05',
-      label: 'Vi phạm phổ biến',
-      value: topViolations[0]?.count ? String(topViolations[0].count) : '0',
-      detail: topViolations.map((item) => `${item.label}: ${item.count}`).join(' · ') || 'Chưa có dữ liệu',
-    },
-    {
-      code: 'TK06',
-      label: 'Trung bình nhóm điểm',
-      value: roundNumber(currentAverage).toFixed(1),
-      detail: `CC ${componentAverages.CC} · VS ${componentAverages.VS} · NN ${componentAverages.NN} · KL ${componentAverages.KL}`,
-    },
-    {
-      code: 'TK07',
-      label: 'Xu hướng tuần trước',
-      value: trend === null ? '-' : `${trend > 0 ? '+' : ''}${trend}`,
-      detail: trend === null ? 'Chưa có tuần trước để so sánh' : `${trend >= 0 ? 'Tăng' : 'Giảm'} so với tuần liền trước`,
-    },
-    {
-      code: 'TK08',
-      label: 'Nhịp độ ghi nhận',
-      value: `${recordDates.length}/${Math.max(weekDayCount, 1)} ngày`,
-      detail: latestDate ? `Ghi nhận gần nhất: ${formatDate(latestDate)}` : 'Chưa có ghi nhận trong tuần',
-    },
-  ]
+  return {
+    action: [
+      {
+        code: 'TK02',
+        tone: attentionScores.length ? 'action' : 'good',
+        label: 'Học sinh cần chú ý',
+        value: attentionScores.length ? `${attentionScores.length} HS` : 'Ổn',
+        detail:
+          attentionScores.slice(0, 3).map((score) => getStudentName(students, score.ma_hs)).join(', ') ||
+          'Không có học sinh nào cần chú ý tuần này',
+      },
+      {
+        code: 'TK03',
+        tone: severeRecords.length ? 'action' : 'good',
+        label: 'Vi phạm nghiêm trọng',
+        value: severeRecords.length ? String(severeRecords.length) : '0',
+        detail:
+          severeRecords.slice(0, 2).map((record) => describeRecord(record, students)).join(' · ') ||
+          'Không có vi phạm nghiêm trọng trong tuần',
+      },
+      {
+        code: 'TK04',
+        tone: collectiveEventsCount ? 'action' : 'good',
+        label: 'Sự kiện chờ xử lý',
+        value: collectiveEventsCount ? String(collectiveEventsCount) : '0',
+        detail: collectiveEventsCount ? 'Cần xử lý tập thể/tổ trực' : 'Không có sự kiện tập thể/tổ trực đang chờ',
+      },
+    ],
+    observation: [
+      {
+        code: 'TK01',
+        tone: 'neutral',
+        label: 'Sĩ số & học sinh sạch',
+        value: `${activeStudents.length} HS`,
+        detail: `${cleanStudents.length} em không có ghi nhận tuần này`,
+      },
+      {
+        code: 'TK05',
+        tone: 'neutral',
+        label: 'Vi phạm phổ biến',
+        value: topViolations[0]?.count ? String(topViolations[0].count) : '0',
+        detail: topViolations.map((item) => `${item.label}: ${item.count}`).join(' · ') || 'Chưa có vi phạm trong tuần',
+      },
+      {
+        code: 'TK06',
+        tone: 'neutral',
+        label: 'Trung bình nhóm điểm',
+        value: roundNumber(currentAverage).toFixed(1),
+        detail: `CC ${componentAverages.CC} · VS ${componentAverages.VS} · NN ${componentAverages.NN} · KL ${componentAverages.KL}`,
+      },
+      ...tk07,
+      {
+        code: 'TK08',
+        tone: 'neutral',
+        label: 'Nhịp độ ghi nhận',
+        value: `${recordDates.length}/${Math.max(weekDayCount, 1)} ngày`,
+        detail: latestDate ? `Ghi nhận gần nhất: ${formatDate(latestDate)}` : 'Chưa có ghi nhận trong tuần',
+      },
+    ],
+  }
 }
 
 function isActiveStudent(student: HocSinh): boolean {
@@ -766,6 +849,11 @@ function roundNumber(value: number): number {
 function getStudentName(students: HocSinh[], maHs: string): string {
   const student = students.find((item) => item.ma_hs === maHs)
   return student ? `${student.ho} ${student.ten}` : maHs
+}
+
+function describeRecord(record: GhiNhan, students: HocSinh[]): string {
+  const subject = record.ma_hs ? getStudentName(students, record.ma_hs) : `Tổ ${record.to_lien_quan || 'tập thể'}`
+  return `${subject}: ${record.ma_danh_muc || record.loai}`
 }
 
 function buildDailyLogs(
