@@ -88,6 +88,7 @@ function doGet(e) {
 function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
+    verifyWriteSecret_(body);
 
     if (body.action === 'add_student' && body.student) {
       var createdStudent = appendUniqueRow_(SHEET_TABS.HocSinh, body.student, 'ma_hs');
@@ -173,6 +174,17 @@ function sanitizePublicStudent_(student) {
   safe.sdt_1 = null;
   safe.sdt_2 = null;
   return safe;
+}
+
+function verifyWriteSecret_(body) {
+  var expected = PropertiesService.getScriptProperties().getProperty('QLHS_WRITE_SECRET');
+  if (!expected) {
+    throw new Error('Missing Apps Script property: QLHS_WRITE_SECRET');
+  }
+
+  if (!body || body.write_secret !== expected) {
+    throw new Error('Invalid write secret');
+  }
 }
 
 // --- Ghi 1 dòng (C012) ---

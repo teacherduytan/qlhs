@@ -50,6 +50,19 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C026 | ✅ Xong | 11/07/2026 | Rà responsive: header/nav tối ưu mobile và laptop |
 | C027 | ✅ Xong | 11/07/2026 | README hướng dẫn sử dụng + tag v0.1.0-phase1 |
 
+## Cải tiến sau triển khai
+
+| ID | Trạng thái | Ngày xong | Ghi chú |
+|---|---|---|---|
+| C028 | ✅ Xong | 11/07/2026 | doPost yêu cầu write_secret khớp Script Property QLHS_WRITE_SECRET |
+| C029 | ☐ Chưa làm | | |
+| C030 | ☐ Chưa làm | | |
+| C031 | ☐ Chưa làm | | |
+| C032 | ☐ Chưa làm | | |
+| C033 | ☐ Chưa làm | | |
+| C034 | ☐ Chưa làm | | |
+| C035 | ☐ Chưa làm | | |
+
 ---
 
 **Chú thích trạng thái**: `☐ Chưa làm` / `🔄 Đang làm` / `✅ Xong` / `⛔ Bị chặn (cần xác nhận)`

@@ -24,6 +24,9 @@ type ApiResponse<T> =
 type QueryValue = string | number | boolean | null | undefined
 
 const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined
+const APPS_SCRIPT_WRITE_SECRET = import.meta.env.VITE_APPS_SCRIPT_WRITE_SECRET as
+  | string
+  | undefined
 
 export class GoogleSheetsDataSource implements DataSource {
   private readonly apiUrl: string | undefined
@@ -113,12 +116,17 @@ export class GoogleSheetsDataSource implements DataSource {
   }
 
   private async post<T>(body: unknown): Promise<T> {
+    const writeSecret = APPS_SCRIPT_WRITE_SECRET?.trim()
+    if (!writeSecret) {
+      throw new Error('Thiếu VITE_APPS_SCRIPT_WRITE_SECRET. Hãy cấu hình mã ghi dữ liệu trong .env.')
+    }
+
     const response = await fetch(this.requireApiUrl(), {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...(isRecord(body) ? body : {}), write_secret: writeSecret }),
     })
 
     return readApiResponse<T>(response)
@@ -144,6 +152,10 @@ export class GoogleSheetsDataSource implements DataSource {
 
     return this.apiUrl
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 async function readApiResponse<T>(response: Response): Promise<T> {
