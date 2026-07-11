@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { BanCanSu, GhiNhan, HocSinh } from '../../data/types'
+import type { BanCanSu, CauHinhTuan, GhiNhan, HocSinh } from '../../data/types'
+import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
 
 type ProfileState =
   | { status: 'loading' }
   | { status: 'not_found' }
   | { status: 'error'; message: string }
-  | { status: 'success'; records: GhiNhan[]; student: HocSinh; role: string }
+  | {
+      status: 'success'
+      records: GhiNhan[]
+      score: WeeklyStudentScore
+      student: HocSinh
+      role: string
+    }
 
 export function StudentProfilePage() {
   const { token } = useParams()
@@ -21,8 +28,13 @@ export function StudentProfilePage() {
       return
     }
 
-    Promise.all([dataSource.getStudentByToken(token), dataSource.getBanCanSu()])
-      .then(async ([student, banCanSu]) => {
+    Promise.all([
+      dataSource.getStudentByToken(token),
+      dataSource.getBanCanSu(),
+      dataSource.getPointCatalog(),
+      dataSource.getWeekConfig(),
+    ])
+      .then(async ([student, banCanSu, catalog, weekConfig]) => {
         if (!active) {
           return
         }
@@ -37,9 +49,16 @@ export function StudentProfilePage() {
           return
         }
 
+        const tuanSo = getLatestWeek(records, weekConfig)
         setState({
           status: 'success',
           records,
+          score: calculateWeeklyStudentScore({
+            catalog,
+            records,
+            student,
+            tuanSo,
+          }),
           student,
           role: getStudentRole(student.ma_hs, banCanSu),
         })
@@ -98,11 +117,54 @@ export function StudentProfilePage() {
         {state.status === 'success' ? (
           <>
             <ProfileCard student={state.student} role={state.role} />
+            <ScoreSummary score={state.score} />
             <RecordHistory records={state.records} />
           </>
         ) : null}
       </section>
     </main>
+  )
+}
+
+function ScoreSummary({ score }: { score: WeeklyStudentScore }) {
+  const scoreItems = [
+    { label: 'Chuyên cần', value: score.diem_chuyen_can },
+    { label: 'Vệ sinh', value: score.diem_ve_sinh },
+    { label: 'Nề nếp', value: score.diem_ne_nep },
+    { label: 'Kỷ luật', value: score.diem_ky_luat },
+    { label: 'Học tập', value: score.diem_hoc_tap },
+  ]
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">Điểm thi đua tuần {score.tuan_so}</h2>
+          <p className="text-sm text-slate-600">Tính theo quy chế thi đua của trường</p>
+        </div>
+        <div className="rounded-md bg-blue-600 px-4 py-3 text-white">
+          <p className="text-xs font-semibold uppercase">Xếp loại</p>
+          <p className="text-xl font-bold">
+            {score.diem_xep_loai_thi_dua} · {score.xep_loai}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-px bg-slate-200 sm:grid-cols-5">
+        {scoreItems.map((item) => (
+          <div key={item.label} className="bg-white p-4">
+            <p className="text-xs font-semibold uppercase text-slate-500">{item.label}</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">{item.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {score.can_canh_bao_ngay ? (
+        <div className="border-t border-red-100 bg-red-50 p-4 text-sm font-medium text-red-800">
+          Có ghi nhận nghiêm trọng, cần xử lý ngay.
+        </div>
+      ) : null}
+    </div>
   )
 }
 
@@ -235,6 +297,15 @@ function formatDate(value: string | null): string {
   }
 
   return new Intl.DateTimeFormat('vi-VN').format(date)
+}
+
+function getLatestWeek(records: GhiNhan[], weekConfig: CauHinhTuan[]): number {
+  const latestRecordWeek = Math.max(0, ...records.map((record) => record.tuan_so || 0))
+  if (latestRecordWeek > 0) {
+    return latestRecordWeek
+  }
+
+  return Math.max(1, ...weekConfig.map((week) => week.tuan_so || 0))
 }
 
 function groupRecordsByWeek(records: GhiNhan[]): Array<{ tuanSo: number; records: GhiNhan[] }> {
