@@ -71,7 +71,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C040 | ✅ Xong | 11/07/2026 | Thêm bộ chọn ngày cụ thể cho Nhật ký theo ngày và lịch sử ghi nhận hồ sơ |
 | C041 | ✅ Xong | 11/07/2026 | Xác minh danh sách học sinh; thêm nút Chi tiết/Thu gọn rõ ràng cho từng dòng |
 | C042 | ✅ Xong | 11/07/2026 | Xác minh màn Import bằng Chrome headless: có Lịch sử import và nút Xoá dữ liệu của lần này |
-| C043 | ☐ Chưa làm | | Vùng thống kê tổng quan (TK01-TK08) |
+| C043 | ✅ Xong | 11/07/2026 | Dashboard có vùng thống kê tổng quan TK01-TK08 theo tuần đang chọn |
 | C044 | ☐ Chưa làm | | Thu gọn/mở rộng CẢ KHỐI danh sách — khác với C030 (từng dòng) |
 
 ---

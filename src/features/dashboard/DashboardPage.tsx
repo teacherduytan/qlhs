@@ -24,6 +24,13 @@ type DashboardState =
       weekConfig: CauHinhTuan[]
     }
 
+type OverviewStat = {
+  code: string
+  label: string
+  value: string
+  detail: string
+}
+
 export function DashboardPage() {
   const [state, setState] = useState<DashboardState>({ status: 'loading' })
   const [expandedDay, setExpandedDay] = useState<string | null>(null)
@@ -97,11 +104,22 @@ export function DashboardPage() {
     const missingGroupStudents = state.students.filter((student) => !resolveStudentGroup(student))
     const selectedWeek = findWeek(state.weekConfig, state.tuanSo)
     const dailyLogs = buildDailyLogs(state.records, state.weekConfig, state.tuanSo, selectedDate)
+    const overviewStats = buildOverviewStats({
+      catalog: state.catalog,
+      collectiveEventsCount: collectiveEvents.length,
+      currentScores,
+      previousScores,
+      records: state.records,
+      selectedWeek,
+      students: state.students,
+      tuanSo: state.tuanSo,
+    })
 
     return {
       collectiveEvents,
       dailyLogs,
       missingGroupStudents,
+      overviewStats,
       previousScores,
       selectedWeek,
       sortedScores,
@@ -265,6 +283,8 @@ export function DashboardPage() {
               />
             </div>
           </div>
+
+          <OverviewStats stats={body.overviewStats} />
 
           {body.missingGroupStudents.length ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -501,6 +521,25 @@ function SummaryMetric({ label, value }: { label: string; value: number }) {
   )
 }
 
+function OverviewStats({ stats }: { stats: OverviewStat[] }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {stats.map((stat) => (
+        <article key={stat.code} className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-500">{stat.code}</p>
+              <h3 className="mt-1 text-sm font-bold text-slate-900">{stat.label}</h3>
+            </div>
+            <p className="text-right text-xl font-bold text-blue-700">{stat.value}</p>
+          </div>
+          <p className="mt-3 text-sm text-slate-600">{stat.detail}</p>
+        </article>
+      ))}
+    </div>
+  )
+}
+
 function needsAttention(score: WeeklyStudentScore): boolean {
   return (
     score.can_canh_bao_ngay ||
@@ -562,6 +601,154 @@ function eventKey(record: GhiNhan): string {
 
 function resolveStudentGroup(student: HocSinh): number | null {
   return student.to || getStudentGroup(student.ma_hs)
+}
+
+function buildOverviewStats({
+  catalog,
+  collectiveEventsCount,
+  currentScores,
+  previousScores,
+  records,
+  selectedWeek,
+  students,
+  tuanSo,
+}: {
+  catalog: DanhMucDiem[]
+  collectiveEventsCount: number
+  currentScores: WeeklyStudentScore[]
+  previousScores: Map<string, WeeklyStudentScore>
+  records: GhiNhan[]
+  selectedWeek?: CauHinhTuan
+  students: HocSinh[]
+  tuanSo: number
+}): OverviewStat[] {
+  const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
+  const activeStudents = students.filter(isActiveStudent)
+  const weekRecords = records.filter((record) => record.tuan_so === tuanSo)
+  const personalWeekRecords = weekRecords.filter((record) => record.ma_hs)
+  const studentsWithRecords = new Set(personalWeekRecords.map((record) => record.ma_hs))
+  const cleanStudents = activeStudents.filter((student) => !studentsWithRecords.has(student.ma_hs))
+  const attentionScores = currentScores.filter(needsAttention)
+  const severeRecords = weekRecords.filter((record) => {
+    const item = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
+    return Boolean(item?.nghiem_trong)
+  })
+  const topViolations = getTopViolations(weekRecords, catalogByCode)
+  const componentAverages = averageComponents(currentScores)
+  const currentAverage = average(currentScores.map((score) => score.diem_xep_loai_thi_dua))
+  const previousAverage = average(Array.from(previousScores.values()).map((score) => score.diem_xep_loai_thi_dua))
+  const trend = previousScores.size ? roundNumber(currentAverage - previousAverage) : null
+  const recordDates = Array.from(new Set(weekRecords.map((record) => record.ngay))).sort()
+  const latestDate = recordDates.at(-1)
+  const weekDayCount = selectedWeek ? datesBetween(selectedWeek.tu_ngay, selectedWeek.den_ngay).length : recordDates.length
+
+  return [
+    {
+      code: 'TK01',
+      label: 'Sĩ số & học sinh sạch',
+      value: `${activeStudents.length} HS`,
+      detail: `${cleanStudents.length} em không có ghi nhận tuần này`,
+    },
+    {
+      code: 'TK02',
+      label: 'Học sinh cần chú ý',
+      value: String(attentionScores.length),
+      detail: attentionScores.slice(0, 3).map((score) => getStudentName(students, score.ma_hs)).join(', ') || 'Chưa có',
+    },
+    {
+      code: 'TK03',
+      label: 'Vi phạm nghiêm trọng',
+      value: String(severeRecords.length),
+      detail: severeRecords.slice(0, 2).map((record) => record.ma_danh_muc || record.loai).join(', ') || 'Chưa có',
+    },
+    {
+      code: 'TK04',
+      label: 'Sự kiện chờ xử lý',
+      value: String(collectiveEventsCount),
+      detail: collectiveEventsCount ? 'Cần xử lý tập thể/tổ trực' : 'Không có sự kiện chờ',
+    },
+    {
+      code: 'TK05',
+      label: 'Vi phạm phổ biến',
+      value: topViolations[0]?.count ? String(topViolations[0].count) : '0',
+      detail: topViolations.map((item) => `${item.label}: ${item.count}`).join(' · ') || 'Chưa có dữ liệu',
+    },
+    {
+      code: 'TK06',
+      label: 'Trung bình nhóm điểm',
+      value: roundNumber(currentAverage).toFixed(1),
+      detail: `CC ${componentAverages.CC} · VS ${componentAverages.VS} · NN ${componentAverages.NN} · KL ${componentAverages.KL}`,
+    },
+    {
+      code: 'TK07',
+      label: 'Xu hướng tuần trước',
+      value: trend === null ? '-' : `${trend > 0 ? '+' : ''}${trend}`,
+      detail: trend === null ? 'Chưa có tuần trước để so sánh' : `${trend >= 0 ? 'Tăng' : 'Giảm'} so với tuần liền trước`,
+    },
+    {
+      code: 'TK08',
+      label: 'Nhịp độ ghi nhận',
+      value: `${recordDates.length}/${Math.max(weekDayCount, 1)} ngày`,
+      detail: latestDate ? `Ghi nhận gần nhất: ${formatDate(latestDate)}` : 'Chưa có ghi nhận trong tuần',
+    },
+  ]
+}
+
+function isActiveStudent(student: HocSinh): boolean {
+  const today = new Date()
+  const joined = student.ngay_nhap_hoc ? new Date(student.ngay_nhap_hoc) : null
+  const left = student.ngay_roi_lop ? new Date(student.ngay_roi_lop) : null
+
+  return (!joined || joined <= today) && (!left || left > today)
+}
+
+function getTopViolations(
+  records: GhiNhan[],
+  catalogByCode: Map<string, DanhMucDiem>,
+): Array<{ label: string; count: number }> {
+  const counts = new Map<string, number>()
+
+  records.forEach((record) => {
+    if (!record.ma_danh_muc) {
+      return
+    }
+
+    counts.set(record.ma_danh_muc, (counts.get(record.ma_danh_muc) || 0) + (record.so_lan || 1))
+  })
+
+  return Array.from(counts.entries())
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 3)
+    .map(([code, count]) => ({
+      label: catalogByCode.get(code)?.ten_muc || code,
+      count,
+    }))
+}
+
+function averageComponents(scores: WeeklyStudentScore[]): Record<'CC' | 'VS' | 'NN' | 'KL', string> {
+  return {
+    CC: roundNumber(average(scores.map((score) => score.diem_chuyen_can))).toFixed(1),
+    VS: roundNumber(average(scores.map((score) => score.diem_ve_sinh))).toFixed(1),
+    NN: roundNumber(average(scores.map((score) => score.diem_ne_nep))).toFixed(1),
+    KL: roundNumber(average(scores.map((score) => score.diem_ky_luat))).toFixed(1),
+  }
+}
+
+function average(values: number[]): number {
+  if (!values.length) {
+    return 0
+  }
+
+  return values.reduce((sum, value) => sum + value, 0) / values.length
+}
+
+function roundNumber(value: number): number {
+  return Math.round(value * 10) / 10
+}
+
+function getStudentName(students: HocSinh[], maHs: string): string {
+  const student = students.find((item) => item.ma_hs === maHs)
+  return student ? `${student.ho} ${student.ten}` : maHs
 }
 
 function buildDailyLogs(
