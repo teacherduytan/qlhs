@@ -21,10 +21,12 @@ type DashboardState =
       scores: WeeklyStudentScore[]
       students: HocSinh[]
       tuanSo: number
+      weekConfig: CauHinhTuan[]
     }
 
 export function DashboardPage() {
   const [state, setState] = useState<DashboardState>({ status: 'loading' })
+  const [expandedDay, setExpandedDay] = useState<string | null>(null)
   const [selectedStudentByEvent, setSelectedStudentByEvent] = useState<Record<string, string>>({})
   const [processingEventId, setProcessingEventId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -51,6 +53,7 @@ export function DashboardPage() {
           scores: calculateClassWeeklyScores({ catalog, records, students, tuanSo }),
           students,
           tuanSo,
+          weekConfig,
         })
       })
       .catch((error: unknown) => {
@@ -86,9 +89,11 @@ export function DashboardPage() {
     )
     const collectiveEvents = getCollectiveEvents(state.records, state.catalog, state.tuanSo)
     const missingGroupStudents = state.students.filter((student) => !resolveStudentGroup(student))
+    const dailyLogs = buildDailyLogs(state.records, state.weekConfig, state.tuanSo)
 
     return {
       collectiveEvents,
+      dailyLogs,
       missingGroupStudents,
       previousScores,
       sortedScores,
@@ -397,6 +402,58 @@ export function DashboardPage() {
               <div className="p-4 text-sm text-slate-600">Chưa có sự kiện tập thể trong tuần.</div>
             )}
           </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white">
+            <div className="border-b border-slate-200 p-4">
+              <h3 className="text-base font-bold text-slate-900">Nhật ký theo ngày</h3>
+              <p className="text-sm text-slate-600">Tất cả các ngày trong tuần {state.tuanSo}.</p>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {body.dailyLogs.map((day) => (
+                <section key={day.date} className="p-4">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedDay(expandedDay === day.date ? null : day.date)}
+                    className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{formatDate(day.date)}</p>
+                      <p className="text-sm text-slate-600">
+                        {day.records.length
+                          ? `${day.records.length} ghi nhận`
+                          : 'Chưa có ghi nhận'}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
+                      {day.summary.map((item) => (
+                        <span key={item.label} className="rounded-full bg-slate-100 px-2 py-1">
+                          {item.label}: {item.count}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                  {expandedDay === day.date && day.records.length ? (
+                    <div className="mt-3 space-y-2">
+                      {day.records.map((record, index) => (
+                        <article
+                          key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_hs}-${index}`}
+                          className="rounded-md border border-slate-200 p-3 text-sm"
+                        >
+                          <p className="font-semibold text-slate-900">
+                            {record.ma_hs || `Tổ ${record.to_lien_quan || 'tập thể'}`} ·{' '}
+                            {record.ma_danh_muc || record.loai}
+                          </p>
+                          <p className="text-slate-600">
+                            {record.noi_dung || record.ly_do || 'Không có mô tả'}
+                          </p>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              ))}
+            </div>
+          </div>
         </>
       ) : null}
     </section>
@@ -482,6 +539,78 @@ function getLatestWeek(records: GhiNhan[], weekConfig: CauHinhTuan[]): number {
   }
 
   return Math.max(1, ...weekConfig.map((week) => week.tuan_so || 0))
+}
+
+function buildDailyLogs(records: GhiNhan[], weekConfig: CauHinhTuan[], tuanSo: number) {
+  const week = weekConfig.find((item) => item.tuan_so === tuanSo)
+  const dates = week ? datesBetween(week.tu_ngay, week.den_ngay) : uniqueRecordDates(records, tuanSo)
+
+  return dates.map((date) => {
+    const dayRecords = records.filter((record) => record.tuan_so === tuanSo && record.ngay === date)
+    return {
+      date,
+      records: dayRecords,
+      summary: summarizeRecords(dayRecords),
+    }
+  })
+}
+
+function datesBetween(start: string, end: string): string[] {
+  const dates: string[] = []
+  const current = new Date(start)
+  const last = new Date(end)
+
+  while (!Number.isNaN(current.getTime()) && current <= last) {
+    dates.push(toIsoDate(current))
+    current.setDate(current.getDate() + 1)
+  }
+
+  return dates
+}
+
+function uniqueRecordDates(records: GhiNhan[], tuanSo: number): string[] {
+  return Array.from(
+    new Set(records.filter((record) => record.tuan_so === tuanSo).map((record) => record.ngay)),
+  ).sort()
+}
+
+function summarizeRecords(records: GhiNhan[]) {
+  const labels: Record<GhiNhan['loai'], string> = {
+    chuyen_can: 'CC',
+    ve_sinh: 'VS',
+    ne_nep: 'NN',
+    trat_tu_ky_luat: 'KL',
+    hoc_tap: 'HT',
+    khen_thuong: 'KT',
+  }
+  const counts = new Map<string, number>()
+  records.forEach((record) => {
+    const label = labels[record.loai]
+    counts.set(label, (counts.get(label) || 0) + 1)
+  })
+
+  return Array.from(counts.entries()).map(([label, count]) => ({ label, count }))
+}
+
+function toIsoDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function formatDate(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date)
 }
 
 function getStudentRecords(records: GhiNhan[], maHs: string, weeks: number[]): GhiNhan[] {
