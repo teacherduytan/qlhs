@@ -8,6 +8,7 @@ import type {
   TrangThaiXuLyTapThe,
 } from '../../data/types'
 import { calculateClassWeeklyScores, type WeeklyStudentScore } from '../scoring/scoring'
+import { buildPedagogySuggestions } from '../scoring/suggestions'
 import { getStudentGroup } from '../students/studentGroups'
 
 type DashboardState =
@@ -75,12 +76,21 @@ export function DashboardPage() {
     const sortedScores = [...state.scores].sort(
       (a, b) => a.diem_xep_loai_thi_dua - b.diem_xep_loai_thi_dua,
     )
+    const previousScores = new Map(
+      calculateClassWeeklyScores({
+        catalog: state.catalog,
+        records: state.records,
+        students: state.students,
+        tuanSo: Math.max(1, state.tuanSo - 1),
+      }).map((score) => [score.ma_hs, score]),
+    )
     const collectiveEvents = getCollectiveEvents(state.records, state.catalog, state.tuanSo)
     const missingGroupStudents = state.students.filter((student) => !getStudentGroup(student.ma_hs))
 
     return {
       collectiveEvents,
       missingGroupStudents,
+      previousScores,
       sortedScores,
       studentById,
     }
@@ -251,11 +261,23 @@ export function DashboardPage() {
                     <th className="px-3 py-3">HT</th>
                     <th className="px-3 py-3">Tổng</th>
                     <th className="px-3 py-3">Xếp loại</th>
+                    <th className="px-3 py-3">Gợi ý</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {body.sortedScores.map((score) => {
                     const student = body.studentById.get(score.ma_hs)
+                    const suggestions = buildPedagogySuggestions({
+                      currentWeekRecords: getStudentRecords(state.records, score.ma_hs, [
+                        state.tuanSo,
+                      ]),
+                      previousScore: body.previousScores.get(score.ma_hs),
+                      score,
+                      twoWeekRecords: getStudentRecords(state.records, score.ma_hs, [
+                        state.tuanSo,
+                        Math.max(1, state.tuanSo - 1),
+                      ]),
+                    })
                     return (
                       <tr
                         key={score.ma_hs}
@@ -276,6 +298,17 @@ export function DashboardPage() {
                           <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
                             {score.xep_loai}
                           </span>
+                        </td>
+                        <td className="max-w-80 px-3 py-3">
+                          {suggestions.length ? (
+                            <ul className="space-y-1 text-xs text-slate-700">
+                              {suggestions.map((suggestion) => (
+                                <li key={suggestion}>{suggestion}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <span className="text-xs text-slate-400">-</span>
+                          )}
                         </td>
                       </tr>
                     )
@@ -445,4 +478,8 @@ function getLatestWeek(records: GhiNhan[], weekConfig: CauHinhTuan[]): number {
   }
 
   return Math.max(1, ...weekConfig.map((week) => week.tuan_so || 0))
+}
+
+function getStudentRecords(records: GhiNhan[], maHs: string, weeks: number[]): GhiNhan[] {
+  return records.filter((record) => record.ma_hs === maHs && weeks.includes(record.tuan_so))
 }

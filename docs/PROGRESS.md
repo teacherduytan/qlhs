@@ -38,7 +38,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C020 | ✅ Xong | 11/07/2026 | Hồ sơ hiển thị điểm thi đua, điểm học tập, tổng hợp và xếp loại |
 | C021 | ✅ Xong | 11/07/2026 | Dashboard giáo viên: điểm thi đua, cảnh báo, sự kiện tập thể/tổ trực |
 | C021a | ✅ Xong | 11/07/2026 | Dashboard xử lý sự kiện tập thể: gán 1 HS, áp dụng lớp/tổ, bỏ qua |
-| C022 | ☐ Chưa làm | | |
+| C022 | ✅ Xong | 11/07/2026 | Gợi ý xử lý sư phạm rule-based trên dashboard |
 | C023 | ☐ Chưa làm | | |
 | C024 | ☐ Chưa làm | | |
 
