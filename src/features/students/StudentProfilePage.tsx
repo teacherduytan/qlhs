@@ -192,7 +192,9 @@ function ScoreSummary({ score }: { score: WeeklyStudentScore }) {
         {scoreItems.map((item) => (
           <div key={item.label} className="bg-white p-4">
             <p className="text-xs font-semibold uppercase text-slate-500">{item.label}</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{item.value}</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">
+              {item.value === null ? 'Chưa có dữ liệu' : item.value}
+            </p>
           </div>
         ))}
       </div>

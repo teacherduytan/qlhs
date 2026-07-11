@@ -290,7 +290,7 @@ export function DashboardPage() {
                         <td className="px-3 py-3">{score.diem_ve_sinh}</td>
                         <td className="px-3 py-3">{score.diem_ne_nep}</td>
                         <td className="px-3 py-3">{score.diem_ky_luat}</td>
-                        <td className="px-3 py-3">{score.diem_hoc_tap}</td>
+                        <td className="px-3 py-3">{formatStudyScore(score.diem_hoc_tap)}</td>
                         <td className="px-3 py-3 font-bold text-slate-900">
                           {score.diem_xep_loai_thi_dua}
                         </td>
@@ -482,4 +482,8 @@ function getLatestWeek(records: GhiNhan[], weekConfig: CauHinhTuan[]): number {
 
 function getStudentRecords(records: GhiNhan[], maHs: string, weeks: number[]): GhiNhan[] {
   return records.filter((record) => record.ma_hs === maHs && weeks.includes(record.tuan_so))
+}
+
+function formatStudyScore(score: number | null): string {
+  return score === null ? 'Chưa có dữ liệu' : String(score)
 }

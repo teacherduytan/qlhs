@@ -11,7 +11,7 @@ export interface WeeklyStudentScore {
   diem_ve_sinh: number
   diem_ne_nep: number
   diem_ky_luat: number
-  diem_hoc_tap: number
+  diem_hoc_tap: number | null
   diem_xep_loai_thi_dua: number
   xep_loai: XepLoai
   can_canh_bao_ngay: boolean
@@ -42,7 +42,9 @@ export function calculateWeeklyStudentScore({
   ) as Record<ScoreComponent, number>
   const diemHocTap = calculateStudyScore(studentRecords)
   const diemTongHop =
-    (components.CC + components.VS + components.NN + components.KL + diemHocTap) / 6
+    diemHocTap === null
+      ? (components.CC + components.VS + components.NN + components.KL) / 4
+      : (components.CC + components.VS + components.NN + components.KL + diemHocTap) / 6
 
   return {
     ma_hs: student.ma_hs,
@@ -51,7 +53,7 @@ export function calculateWeeklyStudentScore({
     diem_ve_sinh: components.VS,
     diem_ne_nep: components.NN,
     diem_ky_luat: components.KL,
-    diem_hoc_tap: roundScore(diemHocTap),
+    diem_hoc_tap: diemHocTap === null ? null : roundScore(diemHocTap),
     diem_xep_loai_thi_dua: roundScore(diemTongHop),
     xep_loai: classifyScore(diemTongHop),
     can_canh_bao_ngay: hasSeverePersonalRecord(studentRecords, catalogByCode),
@@ -97,13 +99,13 @@ function calculateComponentScore(
   return clamp(100 + delta, 0, 100)
 }
 
-function calculateStudyScore(records: GhiNhan[]): number {
+function calculateStudyScore(records: GhiNhan[]): number | null {
   const studyScores = records
     .map((record) => record.diem_so_mon)
     .filter((score): score is number => typeof score === 'number')
 
   if (studyScores.length === 0) {
-    return 0
+    return null
   }
 
   const total = studyScores.reduce((sum, score) => sum + score, 0)
