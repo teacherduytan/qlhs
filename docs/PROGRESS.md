@@ -6,8 +6,8 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 
 | ID | Trạng thái | Ngày xong | Ghi chú |
 |---|---|---|---|
-| C001 | ✅ Xong | 11/07/2026 | |
-| C002 | ✅ Xong | 11/07/2026 | |
+| C001 | ✅ Xong | 11/07/2026 |  |
+| C002 | ✅ Xong | 11/07/2026 |  |
 | C003 | ✅ Xong | 11/07/2026 | Script SetupSheet.gs + seed DanhMucDiem |
 | C004 | ✅ Xong | 11/07/2026 | 36 HS + 2 tuần trong du-lieu-mau/ |
 | C005 | ✅ Xong | 11/07/2026 | Phiếu 3 phần + bảng tra cứu mã |
@@ -34,7 +34,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C016 | ✅ Xong | 11/07/2026 | Màn hình Import JSON chung: chọn loại, dán/tải file, preview, xác nhận import |
 | C017 | ✅ Xong | 11/07/2026 | Hồ sơ theo token + vai trò BanCanSu, không hiển thị SĐT phụ huynh |
 | C018 | ✅ Xong | 11/07/2026 | Hồ sơ hiển thị lịch sử GhiNhan theo học sinh, sắp xếp mới nhất và gom theo tuần |
-| C019 | ✅ Xong | 11/07/2026 | Logic tính điểm thi đua: 4 thành phần, học tập, tổng hợp chia 6, bỏ qua tập thể/tổ trực |
+| C019 | ✅ Xong | 11/07/2026 | Logic tính điểm thi đua: 4 thành phần, học tập, tổng hợp chia 6, bỏ qua tập thể/tổ trực — ~~⚠️ có lỗi 66,67~~ đã sửa ở C031 |
 | C020 | ✅ Xong | 11/07/2026 | Hồ sơ hiển thị điểm thi đua, điểm học tập, tổng hợp và xếp loại |
 | C021 | ✅ Xong | 11/07/2026 | Dashboard giáo viên: điểm thi đua, cảnh báo, sự kiện tập thể/tổ trực |
 | C021a | ✅ Xong | 11/07/2026 | Dashboard xử lý sự kiện tập thể: gán 1 HS, áp dụng lớp/tổ, bỏ qua |
@@ -50,7 +50,9 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C026 | ✅ Xong | 11/07/2026 | Rà responsive: header/nav tối ưu mobile và laptop |
 | C027 | ✅ Xong | 11/07/2026 | README hướng dẫn sử dụng + tag v0.1.0-phase1 |
 
-## Cải tiến sau triển khai
+---
+
+## Cải tiến sau triển khai (xem chi tiết ở [06-cai-tien-sau-trien-khai.md](06-cai-tien-sau-trien-khai.md))
 
 | ID | Trạng thái | Ngày xong | Ghi chú |
 |---|---|---|---|
@@ -63,6 +65,9 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C034 | ✅ Xong | 11/07/2026 | Import GhiNhan tự khớp ho_ten sang ma_hs, tự điền tuần/diện/điểm và log lỗi từng dòng |
 | C035 | ✅ Xong | 11/07/2026 | Thêm mẫu JSON và prompt chuyển ảnh phiếu sang JSON vào du-lieu-mau |
 | C036 | ✅ Xong | 11/07/2026 | Xoá dữ liệu theo lần import: nút xoá trên lịch sử import, Apps Script xoá GhiNhan theo ma_log_import và đánh dấu log da_xoa |
+| C037 | ☐ Chưa làm | | Bộ chọn tuần — nghi là nguyên nhân dashboard/hồ sơ trống |
+| C038 | ☐ Chưa làm | | Lịch sử ghi nhận hiện toàn bộ, không phụ thuộc tuần |
+| C039 | ✅ Xong | 11/07/2026 | Apps Script tự tính tuan_so khi import, cảnh báo nếu ngoài CauHinhTuan và thêm vaLaiTuanSoChoGhiNhan() để vá dữ liệu cũ |
 
 ---
 

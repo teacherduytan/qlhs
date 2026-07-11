@@ -342,10 +342,16 @@ function importBatch_(loai, rows, nguoiThucHien) {
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   var success = 0;
   var errors = [];
+  var warnings = [];
 
   rows.forEach(function (row, index) {
     try {
       var enriched = prepareImportRow_(loai, row, maLog);
+      var rowWarnings = enriched._import_warnings || [];
+      rowWarnings.forEach(function (warning) {
+        warnings.push('Dòng ' + (index + 1) + ': ' + warning);
+      });
+
       var line = headers.map(function (h) {
         return enriched[h] !== undefined && enriched[h] !== null ? enriched[h] : '';
       });
@@ -356,7 +362,8 @@ function importBatch_(loai, rows, nguoiThucHien) {
     }
   });
 
-  var trangThai = errors.length === 0 ? 'thanh_cong' : (success > 0 ? 'loi_mot_phan' : 'that_bai');
+  var notes = errors.concat(warnings);
+  var trangThai = notes.length === 0 ? 'thanh_cong' : (success > 0 ? 'loi_mot_phan' : 'that_bai');
   var logRow = {
     ma_log: maLog,
     thoi_gian: new Date(),
@@ -365,7 +372,7 @@ function importBatch_(loai, rows, nguoiThucHien) {
     nguoi_thuc_hien: nguoiThucHien,
     trang_thai: trangThai,
     duong_dan_file_goc: fileUrl,
-    ghi_chu: errors.length ? errors.join('; ') : '',
+    ghi_chu: notes.length ? notes.join('; ') : '',
   };
   appendRow_(SHEET_TABS.NhatKyImport, logRow);
 
@@ -406,8 +413,14 @@ function prepareGhiNhanImportRow_(row, maLog) {
     enriched.dien_tai_thoi_diem = student.dien;
   }
 
-  if (!enriched.tuan_so && enriched.ngay) {
-    enriched.tuan_so = findWeekNumberByDate_(enriched.ngay);
+  if (isBlank_(enriched.tuan_so) && enriched.ngay) {
+    var weekResult = resolveWeekNumberByDate_(enriched.ngay);
+    if (!isBlank_(weekResult.tuan_so)) {
+      enriched.tuan_so = weekResult.tuan_so;
+    } else {
+      enriched.tuan_so = '';
+      addImportWarning_(enriched, weekResult.warning);
+    }
   }
 
   if (catalogItem && (enriched.diem_cong_tru === undefined || enriched.diem_cong_tru === null || enriched.diem_cong_tru === '')) {
@@ -450,18 +463,104 @@ function findStudentByFullName_(fullName) {
   return matches[0];
 }
 
+function vaLaiTuanSoChoGhiNhan() {
+  var sheet = getSpreadsheet_().getSheetByName(SHEET_TABS.GhiNhan);
+  if (!sheet) throw new Error('Tab not found: ' + SHEET_TABS.GhiNhan);
+
+  var values = sheet.getDataRange().getValues();
+  if (values.length < 2) {
+    return { so_dong_quet: 0, so_dong_cap_nhat: 0, canh_bao: [] };
+  }
+
+  var headers = values[0];
+  var ngayIndex = headers.indexOf('ngay');
+  var tuanSoIndex = headers.indexOf('tuan_so');
+  if (ngayIndex === -1) throw new Error('Key field not found: ngay');
+  if (tuanSoIndex === -1) throw new Error('Key field not found: tuan_so');
+
+  var updated = 0;
+  var warnings = [];
+  for (var i = 1; i < values.length; i++) {
+    var currentWeek = values[i][tuanSoIndex];
+    var dateValue = values[i][ngayIndex];
+    if (!isBlank_(currentWeek) || isBlank_(dateValue)) {
+      continue;
+    }
+
+    var weekResult = resolveWeekNumberByDate_(dateValue);
+    if (!isBlank_(weekResult.tuan_so)) {
+      sheet.getRange(i + 1, tuanSoIndex + 1).setValue(weekResult.tuan_so);
+      updated++;
+    } else {
+      warnings.push('Dòng ' + (i + 1) + ': ' + weekResult.warning);
+    }
+  }
+
+  var result = {
+    so_dong_quet: values.length - 1,
+    so_dong_cap_nhat: updated,
+    canh_bao: warnings,
+  };
+  Logger.log(JSON.stringify(result, null, 2));
+  return result;
+}
+
 function findWeekNumberByDate_(dateText) {
-  var target = new Date(dateText);
-  if (isNaN(target.getTime())) throw new Error('Ngày không hợp lệ: ' + dateText);
+  return resolveWeekNumberByDate_(dateText).tuan_so;
+}
+
+function resolveWeekNumberByDate_(dateValue) {
+  var target = parseDateValue_(dateValue);
+  if (!target) {
+    return {
+      tuan_so: null,
+      warning: 'Ngày không hợp lệ, chưa thể tự điền tuan_so: ' + dateValue,
+    };
+  }
 
   var weeks = getSheetObjects_(SHEET_TABS.CauHinhTuan);
   for (var i = 0; i < weeks.length; i++) {
-    var start = new Date(weeks[i].tu_ngay);
-    var end = new Date(weeks[i].den_ngay);
-    if (target >= start && target <= end) return weeks[i].tuan_so;
+    var start = parseDateValue_(weeks[i].tu_ngay);
+    var end = parseDateValue_(weeks[i].den_ngay);
+    if (start && end && target >= start && target <= end) {
+      return { tuan_so: weeks[i].tuan_so, warning: '' };
+    }
   }
 
-  throw new Error('Không tìm thấy tuần cho ngày: ' + dateText);
+  return {
+    tuan_so: null,
+    warning: 'Không tìm thấy tuần trong CauHinhTuan cho ngày: ' + formatDateForLog_(target),
+  };
+}
+
+function parseDateValue_(value) {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+
+  var text = String(value || '').trim();
+  var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (match) {
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+
+  var parsed = new Date(text);
+  if (isNaN(parsed.getTime())) return null;
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+}
+
+function formatDateForLog_(dateValue) {
+  return Utilities.formatDate(dateValue, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+}
+
+function addImportWarning_(row, warning) {
+  if (!warning) return;
+  if (!row._import_warnings) row._import_warnings = [];
+  row._import_warnings.push(warning);
+}
+
+function isBlank_(value) {
+  return value === null || value === undefined || value === '';
 }
 
 function findByKey_(tabName, keyField, keyValue) {
