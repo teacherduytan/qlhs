@@ -117,12 +117,50 @@ export function StudentProfilePage() {
         {state.status === 'success' ? (
           <>
             <ProfileCard student={state.student} role={state.role} />
+            <TodayRecords records={state.records} />
             <ScoreSummary score={state.score} />
             <RecordHistory records={state.records} />
           </>
         ) : null}
       </section>
     </main>
+  )
+}
+
+function TodayRecords({ records }: { records: GhiNhan[] }) {
+  const today = getTodayIsoDate()
+  const todayRecords = records.filter((record) => record.ngay === today)
+
+  return (
+    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">Hôm nay</h2>
+          <p className="text-sm text-slate-600">{formatDate(today)}</p>
+        </div>
+        <p className="text-sm font-semibold text-blue-700">{todayRecords.length} ghi nhận</p>
+      </div>
+
+      {todayRecords.length ? (
+        <div className="mt-3 space-y-2">
+          {todayRecords.map((record, index) => (
+            <article
+              key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc}-${index}`}
+              className="rounded-md border border-blue-100 bg-white p-3"
+            >
+              <p className="text-sm font-semibold text-slate-900">
+                {record.ma_danh_muc || labelRecordType(record.loai)}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                {record.noi_dung || record.ly_do || 'Không có mô tả'}
+              </p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 text-sm text-slate-600">Chưa có ghi nhận nào trong hôm nay.</p>
+      )}
+    </div>
   )
 }
 
@@ -341,4 +379,12 @@ function labelRecordType(loai: GhiNhan['loai']): string {
   }
 
   return labels[loai]
+}
+
+function getTodayIsoDate(): string {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
