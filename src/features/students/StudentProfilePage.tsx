@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { BanCanSu, HocSinh } from '../../data/types'
+import type { BanCanSu, GhiNhan, HocSinh } from '../../data/types'
 
 type ProfileState =
   | { status: 'loading' }
   | { status: 'not_found' }
   | { status: 'error'; message: string }
-  | { status: 'success'; student: HocSinh; role: string }
+  | { status: 'success'; records: GhiNhan[]; student: HocSinh; role: string }
 
 export function StudentProfilePage() {
   const { token } = useParams()
@@ -22,7 +22,7 @@ export function StudentProfilePage() {
     }
 
     Promise.all([dataSource.getStudentByToken(token), dataSource.getBanCanSu()])
-      .then(([student, banCanSu]) => {
+      .then(async ([student, banCanSu]) => {
         if (!active) {
           return
         }
@@ -32,8 +32,14 @@ export function StudentProfilePage() {
           return
         }
 
+        const records = await dataSource.getRecords(student.ma_hs)
+        if (!active) {
+          return
+        }
+
         setState({
           status: 'success',
+          records,
           student,
           role: getStudentRole(student.ma_hs, banCanSu),
         })
@@ -90,10 +96,78 @@ export function StudentProfilePage() {
         ) : null}
 
         {state.status === 'success' ? (
-          <ProfileCard student={state.student} role={state.role} />
+          <>
+            <ProfileCard student={state.student} role={state.role} />
+            <RecordHistory records={state.records} />
+          </>
         ) : null}
       </section>
     </main>
+  )
+}
+
+function RecordHistory({ records }: { records: GhiNhan[] }) {
+  const groupedRecords = groupRecordsByWeek(records)
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 p-4">
+        <h2 className="text-lg font-bold text-slate-900">Lịch sử ghi nhận</h2>
+        <p className="text-sm text-slate-600">
+          {records.length ? `${records.length} dòng ghi nhận` : 'Chưa có ghi nhận nào'}
+        </p>
+      </div>
+
+      {groupedRecords.length ? (
+        <div className="divide-y divide-slate-200">
+          {groupedRecords.map(({ records: weekRecords, tuanSo }) => (
+            <section key={tuanSo} className="p-4">
+              <h3 className="text-sm font-bold text-blue-700">Tuần {tuanSo}</h3>
+              <div className="mt-3 space-y-3">
+                {weekRecords.map((record, index) => (
+                  <article
+                    key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc}-${index}`}
+                    className="rounded-md border border-slate-200 p-3"
+                  >
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {record.ma_danh_muc || labelRecordType(record.loai)}
+                        </p>
+                        <p className="text-sm text-slate-600">
+                          {record.noi_dung || record.ly_do || 'Không có mô tả'}
+                        </p>
+                      </div>
+                      <p className="text-sm font-medium text-slate-500">
+                        {formatDate(record.ngay)}
+                      </p>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
+                      <Badge>{labelRecordType(record.loai)}</Badge>
+                      {record.tiet ? <Badge>{`Tiết ${record.tiet}`}</Badge> : null}
+                      {record.mon_hoc ? <Badge>{record.mon_hoc}</Badge> : null}
+                      {typeof record.diem_cong_tru === 'number' ? (
+                        <Badge>{`${record.diem_cong_tru} điểm`}</Badge>
+                      ) : null}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <div className="p-4 text-sm text-slate-600">Hồ sơ này chưa có lịch sử ghi nhận.</div>
+      )}
+    </div>
+  )
+}
+
+function Badge({ children }: { children: string }) {
+  return (
+    <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">
+      {children}
+    </span>
   )
 }
 
@@ -161,4 +235,39 @@ function formatDate(value: string | null): string {
   }
 
   return new Intl.DateTimeFormat('vi-VN').format(date)
+}
+
+function groupRecordsByWeek(records: GhiNhan[]): Array<{ tuanSo: number; records: GhiNhan[] }> {
+  const sortedRecords = [...records].sort((a, b) => {
+    const byDate = new Date(b.ngay).getTime() - new Date(a.ngay).getTime()
+    if (byDate !== 0) {
+      return byDate
+    }
+
+    return b.tuan_so - a.tuan_so
+  })
+
+  return sortedRecords.reduce<Array<{ tuanSo: number; records: GhiNhan[] }>>((groups, record) => {
+    const currentGroup = groups.find((group) => group.tuanSo === record.tuan_so)
+    if (currentGroup) {
+      currentGroup.records.push(record)
+    } else {
+      groups.push({ tuanSo: record.tuan_so, records: [record] })
+    }
+
+    return groups
+  }, [])
+}
+
+function labelRecordType(loai: GhiNhan['loai']): string {
+  const labels: Record<GhiNhan['loai'], string> = {
+    chuyen_can: 'Chuyên cần',
+    ve_sinh: 'Vệ sinh',
+    ne_nep: 'Nề nếp',
+    trat_tu_ky_luat: 'Trật tự - kỷ luật',
+    hoc_tap: 'Học tập',
+    khen_thuong: 'Khen thưởng',
+  }
+
+  return labels[loai]
 }
