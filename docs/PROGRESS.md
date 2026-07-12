@@ -89,6 +89,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C057 | ✅ Xong | 12/07/2026 | Mẫu phiếu in trong app và docs/mau-phieu-ghi-nhan.md chuyển sang 1 bảng duy nhất, không mã |
 | C058 | ✅ Xong | 12/07/2026 | Prompt AI suy luận mã/phạm vi từ phiếu tự do, map thành tích sang KT và bổ sung KT01-KT05 vào seed DanhMucDiem |
 | C059 | ✅ Xong | 12/07/2026 | Cập nhật Vite base path thành /qlhs/ cho GitHub Pages repo teacherduytan/qlhs |
+| C059a | ✅ Xong | 12/07/2026 | Hoàn thiện CI/CD GitHub Pages: deploy bằng Actions, tránh trùng artifact và đọc VITE_APPS_SCRIPT_URL/VITE_WRITE_SECRET từ GitHub Secrets |
 
 ---
 
