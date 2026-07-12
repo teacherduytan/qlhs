@@ -78,7 +78,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C047 | ✅ Xong | 11/07/2026 | Thêm helper màu chung và áp dụng cho Dashboard, hồ sơ, lịch sử ghi nhận, nhật ký ngày, danh sách học sinh |
 | C048 | ✅ Xong | 11/07/2026 | Sửa ngưỡng xếp loại theo trạng thái có/chưa có điểm học tập, thêm ghi chú so sánh điểm và dữ liệu đối chiếu cá nhân |
 | C049 | ✅ Xong | 12/07/2026 | Thêm khu vực Xem theo Nhóm vi phạm trên Dashboard, có chọn nhóm, hiện đủ/ẩn học sinh sạch và TK06 nhảy tới nhóm Kỷ luật |
-| C050 | ☐ Chưa làm | | Mọi báo cáo đều điều hướng được — mở rộng cả TK01/06/07/08, không còn ngoại lệ |
+| C050 | ✅ Xong | 12/07/2026 | Mở rộng điều hướng TK01/TK06/TK07/TK08 và thêm popup tra cứu mã cho badge ở Dashboard/Hồ sơ |
 
 ---
 

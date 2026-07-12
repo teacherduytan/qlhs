@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh } from '../../data/types'
+import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
 import { getBadgeClassForRecord } from '../scoring/scoreStyles'
 import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
@@ -184,11 +185,11 @@ function TodayRecords({ catalog, records }: { catalog: DanhMucDiem[]; records: G
               className="rounded-md border border-blue-100 bg-white p-3"
             >
               <p className="text-sm font-semibold text-slate-900">
-                <span
-                  className={`rounded-full border px-2 py-1 text-xs ${getBadgeClassForRecord(record, catalogByCode)}`}
-                >
-                {record.ma_danh_muc || labelRecordType(record.loai)}
-                </span>
+                <CatalogCodeBadge
+                  catalogItem={record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined}
+                  code={record.ma_danh_muc || record.loai}
+                  label={record.ma_danh_muc || labelRecordType(record.loai)}
+                />
               </p>
               <p className="mt-1 text-sm text-slate-600">
                 {record.noi_dung || record.ly_do || 'Không có mô tả'}
@@ -321,11 +322,11 @@ function RecordHistory({
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">
-                          <span
-                            className={`rounded-full border px-2 py-1 text-xs ${getBadgeClassForRecord(record, catalogByCode)}`}
-                          >
-                          {record.ma_danh_muc || labelRecordType(record.loai)}
-                          </span>
+                          <CatalogCodeBadge
+                            catalogItem={record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined}
+                            code={record.ma_danh_muc || record.loai}
+                            label={record.ma_danh_muc || labelRecordType(record.loai)}
+                          />
                         </p>
                         <p className="text-sm text-slate-600">
                           {record.noi_dung || record.ly_do || 'Không có mô tả'}

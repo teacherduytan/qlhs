@@ -18,6 +18,7 @@ import {
 import { buildPedagogySuggestions } from '../scoring/suggestions'
 import { getStudentGroup } from '../students/studentGroups'
 import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
+import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
 
 type DashboardState =
   | { status: 'loading' }
@@ -39,6 +40,7 @@ type OverviewStat = {
   value: string
   detail: string
   drillDown?: OverviewDrillDown
+  dateTarget?: string
   groupTarget?: GroupViewKey
 }
 
@@ -51,6 +53,8 @@ type OverviewDrillDown =
   | { kind: 'attention'; items: AttentionDrillDownItem[] }
   | { kind: 'records'; emptyText: string; items: RecordDrillDownItem[] }
   | { kind: 'events'; emptyText: string; items: EventDrillDownItem[] }
+  | { kind: 'students'; emptyText: string; items: StudentDrillDownItem[] }
+  | { kind: 'trend'; items: TrendDrillDownItem[] }
 
 type AttentionDrillDownItem = {
   maHs: string
@@ -63,6 +67,7 @@ type AttentionDrillDownItem = {
 
 type RecordDrillDownItem = {
   badgeClass: string
+  catalogItem?: DanhMucDiem
   id: string
   code: string
   date: string
@@ -74,11 +79,25 @@ type RecordDrillDownItem = {
 
 type EventDrillDownItem = {
   badgeClass: string
+  catalogItem?: DanhMucDiem
   id: string
   code: string
   date: string
   description: string
   scope: string
+}
+
+type StudentDrillDownItem = {
+  maHs: string
+  name: string
+  token: string
+}
+
+type TrendDrillDownItem = {
+  group: string
+  current: string
+  previous: string
+  delta: string
 }
 
 type GroupViewKey = 'CC' | 'VS' | 'NN' | 'KL' | 'HT'
@@ -104,6 +123,7 @@ export function DashboardPage() {
   const [processingEventId, setProcessingEventId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const groupViewRef = useRef<HTMLDivElement | null>(null)
+  const dailyLogRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     let active = true
@@ -324,6 +344,12 @@ export function DashboardPage() {
     window.setTimeout(() => groupViewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
+  function openRecordDate(date: string) {
+    setSelectedDate(date)
+    setExpandedDay(date)
+    window.setTimeout(() => dailyLogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
   return (
     <section className="space-y-4">
       <div>
@@ -371,7 +397,11 @@ export function DashboardPage() {
             </div>
           </div>
 
-          <OverviewStats onSelectGroup={openGroupView} stats={body.overviewStats} />
+          <OverviewStats
+            onSelectDate={openRecordDate}
+            onSelectGroup={openGroupView}
+            stats={body.overviewStats}
+          />
 
           <GroupViolationView
             catalogByCode={body.catalogByCode}
@@ -594,7 +624,7 @@ export function DashboardPage() {
             )}
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white">
+          <div ref={dailyLogRef} className="rounded-lg border border-slate-200 bg-white">
             <div className="border-b border-slate-200 p-4">
               <h3 className="text-base font-bold text-slate-900">Nhật ký theo ngày</h3>
               <p className="text-sm text-slate-600">
@@ -639,11 +669,10 @@ export function DashboardPage() {
                         >
                           <p className="font-semibold text-slate-900">
                             {record.ma_hs || `Tổ ${record.to_lien_quan || 'tập thể'}`} ·{' '}
-                            <span
-                              className={`rounded-full border px-2 py-0.5 text-xs ${getBadgeClassForRecord(record, body.catalogByCode)}`}
-                            >
-                              {record.ma_danh_muc || record.loai}
-                            </span>
+                            <CatalogCodeBadge
+                              catalogItem={record.ma_danh_muc ? body.catalogByCode.get(record.ma_danh_muc) : undefined}
+                              code={record.ma_danh_muc || record.loai}
+                            />
                           </p>
                           <p className="text-slate-600">
                             {record.noi_dung || record.ly_do || 'Không có mô tả'}
@@ -672,9 +701,11 @@ function SummaryMetric({ label, value }: { label: string; value: number }) {
 }
 
 function OverviewStats({
+  onSelectDate,
   onSelectGroup,
   stats,
 }: {
+  onSelectDate: (date: string) => void
   onSelectGroup: (group: GroupViewKey) => void
   stats: OverviewStatGroups
 }) {
@@ -686,6 +717,12 @@ function OverviewStats({
     if (stat.groupTarget) {
       setActiveCode(null)
       onSelectGroup(stat.groupTarget)
+      return
+    }
+
+    if (stat.dateTarget) {
+      setActiveCode(null)
+      onSelectDate(stat.dateTarget)
       return
     }
 
@@ -778,7 +815,7 @@ function OverviewCard({
         ? 'text-emerald-700'
         : 'text-blue-700'
   const activeClass = active ? 'ring-2 ring-blue-300' : ''
-  const interactiveClass = stat.drillDown || stat.groupTarget ? 'cursor-pointer hover:shadow-sm' : ''
+  const interactiveClass = stat.drillDown || stat.groupTarget || stat.dateTarget ? 'cursor-pointer hover:shadow-sm' : ''
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -789,15 +826,21 @@ function OverviewCard({
         <p className={`text-right text-xl font-bold ${valueClass}`}>{stat.value}</p>
       </div>
       <p className="mt-3 text-sm opacity-80">{stat.detail}</p>
-      {stat.drillDown || stat.groupTarget ? (
+      {stat.drillDown || stat.groupTarget || stat.dateTarget ? (
         <p className="mt-3 text-xs font-semibold opacity-70">
-          {active ? 'Đang mở chi tiết' : stat.groupTarget ? 'Bấm để xem theo nhóm' : 'Bấm để xem chi tiết'}
+          {active
+            ? 'Đang mở chi tiết'
+            : stat.groupTarget
+              ? 'Bấm để xem theo nhóm'
+              : stat.dateTarget
+                ? 'Bấm để xem nhật ký ngày'
+                : 'Bấm để xem chi tiết'}
         </p>
       ) : null}
     </>
   )
 
-  if (!stat.drillDown && !stat.groupTarget) {
+  if (!stat.drillDown && !stat.groupTarget && !stat.dateTarget) {
     return <article className={`rounded-lg border p-4 ${toneClass}`}>{content}</article>
   }
 
@@ -868,9 +911,7 @@ function OverviewDrillDownPanel({
                 key={item.id}
                 className="grid gap-2 py-3 text-sm lg:grid-cols-[8rem_1fr_9rem_8rem] lg:items-center"
               >
-                <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${item.badgeClass}`}>
-                  {item.code}
-                </span>
+                <CatalogCodeBadge catalogItem={item.catalogItem} code={item.code} />
                 <div>
                   {item.token ? (
                     <Link to={`/hs/${item.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
@@ -899,9 +940,7 @@ function OverviewDrillDownPanel({
                 key={item.id}
                 className="grid gap-2 py-3 text-sm lg:grid-cols-[8rem_8rem_1fr_9rem] lg:items-center"
               >
-                <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${item.badgeClass}`}>
-                  {item.code}
-                </span>
+                <CatalogCodeBadge catalogItem={item.catalogItem} code={item.code} />
                 <span className="font-medium text-blue-700">{item.scope}</span>
                 <span className="text-slate-600">{item.description}</span>
                 <span className="text-slate-600">{formatDate(item.date)}</span>
@@ -911,6 +950,49 @@ function OverviewDrillDownPanel({
         ) : (
           <p className="mt-3 text-sm text-slate-600">{drillDown.emptyText}</p>
         )
+      ) : null}
+
+      {drillDown.kind === 'students' ? (
+        drillDown.items.length ? (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {drillDown.items.map((item) => (
+              <Link
+                key={item.maHs}
+                to={`/hs/${item.token}`}
+                className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-slate-600">{drillDown.emptyText}</p>
+        )
+      ) : null}
+
+      {drillDown.kind === 'trend' ? (
+        <div className="mt-3 overflow-hidden rounded-md border border-slate-200">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+              <tr>
+                <th className="px-3 py-3">Nhóm</th>
+                <th className="px-3 py-3">Tuần này</th>
+                <th className="px-3 py-3">Tuần trước</th>
+                <th className="px-3 py-3">Chênh lệch</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {drillDown.items.map((item) => (
+                <tr key={item.group}>
+                  <td className="px-3 py-3 font-semibold text-slate-900">{item.group}</td>
+                  <td className="px-3 py-3 text-slate-700">{item.current}</td>
+                  <td className="px-3 py-3 text-slate-700">{item.previous}</td>
+                  <td className="px-3 py-3 font-semibold text-blue-700">{item.delta}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </section>
   )
@@ -1012,15 +1094,16 @@ function GroupViolationView({
                     {row.records.length ? (
                       <div className="flex flex-wrap gap-2">
                         {row.records.map((record, index) => (
-                          <span
+                          <CatalogCodeBadge
                             key={record.ma_ghi_nhan || `${row.maHs}-${record.ngay}-${index}`}
-                            className={`rounded-full border px-2 py-1 text-xs font-semibold ${getBadgeClassForRecord(record, catalogByCode)}`}
-                            title={record.noi_dung || record.ly_do || ''}
-                          >
-                            {isStudyGroup
-                              ? `${record.mon_hoc || 'Điểm'}: ${record.diem_so_mon}`
-                              : record.ma_danh_muc || record.loai}
-                          </span>
+                            catalogItem={record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined}
+                            code={record.ma_danh_muc || record.loai}
+                            label={
+                              isStudyGroup
+                                ? `${record.mon_hoc || 'Điểm'}: ${record.diem_so_mon}`
+                                : record.ma_danh_muc || record.loai
+                            }
+                          />
                         ))}
                       </div>
                     ) : (
@@ -1098,9 +1181,7 @@ function TeamInfoPanel({
                 <div key={item.id} className="rounded-md bg-white p-2 text-sm">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <span className="font-semibold text-slate-900">
-                      <span className={`rounded-full border px-2 py-0.5 text-xs ${item.badgeClass}`}>
-                        {item.code}
-                      </span>{' '}
+                      <CatalogCodeBadge catalogItem={item.catalogItem} code={item.code} />{' '}
                       Tuần {item.week}
                     </span>
                     <span className="text-xs font-medium text-slate-500">{formatDate(item.date)}</span>
@@ -1218,6 +1299,8 @@ function buildOverviewStats({
     ? weekRecords.filter((record) => record.ma_danh_muc === topViolationCode)
     : []
   const componentAverages = averageComponents(currentScores)
+  const previousComponentAverages = averageComponents(Array.from(previousScores.values()))
+  const trendItems = buildTrendItems(componentAverages, previousComponentAverages)
   const currentAverage = average(currentScores.map((score) => score.diem_xep_loai_thi_dua))
   const hasPreviousWeek = tuanSo > 1
   const previousAverage = average(Array.from(previousScores.values()).map((score) => score.diem_xep_loai_thi_dua))
@@ -1235,6 +1318,10 @@ function buildOverviewStats({
             label: 'Xu hướng tuần trước',
             value: `${trend > 0 ? '+' : ''}${trend}`,
             detail: `${trend >= 0 ? 'Tăng' : 'Giảm'} so với tuần liền trước`,
+            drillDown: {
+              kind: 'trend',
+              items: trendItems,
+            },
           },
         ]
 
@@ -1291,6 +1378,15 @@ function buildOverviewStats({
         label: 'Sĩ số & học sinh sạch',
         value: `${activeStudents.length} HS`,
         detail: `${cleanStudents.length} em không có ghi nhận tuần này`,
+        drillDown: {
+          kind: 'students',
+          emptyText: 'Không có học sinh sạch trong tuần đang xem.',
+          items: cleanStudents.map((student) => ({
+            maHs: student.ma_hs,
+            name: `${student.ho} ${student.ten}`,
+            token: student.token_ho_so,
+          })),
+        },
       },
       {
         code: 'TK05',
@@ -1321,6 +1417,7 @@ function buildOverviewStats({
         label: 'Nhịp độ ghi nhận',
         value: `${recordDates.length}/${Math.max(weekDayCount, 1)} ngày`,
         detail: latestDate ? `Ghi nhận gần nhất: ${formatDate(latestDate)}` : 'Chưa có ghi nhận trong tuần',
+        dateTarget: latestDate,
       },
     ],
   }
@@ -1469,9 +1566,11 @@ function toRecordDrillDownItem(
   catalogByCode: Map<string, DanhMucDiem>,
 ): RecordDrillDownItem {
   const student = record.ma_hs ? studentById.get(record.ma_hs) : undefined
+  const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
 
   return {
     badgeClass: getBadgeClassForRecord(record, catalogByCode),
+    catalogItem,
     id: record.ma_ghi_nhan || `${record.ngay}-${record.ma_hs || record.ma_danh_muc}-${index}`,
     code: record.ma_danh_muc || record.loai,
     date: record.ngay,
@@ -1496,6 +1595,7 @@ function toEventDrillDownItem(
 
   return {
     badgeClass: getBadgeClassForCatalog(catalogItem),
+    catalogItem,
     id: record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc || 'event'}-${index}`,
     code: record.ma_danh_muc || record.loai,
     date: record.ngay,
@@ -1521,7 +1621,7 @@ function getTeamEventHistory(
   teamNumber: number,
   records: GhiNhan[],
   catalog: DanhMucDiem[],
-): Array<{ badgeClass: string; code: string; date: string; description: string; id: string; week: number }> {
+): Array<{ badgeClass: string; catalogItem?: DanhMucDiem; code: string; date: string; description: string; id: string; week: number }> {
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
 
   return records
@@ -1530,14 +1630,19 @@ function getTeamEventHistory(
       return catalogItem?.pham_vi === 'to_truc' && record.to_lien_quan === teamNumber
     })
     .sort((a, b) => new Date(b.ngay).getTime() - new Date(a.ngay).getTime())
-    .map((record, index) => ({
-      badgeClass: getBadgeClassForRecord(record, catalogByCode),
-      code: record.ma_danh_muc || record.loai,
-      date: record.ngay,
-      description: record.noi_dung || record.ly_do || 'Không có mô tả',
-      id: record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc || 'team'}-${index}`,
-      week: record.tuan_so,
-    }))
+    .map((record, index) => {
+      const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
+
+      return {
+        badgeClass: getBadgeClassForRecord(record, catalogByCode),
+        catalogItem,
+        code: record.ma_danh_muc || record.loai,
+        date: record.ngay,
+        description: record.noi_dung || record.ly_do || 'Không có mô tả',
+        id: record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc || 'team'}-${index}`,
+        week: record.tuan_so,
+      }
+    })
 }
 
 function normalizeText(value: string): string {
@@ -1554,6 +1659,31 @@ function averageComponents(scores: WeeklyStudentScore[]): Record<'CC' | 'VS' | '
     NN: roundNumber(average(scores.map((score) => score.diem_ne_nep))).toFixed(1),
     KL: roundNumber(average(scores.map((score) => score.diem_ky_luat))).toFixed(1),
   }
+}
+
+function buildTrendItems(
+  current: Record<'CC' | 'VS' | 'NN' | 'KL', string>,
+  previous: Record<'CC' | 'VS' | 'NN' | 'KL', string>,
+): TrendDrillDownItem[] {
+  const groups: Array<{ key: 'CC' | 'VS' | 'NN' | 'KL'; label: string }> = [
+    { key: 'CC', label: 'Chuyên cần' },
+    { key: 'VS', label: 'Vệ sinh' },
+    { key: 'NN', label: 'Nề nếp' },
+    { key: 'KL', label: 'Kỷ luật' },
+  ]
+
+  return groups.map((item) => {
+    const currentValue = Number(current[item.key])
+    const previousValue = Number(previous[item.key])
+    const delta = roundNumber(currentValue - previousValue)
+
+    return {
+      group: item.label,
+      current: current[item.key],
+      previous: previous[item.key],
+      delta: `${delta > 0 ? '+' : ''}${delta.toFixed(1)}`,
+    }
+  })
 }
 
 function average(values: number[]): number {
