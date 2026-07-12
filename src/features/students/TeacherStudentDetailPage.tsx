@@ -230,16 +230,18 @@ export function TeacherStudentDetailPage() {
   )
 }
 
-function PhoneRow({ label, name, value }: { label: string; name?: string; value: string | null }) {
+function PhoneRow({ label, name, value }: { label: string; name?: string; value: unknown }) {
+  const phoneText = toText(value)
+
   return (
     <div className="flex flex-col rounded-md border border-slate-200 bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p className="font-semibold text-slate-900">{label}</p>
         {name ? <p className="text-slate-600">{name}</p> : null}
       </div>
-      {value ? (
-        <a href={`tel:${normalizePhone(value)}`} className="font-bold text-blue-700 hover:text-blue-800">
-          {value}
+      {phoneText ? (
+        <a href={`tel:${normalizePhone(phoneText)}`} className="font-bold text-blue-700 hover:text-blue-800">
+          {phoneText}
         </a>
       ) : (
         <span className="text-slate-400">Chưa có</span>
@@ -277,17 +279,17 @@ function TextField({
 
 function formFromStudent(student: HocSinh): StudentForm {
   return {
-    ho: student.ho,
-    ten: student.ten,
+    ho: toText(student.ho),
+    ten: toText(student.ten),
     dien: student.dien,
     nu: student.nu,
-    dan_toc: student.dan_toc || 'Kinh',
-    ngay_sinh: student.ngay_sinh || '',
+    dan_toc: toText(student.dan_toc) || 'Kinh',
+    ngay_sinh: toText(student.ngay_sinh),
     to: student.to ? String(student.to) : '',
-    sdt_1: student.sdt_1 || '',
-    sdt_2: student.sdt_2 || '',
+    sdt_1: toText(student.sdt_1),
+    sdt_2: toText(student.sdt_2),
     la_co_do: student.la_co_do,
-    ghi_chu: student.ghi_chu || '',
+    ghi_chu: toText(student.ghi_chu),
   }
 }
 
@@ -314,6 +316,10 @@ function nullable(value: string): string | null {
 
 function normalizePhone(value: string): string {
   return value.replace(/[^\d+]/g, '')
+}
+
+function toText(value: unknown): string {
+  return value === null || value === undefined ? '' : String(value)
 }
 
 function getRole(maHs: string, banCanSu: BanCanSu[]): string {

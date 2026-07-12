@@ -568,17 +568,17 @@ function QuickStat({ label, value }: { label: string; value: number }) {
 
 function formFromStudent(student: HocSinh): StudentForm {
   return {
-    ho: student.ho,
-    ten: student.ten,
+    ho: toText(student.ho),
+    ten: toText(student.ten),
     dien: student.dien,
     nu: student.nu,
-    dan_toc: student.dan_toc || 'Kinh',
-    ngay_sinh: student.ngay_sinh || '',
+    dan_toc: toText(student.dan_toc) || 'Kinh',
+    ngay_sinh: toText(student.ngay_sinh),
     to: student.to ? String(student.to) : '',
-    sdt_1: student.sdt_1 || '',
-    sdt_2: student.sdt_2 || '',
+    sdt_1: toText(student.sdt_1),
+    sdt_2: toText(student.sdt_2),
     la_co_do: student.la_co_do,
-    ghi_chu: student.ghi_chu || '',
+    ghi_chu: toText(student.ghi_chu),
   }
 }
 
@@ -633,6 +633,10 @@ function randomToken(): string {
 function nullable(value: string): string | null {
   const trimmed = value.trim()
   return trimmed ? trimmed : null
+}
+
+function toText(value: unknown): string {
+  return value === null || value === undefined ? '' : String(value)
 }
 
 function normalize(value: string): string {
