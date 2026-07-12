@@ -16,8 +16,8 @@ concurrency:
 
 env:
   PAGES_ARTIFACT_NAME: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
-  VITE_APPS_SCRIPT_URL: https://script.google.com/macros/s/AKfycby6adipc2AkfpUi3grt0R_OxJwwJEi2RTBoRF2adqpAgFsTxsELpl_yVtnfwhE2aD9e/exec
-  VITE_APPS_SCRIPT_WRITE_SECRET: ${{ secrets.VITE_APPS_SCRIPT_WRITE_SECRET }}
+  VITE_APPS_SCRIPT_URL: ${{ secrets.VITE_APPS_SCRIPT_URL }}
+  VITE_APPS_SCRIPT_WRITE_SECRET: ${{ secrets.VITE_APPS_SCRIPT_WRITE_SECRET || secrets.VITE_WRITE_SECRET }}
 
 jobs:
   build:
