@@ -4,6 +4,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage'
 import { ImportPage } from './features/import/ImportPage'
 import { StudentProfilePage } from './features/students/StudentProfilePage'
 import { StudentsPage } from './features/students/StudentsPage'
+import { TeacherStudentDetailPage } from './features/students/TeacherStudentDetailPage'
 
 export const router = createHashRouter([
   {
@@ -12,6 +13,7 @@ export const router = createHashRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'hoc-sinh', element: <StudentsPage /> },
+      { path: 'quan-ly/hoc-sinh/:maHs', element: <TeacherStudentDetailPage /> },
       { path: 'import', element: <ImportPage /> },
     ],
   },

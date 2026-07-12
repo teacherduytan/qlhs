@@ -496,7 +496,7 @@ export function StudentsPage() {
                               </div>
                               <div className="mt-3 flex flex-wrap gap-2">
                                 <Link
-                                  to={`/hs/${student.token_ho_so}`}
+                                  to={`/quan-ly/hoc-sinh/${student.ma_hs}`}
                                   className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                                 >
                                   Xem hồ sơ đầy đủ

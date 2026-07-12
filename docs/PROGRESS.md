@@ -84,7 +84,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C053 | ✅ Xong | 12/07/2026 | Drill-down TK hiển thị bằng modal overlay, đóng bằng X/nền tối/Esc |
 | C054 | ✅ Xong | 12/07/2026 | Bấm lại nhóm đang chọn sẽ bỏ lọc và quay về danh sách tổng mặc định |
 | C055 | ✅ Xong | 12/07/2026 | Thêm STT cho bảng điểm Dashboard, Xem theo Nhóm và các danh sách học sinh trong modal TK |
-| C056 | ☐ Chưa làm | | ⚠️ Bảo mật — tách route riêng cho giáo viên (SĐT, edit, click-to-call), không đụng route công khai của học sinh |
+| C056 | ✅ Xong | 12/07/2026 | Thêm route giáo viên /quan-ly/hoc-sinh/:maHs có SĐT, tel:, edit trực tiếp; link danh sách trỏ đúng route mới |
 | C057 | ☐ Chưa làm | | Phiếu ghi nhận đơn giản hoá — 1 mẫu duy nhất, không mã |
 | C058 | ☐ Chưa làm | | AI tự suy luận mã/phạm vi từ mô tả tự do khi import |
 
