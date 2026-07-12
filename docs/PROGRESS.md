@@ -79,6 +79,14 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C048 | ✅ Xong | 11/07/2026 | Sửa ngưỡng xếp loại theo trạng thái có/chưa có điểm học tập, thêm ghi chú so sánh điểm và dữ liệu đối chiếu cá nhân |
 | C049 | ✅ Xong | 12/07/2026 | Thêm khu vực Xem theo Nhóm vi phạm trên Dashboard, có chọn nhóm, hiện đủ/ẩn học sinh sạch và TK06 nhảy tới nhóm Kỷ luật |
 | C050 | ✅ Xong | 12/07/2026 | Mở rộng điều hướng TK01/TK06/TK07/TK08 và thêm popup tra cứu mã cho badge ở Dashboard/Hồ sơ |
+| C051 | ✅ Xong | 12/07/2026 | Thêm loai_tuan và script taoCauHinhTuanNamHoc() sinh cấu hình tuần cả năm, đánh dấu tuần nghỉ |
+| C052 | ☐ Chưa làm | | Bộ chọn tuần điều hướng tiến/lùi + chọn nhanh theo tháng |
+| C053 | ☐ Chưa làm | | Drill-down TK chuyển sang modal |
+| C054 | ☐ Chưa làm | | "Xem theo Nhóm" — bấm lại thì về mặc định |
+| C055 | ☐ Chưa làm | | Thêm STT cho mọi danh sách học sinh |
+| C056 | ☐ Chưa làm | | ⚠️ Bảo mật — tách route riêng cho giáo viên (SĐT, edit, click-to-call), không đụng route công khai của học sinh |
+| C057 | ☐ Chưa làm | | Phiếu ghi nhận đơn giản hoá — 1 mẫu duy nhất, không mã |
+| C058 | ☐ Chưa làm | | AI tự suy luận mã/phạm vi từ mô tả tự do khi import |
 
 ---
 

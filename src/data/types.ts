@@ -18,6 +18,8 @@ export type LoaiDuLieuImport = 'hoc_sinh' | 'ghi_nhan' | 'phu_huynh' | 'ban_can_
 
 export type TrangThaiImport = 'thanh_cong' | 'loi_mot_phan' | 'that_bai' | 'da_xoa'
 
+export type LoaiTuan = 'hoc_binh_thuong' | 'nghi_le'
+
 export type TrangThaiXuLyTapThe =
   | 'chua_xu_ly'
   | 'da_gan_ca_nhan'
@@ -74,6 +76,7 @@ export interface CauHinhTuan {
   tu_ngay: string
   den_ngay: string
   so_ngay: number
+  loai_tuan?: LoaiTuan
 }
 
 export interface GhiNhan {

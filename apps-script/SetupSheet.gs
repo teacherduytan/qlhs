@@ -20,7 +20,7 @@ var TAB_SCHEMA = {
   PhuHuynh: ['ma_hs', 'ho_ten_ph', 'quan_he', 'sdt', 'uu_tien_lien_he'],
   BanCanSu: ['ma_hs', 'chuc_vu', 'to', 'ngay_bat_dau'],
   DanhMucDiem: ['ma_danh_muc', 'nhom', 'ten_muc', 'diem', 'nghiem_trong', 'pham_vi'],
-  CauHinhTuan: ['tuan_so', 'tu_ngay', 'den_ngay', 'so_ngay'],
+  CauHinhTuan: ['tuan_so', 'tu_ngay', 'den_ngay', 'so_ngay', 'loai_tuan'],
   GhiNhan: [
     'ma_ghi_nhan', 'ma_hs', 'to_lien_quan', 'ngay', 'tuan_so', 'dien_tai_thoi_diem',
     'tiet', 'mon_hoc', 'loai', 'ma_danh_muc', 'noi_dung', 'so_lan', 'ly_do',
@@ -99,4 +99,122 @@ function seedDanhMucDiem_(sheet) {
   if (rows.length > 0) {
     sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
   }
+}
+
+function taoCauHinhTuanNamHoc() {
+  return taoCauHinhTuan({
+    ngay_bat_dau: '2025-08-18',
+    tong_so_tuan: 37,
+    khoang_nghi: [
+      { tu_ngay: '2026-02-16', den_ngay: '2026-02-22', ten: 'Nghi Tet' }
+    ],
+    xoa_du_lieu_cu: true
+  });
+}
+
+function taoCauHinhTuan(config) {
+  config = config || {};
+  var startDate = parseIsoDateForSetup_(config.ngay_bat_dau || '2025-08-18');
+  var totalWeeks = Number(config.tong_so_tuan || 37);
+  var holidayRanges = (config.khoang_nghi || []).map(function (range) {
+    return {
+      tu_ngay: parseIsoDateForSetup_(range.tu_ngay),
+      den_ngay: parseIsoDateForSetup_(range.den_ngay),
+      ten: range.ten || ''
+    };
+  });
+
+  if (!startDate) {
+    throw new Error('ngay_bat_dau phai co dinh dang YYYY-MM-DD');
+  }
+  if (!totalWeeks || totalWeeks < 1) {
+    throw new Error('tong_so_tuan phai la so duong');
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    throw new Error('Hay mo script tu Google Sheet can cap nhat, hoac chay setupQLHSSheet() truoc.');
+  }
+
+  var sheet = ss.getSheetByName('CauHinhTuan');
+  if (!sheet) {
+    sheet = ss.insertSheet('CauHinhTuan');
+  }
+
+  ensureSheetHeaders_(sheet, TAB_SCHEMA.CauHinhTuan);
+
+  var headers = getHeaderValues_(sheet);
+  var rows = [];
+  for (var index = 0; index < totalWeeks; index += 1) {
+    var weekStart = addDaysForSetup_(startDate, index * 7);
+    var weekEnd = addDaysForSetup_(weekStart, 4);
+    var isHoliday = holidayRanges.some(function (range) {
+      return rangesOverlapForSetup_(weekStart, weekEnd, range.tu_ngay, range.den_ngay);
+    });
+    var item = {
+      tuan_so: index + 1,
+      tu_ngay: formatIsoDateForSetup_(weekStart),
+      den_ngay: formatIsoDateForSetup_(weekEnd),
+      so_ngay: isHoliday ? 0 : 5,
+      loai_tuan: isHoliday ? 'nghi_le' : 'hoc_binh_thuong'
+    };
+    rows.push(headers.map(function (col) { return item[col] !== undefined ? item[col] : ''; }));
+  }
+
+  if (config.xoa_du_lieu_cu !== false && sheet.getLastRow() > 1) {
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+  }
+
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
+
+  Logger.log('Da tao ' + rows.length + ' dong CauHinhTuan trong sheet: ' + ss.getName());
+  return rows.length;
+}
+
+function ensureSheetHeaders_(sheet, expectedHeaders) {
+  var currentHeaders = getHeaderValues_(sheet);
+  if (currentHeaders.length === 0) {
+    sheet.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, expectedHeaders.length).setFontWeight('bold');
+    return;
+  }
+
+  expectedHeaders.forEach(function (header) {
+    if (currentHeaders.indexOf(header) === -1) {
+      sheet.getRange(1, currentHeaders.length + 1).setValue(header);
+      currentHeaders.push(header);
+    }
+  });
+
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, currentHeaders.length).setFontWeight('bold');
+}
+
+function getHeaderValues_(sheet) {
+  var lastColumn = sheet.getLastColumn();
+  if (lastColumn < 1) return [];
+  return sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (value) {
+    return String(value || '').trim();
+  }).filter(function (value) { return value !== ''; });
+}
+
+function parseIsoDateForSetup_(value) {
+  var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+  if (!match) return null;
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
+function addDaysForSetup_(date, days) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+}
+
+function rangesOverlapForSetup_(leftStart, leftEnd, rightStart, rightEnd) {
+  return Boolean(rightStart && rightEnd && leftStart <= rightEnd && rightStart <= leftEnd);
+}
+
+function formatIsoDateForSetup_(date) {
+  return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
 }
