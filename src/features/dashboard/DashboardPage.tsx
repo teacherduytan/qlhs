@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type {
@@ -39,6 +39,7 @@ type OverviewStat = {
   value: string
   detail: string
   drillDown?: OverviewDrillDown
+  groupTarget?: GroupViewKey
 }
 
 type OverviewStatGroups = {
@@ -80,15 +81,29 @@ type EventDrillDownItem = {
   scope: string
 }
 
+type GroupViewKey = 'CC' | 'VS' | 'NN' | 'KL' | 'HT'
+
+type GroupViewRow = {
+  maHs: string
+  name: string
+  token: string
+  score: number | null
+  recordCount: number
+  records: GhiNhan[]
+}
+
 export function DashboardPage() {
   const [state, setState] = useState<DashboardState>({ status: 'loading' })
   const [expandedDay, setExpandedDay] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState('')
   const [scoresCollapsed, setScoresCollapsed] = useState(false)
+  const [selectedGroup, setSelectedGroup] = useState<GroupViewKey>('KL')
+  const [showAllGroupStudents, setShowAllGroupStudents] = useState(false)
   const [expandedTeamEventId, setExpandedTeamEventId] = useState<string | null>(null)
   const [selectedStudentByEvent, setSelectedStudentByEvent] = useState<Record<string, string>>({})
   const [processingEventId, setProcessingEventId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const groupViewRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     let active = true
@@ -168,6 +183,15 @@ export function DashboardPage() {
       students: state.students,
       tuanSo: state.tuanSo,
     })
+    const groupViewRows = buildGroupViewRows({
+      catalog: state.catalog,
+      group: selectedGroup,
+      records: state.records,
+      scores: currentScores,
+      showAll: showAllGroupStudents,
+      students: state.students,
+      tuanSo: state.tuanSo,
+    })
 
     return {
       catalogByCode,
@@ -177,11 +201,12 @@ export function DashboardPage() {
       missingGroupStudents,
       overviewStats,
       previousScores,
+      groupViewRows,
       selectedWeek,
       sortedScores,
       studentById,
     }
-  }, [selectedDate, state])
+  }, [selectedDate, selectedGroup, showAllGroupStudents, state])
 
   async function processCollectiveEvent(
     record: GhiNhan,
@@ -294,6 +319,11 @@ export function DashboardPage() {
     setSelectedDate(date)
   }
 
+  function openGroupView(group: GroupViewKey) {
+    setSelectedGroup(group)
+    window.setTimeout(() => groupViewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
   return (
     <section className="space-y-4">
       <div>
@@ -341,7 +371,17 @@ export function DashboardPage() {
             </div>
           </div>
 
-          <OverviewStats stats={body.overviewStats} />
+          <OverviewStats onSelectGroup={openGroupView} stats={body.overviewStats} />
+
+          <GroupViolationView
+            catalogByCode={body.catalogByCode}
+            group={selectedGroup}
+            onGroupChange={setSelectedGroup}
+            rows={body.groupViewRows}
+            sectionRef={groupViewRef}
+            showAll={showAllGroupStudents}
+            onShowAllChange={setShowAllGroupStudents}
+          />
 
           {body.missingGroupStudents.length ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -631,10 +671,26 @@ function SummaryMetric({ label, value }: { label: string; value: number }) {
   )
 }
 
-function OverviewStats({ stats }: { stats: OverviewStatGroups }) {
+function OverviewStats({
+  onSelectGroup,
+  stats,
+}: {
+  onSelectGroup: (group: GroupViewKey) => void
+  stats: OverviewStatGroups
+}) {
   const [activeCode, setActiveCode] = useState<string | null>(null)
   const allStats = [...stats.action, ...stats.observation]
   const activeStat = activeCode ? allStats.find((stat) => stat.code === activeCode) : undefined
+
+  function selectStat(stat: OverviewStat) {
+    if (stat.groupTarget) {
+      setActiveCode(null)
+      onSelectGroup(stat.groupTarget)
+      return
+    }
+
+    setActiveCode(activeCode === stat.code ? null : stat.code)
+  }
 
   return (
     <div className="space-y-3">
@@ -642,14 +698,14 @@ function OverviewStats({ stats }: { stats: OverviewStatGroups }) {
         title="Nhóm cần hành động ngay"
         description="Các tín hiệu nên xử lý hoặc xem trước."
         activeCode={activeCode}
-        onSelectStat={setActiveCode}
+        onSelectStat={selectStat}
         stats={stats.action}
       />
       <OverviewGroup
         title="Nhóm quan sát chung"
         description="Bối cảnh chung của lớp trong tuần đang xem."
         activeCode={activeCode}
-        onSelectStat={setActiveCode}
+        onSelectStat={selectStat}
         stats={stats.observation}
       />
       {activeStat?.drillDown ? (
@@ -672,7 +728,7 @@ function OverviewGroup({
 }: {
   activeCode: string | null
   description: string
-  onSelectStat: (code: string | null) => void
+  onSelectStat: (stat: OverviewStat) => void
   stats: OverviewStat[]
   title: string
 }) {
@@ -691,7 +747,7 @@ function OverviewGroup({
           <OverviewCard
             key={stat.code}
             active={activeCode === stat.code}
-            onSelect={() => onSelectStat(activeCode === stat.code ? null : stat.code)}
+            onSelect={() => onSelectStat(stat)}
             stat={stat}
           />
         ))}
@@ -722,7 +778,7 @@ function OverviewCard({
         ? 'text-emerald-700'
         : 'text-blue-700'
   const activeClass = active ? 'ring-2 ring-blue-300' : ''
-  const interactiveClass = stat.drillDown ? 'cursor-pointer hover:shadow-sm' : ''
+  const interactiveClass = stat.drillDown || stat.groupTarget ? 'cursor-pointer hover:shadow-sm' : ''
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -733,15 +789,15 @@ function OverviewCard({
         <p className={`text-right text-xl font-bold ${valueClass}`}>{stat.value}</p>
       </div>
       <p className="mt-3 text-sm opacity-80">{stat.detail}</p>
-      {stat.drillDown ? (
+      {stat.drillDown || stat.groupTarget ? (
         <p className="mt-3 text-xs font-semibold opacity-70">
-          {active ? 'Đang mở chi tiết' : 'Bấm để xem chi tiết'}
+          {active ? 'Đang mở chi tiết' : stat.groupTarget ? 'Bấm để xem theo nhóm' : 'Bấm để xem chi tiết'}
         </p>
       ) : null}
     </>
   )
 
-  if (!stat.drillDown) {
+  if (!stat.drillDown && !stat.groupTarget) {
     return <article className={`rounded-lg border p-4 ${toneClass}`}>{content}</article>
   }
 
@@ -856,6 +912,132 @@ function OverviewDrillDownPanel({
           <p className="mt-3 text-sm text-slate-600">{drillDown.emptyText}</p>
         )
       ) : null}
+    </section>
+  )
+}
+
+const GROUP_OPTIONS: Array<{ group: GroupViewKey; label: string }> = [
+  { group: 'CC', label: 'Chuyên cần' },
+  { group: 'VS', label: 'Vệ sinh' },
+  { group: 'NN', label: 'Nề nếp' },
+  { group: 'KL', label: 'Kỷ luật' },
+  { group: 'HT', label: 'Học tập' },
+]
+
+function GroupViolationView({
+  catalogByCode,
+  group,
+  onGroupChange,
+  onShowAllChange,
+  rows,
+  sectionRef,
+  showAll,
+}: {
+  catalogByCode: Map<string, DanhMucDiem>
+  group: GroupViewKey
+  onGroupChange: (group: GroupViewKey) => void
+  onShowAllChange: (showAll: boolean) => void
+  rows: GroupViewRow[]
+  sectionRef: { current: HTMLDivElement | null }
+  showAll: boolean
+}) {
+  const selectedLabel = GROUP_OPTIONS.find((item) => item.group === group)?.label || group
+  const isStudyGroup = group === 'HT'
+
+  return (
+    <section ref={sectionRef} className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h3 className="text-base font-bold text-slate-900">Xem theo Nhóm vi phạm</h3>
+          <p className="text-sm text-slate-600">
+            {isStudyGroup
+              ? 'Sắp xếp điểm học tập từ thấp đến cao trong tuần đang xem.'
+              : 'Danh sách học sinh có ghi nhận thuộc nhóm đã chọn, điểm thấp nhất xếp trước.'}
+          </p>
+        </div>
+        <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+          <input
+            type="checkbox"
+            checked={showAll}
+            onChange={(event) => onShowAllChange(event.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 text-blue-600"
+          />
+          Hiện cả học sinh không vi phạm
+        </label>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {GROUP_OPTIONS.map((option) => {
+          const selected = option.group === group
+
+          return (
+            <button
+              key={option.group}
+              type="button"
+              onClick={() => onGroupChange(option.group)}
+              className={`rounded-full border px-3 py-2 text-sm font-semibold transition hover:shadow-sm ${getBadgeClassForGroup(option.group)} ${
+                selected ? 'ring-2 ring-blue-300' : ''
+              }`}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-md border border-slate-200">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+              <tr>
+                <th className="px-3 py-3">Học sinh</th>
+                <th className="px-3 py-3">{isStudyGroup ? 'Điểm học tập' : `Điểm ${selectedLabel}`}</th>
+                <th className="px-3 py-3">{isStudyGroup ? 'Số điểm đã ghi' : 'Số ghi nhận'}</th>
+                <th className="px-3 py-3">{isStudyGroup ? 'Điểm môn' : 'Mã liên quan'}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.map((row) => (
+                <tr key={row.maHs} className="hover:bg-slate-50">
+                  <td className="whitespace-nowrap px-3 py-3">
+                    <Link to={`/hs/${row.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
+                      {row.name}
+                    </Link>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3 font-bold text-slate-900">
+                    {row.score === null ? 'Chưa có dữ liệu' : row.score}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3 text-slate-700">{row.recordCount}</td>
+                  <td className="min-w-72 px-3 py-3">
+                    {row.records.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {row.records.map((record, index) => (
+                          <span
+                            key={record.ma_ghi_nhan || `${row.maHs}-${record.ngay}-${index}`}
+                            className={`rounded-full border px-2 py-1 text-xs font-semibold ${getBadgeClassForRecord(record, catalogByCode)}`}
+                            title={record.noi_dung || record.ly_do || ''}
+                          >
+                            {isStudyGroup
+                              ? `${record.mon_hoc || 'Điểm'}: ${record.diem_so_mon}`
+                              : record.ma_danh_muc || record.loai}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">Không có ghi nhận</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {rows.length === 0 ? (
+          <div className="border-t border-slate-100 p-4 text-sm text-slate-600">
+            Không có học sinh nào trong nhóm {selectedLabel.toLowerCase()} theo bộ lọc hiện tại.
+          </div>
+        ) : null}
+      </div>
     </section>
   )
 }
@@ -1130,6 +1312,7 @@ function buildOverviewStats({
         label: 'Trung bình nhóm điểm',
         value: roundNumber(currentAverage).toFixed(1),
         detail: `CC ${componentAverages.CC} · VS ${componentAverages.VS} · NN ${componentAverages.NN} · KL ${componentAverages.KL}`,
+        groupTarget: 'KL',
       },
       ...tk07,
       {
@@ -1173,6 +1356,87 @@ function getTopViolations(
       label: catalogByCode.get(code)?.ten_muc || code,
       count,
     }))
+}
+
+function buildGroupViewRows({
+  catalog,
+  group,
+  records,
+  scores,
+  showAll,
+  students,
+  tuanSo,
+}: {
+  catalog: DanhMucDiem[]
+  group: GroupViewKey
+  records: GhiNhan[]
+  scores: WeeklyStudentScore[]
+  showAll: boolean
+  students: HocSinh[]
+  tuanSo: number
+}): GroupViewRow[] {
+  const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
+  const scoreByStudent = new Map(scores.map((score) => [score.ma_hs, score]))
+
+  return students
+    .map((student) => {
+      const score = scoreByStudent.get(student.ma_hs)
+      const studentRecords = records.filter((record) => {
+        if (record.ma_hs !== student.ma_hs || record.tuan_so !== tuanSo) {
+          return false
+        }
+
+        if (group === 'HT') {
+          return typeof record.diem_so_mon === 'number'
+        }
+
+        const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
+        return catalogItem?.nhom === group && catalogItem.pham_vi === 'ca_nhan'
+      })
+
+      return {
+        maHs: student.ma_hs,
+        name: `${student.ho} ${student.ten}`,
+        token: student.token_ho_so,
+        score: score ? getScoreForGroup(score, group) : null,
+        recordCount: studentRecords.reduce((sum, record) => sum + (record.so_lan || 1), 0),
+        records: studentRecords,
+      }
+    })
+    .filter((row) => showAll || row.records.length > 0)
+    .sort((left, right) => {
+      const leftScore = left.score === null ? Number.POSITIVE_INFINITY : left.score
+      const rightScore = right.score === null ? Number.POSITIVE_INFINITY : right.score
+      if (leftScore !== rightScore) {
+        return leftScore - rightScore
+      }
+
+      if (right.recordCount !== left.recordCount) {
+        return right.recordCount - left.recordCount
+      }
+
+      return left.name.localeCompare(right.name, 'vi')
+    })
+}
+
+function getScoreForGroup(score: WeeklyStudentScore, group: GroupViewKey): number | null {
+  if (group === 'CC') {
+    return score.diem_chuyen_can
+  }
+
+  if (group === 'VS') {
+    return score.diem_ve_sinh
+  }
+
+  if (group === 'NN') {
+    return score.diem_ne_nep
+  }
+
+  if (group === 'KL') {
+    return score.diem_ky_luat
+  }
+
+  return score.diem_hoc_tap
 }
 
 function toAttentionDrillDownItem(
