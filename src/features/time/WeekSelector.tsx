@@ -16,27 +16,81 @@ type WeekDatePickerProps = {
 }
 
 export function WeekSelector({ label = 'Tuần', onChange, value, weeks }: WeekSelectorProps) {
-  const sortedWeeks = sortWeeks(weeks)
+  const selectableWeeks = getSelectableWeeks(weeks)
+  const selectedIndex = selectableWeeks.findIndex((week) => week.tuan_so === value)
+  const selectedWeek = selectableWeeks[selectedIndex]
+  const quickGroups = groupWeeksByMonth(selectableWeeks)
+  const currentWeekValue = selectDefaultWeek(weeks)
 
   return (
-    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-      {label}
-      <select
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-      >
-        {sortedWeeks.length ? (
-          sortedWeeks.map((week) => (
-            <option key={week.tuan_so} value={week.tuan_so}>
-              {formatWeekLabel(week)}
-            </option>
-          ))
-        ) : (
-          <option value={value}>Tuần {value}</option>
-        )}
-      </select>
-    </label>
+    <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+      <span>{label}</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            const previousWeek = selectableWeeks[selectedIndex - 1]
+            if (previousWeek) onChange(previousWeek.tuan_so)
+          }}
+          disabled={selectedIndex <= 0}
+          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+        >
+          ← Tuần trước
+        </button>
+
+        <div className="min-w-[220px] rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900">
+          {selectedWeek ? formatWeekLabel(selectedWeek) : `Tuần ${value}`}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            const nextWeek = selectableWeeks[selectedIndex + 1]
+            if (nextWeek) onChange(nextWeek.tuan_so)
+          }}
+          disabled={selectedIndex < 0 || selectedIndex >= selectableWeeks.length - 1}
+          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+        >
+          Tuần sau →
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onChange(currentWeekValue)}
+          disabled={value === currentWeekValue || selectableWeeks.length === 0}
+          className="h-10 rounded-md border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+        >
+          Về tuần hiện tại
+        </button>
+
+        <details className="relative">
+          <summary className="flex h-10 cursor-pointer list-none items-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            Chọn nhanh
+          </summary>
+          <div className="absolute left-0 z-20 mt-2 w-72 rounded-md border border-slate-200 bg-white p-3 shadow-lg">
+            <select
+              value={selectedWeek?.tuan_so ?? ''}
+              onChange={(event) => onChange(Number(event.target.value))}
+              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {quickGroups.length ? (
+                quickGroups.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.weeks.map((week) => (
+                      <option key={week.tuan_so} value={week.tuan_so}>
+                        {formatWeekLabel(week)}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))
+              ) : (
+                <option value={value}>Tuần {value}</option>
+              )}
+            </select>
+          </div>
+        </details>
+      </div>
+    </div>
   )
 }
 
@@ -74,7 +128,7 @@ export function WeekDatePicker({
 }
 
 export function selectDefaultWeek(weeks: CauHinhTuan[], records: GhiNhan[] = []): number {
-  const sortedWeeks = sortWeeks(weeks)
+  const sortedWeeks = getSelectableWeeks(weeks)
   const today = startOfDay(new Date())
   const currentWeek = sortedWeeks.find((week) => isDateInWeek(today, week))
 
@@ -98,6 +152,10 @@ export function selectDefaultWeek(weeks: CauHinhTuan[], records: GhiNhan[] = [])
   }
 
   return Math.max(1, ...records.map((record) => record.tuan_so || 0))
+}
+
+export function getSelectableWeeks(weeks: CauHinhTuan[]): CauHinhTuan[] {
+  return sortWeeks(weeks).filter((week) => week.loai_tuan !== 'nghi_le')
 }
 
 export function sortWeeks(weeks: CauHinhTuan[]): CauHinhTuan[] {
@@ -152,4 +210,26 @@ function formatShortDate(value: string): string {
     day: '2-digit',
     month: '2-digit',
   }).format(date)
+}
+
+function groupWeeksByMonth(weeks: CauHinhTuan[]): Array<{ label: string; weeks: CauHinhTuan[] }> {
+  const groups = new Map<string, CauHinhTuan[]>()
+
+  weeks.forEach((week) => {
+    const start = parseIsoDate(week.tu_ngay)
+    const label = start ? `${getSemesterLabel(start)} › Tháng ${start.getMonth() + 1}/${start.getFullYear()}` : 'Chưa rõ tháng'
+    const group = groups.get(label) || []
+    group.push(week)
+    groups.set(label, group)
+  })
+
+  return Array.from(groups.entries()).map(([label, groupWeeks]) => ({
+    label,
+    weeks: groupWeeks,
+  }))
+}
+
+function getSemesterLabel(date: Date): string {
+  const month = date.getMonth() + 1
+  return month >= 8 && month <= 12 ? 'Học kỳ 1' : 'Học kỳ 2'
 }

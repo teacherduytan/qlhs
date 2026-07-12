@@ -80,7 +80,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C049 | ✅ Xong | 12/07/2026 | Thêm khu vực Xem theo Nhóm vi phạm trên Dashboard, có chọn nhóm, hiện đủ/ẩn học sinh sạch và TK06 nhảy tới nhóm Kỷ luật |
 | C050 | ✅ Xong | 12/07/2026 | Mở rộng điều hướng TK01/TK06/TK07/TK08 và thêm popup tra cứu mã cho badge ở Dashboard/Hồ sơ |
 | C051 | ✅ Xong | 12/07/2026 | Thêm loai_tuan và script taoCauHinhTuanNamHoc() sinh cấu hình tuần cả năm, đánh dấu tuần nghỉ |
-| C052 | ☐ Chưa làm | | Bộ chọn tuần điều hướng tiến/lùi + chọn nhanh theo tháng |
+| C052 | ✅ Xong | 12/07/2026 | Bộ chọn tuần có nút trước/sau, chọn nhanh nhóm theo tháng/học kỳ và bỏ qua tuần nghỉ |
 | C053 | ☐ Chưa làm | | Drill-down TK chuyển sang modal |
 | C054 | ☐ Chưa làm | | "Xem theo Nhóm" — bấm lại thì về mặc định |
 | C055 | ☐ Chưa làm | | Thêm STT cho mọi danh sách học sinh |
