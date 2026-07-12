@@ -82,7 +82,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C051 | ✅ Xong | 12/07/2026 | Thêm loai_tuan và script taoCauHinhTuanNamHoc() sinh cấu hình tuần cả năm, đánh dấu tuần nghỉ |
 | C052 | ✅ Xong | 12/07/2026 | Bộ chọn tuần có nút trước/sau, chọn nhanh nhóm theo tháng/học kỳ và bỏ qua tuần nghỉ |
 | C053 | ✅ Xong | 12/07/2026 | Drill-down TK hiển thị bằng modal overlay, đóng bằng X/nền tối/Esc |
-| C054 | ☐ Chưa làm | | "Xem theo Nhóm" — bấm lại thì về mặc định |
+| C054 | ✅ Xong | 12/07/2026 | Bấm lại nhóm đang chọn sẽ bỏ lọc và quay về danh sách tổng mặc định |
 | C055 | ☐ Chưa làm | | Thêm STT cho mọi danh sách học sinh |
 | C056 | ☐ Chưa làm | | ⚠️ Bảo mật — tách route riêng cho giáo viên (SĐT, edit, click-to-call), không đụng route công khai của học sinh |
 | C057 | ☐ Chưa làm | | Phiếu ghi nhận đơn giản hoá — 1 mẫu duy nhất, không mã |

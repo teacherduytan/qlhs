@@ -117,7 +117,7 @@ export function DashboardPage() {
   const [expandedDay, setExpandedDay] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState('')
   const [scoresCollapsed, setScoresCollapsed] = useState(false)
-  const [selectedGroup, setSelectedGroup] = useState<GroupViewKey>('KL')
+  const [selectedGroup, setSelectedGroup] = useState<GroupViewKey | null>(null)
   const [showAllGroupStudents, setShowAllGroupStudents] = useState(false)
   const [expandedTeamEventId, setExpandedTeamEventId] = useState<string | null>(null)
   const [selectedStudentByEvent, setSelectedStudentByEvent] = useState<Record<string, string>>({})
@@ -1051,14 +1051,14 @@ function GroupViolationView({
   showAll,
 }: {
   catalogByCode: Map<string, DanhMucDiem>
-  group: GroupViewKey
-  onGroupChange: (group: GroupViewKey) => void
+  group: GroupViewKey | null
+  onGroupChange: (group: GroupViewKey | null) => void
   onShowAllChange: (showAll: boolean) => void
   rows: GroupViewRow[]
   sectionRef: { current: HTMLDivElement | null }
   showAll: boolean
 }) {
-  const selectedLabel = GROUP_OPTIONS.find((item) => item.group === group)?.label || group
+  const selectedLabel = group ? GROUP_OPTIONS.find((item) => item.group === group)?.label || group : 'tất cả nhóm'
   const isStudyGroup = group === 'HT'
 
   return (
@@ -1067,7 +1067,9 @@ function GroupViolationView({
         <div>
           <h3 className="text-base font-bold text-slate-900">Xem theo Nhóm vi phạm</h3>
           <p className="text-sm text-slate-600">
-            {isStudyGroup
+            {group === null
+              ? 'Danh sách mặc định không lọc nhóm, sắp xếp theo điểm tổng hợp từ thấp đến cao.'
+              : isStudyGroup
               ? 'Sắp xếp điểm học tập từ thấp đến cao trong tuần đang xem.'
               : 'Danh sách học sinh có ghi nhận thuộc nhóm đã chọn, điểm thấp nhất xếp trước.'}
           </p>
@@ -1091,7 +1093,7 @@ function GroupViolationView({
             <button
               key={option.group}
               type="button"
-              onClick={() => onGroupChange(option.group)}
+              onClick={() => onGroupChange(selected ? null : option.group)}
               className={`rounded-full border px-3 py-2 text-sm font-semibold transition hover:shadow-sm ${getBadgeClassForGroup(option.group)} ${
                 selected ? 'ring-2 ring-blue-300' : ''
               }`}
@@ -1108,7 +1110,9 @@ function GroupViolationView({
             <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
               <tr>
                 <th className="px-3 py-3">Học sinh</th>
-                <th className="px-3 py-3">{isStudyGroup ? 'Điểm học tập' : `Điểm ${selectedLabel}`}</th>
+                <th className="px-3 py-3">
+                  {group === null ? 'Điểm tổng hợp' : isStudyGroup ? 'Điểm học tập' : `Điểm ${selectedLabel}`}
+                </th>
                 <th className="px-3 py-3">{isStudyGroup ? 'Số điểm đã ghi' : 'Số ghi nhận'}</th>
                 <th className="px-3 py-3">{isStudyGroup ? 'Điểm môn' : 'Mã liên quan'}</th>
               </tr>
@@ -1152,7 +1156,7 @@ function GroupViolationView({
         </div>
         {rows.length === 0 ? (
           <div className="border-t border-slate-100 p-4 text-sm text-slate-600">
-            Không có học sinh nào trong nhóm {selectedLabel.toLowerCase()} theo bộ lọc hiện tại.
+            Không có học sinh nào trong {selectedLabel.toLowerCase()} theo bộ lọc hiện tại.
           </div>
         ) : null}
       </div>
@@ -1500,7 +1504,7 @@ function buildGroupViewRows({
   tuanSo,
 }: {
   catalog: DanhMucDiem[]
-  group: GroupViewKey
+  group: GroupViewKey | null
   records: GhiNhan[]
   scores: WeeklyStudentScore[]
   showAll: boolean
@@ -1516,6 +1520,10 @@ function buildGroupViewRows({
       const studentRecords = records.filter((record) => {
         if (record.ma_hs !== student.ma_hs || record.tuan_so !== tuanSo) {
           return false
+        }
+
+        if (group === null) {
+          return true
         }
 
         if (group === 'HT') {
@@ -1535,7 +1543,7 @@ function buildGroupViewRows({
         records: studentRecords,
       }
     })
-    .filter((row) => showAll || row.records.length > 0)
+    .filter((row) => group === null || showAll || row.records.length > 0)
     .sort((left, right) => {
       const leftScore = left.score === null ? Number.POSITIVE_INFINITY : left.score
       const rightScore = right.score === null ? Number.POSITIVE_INFINITY : right.score
@@ -1551,7 +1559,11 @@ function buildGroupViewRows({
     })
 }
 
-function getScoreForGroup(score: WeeklyStudentScore, group: GroupViewKey): number | null {
+function getScoreForGroup(score: WeeklyStudentScore, group: GroupViewKey | null): number | null {
+  if (group === null) {
+    return score.diem_xep_loai_thi_dua
+  }
+
   if (group === 'CC') {
     return score.diem_chuyen_can
   }
