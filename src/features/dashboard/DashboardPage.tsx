@@ -453,6 +453,7 @@ export function DashboardPage() {
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
                   <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
                     <tr>
+                      <th className="px-3 py-3">STT</th>
                       <th className="px-3 py-3">Học sinh</th>
                       <th className="px-3 py-3">CC</th>
                       <th className="px-3 py-3">VS</th>
@@ -465,7 +466,7 @@ export function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {body.sortedScores.map((score) => {
+                    {body.sortedScores.map((score, index) => {
                       const student = body.studentById.get(score.ma_hs)
                       const suggestions = buildPedagogySuggestions({
                         currentWeekRecords: getStudentRecords(state.records, score.ma_hs, [
@@ -483,6 +484,7 @@ export function DashboardPage() {
                           key={score.ma_hs}
                           className={needsAttention(score) ? 'bg-red-50' : 'hover:bg-slate-50'}
                         >
+                          <td className="whitespace-nowrap px-3 py-3 text-slate-600">{index + 1}</td>
                           <td className="whitespace-nowrap px-3 py-3 font-semibold text-slate-900">
                             {student ? `${student.ho} ${student.ten}` : score.ma_hs}
                           </td>
@@ -918,11 +920,12 @@ function OverviewDrillDownPanel({
       {drillDown.kind === 'attention' ? (
         drillDown.items.length ? (
           <div className="mt-3 divide-y divide-slate-100">
-            {drillDown.items.map((item) => (
+            {drillDown.items.map((item, index) => (
               <div
                 key={item.maHs}
-                className="grid gap-2 py-3 text-sm sm:grid-cols-[1fr_auto_auto] sm:items-center"
+                className="grid gap-2 py-3 text-sm sm:grid-cols-[3rem_1fr_auto_auto] sm:items-center"
               >
+                <span className="text-slate-500">{index + 1}</span>
                 <Link to={`/hs/${item.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
                   {item.name}
                 </Link>
@@ -941,11 +944,12 @@ function OverviewDrillDownPanel({
       {drillDown.kind === 'records' ? (
         drillDown.items.length ? (
           <div className="mt-3 divide-y divide-slate-100">
-            {drillDown.items.map((item) => (
+            {drillDown.items.map((item, index) => (
               <div
                 key={item.id}
-                className="grid gap-2 py-3 text-sm lg:grid-cols-[8rem_1fr_9rem_8rem] lg:items-center"
+                className="grid gap-2 py-3 text-sm lg:grid-cols-[3rem_8rem_1fr_9rem_8rem] lg:items-center"
               >
+                <span className="text-slate-500">{index + 1}</span>
                 <CatalogCodeBadge catalogItem={item.catalogItem} code={item.code} />
                 <div>
                   {item.token ? (
@@ -990,12 +994,13 @@ function OverviewDrillDownPanel({
       {drillDown.kind === 'students' ? (
         drillDown.items.length ? (
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {drillDown.items.map((item) => (
+            {drillDown.items.map((item, index) => (
               <Link
                 key={item.maHs}
                 to={`/hs/${item.token}`}
                 className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 hover:text-blue-800"
               >
+                <span className="mr-2 text-slate-500">{index + 1}.</span>
                 {item.name}
               </Link>
             ))}
@@ -1109,6 +1114,7 @@ function GroupViolationView({
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
               <tr>
+                <th className="px-3 py-3">STT</th>
                 <th className="px-3 py-3">Học sinh</th>
                 <th className="px-3 py-3">
                   {group === null ? 'Điểm tổng hợp' : isStudyGroup ? 'Điểm học tập' : `Điểm ${selectedLabel}`}
@@ -1118,8 +1124,9 @@ function GroupViolationView({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.map((row) => (
+              {rows.map((row, index) => (
                 <tr key={row.maHs} className="hover:bg-slate-50">
+                  <td className="whitespace-nowrap px-3 py-3 text-slate-600">{index + 1}</td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <Link to={`/hs/${row.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
                       {row.name}
