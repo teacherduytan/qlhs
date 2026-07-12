@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type {
@@ -746,11 +747,13 @@ function OverviewStats({
         stats={stats.observation}
       />
       {activeStat?.drillDown ? (
-        <OverviewDrillDownPanel
-          drillDown={activeStat.drillDown}
-          statLabel={`${activeStat.code} · ${activeStat.label}`}
-          onClose={() => setActiveCode(null)}
-        />
+        <OverviewDrillDownModal onClose={() => setActiveCode(null)}>
+          <OverviewDrillDownPanel
+            drillDown={activeStat.drillDown}
+            statLabel={`${activeStat.code} · ${activeStat.label}`}
+            onClose={() => setActiveCode(null)}
+          />
+        </OverviewDrillDownModal>
       ) : null}
     </div>
   )
@@ -855,6 +858,37 @@ function OverviewCard({
   )
 }
 
+function OverviewDrillDownModal({
+  children,
+  onClose,
+}: {
+  children: ReactNode
+  onClose: () => void
+}) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4"
+      role="presentation"
+      onMouseDown={onClose}
+    >
+      <div className="w-full max-w-5xl" onMouseDown={(event) => event.stopPropagation()}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 function OverviewDrillDownPanel({
   drillDown,
   onClose,
@@ -865,7 +899,7 @@ function OverviewDrillDownPanel({
   statLabel: string
 }) {
   return (
-    <section className="rounded-lg border border-blue-200 bg-white p-4 shadow-sm">
+    <section className="max-h-[85vh] overflow-y-auto rounded-lg border border-blue-200 bg-white p-4 shadow-xl">
       <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-base font-bold text-slate-900">Chi tiết {statLabel}</h3>
@@ -874,9 +908,10 @@ function OverviewDrillDownPanel({
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          aria-label="Đóng chi tiết"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-xl font-semibold leading-none text-slate-700 hover:bg-slate-50"
         >
-          Đóng
+          ×
         </button>
       </div>
 

@@ -81,7 +81,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C050 | ✅ Xong | 12/07/2026 | Mở rộng điều hướng TK01/TK06/TK07/TK08 và thêm popup tra cứu mã cho badge ở Dashboard/Hồ sơ |
 | C051 | ✅ Xong | 12/07/2026 | Thêm loai_tuan và script taoCauHinhTuanNamHoc() sinh cấu hình tuần cả năm, đánh dấu tuần nghỉ |
 | C052 | ✅ Xong | 12/07/2026 | Bộ chọn tuần có nút trước/sau, chọn nhanh nhóm theo tháng/học kỳ và bỏ qua tuần nghỉ |
-| C053 | ☐ Chưa làm | | Drill-down TK chuyển sang modal |
+| C053 | ✅ Xong | 12/07/2026 | Drill-down TK hiển thị bằng modal overlay, đóng bằng X/nền tối/Esc |
 | C054 | ☐ Chưa làm | | "Xem theo Nhóm" — bấm lại thì về mặc định |
 | C055 | ☐ Chưa làm | | Thêm STT cho mọi danh sách học sinh |
 | C056 | ☐ Chưa làm | | ⚠️ Bảo mật — tách route riêng cho giáo viên (SĐT, edit, click-to-call), không đụng route công khai của học sinh |
