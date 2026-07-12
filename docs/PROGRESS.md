@@ -85,7 +85,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C054 | ✅ Xong | 12/07/2026 | Bấm lại nhóm đang chọn sẽ bỏ lọc và quay về danh sách tổng mặc định |
 | C055 | ✅ Xong | 12/07/2026 | Thêm STT cho bảng điểm Dashboard, Xem theo Nhóm và các danh sách học sinh trong modal TK |
 | C056 | ✅ Xong | 12/07/2026 | Thêm route giáo viên /quan-ly/hoc-sinh/:maHs có SĐT, tel:, edit trực tiếp; link danh sách trỏ đúng route mới |
-| C057 | ☐ Chưa làm | | Phiếu ghi nhận đơn giản hoá — 1 mẫu duy nhất, không mã |
+| C057 | ✅ Xong | 12/07/2026 | Mẫu phiếu in trong app và docs/mau-phieu-ghi-nhan.md chuyển sang 1 bảng duy nhất, không mã |
 | C058 | ☐ Chưa làm | | AI tự suy luận mã/phạm vi từ mô tả tự do khi import |
 
 ---
