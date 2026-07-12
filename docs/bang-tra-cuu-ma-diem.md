@@ -1,6 +1,6 @@
-# Bảng tra cứu mã tiêu chí — In kèm phiếu ghi nhận
+# Bảng tra cứu mã tiêu chí — Nội bộ cho AI và giáo viên
 
-> Ban cán sự tra mã khi ghi nhận. Khớp tab `DanhMucDiem` (tài liệu 02–03). Cột **Phạm vi**: `CN` = cá nhân · `TT` = tập thể · `Tổ` = tổ trực.
+> Từ C057, bảng này **không in phát cho ban cán sự** nữa. Dùng để giáo viên/AI đối chiếu khi chuyển phiếu ghi tự do thành JSON. Khớp tab `DanhMucDiem` (tài liệu 02–03). Cột **Phạm vi**: `CN` = cá nhân · `TT` = tập thể · `Tổ` = tổ trực.
 
 ## Nhóm CC — Chuyên cần
 
@@ -56,6 +56,16 @@
 ## Học tập (HT)
 
 Không dùng mã trừ điểm — chỉ ghi **điểm miệng/15 phút** trên phiếu Phần 1 (cột Điểm miệng/15p).
+
+## Nhóm KT — Khen thưởng nội bộ lớp
+
+| Mã | Tiêu chí | Cộng | PV |
+|---|---|---:|---|
+| KT01 | Phát biểu xây dựng bài | 1 | CN |
+| KT02 | Giúp đỡ bạn trong học tập | 2 | CN |
+| KT03 | Được tuyên dương trong tuần | 3 | CN |
+| KT04 | Hoàn thành tốt nhiệm vụ ban cán sự lớp | 2 | CN |
+| KT05 | Có hành động tích cực hỗ trợ tập thể lớp | 2 | CN |
 
 ---
 

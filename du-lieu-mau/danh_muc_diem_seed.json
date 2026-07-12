@@ -32,5 +32,11 @@
   {"ma_danh_muc": "KL12", "nhom": "KL", "ten_muc": "Uống rượu, bia, đánh bạc (bất kỳ hình thức nào) / 1 trường hợp", "diem": -20, "nghiem_trong": true, "pham_vi": "ca_nhan"},
   {"ma_danh_muc": "KL13", "nhom": "KL", "ten_muc": "Ăn cắp, phá hoại tài sản của người khác, của công / 1 trường hợp", "diem": -20, "nghiem_trong": true, "pham_vi": "ca_nhan"},
   {"ma_danh_muc": "KL14", "nhom": "KL", "ten_muc": "Vào lớp chậm trong giờ ra chơi / 1 trường hợp", "diem": -5, "nghiem_trong": false, "pham_vi": "ca_nhan"},
-  {"ma_danh_muc": "KL15", "nhom": "KL", "ten_muc": "Nhận cơm không đúng giờ quy định / tập thể", "diem": -10, "nghiem_trong": false, "pham_vi": "tap_the"}
+  {"ma_danh_muc": "KL15", "nhom": "KL", "ten_muc": "Nhận cơm không đúng giờ quy định / tập thể", "diem": -10, "nghiem_trong": false, "pham_vi": "tap_the"},
+
+  {"ma_danh_muc": "KT01", "nhom": "KT", "ten_muc": "Phát biểu xây dựng bài", "diem": 1, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KT02", "nhom": "KT", "ten_muc": "Giúp đỡ bạn trong học tập", "diem": 2, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KT03", "nhom": "KT", "ten_muc": "Được tuyên dương trong tuần", "diem": 3, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KT04", "nhom": "KT", "ten_muc": "Hoàn thành tốt nhiệm vụ ban cán sự lớp", "diem": 2, "nghiem_trong": false, "pham_vi": "ca_nhan"},
+  {"ma_danh_muc": "KT05", "nhom": "KT", "ten_muc": "Có hành động tích cực hỗ trợ tập thể lớp", "diem": 2, "nghiem_trong": false, "pham_vi": "ca_nhan"}
 ]

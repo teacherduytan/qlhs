@@ -65,7 +65,12 @@ var DANH_MUC_DIEM_SEED = [
   { ma_danh_muc: 'KL12', nhom: 'KL', ten_muc: 'Uống rượu, bia, đánh bạc (bất kỳ hình thức nào) / 1 trường hợp', diem: -20, nghiem_trong: true, pham_vi: 'ca_nhan' },
   { ma_danh_muc: 'KL13', nhom: 'KL', ten_muc: 'Ăn cắp, phá hoại tài sản của người khác, của công / 1 trường hợp', diem: -20, nghiem_trong: true, pham_vi: 'ca_nhan' },
   { ma_danh_muc: 'KL14', nhom: 'KL', ten_muc: 'Vào lớp chậm trong giờ ra chơi / 1 trường hợp', diem: -5, nghiem_trong: false, pham_vi: 'ca_nhan' },
-  { ma_danh_muc: 'KL15', nhom: 'KL', ten_muc: 'Nhận cơm không đúng giờ quy định / tập thể', diem: -10, nghiem_trong: false, pham_vi: 'tap_the' }
+  { ma_danh_muc: 'KL15', nhom: 'KL', ten_muc: 'Nhận cơm không đúng giờ quy định / tập thể', diem: -10, nghiem_trong: false, pham_vi: 'tap_the' },
+  { ma_danh_muc: 'KT01', nhom: 'KT', ten_muc: 'Phát biểu xây dựng bài', diem: 1, nghiem_trong: false, pham_vi: 'ca_nhan' },
+  { ma_danh_muc: 'KT02', nhom: 'KT', ten_muc: 'Giúp đỡ bạn trong học tập', diem: 2, nghiem_trong: false, pham_vi: 'ca_nhan' },
+  { ma_danh_muc: 'KT03', nhom: 'KT', ten_muc: 'Được tuyên dương trong tuần', diem: 3, nghiem_trong: false, pham_vi: 'ca_nhan' },
+  { ma_danh_muc: 'KT04', nhom: 'KT', ten_muc: 'Hoàn thành tốt nhiệm vụ ban cán sự lớp', diem: 2, nghiem_trong: false, pham_vi: 'ca_nhan' },
+  { ma_danh_muc: 'KT05', nhom: 'KT', ten_muc: 'Có hành động tích cực hỗ trợ tập thể lớp', diem: 2, nghiem_trong: false, pham_vi: 'ca_nhan' }
 ];
 
 function setupQLHSSheet() {
@@ -99,6 +104,41 @@ function seedDanhMucDiem_(sheet) {
   if (rows.length > 0) {
     sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
   }
+}
+
+function boSungDanhMucKhenThuong() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    throw new Error('Hay mo script tu Google Sheet can cap nhat.');
+  }
+
+  var sheet = ss.getSheetByName('DanhMucDiem');
+  if (!sheet) {
+    throw new Error('Khong tim thay tab DanhMucDiem.');
+  }
+
+  ensureSheetHeaders_(sheet, TAB_SCHEMA.DanhMucDiem);
+  var headers = getHeaderValues_(sheet);
+  var codeIndex = headers.indexOf('ma_danh_muc');
+  var existingCodes = {};
+  if (sheet.getLastRow() > 1 && codeIndex >= 0) {
+    sheet.getRange(2, codeIndex + 1, sheet.getLastRow() - 1, 1).getValues().forEach(function (row) {
+      existingCodes[String(row[0] || '').trim()] = true;
+    });
+  }
+
+  var rows = DANH_MUC_DIEM_SEED
+    .filter(function (item) { return item.nhom === 'KT' && !existingCodes[item.ma_danh_muc]; })
+    .map(function (item) {
+      return headers.map(function (col) { return item[col] !== undefined ? item[col] : ''; });
+    });
+
+  if (rows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, headers.length).setValues(rows);
+  }
+
+  Logger.log('Da bo sung ' + rows.length + ' ma KT vao DanhMucDiem.');
+  return rows.length;
 }
 
 function taoCauHinhTuanNamHoc() {
