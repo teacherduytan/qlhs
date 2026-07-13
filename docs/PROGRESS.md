@@ -103,6 +103,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C070 | ✅ Xong | 13/07/2026 | Phân loại Tích cực/Vi phạm ngay trong cột Nội dung vi phạm/ghi nhận |
 | C071 | ✅ Xong | 13/07/2026 | Thêm trang quản lý danh mục vi phạm/tích cực và CRUD tab DanhMucDiem |
 | C072 | ✅ Xong | 13/07/2026 | Gắn ghi nhận vi phạm/tích cực lên học sinh theo cá nhân, tổ hoặc cả lớp |
+| C073 | ✅ Xong | 13/07/2026 | Đồng bộ logic ghi nhận tay với import JSON và chỉ gắn danh mục cá nhân lên học sinh |
 
 ---
 

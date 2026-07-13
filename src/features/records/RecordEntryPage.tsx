@@ -75,7 +75,7 @@ export function RecordEntryPage() {
         const selectedWeek = weeks.find((week) => week.tuan_so === weekNumber)
         const today = toDateInputValue(new Date())
         const date = selectedWeek && isDateInWeek(today, selectedWeek) ? today : selectedWeek?.tu_ngay || today
-        const firstCatalog = sortCatalog(catalog)[0]
+        const firstCatalog = getPersonalCatalog(catalog)[0]
 
         setState({ status: 'success', catalog, records, students, weeks })
         setForm((current) => ({
@@ -121,7 +121,7 @@ export function RecordEntryPage() {
     if (state.status !== 'success') return []
     const keyword = normalize(catalogQuery)
 
-    return sortCatalog(state.catalog)
+    return getPersonalCatalog(state.catalog)
       .filter((item) => {
         if (!keyword) return true
         return normalize(`${item.ma_danh_muc} ${item.nhom} ${item.ten_muc}`).includes(keyword)
@@ -269,7 +269,7 @@ export function RecordEntryPage() {
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <InfoBox label="Danh mục đã có" value={state.catalog.length} />
+          <InfoBox label="Danh mục cá nhân" value={getPersonalCatalog(state.catalog).length} />
           <InfoBox label="Học sinh trong lớp" value={state.students.length} />
           <InfoBox label="Sẽ tạo ghi nhận" value={previewRecords.length} />
           <InfoBox label="Tuần đang chọn" value={form.weekNumber || '-'} />
@@ -281,7 +281,7 @@ export function RecordEntryPage() {
           <div>
             <h3 className="text-base font-bold text-slate-900">1. Chọn nội dung vi phạm/ghi nhận</h3>
             <p className="text-sm text-slate-600">
-              Mỗi ghi nhận sẽ lưu `ma_danh_muc` để nối chặt với nội dung trong DanhMucDiem.
+              Chỉ hiện danh mục cá nhân; mã tập thể/tổ trực xử lý ở luồng sự kiện tập thể.
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 md:w-[420px]">
@@ -346,6 +346,11 @@ export function RecordEntryPage() {
               </button>
             )
           })}
+          {visibleCatalog.length === 0 ? (
+            <div className="rounded-lg border border-cyan-200 bg-white p-4 text-sm font-medium text-slate-600 md:col-span-2 xl:col-span-3">
+              Chưa có danh mục cá nhân phù hợp. Hãy thêm/sửa phạm vi danh mục ở trang Danh mục.
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -746,6 +751,10 @@ function sortCatalog(catalog: DanhMucDiem[]): DanhMucDiem[] {
     const group = left.nhom.localeCompare(right.nhom)
     return group || left.ma_danh_muc.localeCompare(right.ma_danh_muc)
   })
+}
+
+function getPersonalCatalog(catalog: DanhMucDiem[]): DanhMucDiem[] {
+  return sortCatalog(catalog).filter((item) => item.pham_vi === 'ca_nhan')
 }
 
 function compareStudents(left: HocSinh, right: HocSinh): number {

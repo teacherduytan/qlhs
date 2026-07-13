@@ -438,6 +438,9 @@ function prepareManualGhiNhanRow_(record, generatedId) {
   var enriched = stripPrivateKeys_(record || {});
   var catalogItem = enriched.ma_danh_muc ? findByKey_(SHEET_TABS.DanhMucDiem, 'ma_danh_muc', enriched.ma_danh_muc) : null;
   if (!catalogItem) throw new Error('Khong tim thay ma_danh_muc: ' + enriched.ma_danh_muc);
+  if (catalogItem.pham_vi !== 'ca_nhan') {
+    throw new Error('Trang ghi nhan hoc sinh chi gan danh muc ca_nhan. Ma ' + catalogItem.ma_danh_muc + ' co pham_vi=' + catalogItem.pham_vi + '.');
+  }
 
   if (!enriched.ma_hs) throw new Error('Ghi nhan nhap tay can ma_hs.');
   var student = findByKey_(SHEET_TABS.HocSinh, 'ma_hs', enriched.ma_hs);
@@ -445,29 +448,26 @@ function prepareManualGhiNhanRow_(record, generatedId) {
 
   enriched.ma_ghi_nhan = enriched.ma_ghi_nhan || generatedId;
   enriched.to_lien_quan = isBlank_(enriched.to_lien_quan) ? student.to : enriched.to_lien_quan;
-  enriched.dien_tai_thoi_diem = enriched.dien_tai_thoi_diem || student.dien;
-  enriched.loai = enriched.loai || getRecordTypeForCatalogGroup_(catalogItem.nhom);
   enriched.noi_dung = enriched.noi_dung || catalogItem.ten_muc;
-  enriched.diem_cong_tru = isBlank_(enriched.diem_cong_tru) ? catalogItem.diem : Number(enriched.diem_cong_tru);
-  enriched.so_lan = Number(enriched.so_lan || 1);
-  enriched.da_xu_ly = toBoolean_(enriched.da_xu_ly);
-  enriched.goi_phu_huynh = toBoolean_(enriched.goi_phu_huynh);
+  enriched.loai = enriched.loai || getRecordTypeForCatalogGroup_(catalogItem.nhom);
   enriched.nguon = enriched.nguon || 'nhap_tay';
-  enriched.ma_log_import = '';
-  enriched.trang_thai_xu_ly_tap_the = enriched.trang_thai_xu_ly_tap_the || '';
-  enriched.su_kien_goc = enriched.su_kien_goc || '';
 
   if (!enriched.ngay) {
     enriched.ngay = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   }
 
-  if (isBlank_(enriched.tuan_so)) {
-    var weekResult = resolveWeekNumberByDate_(enriched.ngay);
-    if (isBlank_(weekResult.tuan_so)) throw new Error(weekResult.warning);
-    enriched.tuan_so = weekResult.tuan_so;
+  var prepared = prepareGhiNhanImportRow_(enriched, '');
+  prepared.ma_log_import = '';
+  prepared.nguon = 'nhap_tay';
+  prepared.to_lien_quan = isBlank_(prepared.to_lien_quan) ? student.to : prepared.to_lien_quan;
+  prepared.trang_thai_xu_ly_tap_the = '';
+  prepared.su_kien_goc = prepared.su_kien_goc || '';
+
+  if (!prepared.ma_hs) {
+    throw new Error('Ghi nhan nhap tay phai tao dong ca nhan cho hoc sinh.');
   }
 
-  return enriched;
+  return prepared;
 }
 
 function getRecordTypeForCatalogGroup_(group) {
