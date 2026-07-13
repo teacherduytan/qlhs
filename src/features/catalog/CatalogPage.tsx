@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { DanhMucDiem, NhomDiem, PhamViDanhMuc } from '../../data/types'
 import { getBadgeClassForCatalog } from '../scoring/scoreStyles'
@@ -45,6 +46,7 @@ const selectClass =
   'h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
 
 export function CatalogPage() {
+  const [searchParams] = useSearchParams()
   const [catalog, setCatalog] = useState<DanhMucDiem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -58,6 +60,7 @@ export function CatalogPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [deletingCode, setDeletingCode] = useState<string | null>(null)
+  const linkedCode = (searchParams.get('ma') || '').trim().toUpperCase()
 
   useEffect(() => {
     let active = true
@@ -83,6 +86,14 @@ export function CatalogPage() {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    if (!linkedCode) return
+    setQuery(linkedCode)
+    setGroupFilter('all')
+    setToneFilter('all')
+    setSortKey('code_asc')
+  }, [linkedCode])
 
   const stats = useMemo(() => {
     return catalog.reduce(
@@ -354,6 +365,11 @@ export function CatalogPage() {
       </form>
 
       <div className="rounded-lg border border-violet-200 bg-violet-50 p-4">
+        {linkedCode ? (
+          <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800">
+            Đang xem danh mục liên kết: {linkedCode}
+          </div>
+        ) : null}
         <div className="grid gap-3 md:grid-cols-4">
           <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
             Tìm kiếm
@@ -431,7 +447,13 @@ export function CatalogPage() {
                 </tr>
               ) : (
                 visibleCatalog.map((item) => (
-                  <tr key={item.ma_danh_muc} className="align-top hover:bg-slate-50">
+                  <tr
+                    key={item.ma_danh_muc}
+                    id={`catalog-${item.ma_danh_muc}`}
+                    className={`align-top hover:bg-slate-50 ${
+                      item.ma_danh_muc === linkedCode ? 'bg-blue-50 ring-2 ring-inset ring-blue-300' : ''
+                    }`}
+                  >
                     <td className="px-3 py-3">
                       <span
                         className={`inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${getBadgeClassForCatalog(

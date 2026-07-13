@@ -1499,23 +1499,54 @@ function GroupViolationView({
                   <td className="min-w-72 px-3 py-3">
                     {row.records.length ? (
                       <div className="space-y-2">
-                        {row.records.map((record, index) => (
+                        {row.records.map((record, index) => {
+                          const catalogItem = record.ma_danh_muc
+                            ? catalogByCode.get(record.ma_danh_muc)
+                            : undefined
+
+                          return (
                           <div
                             key={record.ma_ghi_nhan || `${row.maHs}-${record.ngay}-${index}`}
                             className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
                           >
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                              <p className="font-semibold text-slate-900">
-                                {getGroupRecordDescription(record, catalogByCode)}
-                              </p>
+                              <div>
+                                {record.ma_danh_muc ? (
+                                  <Link
+                                    to={`/danh-muc?ma=${encodeURIComponent(record.ma_danh_muc)}`}
+                                    className="font-semibold text-blue-700 hover:text-blue-800 hover:underline"
+                                  >
+                                    {getGroupRecordDescription(record, catalogByCode)}
+                                  </Link>
+                                ) : (
+                                  <p className="font-semibold text-slate-900">
+                                    {getGroupRecordDescription(record, catalogByCode)}
+                                  </p>
+                                )}
+                                <p className="mt-1 text-xs text-slate-500">
+                                  {record.ma_danh_muc
+                                    ? catalogItem
+                                      ? 'Liên kết DanhMucDiem'
+                                      : 'Mã danh mục chưa có trong DanhMucDiem'
+                                    : 'Chưa liên kết danh mục'}
+                                </p>
+                              </div>
                               <RecordPolarityBadge record={record} catalogByCode={catalogByCode} />
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                               <CatalogCodeBadge
-                                catalogItem={record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined}
+                                catalogItem={catalogItem}
                                 code={record.ma_danh_muc || record.loai}
                                 label={getGroupRecordCodeLabel(record)}
                               />
+                              {record.ma_danh_muc ? (
+                                <Link
+                                  to={`/danh-muc?ma=${encodeURIComponent(record.ma_danh_muc)}`}
+                                  className="font-semibold text-blue-700 hover:underline"
+                                >
+                                  Xem danh mục
+                                </Link>
+                              ) : null}
                               <span>{formatDate(record.ngay)}</span>
                               {record.diem_cong_tru ? (
                                 <span className={record.diem_cong_tru < 0 ? 'font-semibold text-red-700' : 'font-semibold text-emerald-700'}>
@@ -1524,7 +1555,8 @@ function GroupViolationView({
                               ) : null}
                             </div>
                           </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     ) : (
                       <span className="text-slate-400">Không có ghi nhận</span>
@@ -2181,9 +2213,9 @@ function getGroupRecordDescription(
   const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
 
   return (
+    catalogItem?.ten_muc ||
     record.noi_dung ||
     record.ly_do ||
-    catalogItem?.ten_muc ||
     getRecordTypeLabel(record.loai)
   )
 }
