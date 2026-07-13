@@ -1534,7 +1534,7 @@ function buildGroupViewRows({
         }
 
         if (group === 'HT') {
-          return typeof record.diem_so_mon === 'number'
+          return record.loai === 'hoc_tap' && typeof record.diem_so_mon === 'number'
         }
 
         const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined

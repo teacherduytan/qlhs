@@ -102,6 +102,7 @@ function calculateComponentScore(
 
 function calculateStudyScore(records: GhiNhan[]): number | null {
   const studyScores = records
+    .filter((record) => record.loai === 'hoc_tap')
     .map((record) => record.diem_so_mon)
     .filter((score): score is number => typeof score === 'number')
 

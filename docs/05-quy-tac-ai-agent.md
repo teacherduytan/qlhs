@@ -6,7 +6,8 @@
 
 1. Đọc [04-lo-trinh-giai-doan-1.md](04-lo-trinh-giai-doan-1.md) để biết commit hiện tại.
 2. Đọc các tài liệu liên quan (00–03) nếu commit đụng tới nghiệp vụ hoặc schema.
-3. **Chỉ làm đúng phạm vi một commit** — không nhảy commit, không gộp nhiều commit trừ khi người dùng yêu cầu rõ.
+3. Với mọi yêu cầu mới của người dùng, tự xét yêu cầu đó cần cập nhật tài liệu `.md` nào trong `docs/` (thường là `06-cai-tien-sau-trien-khai.md`, `PROGRESS.md`, và tài liệu nghiệp vụ/thiết kế liên quan), cập nhật và ghi log trước khi sửa code — không chờ người dùng nhắc lại.
+4. **Chỉ làm đúng phạm vi một commit** — không nhảy commit, không gộp nhiều commit trừ khi người dùng yêu cầu rõ.
 
 ## 2. Trong khi code
 
@@ -18,6 +19,7 @@
 | **Feature-based** | Tính năng mới → thư mục `src/features/<tên>/` mới; tránh sửa lan sang feature khác. |
 | **Không tự suy diễn nghiệp vụ** | Điểm trừ, phạm vi tập thể, bảo mật… lấy từ tài liệu 02–03. Thiếu thông tin → hỏi hoặc đánh dấu `⛔ Bị chặn` trong PROGRESS. |
 | **Giữ diff nhỏ** | Không refactor hoặc đổi công nghệ ngoài phạm vi commit. |
+| **Docs trước, code sau** | Khi phát sinh yêu cầu mới, thêm mục commit/log tương ứng vào tài liệu sống trước, rồi mới triển khai. Nếu yêu cầu làm thay đổi hành vi người dùng, cập nhật thêm tài liệu mô tả hành vi đó. |
 
 ## 3. Commit message
 

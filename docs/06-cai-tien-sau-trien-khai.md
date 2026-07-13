@@ -13,6 +13,8 @@
 | ID | Commit | Phạm vi | Tiêu chí hoàn thành |
 |---|---|---|---|
 | C028 | `[C028] fix(security): thêm mã bí mật cho Apps Script doPost` | Vì deploy Web App ở chế độ "Bất kỳ ai" (Anyone) để frontend gọi được, ai có URL cũng gọi `doPost` ghi được dữ liệu. Thêm 1 chuỗi bí mật cố định gửi kèm mỗi request ghi từ frontend (header hoặc field riêng); `Code.gs` kiểm tra khớp mới cho ghi, sai thì từ chối. | Gọi `doPost` thiếu hoặc sai mã bí mật → bị từ chối, Sheet không đổi. Gọi từ web app thật (có đúng mã) → ghi bình thường như cũ. |
+
+> ⚠️ **Đã lộ ra lỗ hổng (12/07/2026)**: cơ chế `write_secret` ở C028 dựa vào biến môi trường `VITE_*`, bị nhúng cứng vào file JS build ra — ai mở app cũng xem được qua DevTools, không chặn được người dùng hợp lệ (kể cả học sinh) tự gọi hành động ghi/sửa qua giao diện. Xem cơ chế thay thế đúng đắn ở **Đợt phát hiện #10, commit C060**.
 | C029 | `[C029] docs: chốt và ghi lại cấu hình deploy Apps Script đúng chuẩn` | Nguyên nhân gốc khiến vòng 1 không hiển thị dữ liệu: deploy sai chế độ quyền truy cập. Ghi rõ vào README/hướng dẫn vận hành: **Thực thi với tư cách = Tôi**, **Ai có quyền truy cập = Bất kỳ ai**; cách deploy lại giữ nguyên URL (Quản lý triển khai, không tạo Triển khai mới). | Có 1 mục riêng, dễ tìm trong README, để lần sau không lặp lại lỗi này khi cần deploy lại. |
 | C030 | `[C030] feat(students): danh sách học sinh có hiệu ứng thu gọn/mở rộng khi bấm, kèm nút xem hồ sơ đầy đủ và copy link` | **Đã xác nhận**: bấm tên học sinh hiện tại không dẫn đi đâu — sửa lại. Thiết kế: bấm vào 1 dòng học sinh → dòng đó **mở rộng ngay tại chỗ** (accordion), hiện nhanh 4 điểm thành phần + tổ + vai trò cán sự (nếu có) + số vi phạm gần đây, không rời trang. Bấm lại → thu gọn về như cũ. Trong phần mở rộng có 2 nút riêng: **"Xem hồ sơ đầy đủ"** (mở trang `/#/hs/<token>` — giáo viên xem chi tiết) và **"Copy link hồ sơ"** (copy URL vào clipboard — dùng để gửi cho học sinh). | Bấm 1 dòng → mở rộng đúng hiệu ứng, hiện đủ thông tin nhanh; bấm lại → thu gọn. Nút "Xem hồ sơ đầy đủ" mở đúng trang hồ sơ. Nút "Copy link" dán (Ctrl+V) ra đúng URL của đúng em đó. |
 
@@ -87,8 +89,62 @@ Bấm vào tên học sinh hiện tại **không** dẫn sang trang hồ sơ —
 
 ---
 
-## Đợt phát hiện #7 — (để trống, thêm khi phát sinh thêm trong lúc mình trao đổi)
+## Đợt phát hiện #7 — trang xem theo nhóm + điều hướng toàn bộ (11/07/2026)
 
 | ID | Commit | Phạm vi | Tiêu chí hoàn thành |
 |---|---|---|---|
-| | | | |
+| C049 | `[C049] feat(dashboard): thêm khu vực "Xem theo Nhóm vi phạm"` | Theo **[tài liệu 08](08-lien-ket-va-mau-sac.md) Phần 1c**: thêm 1 khu vực/tab mới trên Dashboard, có 5 nút chọn nhóm (Chuyên cần/Vệ sinh/Nề nếp/Kỷ luật/Học tập, đúng màu tài liệu 08 Phần 2). Chọn 1 nhóm → hiện danh sách toàn bộ học sinh có ghi nhận thuộc nhóm đó trong tuần đang xem, sắp xếp điểm thấp nhất lên đầu, có công tắc "hiện cả học sinh không vi phạm". Thẻ TK06 trên vùng thống kê tổng quan giờ bấm vào → nhảy thẳng tới đây với nhóm tương ứng đã chọn sẵn. | Chọn nhóm Kỷ luật → đúng danh sách học sinh có vi phạm Kỷ luật tuần này hiện ra, sắp đúng thứ tự điểm thấp→cao; bấm 1 dòng → đúng hồ sơ; bấm TK06 "KL: 85" trên tổng quan → nhảy thẳng tới đây với Kỷ luật đã chọn sẵn. |
+| C050 | `[C050] feat(ui): áp dụng nguyên tắc "mọi báo cáo đều điều hướng được" — không còn ngoại lệ` | Theo **tài liệu 08 Phần 1 (bản cập nhật)**: rà soát lại toàn bộ TK01–TK08 (không chỉ TK02–TK05 như C045) — tất cả đều phải bấm được theo đúng bảng ánh xạ mới. Đảm bảo mọi con số/badge có thể bấm trên Dashboard, hồ sơ học sinh, Nhật ký theo ngày, danh sách học sinh đều có: con trỏ bàn tay khi hover, phản hồi thị giác nhỏ (gạch chân/đổi nền nhạt), và hành vi bấm đúng. | Rê chuột qua từng con số/badge trên toàn bộ Dashboard/hồ sơ/nhật ký → tất cả đều đổi con trỏ + có phản hồi hover; bấm vào → đúng đích theo bảng ánh xạ tài liệu 08 (bao gồm cả TK01, TK07, TK08 trước đây bỏ ngỏ). |
+
+> **Thứ tự làm**: C049 nên làm **trước hoặc cùng lúc** C050, vì TK06 trong C050 cần khu vực "Xem theo Nhóm" của C049 đã tồn tại để dẫn tới. C045 (đợt #6) nếu chưa làm thì gộp luôn vào C050 cho gọn — không cần làm 2 lần.
+
+---
+
+## Đợt phát hiện #8 — mở rộng tuần cả năm, modal, phiếu đơn giản hoá (12/07/2026)
+
+| ID | Commit | Phạm vi | Tiêu chí hoàn thành |
+|---|---|---|---|
+| C051 | `[C051] feat(data): tự động tạo cấu hình tuần cho cả học kỳ/năm học` | Viết 1 script chạy 1 lần trong Apps Script Editor (như `SetupSheet.gs`): input ngày khai giảng, tổng số tuần dự kiến (VD 37), danh sách khoảng nghỉ lễ/Tết (tuỳ chọn) — tự động tạo toàn bộ dòng `CauHinhTuan` cho cả năm. Thêm cột `loai_tuan` (`hoc_binh_thuong` / `nghi_le`) vào `CauHinhTuan` để đánh dấu tuần nghỉ, không hiện trong bộ chọn tuần ở C052. | Chạy script với input mẫu (khai giảng 18/08/2025, 37 tuần) → ra đủ 37 dòng `CauHinhTuan` đúng ngày; tuần nào trong khoảng nghỉ đã khai báo → đánh dấu đúng `nghi_le`. |
+| C052 | `[C052] feat(ui): bộ chọn tuần dạng điều hướng tiến/lùi + chọn nhanh theo tháng` | **Thay** bộ chọn tuần hiện tại (dropdown phẳng, không tối ưu khi có 37 tuần) bằng: 2 nút mũi tên (◀ Tuần trước / Tuần sau ▶) đi từng tuần, + 1 nút "Chọn nhanh" mở lịch nhóm theo tháng/học kỳ (VD "Học kỳ 1 › Tháng 9 › Tuần 3 (15–19/09)") để nhảy xa, + nút "Về tuần hiện tại". Bỏ qua các tuần đánh dấu `nghi_le` (C051) khi liệt kê. | Có 37 tuần đã cấu hình, bộ chọn không hiện danh sách phẳng; đi tới/lùi từng tuần mượt bằng mũi tên; nhảy nhanh tới 1 tuần xa qua chọn theo tháng đúng; tuần nghỉ không xuất hiện trong danh sách chọn. |
+| C053 | `[C053] fix(ui): chuyển toàn bộ drill-down của thẻ TK sang dạng modal` | Chi tiết mở ra khi bấm bất kỳ thẻ TK01–TK08 (C045, C050) đổi từ hiển thị inline (đẩy nội dung trang xuống, dễ bị bỏ sót) sang **modal overlay** ở giữa màn hình — có nút X, bấm ra vùng tối xung quanh hoặc phím Esc thì tự đóng. | Bấm bất kỳ thẻ TK nào → modal hiện rõ ràng giữa màn hình, không lẫn vào nội dung trang; bấm ra ngoài hoặc Esc → tự tắt. |
+| C054 | `[C054] fix(ui): "Xem theo Nhóm vi phạm" (C049) — bấm lại nhóm đang chọn thì quay về mặc định` | Sửa hành vi 5 nút chọn nhóm: bấm 1 nhóm đang active lần nữa → bỏ chọn, quay lại danh sách mặc định (không lọc gì), thay vì bị kẹt ở trạng thái đã lọc không thoát ra được. | Bấm "Chuyên cần" → lọc đúng; bấm "Chuyên cần" lần 2 → quay đúng về danh sách mặc định ban đầu. |
+| C055 | `[C055] feat(ui): thêm số thứ tự (STT) cho mọi danh sách học sinh` | Rà toàn bộ nơi hiển thị nhiều học sinh dạng danh sách — Danh sách học sinh (C015), "Xem theo Nhóm" (C049), các modal chi tiết TK02/TK03 (C053) — thêm cột STT ở đầu mỗi dòng. | Mọi danh sách học sinh đều có STT bắt đầu từ 1, tăng dần đúng thứ tự đang hiển thị. |
+| C056 | `[C056] feat(security+ui): tách route Chi tiết học sinh riêng cho giáo viên — hiện SĐT phụ huynh, bấm gọi trên di động, edit trực tiếp` | **Route công khai `/#/hs/<token>` giữ nguyên như cũ** (không SĐT phụ huynh, không edit — đúng tài liệu 01 mục 6). Thêm route **mới, riêng cho giáo viên**: `/#/quan-ly/hoc-sinh/<ma_hs>` (dùng mã nội bộ, không phải token công khai), chỉ vào được từ trong Danh sách học sinh. Ở route mới: hiện đủ `sdt_1`/`sdt_2` dạng link `tel:` (bấm trên di động mở app gọi ngay), cho edit trực tiếp các trường tại chỗ (gọi `updateStudent()` khi lưu). **Sửa lại nút "Xem hồ sơ đầy đủ" ở C030** — trước đây trỏ nhầm sang route công khai, nay trỏ đúng route mới này. | Vào route mới từ Danh sách học sinh → thấy đủ SĐT phụ huynh, bấm số trên di động → mở app gọi điện; sửa 1 trường, lưu → Sheet cập nhật đúng. Mở lại `/#/hs/<token>` bằng đúng token em đó → xác nhận vẫn KHÔNG thấy SĐT phụ huynh, không có nút edit. |
+| C057 | `[C057] feat(form): thiết kế lại phiếu ghi nhận — 1 mẫu đơn giản duy nhất cho toàn bộ ban cán sự` | Thay phiếu 3 phần + bảng tra cứu mã hiện tại (quá phức tạp, bắt các em tra mã, ảnh hưởng thời gian học) bằng **1 mẫu duy nhất**: cột STT, Họ tên, Tiết, Môn, Nội dung vi phạm (tự do, không mã), Nội dung thành tích (tự do — điểm tốt/được tuyên dương/giúp đỡ bạn...). Không còn mã, không còn chia 3 phần — ban cán sự chỉ ghi đúng những gì thấy. Cập nhật `mau-phieu-ghi-nhan.md`. | 1 trang duy nhất, đủ cột theo yêu cầu, in ra dùng ngay, không xuất hiện mã nào trên phiếu. |
+| C058 | `[C058] feat(backend+docs): AI tự suy luận mã và phạm vi từ mô tả tự do khi chuyển phiếu đơn giản thành JSON` | Cập nhật `mau-prompt-chuyen-doi-json.md`: vì phiếu mới (C057) không còn mã, prompt hướng dẫn AI (Claude) tự đọc mô tả tự do, đối chiếu `bang-tra-cuu-ma-diem.md` (giờ dùng **nội bộ cho AI/giáo viên**, không in cho học sinh) để suy luận đúng mã CC/VS/NN/KL phù hợp nhất, tự nhận diện phạm vi cá nhân/tổ trực/tập thể từ ngữ cảnh (VD "cả lớp" → tập thể, "tổ 2" → tổ trực, có tên cụ thể → cá nhân). Cột "Nội dung thành tích" tự động map sang nhóm `KT` (điểm cộng nội bộ) — **coi như đã được xác nhận bật** từ chính yêu cầu này (đóng câu hỏi mở ở tài liệu 03 mục 6). Nạp đủ danh mục KT01–KT05 vào `DanhMucDiem` nếu chưa có. | Đưa ảnh phiếu mẫu mới cho Claude theo đúng prompt cập nhật → JSON trả về có mã suy luận hợp lý cho từng dòng vi phạm, đúng phạm vi cá nhân/tổ trực/tập thể, và dòng thành tích có mã nhóm KT hợp lệ. |
+
+> **Thứ tự làm**: C051 trước C052 (cần nhiều tuần mới cần bộ chọn tối ưu). C057 trước C058 (phiếu mới xong mới cập nhật prompt tương ứng). C056 cần sửa cả link ở C030 — làm xong nhớ kiểm tra lại danh sách học sinh có trỏ đúng route mới chưa.
+
+---
+
+## Đợt phát hiện #9 — chuẩn bị deploy GitHub Pages chính thức (12/07/2026)
+
+| ID | Commit | Phạm vi | Tiêu chí hoàn thành |
+|---|---|---|---|
+| C059 | `[C059] chore: cập nhật base path khớp tên repo GitHub sau khi đổi tên` | Repo GitHub đã tạo: `teacherduytan/qlhs`. Sửa `vite.config.ts`: `base: '/qlhs/'`. Rà `.github/workflows/` xem có hardcode tên repo cũ ở đâu không, sửa cho khớp. | Sau khi build & deploy, mở đúng **`https://teacherduytan.github.io/qlhs/`** → app tải đầy đủ CSS/JS, không phải trang trắng. |
+
+---
+
+## Đợt phát hiện #10 — lỗ hổng bảo mật: học sinh vào được vùng edit của giáo viên (12/07/2026)
+
+| ID | Commit | Phạm vi | Tiêu chí hoàn thành |
+|---|---|---|---|
+| C060 | `[C060] fix(security): thêm màn đăng nhập giáo viên thật, bỏ nhúng write_secret vào bundle JS` | **Lỗ hổng nghiêm trọng phát hiện**: học sinh từ trang hồ sơ công khai (`/#/hs/<token>`) điều hướng được sang toàn bộ vùng giáo viên (Dashboard, Danh sách học sinh, `/#/quan-ly/hoc-sinh/<mã>`) và **tự sửa được dữ liệu**, vì (1) không có rào chắn đăng nhập nào ở các route đó, (2) `write_secret` bị nhúng cứng vào file JS lúc build nên ai mở app cũng xem được qua DevTools. Sửa: <br>1. Coi **mọi route trừ `/#/hs/<token>`** là vùng giáo viên — thêm 1 màn "Đăng nhập giáo viên" (chỉ 1 ô mật khẩu, không cần tài khoản) chặn trước khi vào bất kỳ route nào khác. <br>2. Mật khẩu **không** đưa vào biến môi trường `VITE_*` (sẽ lại bị nhúng vào bundle) — khi nhập, gửi lên Apps Script so khớp với Script Property, đúng thì trả về 1 **session token tạm** (lưu qua `CacheService`, hết hạn sau ví dụ 8 tiếng). <br>3. Token phiên lưu ở `sessionStorage` (mất khi đóng tab, không phải `localStorage`) — mọi request ghi/sửa sau đó gửi kèm token này để Apps Script xác minh, thay cho `write_secret` cũ nhúng cứng. <br>4. Trang `/#/hs/<token>` **giữ nguyên không đổi** — học sinh vẫn vào thẳng bằng token như cũ, không cần đăng nhập. Header/nav trên trang này **ẩn hết menu điều hướng sang vùng giáo viên** (không còn đường nào để "quay lại trang chính" sang khu giáo viên). | Mở `/#/hs/<token>` bất kỳ → vào thẳng, không thấy menu nào dẫn sang Dashboard/Học sinh/Import. Mở `/#/` hoặc bất kỳ route giáo viên nào chưa đăng nhập → chỉ thấy màn nhập mật khẩu, không thấy nội dung phía sau dù xem code nguồn. Nhập đúng mật khẩu → vào được; đóng tab mở lại → phải nhập lại. Xem DevTools Network/Source → không tìm thấy mật khẩu hay write_secret nhúng sẵn trong bất kỳ file JS nào. |
+
+> **Đây là lỗi ưu tiên cao nhất trong toàn bộ các đợt cải tiến** — trước khi phát thêm link cho học sinh dùng thật, bắt buộc phải xong C060.
+
+---
+
+## Đợt phát hiện #11 — đối chiếu file AI đã tinh chỉnh khi thực thi C058 (12/07/2026)
+
+| ID | Commit | Phạm vi | Tiêu chí hoàn thành |
+|---|---|---|---|
+| C061 | `[C061] fix(docs+backend): tách riêng dòng hoc_tap khỏi khen_thuong khi thành tích có kèm điểm số` | **Lỗi phát hiện khi đối chiếu file `mau-prompt-chuyen-doi-json.md` AI đã tự tinh chỉnh lúc làm C058**: khi "Nội dung thành tích" có nhắc điểm số (VD "được 9 điểm miệng Toán"), AI gộp `diem_so_mon` vào chung dòng `loai=khen_thuong` — khiến điểm số đó **không được tính vào Điểm học tập** (công thức tài liệu 03 chỉ đọc dòng `loai=hoc_tap`). Đã sửa `mau-prompt-chuyen-doi-json.md`: bắt buộc tách thành 2 dòng riêng (1 `khen_thuong` không có điểm, 1 `hoc_tap` có điểm, không có mã). Rà lại xem code xử lý import (C034/C058) có đang tự động gộp tương tự không — nếu có, sửa theo đúng logic tách dòng này. Đồng thời xác nhận `KT05` đã có trong tài liệu 03/bảng tra cứu (đã bổ sung). | Đưa 1 phiếu test có dòng thành tích kèm điểm số qua đúng prompt mới → JSON trả về đúng 2 dòng tách biệt; import vào → Điểm học tập của học sinh đó phản ánh đúng điểm số đã ghi trên phiếu. |
+
+---
+
+## Đợt phát hiện #12 — ưu tiên trải nghiệm hồ sơ học sinh public (13/07/2026)
+
+| ID | Commit | Phạm vi | Tiêu chí hoàn thành |
+|---|---|---|---|
+| C062 | `[C062] feat(student-profile): đưa ghi nhận của học sinh thành nội dung nổi bật đầu trang` | Trang hồ sơ public của học sinh hiện đang đưa thông tin cá nhân lên trước, trong khi nhu cầu chính của học sinh khi mở link là xem ngay các ghi nhận giáo viên đã nhập từ JSON/phiếu giấy. Thiết kế lại `/#/hs/<token>` theo hướng: đầu trang hiển thị rõ tên học sinh ngắn gọn và khối "Ghi nhận của em" nổi bật, gồm ghi nhận mới nhất/danh sách ghi nhận gần đây, ngày, loại, mã, nội dung, điểm cộng/trừ hoặc điểm môn nếu có. Các phần ít cần xem ngay như thông tin cá nhân đưa vào tab/khu vực phụ mặc định không chiếm màn hình đầu tiên. Điểm thi đua tuần vẫn xem được nhưng không lấn át ghi nhận. | Mở hồ sơ học sinh trên điện thoại/laptop → ngay màn đầu đã thấy khối ghi nhận nổi bật; học sinh không cần cuộn qua thẻ thông tin cá nhân để biết mình được ghi nhận gì. Có tab/khu vực riêng để xem Điểm tuần và Thông tin cá nhân khi cần. Không hiển thị SĐT phụ huynh trên hồ sơ public. |

@@ -91,6 +91,8 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C059 | ✅ Xong | 12/07/2026 | Cập nhật Vite base path thành /qlhs/ cho GitHub Pages repo teacherduytan/qlhs |
 | C059a | ✅ Xong | 12/07/2026 | Hoàn thiện CI/CD GitHub Pages: deploy bằng Actions, tránh trùng artifact và đọc VITE_APPS_SCRIPT_URL từ GitHub Secrets |
 | C060 | ✅ Xong | 13/07/2026 | Thêm đăng nhập giáo viên thật qua Apps Script, session token lưu sessionStorage, bỏ VITE write_secret khỏi bundle, ẩn lối điều hướng từ hồ sơ học sinh sang vùng giáo viên |
+| C061 | ✅ Xong | 13/07/2026 | Sửa prompt tách điểm số thành dòng hoc_tap riêng; import cảnh báo/bỏ qua diem_so_mon sai loại và Điểm học tập chỉ đọc loai=hoc_tap |
+| C062 | ✅ Xong | 13/07/2026 | Đưa ghi nhận của học sinh thành nội dung nổi bật đầu trang hồ sơ public; thông tin cá nhân chuyển vào tab phụ |
 
 ---
 

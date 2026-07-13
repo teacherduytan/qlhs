@@ -22,9 +22,12 @@ type ProfileState =
       weekConfig: CauHinhTuan[]
     }
 
+type ProfileTab = 'records' | 'score' | 'info'
+
 export function StudentProfilePage() {
   const { token } = useParams()
   const [state, setState] = useState<ProfileState>({ status: 'loading' })
+  const [activeTab, setActiveTab] = useState<ProfileTab>('records')
 
   const score = useMemo(() => {
     if (state.status !== 'success') {
@@ -126,29 +129,46 @@ export function StudentProfilePage() {
 
         {state.status === 'success' && score ? (
           <>
-            <ProfileCard student={state.student} role={state.role} />
-            <TodayRecords catalog={state.catalog} records={state.records} />
-            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="max-w-xs">
-                <WeekSelector
-                  label="Tuần tính điểm"
-                  value={state.tuanSo}
-                  weeks={state.weekConfig}
-                  onChange={(tuanSo) =>
-                    setState((current) =>
-                      current.status === 'success' ? { ...current, tuanSo } : current,
-                    )
-                  }
-                />
-              </div>
-            </div>
-            <ScoreSummary score={score} />
-            <RecordHistory
-              catalog={state.catalog}
-              records={state.records}
-              selectedWeek={findWeek(state.weekConfig, state.tuanSo)}
-              tuanSo={state.tuanSo}
+            <StudentProfileHeader
+              recordCount={state.records.length}
+              role={state.role}
+              student={state.student}
             />
+            <FeaturedRecords catalog={state.catalog} records={state.records} />
+            <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
+
+            {activeTab === 'records' ? (
+              <RecordHistory
+                catalog={state.catalog}
+                records={state.records}
+                selectedWeek={findWeek(state.weekConfig, state.tuanSo)}
+                tuanSo={state.tuanSo}
+              />
+            ) : null}
+
+            {activeTab === 'score' ? (
+              <>
+                <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="max-w-xs">
+                    <WeekSelector
+                      label="Tuần tính điểm"
+                      value={state.tuanSo}
+                      weeks={state.weekConfig}
+                      onChange={(tuanSo) =>
+                        setState((current) =>
+                          current.status === 'success' ? { ...current, tuanSo } : current,
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+                <ScoreSummary score={score} />
+              </>
+            ) : null}
+
+            {activeTab === 'info' ? (
+              <ProfileCard student={state.student} role={state.role} />
+            ) : null}
           </>
         ) : null}
       </section>
@@ -156,44 +176,103 @@ export function StudentProfilePage() {
   )
 }
 
-function TodayRecords({ catalog, records }: { catalog: DanhMucDiem[]; records: GhiNhan[] }) {
-  const today = getTodayIsoDate()
-  const todayRecords = records.filter((record) => record.ngay === today)
+function StudentProfileHeader({
+  recordCount,
+  role,
+  student,
+}: {
+  recordCount: number
+  role: string
+  student: HocSinh
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
+          {student.ten.slice(0, 1).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase text-blue-600">{role}</p>
+          <h2 className="truncate text-2xl font-bold text-slate-950">
+            {student.ho} {student.ten}
+          </h2>
+        </div>
+        <div className="rounded-md bg-slate-100 px-3 py-2 text-center">
+          <p className="text-lg font-bold text-slate-900">{recordCount}</p>
+          <p className="text-xs font-semibold text-slate-500">ghi nhận</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FeaturedRecords({ catalog, records }: { catalog: DanhMucDiem[]; records: GhiNhan[] }) {
+  const latestRecords = sortRecordsNewest(records).slice(0, 4)
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
 
   return (
-    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-lg border border-blue-300 bg-blue-50 shadow-sm">
+      <div className="border-b border-blue-100 p-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Hôm nay</h2>
-          <p className="text-sm text-slate-600">{formatDate(today)}</p>
+          <p className="text-xs font-semibold uppercase text-blue-700">Ghi nhận của em</p>
+          <h2 className="text-xl font-bold text-slate-950">Những ghi nhận mới nhất trên lớp</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Các dòng thầy/cô đã nhập từ phiếu ghi nhận vào hệ thống.
+          </p>
         </div>
-        <p className="text-sm font-semibold text-blue-700">{todayRecords.length} ghi nhận</p>
       </div>
 
-      {todayRecords.length ? (
-        <div className="mt-3 space-y-2">
-          {todayRecords.map((record, index) => (
+      {latestRecords.length ? (
+        <div className="space-y-2 p-4">
+          {latestRecords.map((record, index) => (
             <article
               key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc}-${index}`}
-              className="rounded-md border border-blue-100 bg-white p-3"
+              className="rounded-md border border-blue-100 bg-white p-3 shadow-sm"
             >
-              <p className="text-sm font-semibold text-slate-900">
-                <CatalogCodeBadge
-                  catalogItem={record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined}
-                  code={record.ma_danh_muc || record.loai}
-                  label={record.ma_danh_muc || labelRecordType(record.loai)}
-                />
-              </p>
-              <p className="mt-1 text-sm text-slate-600">
-                {record.noi_dung || record.ly_do || 'Không có mô tả'}
-              </p>
+              <RecordSummary record={record} catalogByCode={catalogByCode} featured />
             </article>
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-sm text-slate-600">Chưa có ghi nhận nào trong hôm nay.</p>
+        <div className="p-4 text-sm text-slate-600">
+          Chưa có ghi nhận nào được nhập cho hồ sơ này.
+        </div>
       )}
+    </div>
+  )
+}
+
+function ProfileTabs({
+  activeTab,
+  onChange,
+}: {
+  activeTab: ProfileTab
+  onChange: (tab: ProfileTab) => void
+}) {
+  const tabs: Array<{ id: ProfileTab; label: string }> = [
+    { id: 'records', label: 'Tất cả ghi nhận' },
+    { id: 'score', label: 'Điểm tuần' },
+    { id: 'info', label: 'Thông tin cá nhân' },
+  ]
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+      <div className="grid grid-cols-3 gap-1">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onChange(tab.id)}
+            className={`min-h-11 rounded-md px-2 py-2 text-sm font-semibold transition ${
+              activeTab === tab.id
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -313,33 +392,7 @@ function RecordHistory({
                     key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc}-${index}`}
                     className="rounded-md border border-slate-200 p-3"
                   >
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          <CatalogCodeBadge
-                            catalogItem={record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined}
-                            code={record.ma_danh_muc || record.loai}
-                            label={record.ma_danh_muc || labelRecordType(record.loai)}
-                          />
-                        </p>
-                        <p className="text-sm text-slate-600">
-                          {record.noi_dung || record.ly_do || 'Không có mô tả'}
-                        </p>
-                      </div>
-                      <p className="text-sm font-medium text-slate-500">
-                        {formatDate(record.ngay)}
-                      </p>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
-                      <Badge className={getBadgeClassForRecord(record, catalogByCode)}>
-                        {labelRecordType(record.loai)}
-                      </Badge>
-                      {record.tiet ? <Badge>{`Tiết ${record.tiet}`}</Badge> : null}
-                      {record.mon_hoc ? <Badge>{record.mon_hoc}</Badge> : null}
-                      {typeof record.diem_cong_tru === 'number' ? (
-                        <Badge>{`${record.diem_cong_tru} điểm`}</Badge>
-                      ) : null}
-                    </div>
+                    <RecordSummary record={record} catalogByCode={catalogByCode} />
                   </article>
                 ))}
               </div>
@@ -350,6 +403,46 @@ function RecordHistory({
         <div className="p-4 text-sm text-slate-600">Không có lịch sử ghi nhận phù hợp.</div>
       )}
     </div>
+  )
+}
+
+function RecordSummary({
+  catalogByCode,
+  featured = false,
+  record,
+}: {
+  catalogByCode: Map<string, DanhMucDiem>
+  featured?: boolean
+  record: GhiNhan
+}) {
+  const pointText = getRecordPointText(record)
+
+  return (
+    <>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-900">
+            <CatalogCodeBadge
+              catalogItem={record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined}
+              code={record.ma_danh_muc || record.loai}
+              label={record.ma_danh_muc || labelRecordType(record.loai)}
+            />
+          </p>
+          <p className={`${featured ? 'mt-2 text-base font-semibold text-slate-900' : 'text-sm text-slate-600'}`}>
+            {record.noi_dung || record.ly_do || 'Không có mô tả'}
+          </p>
+        </div>
+        <p className="whitespace-nowrap text-sm font-medium text-slate-500">{formatDate(record.ngay)}</p>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
+        <Badge className={getBadgeClassForRecord(record, catalogByCode)}>
+          {labelRecordType(record.loai)}
+        </Badge>
+        {record.tiet ? <Badge>{`Tiết ${record.tiet}`}</Badge> : null}
+        {record.mon_hoc ? <Badge>{record.mon_hoc}</Badge> : null}
+        {pointText ? <Badge>{pointText}</Badge> : null}
+      </div>
+    </>
   )
 }
 
@@ -433,14 +526,7 @@ function formatDate(value: string | null): string {
 }
 
 function groupRecordsByWeek(records: GhiNhan[]): Array<{ tuanSo: number; records: GhiNhan[] }> {
-  const sortedRecords = [...records].sort((a, b) => {
-    const byDate = new Date(b.ngay).getTime() - new Date(a.ngay).getTime()
-    if (byDate !== 0) {
-      return byDate
-    }
-
-    return b.tuan_so - a.tuan_so
-  })
+  const sortedRecords = sortRecordsNewest(records)
 
   return sortedRecords.reduce<Array<{ tuanSo: number; records: GhiNhan[] }>>((groups, record) => {
     const currentGroup = groups.find((group) => group.tuanSo === record.tuan_so)
@@ -452,6 +538,17 @@ function groupRecordsByWeek(records: GhiNhan[]): Array<{ tuanSo: number; records
 
     return groups
   }, [])
+}
+
+function sortRecordsNewest(records: GhiNhan[]): GhiNhan[] {
+  return [...records].sort((a, b) => {
+    const byDate = new Date(b.ngay).getTime() - new Date(a.ngay).getTime()
+    if (byDate !== 0) {
+      return byDate
+    }
+
+    return b.tuan_so - a.tuan_so
+  })
 }
 
 function filterHistoryRecords(
@@ -484,10 +581,14 @@ function labelRecordType(loai: GhiNhan['loai']): string {
   return labels[loai]
 }
 
-function getTodayIsoDate(): string {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+function getRecordPointText(record: GhiNhan): string | null {
+  if (record.loai === 'hoc_tap' && typeof record.diem_so_mon === 'number') {
+    return `Điểm môn: ${record.diem_so_mon}`
+  }
+
+  if (typeof record.diem_cong_tru === 'number') {
+    return `${record.diem_cong_tru > 0 ? '+' : ''}${record.diem_cong_tru} điểm`
+  }
+
+  return null
 }

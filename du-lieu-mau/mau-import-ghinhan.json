@@ -107,8 +107,9 @@
     "Điền 'ho_ten' (tên đầy đủ trên phiếu) — KHÔNG cần biết mã ma_hs, hệ thống tự khớp tên với danh sách lớp khi import. Nếu không khớp được (sai chính tả, trùng tên...), dòng đó sẽ báo lỗi để giáo viên xử lý tay.",
     "Để 'ma_hs': null luôn — trường này hệ thống tự điền, AI không cần đoán.",
     "'ma_danh_muc' phải lấy đúng mã trong bảng tra cứu (bang-tra-cuu-ma-diem.md) — ví dụ CC01, KL09, NN04. Không tự đặt mã mới.",
-    "loai chỉ nhận 1 trong 5 giá trị: chuyen_can | ve_sinh | ne_nep | trat_tu_ky_luat | hoc_tap",
+    "loai chỉ nhận 1 trong 6 giá trị: chuyen_can | ve_sinh | ne_nep | trat_tu_ky_luat | hoc_tap | khen_thuong",
     "Trường hợp 'hoc_tap': không cần ma_danh_muc, chỉ cần diem_so_mon.",
+    "Nếu thành tích/khen thưởng có kèm điểm số, phải tách thành 2 dòng: 1 dòng loai=khen_thuong có ma_danh_muc KT và diem_so_mon=null; 1 dòng loai=hoc_tap có ma_danh_muc=null và diem_so_mon là điểm số.",
     "Trường hợp tập thể/tổ trực: để 'ho_ten' và 'ma_hs' là null; nếu là tổ trực thì điền 'to_lien_quan', nếu là cả lớp thì để 'to_lien_quan' cũng null.",
     "'tuan_so', 'dien_tai_thoi_diem', 'ma_ghi_nhan', 'diem_cong_tru' — KHÔNG cần AI điền, hệ thống tự tính khi import."
   ]

@@ -483,6 +483,20 @@ function prepareGhiNhanImportRow_(row, maLog) {
     enriched.diem_cong_tru = catalogItem.diem;
   }
 
+  if (enriched.loai !== 'hoc_tap' && !isBlank_(enriched.diem_so_mon)) {
+    addImportWarning_(
+      enriched,
+      'diem_so_mon chỉ được tính trên dòng loai=hoc_tap; hãy tách điểm số thành dòng hoc_tap riêng. Dòng này đã bỏ qua diem_so_mon.'
+    );
+    enriched.diem_so_mon = '';
+  }
+
+  if (enriched.loai === 'hoc_tap' && !isBlank_(enriched.ma_danh_muc)) {
+    addImportWarning_(enriched, 'Dòng loai=hoc_tap không dùng ma_danh_muc; đã bỏ qua ma_danh_muc.');
+    enriched.ma_danh_muc = '';
+    enriched.diem_cong_tru = '';
+  }
+
   if (!enriched.so_lan) enriched.so_lan = 1;
   if (enriched.da_xu_ly === null || enriched.da_xu_ly === undefined) enriched.da_xu_ly = false;
   if (enriched.goi_phu_huynh === null || enriched.goi_phu_huynh === undefined) enriched.goi_phu_huynh = false;
