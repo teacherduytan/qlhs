@@ -99,6 +99,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C066 | ✅ Xong | 13/07/2026 | Thêm điều hướng nhanh tới section và nút thu gọn/mở rộng từng section |
 | C067 | ✅ Xong | 13/07/2026 | TK05 đếm/mở đầy đủ danh sách vi phạm và đổi nhãn tiêu cực thành vi phạm |
 | C068 | ✅ Xong | 13/07/2026 | Đưa vi phạm học tập tự do như quên dụng cụ vào Xem theo Nhóm vi phạm |
+| C069 | ✅ Xong | 13/07/2026 | Xem theo Nhóm vi phạm hiển thị nội dung vi phạm thay vì chỉ mã |
 
 ---
 

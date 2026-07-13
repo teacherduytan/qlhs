@@ -1448,7 +1448,7 @@ function GroupViolationView({
                   {group === null ? 'Điểm tổng hợp' : isStudyGroup ? 'Điểm học tập' : `Điểm ${selectedLabel}`}
                 </th>
                 <th className="px-3 py-3">Số ghi nhận</th>
-                <th className="px-3 py-3">{isStudyGroup ? 'Điểm/nội dung liên quan' : 'Mã liên quan'}</th>
+                <th className="px-3 py-3">Nội dung vi phạm/ghi nhận</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1466,18 +1466,29 @@ function GroupViolationView({
                   <td className="whitespace-nowrap px-3 py-3 text-slate-700">{row.recordCount}</td>
                   <td className="min-w-72 px-3 py-3">
                     {row.records.length ? (
-                      <div className="flex flex-wrap gap-2">
+                      <div className="space-y-2">
                         {row.records.map((record, index) => (
-                          <CatalogCodeBadge
+                          <div
                             key={record.ma_ghi_nhan || `${row.maHs}-${record.ngay}-${index}`}
-                            catalogItem={record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined}
-                            code={record.ma_danh_muc || record.loai}
-                            label={
-                              isStudyGroup
-                                ? getGroupRecordLabel(record)
-                                : record.ma_danh_muc || record.loai
-                            }
-                          />
+                            className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
+                          >
+                            <p className="font-semibold text-slate-900">
+                              {getGroupRecordDescription(record, catalogByCode)}
+                            </p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                              <CatalogCodeBadge
+                                catalogItem={record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined}
+                                code={record.ma_danh_muc || record.loai}
+                                label={getGroupRecordCodeLabel(record)}
+                              />
+                              <span>{formatDate(record.ngay)}</span>
+                              {record.diem_cong_tru ? (
+                                <span className={record.diem_cong_tru < 0 ? 'font-semibold text-red-700' : 'font-semibold text-emerald-700'}>
+                                  {record.diem_cong_tru > 0 ? '+' : ''}{record.diem_cong_tru} điểm
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
                         ))}
                       </div>
                     ) : (
@@ -2128,7 +2139,21 @@ function getGroupForRecord(
   return null
 }
 
-function getGroupRecordLabel(record: GhiNhan): string {
+function getGroupRecordDescription(
+  record: GhiNhan,
+  catalogByCode: Map<string, DanhMucDiem>,
+): string {
+  const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
+
+  return (
+    record.noi_dung ||
+    record.ly_do ||
+    catalogItem?.ten_muc ||
+    getRecordTypeLabel(record.loai)
+  )
+}
+
+function getGroupRecordCodeLabel(record: GhiNhan): string {
   if (record.loai === 'hoc_tap' && typeof record.diem_so_mon === 'number') {
     return `${record.mon_hoc || 'Điểm'}: ${record.diem_so_mon}`
   }
