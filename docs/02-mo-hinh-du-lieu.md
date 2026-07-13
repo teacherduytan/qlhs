@@ -189,7 +189,7 @@ Mỗi dòng = một lần ghi nhận cho một học sinh, một ngày, một ti
 | `diem_so_mon` | number | Điểm kiểm tra miệng/15p trong tiết đó (nếu có). |
 | `diem_cong_tru` | number | Tự động lấy từ `DanhMucDiem.diem` theo `ma_danh_muc`, có thể ghi đè thủ công nếu cần. |
 | `nguoi_ghi` | text | Tên/chức vụ ban cán sự hoặc giáo viên ghi nhận. |
-| `nguon` | text | `phieu_giay` / `web` — để biết dữ liệu vào từ đâu, phục vụ đối chiếu. |
+| `nguon` | text | `phieu_giay` / `web` / `nhap_tay` — để biết dữ liệu vào từ đâu, phục vụ đối chiếu. |
 | `ma_log_import` | text (FK) | Liên kết tới tab `NhatKyImport` — biết chính xác dòng này được nhập vào qua lần import nào (xem Tab 7 bên dưới). |
 | `trang_thai_xu_ly_tap_the` | text | Chỉ áp dụng khi `pham_vi ≠ ca_nhan`: `chua_xu_ly` (mặc định) / `da_gan_ca_nhan` / `da_ap_dung_ca_lop` / `bo_qua`. Rỗng với các dòng cá nhân thông thường. Xem quy trình xử lý ở tài liệu 03 mục 2b. |
 | `su_kien_goc` | text (FK, tự tham chiếu `ma_ghi_nhan`) | Chỉ có ở các dòng cá nhân được **tự động sinh ra** từ thao tác "Gán cho 1 học sinh" / "Áp dụng cho tất cả" — trỏ về dòng sự kiện tập thể gốc, để truy vết nguồn gốc vi phạm. |

@@ -143,6 +143,11 @@ function doPost(e) {
       return jsonResponse_({ ok: true, data: null });
     }
 
+    if (body.action === 'add_records' && body.records) {
+      var createdRecords = appendGhiNhanRecords_(body.records);
+      return jsonResponse_({ ok: true, data: createdRecords });
+    }
+
     if (body.action === 'process_collective_event' && body.source_record_id && body.status) {
       var generated = processCollectiveEvent_(
         body.source_record_id,
@@ -401,6 +406,79 @@ function toBoolean_(value) {
 
   var text = String(value).trim().toLowerCase();
   return text === 'true' || text === '1' || text === 'yes' || text === 'x';
+}
+
+function appendGhiNhanRecords_(records) {
+  if (!Array.isArray(records) || records.length === 0) {
+    throw new Error('Khong co ghi nhan nao de luu.');
+  }
+
+  var sheet = getSpreadsheet_().getSheetByName(SHEET_TABS.GhiNhan);
+  if (!sheet) throw new Error('Tab not found: ' + SHEET_TABS.GhiNhan);
+
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var nextNumber = getNextIdNumber_('GN', SHEET_TABS.GhiNhan, 'ma_ghi_nhan');
+  var created = records.map(function (record) {
+    var enriched = prepareManualGhiNhanRow_(record, 'GN' + String(nextNumber).padStart(6, '0'));
+    nextNumber++;
+    return enriched;
+  });
+
+  var lines = created.map(function (record) {
+    return headers.map(function (h) {
+      return record[h] !== undefined && record[h] !== null ? record[h] : '';
+    });
+  });
+  sheet.getRange(sheet.getLastRow() + 1, 1, lines.length, headers.length).setValues(lines);
+
+  return created;
+}
+
+function prepareManualGhiNhanRow_(record, generatedId) {
+  var enriched = stripPrivateKeys_(record || {});
+  var catalogItem = enriched.ma_danh_muc ? findByKey_(SHEET_TABS.DanhMucDiem, 'ma_danh_muc', enriched.ma_danh_muc) : null;
+  if (!catalogItem) throw new Error('Khong tim thay ma_danh_muc: ' + enriched.ma_danh_muc);
+
+  if (!enriched.ma_hs) throw new Error('Ghi nhan nhap tay can ma_hs.');
+  var student = findByKey_(SHEET_TABS.HocSinh, 'ma_hs', enriched.ma_hs);
+  if (!student) throw new Error('Khong tim thay ma_hs: ' + enriched.ma_hs);
+
+  enriched.ma_ghi_nhan = enriched.ma_ghi_nhan || generatedId;
+  enriched.to_lien_quan = isBlank_(enriched.to_lien_quan) ? student.to : enriched.to_lien_quan;
+  enriched.dien_tai_thoi_diem = enriched.dien_tai_thoi_diem || student.dien;
+  enriched.loai = enriched.loai || getRecordTypeForCatalogGroup_(catalogItem.nhom);
+  enriched.noi_dung = enriched.noi_dung || catalogItem.ten_muc;
+  enriched.diem_cong_tru = isBlank_(enriched.diem_cong_tru) ? catalogItem.diem : Number(enriched.diem_cong_tru);
+  enriched.so_lan = Number(enriched.so_lan || 1);
+  enriched.da_xu_ly = toBoolean_(enriched.da_xu_ly);
+  enriched.goi_phu_huynh = toBoolean_(enriched.goi_phu_huynh);
+  enriched.nguon = enriched.nguon || 'nhap_tay';
+  enriched.ma_log_import = '';
+  enriched.trang_thai_xu_ly_tap_the = enriched.trang_thai_xu_ly_tap_the || '';
+  enriched.su_kien_goc = enriched.su_kien_goc || '';
+
+  if (!enriched.ngay) {
+    enriched.ngay = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+
+  if (isBlank_(enriched.tuan_so)) {
+    var weekResult = resolveWeekNumberByDate_(enriched.ngay);
+    if (isBlank_(weekResult.tuan_so)) throw new Error(weekResult.warning);
+    enriched.tuan_so = weekResult.tuan_so;
+  }
+
+  return enriched;
+}
+
+function getRecordTypeForCatalogGroup_(group) {
+  var map = {
+    CC: 'chuyen_can',
+    VS: 've_sinh',
+    NN: 'ne_nep',
+    KL: 'trat_tu_ky_luat',
+    KT: 'khen_thuong',
+  };
+  return map[group] || 'ne_nep';
 }
 
 function deleteRowsByField_(tabName, keyField, keyValue) {
@@ -752,6 +830,10 @@ function getOrCreateFolderPath_(parts) {
 }
 
 function generateId_(prefix, tabName, keyField) {
+  return prefix + String(getNextIdNumber_(prefix, tabName, keyField)).padStart(6, '0');
+}
+
+function getNextIdNumber_(prefix, tabName, keyField) {
   var rows = getSheetObjects_(tabName);
   var max = 0;
   rows.forEach(function (row) {
@@ -759,8 +841,7 @@ function generateId_(prefix, tabName, keyField) {
     var num = parseInt(id.replace(prefix, ''), 10);
     if (!isNaN(num) && num > max) max = num;
   });
-  var next = max + 1;
-  return prefix + String(next).padStart(6, '0');
+  return max + 1;
 }
 
 function jsonResponse_(payload, status) {

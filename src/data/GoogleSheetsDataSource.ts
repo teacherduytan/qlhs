@@ -78,6 +78,10 @@ export class GoogleSheetsDataSource implements DataSource {
     return this.post<GhiNhan>({ tab: 'GhiNhan', row: record })
   }
 
+  addRecords(records: GhiNhan[]): Promise<GhiNhan[]> {
+    return this.post<GhiNhan[]>({ action: 'add_records', records })
+  }
+
   processCollectiveEvent(
     sourceRecordId: string,
     status: GhiNhan['trang_thai_xu_ly_tap_the'],

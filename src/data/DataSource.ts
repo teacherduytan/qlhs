@@ -29,6 +29,7 @@ export interface DataSource {
 
   getRecords(maHs?: string): Promise<GhiNhan[]>
   addRecord(record: GhiNhan): Promise<GhiNhan>
+  addRecords(records: GhiNhan[]): Promise<GhiNhan[]>
   processCollectiveEvent(
     sourceRecordId: string,
     status: GhiNhan['trang_thai_xu_ly_tap_the'],
