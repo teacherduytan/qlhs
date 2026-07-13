@@ -11,6 +11,7 @@ import type {
   TrangThaiXuLyTapThe,
 } from '../../data/types'
 import { calculateClassWeeklyScores, type WeeklyStudentScore } from '../scoring/scoring'
+import { getRecordInsight, summarizeRecordImpacts } from '../records/recordInsights'
 import {
   getBadgeClassForCatalog,
   getBadgeClassForGroup,
@@ -103,6 +104,10 @@ type TrendDrillDownItem = {
 
 type GroupViewKey = 'CC' | 'VS' | 'NN' | 'KL' | 'HT'
 
+type ScoreSortKey = 'score_asc' | 'score_desc' | 'name_asc' | 'name_desc' | 'records_desc'
+
+type GroupSortKey = 'score_asc' | 'score_desc' | 'name_asc' | 'records_desc'
+
 type GroupViewRow = {
   maHs: string
   name: string
@@ -116,6 +121,8 @@ export function DashboardPage() {
   const [state, setState] = useState<DashboardState>({ status: 'loading' })
   const [expandedDay, setExpandedDay] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState('')
+  const [scoreQuery, setScoreQuery] = useState('')
+  const [scoreSort, setScoreSort] = useState<ScoreSortKey>('score_asc')
   const [scoresCollapsed, setScoresCollapsed] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<GroupViewKey | null>(null)
   const [showAllGroupStudents, setShowAllGroupStudents] = useState(false)
@@ -179,8 +186,13 @@ export function DashboardPage() {
       students: state.students,
       tuanSo: state.tuanSo,
     })
-    const sortedScores = [...currentScores].sort(
-      (a, b) => a.diem_xep_loai_thi_dua - b.diem_xep_loai_thi_dua,
+    const sortedScores = filterAndSortScores(
+      currentScores,
+      state.records,
+      studentById,
+      state.tuanSo,
+      scoreQuery,
+      scoreSort,
     )
     const previousScores = new Map(
       calculateClassWeeklyScores({
@@ -191,7 +203,7 @@ export function DashboardPage() {
       }).map((score) => [score.ma_hs, score]),
     )
     const collectiveEvents = getCollectiveEvents(state.records, state.catalog, state.tuanSo)
-    const missingGroupStudents = state.students.filter((student) => !resolveStudentGroup(student))
+    const missingGroupStudents = state.students.filter((student) => !student.to)
     const selectedWeek = findWeek(state.weekConfig, state.tuanSo)
     const dailyLogs = buildDailyLogs(state.records, state.weekConfig, state.tuanSo, selectedDate)
     const overviewStats = buildOverviewStats({
@@ -227,7 +239,7 @@ export function DashboardPage() {
       sortedScores,
       studentById,
     }
-  }, [selectedDate, selectedGroup, showAllGroupStudents, state])
+  }, [scoreQuery, scoreSort, selectedDate, selectedGroup, showAllGroupStudents, state])
 
   async function processCollectiveEvent(
     record: GhiNhan,
@@ -431,7 +443,9 @@ export function DashboardPage() {
             <div className="flex flex-col gap-3 border-b border-indigo-200 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Điểm thi đua học sinh</h3>
-                <p className="text-sm text-slate-600">{body.sortedScores.length} học sinh</p>
+                <p className="text-sm text-slate-600">
+                  {body.sortedScores.length}/{state.students.length} học sinh
+                </p>
                 <p className="mt-1 text-xs text-slate-500">
                   Điểm xếp loại chỉ so sánh được giữa các học sinh có cùng trạng thái đã/chưa có
                   điểm học tập trong tuần.
@@ -445,6 +459,33 @@ export function DashboardPage() {
                 {scoresCollapsed ? 'Mở rộng danh sách' : 'Thu gọn danh sách'}
               </button>
             </div>
+            {!scoresCollapsed ? (
+              <div className="grid gap-3 border-b border-indigo-200 bg-white/70 p-4 md:grid-cols-[1fr_220px]">
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Lọc bảng điểm
+                  <input
+                    value={scoreQuery}
+                    onChange={(event) => setScoreQuery(event.target.value)}
+                    placeholder="Tên, mã học sinh, xếp loại..."
+                    className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Sắp xếp
+                  <select
+                    value={scoreSort}
+                    onChange={(event) => setScoreSort(event.target.value as ScoreSortKey)}
+                    className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="score_asc">Tổng điểm thấp trước</option>
+                    <option value="score_desc">Tổng điểm cao trước</option>
+                    <option value="name_asc">Tên A-Z</option>
+                    <option value="name_desc">Tên Z-A</option>
+                    <option value="records_desc">Nhiều ghi nhận trước</option>
+                  </select>
+                </label>
+              </div>
+            ) : null}
             {scoresCollapsed ? (
               <div className="p-4 text-sm text-slate-600">
                 Danh sách đang thu gọn. Mở rộng để xem từng học sinh.
@@ -638,55 +679,77 @@ export function DashboardPage() {
               </p>
             </div>
             <div className="divide-y divide-emerald-100 bg-white/70">
-              {body.dailyLogs.map((day) => (
-                <section key={day.date} className="p-4">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedDay(expandedDay === day.date ? null : day.date)}
-                    className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">{formatDate(day.date)}</p>
-                      <p className="text-sm text-slate-600">
-                        {day.records.length
-                          ? `${day.records.length} ghi nhận`
-                          : 'Chưa có ghi nhận'}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
-                      {day.summary.map((item) => (
-                        <span
-                          key={item.label}
-                          className={`rounded-full border px-2 py-1 ${getBadgeClassForGroup(item.label)}`}
-                        >
-                          {item.label}: {item.count}
+              {body.dailyLogs.map((day) => {
+                const dayImpact = summarizeRecordImpacts(day.records, body.catalogByCode)
+
+                return (
+                  <section key={day.date} className="p-4">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedDay(expandedDay === day.date ? null : day.date)}
+                      className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{formatDate(day.date)}</p>
+                        <p className="text-sm text-slate-600">
+                          {day.records.length
+                            ? `${day.records.length} ghi nhận`
+                            : 'Chưa có ghi nhận'}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
+                        {day.summary.map((item) => (
+                          <span
+                            key={item.label}
+                            className={`rounded-full border px-2 py-1 ${getBadgeClassForGroup(item.label)}`}
+                          >
+                            {item.label}: {item.count}
+                          </span>
+                        ))}
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-700">
+                          +{dayImpact.positive}
                         </span>
-                      ))}
-                    </div>
-                  </button>
-                  {expandedDay === day.date && day.records.length ? (
-                    <div className="mt-3 space-y-2">
-                      {day.records.map((record, index) => (
-                        <article
-                          key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_hs}-${index}`}
-                          className="rounded-md border border-emerald-200 bg-white p-3 text-sm"
-                        >
-                          <p className="font-semibold text-slate-900">
-                            {record.ma_hs || `Tổ ${record.to_lien_quan || 'tập thể'}`} ·{' '}
-                            <CatalogCodeBadge
-                              catalogItem={record.ma_danh_muc ? body.catalogByCode.get(record.ma_danh_muc) : undefined}
-                              code={record.ma_danh_muc || record.loai}
-                            />
-                          </p>
-                          <p className="text-slate-600">
-                            {record.noi_dung || record.ly_do || 'Không có mô tả'}
-                          </p>
-                        </article>
-                      ))}
-                    </div>
-                  ) : null}
-                </section>
-              ))}
+                        <span className="rounded-full border border-red-200 bg-red-50 px-2 py-1 text-red-700">
+                          -{dayImpact.negative}
+                        </span>
+                      </div>
+                    </button>
+                    {expandedDay === day.date && day.records.length ? (
+                      <div className="mt-3 space-y-2">
+                        {day.records.map((record, index) => {
+                          const insight = getRecordInsight(record, state.records, body.catalogByCode)
+
+                          return (
+                            <article
+                              key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_hs}-${index}`}
+                              className="rounded-md border border-emerald-200 bg-white p-3 text-sm"
+                            >
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <p className="font-semibold text-slate-900">
+                                  {record.ma_hs || `Tổ ${record.to_lien_quan || 'tập thể'}`} ·{' '}
+                                  <CatalogCodeBadge
+                                    catalogItem={record.ma_danh_muc ? body.catalogByCode.get(record.ma_danh_muc) : undefined}
+                                    code={record.ma_danh_muc || record.loai}
+                                  />
+                                </p>
+                                <RecordImpactBadge insight={insight} />
+                              </div>
+                              <p className="mt-1 text-slate-600">
+                                {record.noi_dung || record.ly_do || 'Không có mô tả'}
+                              </p>
+                              {insight.polarity === 'negative' && insight.intervention ? (
+                                <p className="mt-2 rounded-md bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
+                                  {insight.intervention.label}: {insight.intervention.action}
+                                </p>
+                              ) : null}
+                            </article>
+                          )
+                        })}
+                      </div>
+                    ) : null}
+                  </section>
+                )
+              })}
             </div>
           </div>
         </>
@@ -724,6 +787,30 @@ function SummaryMetric({
       <p className={`text-xs font-semibold uppercase ${labelClass}`}>{label}</p>
       <p className="mt-1 text-2xl font-bold">{value}</p>
     </div>
+  )
+}
+
+function RecordImpactBadge({ insight }: { insight: ReturnType<typeof getRecordInsight> }) {
+  if (insight.impactValue === 1) {
+    return (
+      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">
+        +1 tích cực
+      </span>
+    )
+  }
+
+  if (insight.impactValue === -1) {
+    return (
+      <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-bold text-red-700">
+        {insight.duplicateCount ? `-1 tiêu cực · lần ${insight.duplicateCount}` : '-1 tiêu cực'}
+      </span>
+    )
+  }
+
+  return (
+    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-600">
+      0 theo dõi
+    </span>
   )
 }
 
@@ -1102,6 +1189,12 @@ function GroupViolationView({
 }) {
   const selectedLabel = group ? GROUP_OPTIONS.find((item) => item.group === group)?.label || group : 'tất cả nhóm'
   const isStudyGroup = group === 'HT'
+  const [query, setQuery] = useState('')
+  const [sortKey, setSortKey] = useState<GroupSortKey>('score_asc')
+  const visibleRows = useMemo(
+    () => filterAndSortGroupRows(rows, query, sortKey),
+    [query, rows, sortKey],
+  )
 
   return (
     <section ref={sectionRef} className="rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm">
@@ -1146,6 +1239,31 @@ function GroupViolationView({
         })}
       </div>
 
+      <div className="mt-4 grid gap-3 md:grid-cols-[1fr_220px]">
+        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+          Lọc danh sách nhóm
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Tên, mã học sinh, mã liên quan..."
+            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+          Sắp xếp
+          <select
+            value={sortKey}
+            onChange={(event) => setSortKey(event.target.value as GroupSortKey)}
+            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="score_asc">Điểm thấp trước</option>
+            <option value="score_desc">Điểm cao trước</option>
+            <option value="records_desc">Nhiều ghi nhận trước</option>
+            <option value="name_asc">Tên A-Z</option>
+          </select>
+        </label>
+      </div>
+
       <div className="mt-4 overflow-hidden rounded-md border border-violet-200 bg-white">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -1161,7 +1279,7 @@ function GroupViolationView({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.map((row, index) => (
+              {visibleRows.map((row, index) => (
                 <tr key={row.maHs} className="hover:bg-slate-50">
                   <td className="whitespace-nowrap px-3 py-3 text-slate-600">{index + 1}</td>
                   <td className="whitespace-nowrap px-3 py-3">
@@ -1198,7 +1316,7 @@ function GroupViolationView({
             </tbody>
           </table>
         </div>
-        {rows.length === 0 ? (
+        {visibleRows.length === 0 ? (
           <div className="border-t border-slate-100 p-4 text-sm text-slate-600">
             Không có học sinh nào trong {selectedLabel.toLowerCase()} theo bộ lọc hiện tại.
           </div>
@@ -1530,6 +1648,103 @@ function isActiveStudent(student: HocSinh): boolean {
   const left = student.ngay_roi_lop ? new Date(student.ngay_roi_lop) : null
 
   return (!joined || joined <= today) && (!left || left > today)
+}
+
+function filterAndSortScores(
+  scores: WeeklyStudentScore[],
+  records: GhiNhan[],
+  studentById: Map<string, HocSinh>,
+  tuanSo: number,
+  query: string,
+  sortKey: ScoreSortKey,
+): WeeklyStudentScore[] {
+  const keyword = normalizeText(query)
+  const recordCountByStudent = new Map<string, number>()
+
+  records.forEach((record) => {
+    if (!record.ma_hs || record.tuan_so !== tuanSo) {
+      return
+    }
+    recordCountByStudent.set(record.ma_hs, (recordCountByStudent.get(record.ma_hs) || 0) + 1)
+  })
+
+  return scores
+    .filter((score) => {
+      if (!keyword) {
+        return true
+      }
+
+      const student = studentById.get(score.ma_hs)
+      const haystack = normalizeText(
+        `${score.ma_hs} ${student ? `${student.ho} ${student.ten}` : ''} ${score.xep_loai}`,
+      )
+      return haystack.includes(keyword)
+    })
+    .sort((left, right) => {
+      if (sortKey === 'score_desc') {
+        return right.diem_xep_loai_thi_dua - left.diem_xep_loai_thi_dua
+      }
+
+      if (sortKey === 'name_asc' || sortKey === 'name_desc') {
+        const leftName = studentNameForSort(studentById.get(left.ma_hs), left.ma_hs)
+        const rightName = studentNameForSort(studentById.get(right.ma_hs), right.ma_hs)
+        const direction = sortKey === 'name_asc' ? 1 : -1
+        return direction * leftName.localeCompare(rightName, 'vi')
+      }
+
+      if (sortKey === 'records_desc') {
+        return (recordCountByStudent.get(right.ma_hs) || 0) - (recordCountByStudent.get(left.ma_hs) || 0)
+      }
+
+      return left.diem_xep_loai_thi_dua - right.diem_xep_loai_thi_dua
+    })
+}
+
+function filterAndSortGroupRows(
+  rows: GroupViewRow[],
+  query: string,
+  sortKey: GroupSortKey,
+): GroupViewRow[] {
+  const keyword = normalizeText(query)
+
+  return rows
+    .filter((row) => {
+      if (!keyword) {
+        return true
+      }
+
+      const relatedText = row.records
+        .map((record) => `${record.ma_danh_muc || record.loai} ${record.noi_dung || ''} ${record.ly_do || ''}`)
+        .join(' ')
+      return normalizeText(`${row.maHs} ${row.name} ${relatedText}`).includes(keyword)
+    })
+    .sort((left, right) => {
+      if (sortKey === 'score_desc') {
+        return valueForSortDesc(right.score) - valueForSortDesc(left.score)
+      }
+
+      if (sortKey === 'records_desc') {
+        return right.recordCount - left.recordCount
+      }
+
+      if (sortKey === 'name_asc') {
+        return left.name.localeCompare(right.name, 'vi')
+      }
+
+      return valueForSort(left.score) - valueForSort(right.score)
+    })
+}
+
+function studentNameForSort(student: HocSinh | undefined, fallback: string): string {
+  return student ? `${student.ten} ${student.ho}` : fallback
+}
+
+function valueForSort(value: number | null): number {
+  return value === null ? Number.POSITIVE_INFINITY : value
+}
+
+function valueForSortDesc(value: number | null): number {
+  return value === null ? Number.NEGATIVE_INFINITY : value
 }
 
 function getTopViolations(

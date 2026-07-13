@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh } from '../../data/types'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
+import { getRecordInsight, summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
 import { getBadgeClassForRecord } from '../scoring/scoreStyles'
 import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
@@ -209,16 +210,20 @@ function StudentProfileHeader({
 function FeaturedRecords({ catalog, records }: { catalog: DanhMucDiem[]; records: GhiNhan[] }) {
   const latestRecords = sortRecordsNewest(records).slice(0, 4)
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
+  const summary = summarizeRecordImpacts(records, catalogByCode)
 
   return (
     <div className="rounded-lg border border-blue-300 bg-blue-50 shadow-sm">
       <div className="border-b border-blue-200 p-4">
-        <div>
-          <p className="text-xs font-semibold uppercase text-blue-700">Ghi nhận của em</p>
-          <h2 className="text-xl font-bold text-slate-950">Những ghi nhận mới nhất trên lớp</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Các dòng thầy/cô đã nhập từ phiếu ghi nhận vào hệ thống.
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase text-blue-700">Ghi nhận của em</p>
+            <h2 className="text-xl font-bold text-slate-950">Những ghi nhận mới nhất trên lớp</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Các dòng thầy/cô đã nhập từ phiếu ghi nhận vào hệ thống.
+            </p>
+          </div>
+          <ImpactSummary negative={summary.negative} positive={summary.positive} />
         </div>
       </div>
 
@@ -229,7 +234,12 @@ function FeaturedRecords({ catalog, records }: { catalog: DanhMucDiem[]; records
               key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc}-${index}`}
               className="rounded-md border border-blue-100 bg-white p-3 shadow-sm"
             >
-              <RecordSummary record={record} catalogByCode={catalogByCode} featured />
+              <RecordSummary
+                allRecords={records}
+                record={record}
+                catalogByCode={catalogByCode}
+                featured
+              />
             </article>
           ))}
         </div>
@@ -341,17 +351,21 @@ function RecordHistory({
   const filteredRecords = filterHistoryRecords(records, filterMode, tuanSo, selectedDate)
   const groupedRecords = groupRecordsByWeek(filteredRecords)
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
+  const summary = summarizeRecordImpacts(filteredRecords, catalogByCode)
 
   return (
     <div className="rounded-lg border border-emerald-200 bg-emerald-50 shadow-sm">
       <div className="space-y-3 border-b border-emerald-200 p-4">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900">Lịch sử ghi nhận</h2>
-          <p className="text-sm text-slate-600">
-            {filteredRecords.length
-              ? `${filteredRecords.length}/${records.length} dòng ghi nhận`
-              : 'Không có ghi nhận trong bộ lọc hiện tại'}
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Lịch sử ghi nhận</h2>
+            <p className="text-sm text-slate-600">
+              {filteredRecords.length
+                ? `${filteredRecords.length}/${records.length} dòng ghi nhận`
+                : 'Không có ghi nhận trong bộ lọc hiện tại'}
+            </p>
+          </div>
+          <ImpactSummary negative={summary.negative} positive={summary.positive} />
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
@@ -392,7 +406,11 @@ function RecordHistory({
                     key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc}-${index}`}
                     className="rounded-md border border-emerald-200 bg-white p-3"
                   >
-                    <RecordSummary record={record} catalogByCode={catalogByCode} />
+                    <RecordSummary
+                      allRecords={records}
+                      record={record}
+                      catalogByCode={catalogByCode}
+                    />
                   </article>
                 ))}
               </div>
@@ -407,15 +425,18 @@ function RecordHistory({
 }
 
 function RecordSummary({
+  allRecords,
   catalogByCode,
   featured = false,
   record,
 }: {
+  allRecords: GhiNhan[]
   catalogByCode: Map<string, DanhMucDiem>
   featured?: boolean
   record: GhiNhan
 }) {
   const pointText = getRecordPointText(record)
+  const insight = getRecordInsight(record, allRecords, catalogByCode)
 
   return (
     <>
@@ -435,15 +456,54 @@ function RecordSummary({
         <p className="whitespace-nowrap text-sm font-medium text-slate-500">{formatDate(record.ngay)}</p>
       </div>
       <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
+        <ImpactBadge insight={insight} />
         <Badge className={getBadgeClassForRecord(record, catalogByCode)}>
           {labelRecordType(record.loai)}
         </Badge>
         {record.tiet ? <Badge>{`Tiết ${record.tiet}`}</Badge> : null}
         {record.mon_hoc ? <Badge>{record.mon_hoc}</Badge> : null}
         {pointText ? <Badge>{pointText}</Badge> : null}
+        {insight.polarity === 'negative' && insight.duplicateCount ? (
+          <Badge className="border-red-200 bg-red-50 text-red-700">
+            {`Lần ${insight.duplicateCount}`}
+          </Badge>
+        ) : null}
       </div>
+      {insight.polarity === 'negative' && insight.intervention ? (
+        <div className="mt-3 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-800">
+          <p className="font-bold">{insight.intervention.label}</p>
+          <p className="mt-1">{insight.intervention.action}</p>
+        </div>
+      ) : null}
     </>
   )
+}
+
+function ImpactSummary({ negative, positive }: { negative: number; positive: number }) {
+  return (
+    <div className="grid min-w-48 grid-cols-2 overflow-hidden rounded-md border border-white/80 bg-white text-center shadow-sm">
+      <div className="border-r border-slate-100 px-3 py-2">
+        <p className="text-xs font-semibold uppercase text-emerald-700">Tích cực</p>
+        <p className="text-lg font-bold text-emerald-700">+{positive}</p>
+      </div>
+      <div className="px-3 py-2">
+        <p className="text-xs font-semibold uppercase text-red-700">Tiêu cực</p>
+        <p className="text-lg font-bold text-red-700">-{negative}</p>
+      </div>
+    </div>
+  )
+}
+
+function ImpactBadge({ insight }: { insight: ReturnType<typeof getRecordInsight> }) {
+  if (insight.impactValue === 1) {
+    return <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">+1 tích cực</Badge>
+  }
+
+  if (insight.impactValue === -1) {
+    return <Badge className="border-red-200 bg-red-50 text-red-700">-1 tiêu cực</Badge>
+  }
+
+  return <Badge className="border-slate-200 bg-slate-50 text-slate-600">0 theo dõi</Badge>
 }
 
 function Badge({ children, className = 'bg-slate-100 text-slate-700 border-slate-200' }: { children: string; className?: string }) {

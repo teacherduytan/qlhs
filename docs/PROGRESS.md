@@ -95,6 +95,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C062 | ✅ Xong | 13/07/2026 | Đưa ghi nhận của học sinh thành nội dung nổi bật đầu trang hồ sơ public; thông tin cá nhân chuyển vào tab phụ |
 | C063 | ✅ Xong | 13/07/2026 | Tách khen thưởng/KT khỏi Vi phạm phổ biến và thêm ghi nhận tích cực trên Dashboard |
 | C064 | ✅ Xong | 13/07/2026 | Phân màu nền/viền các section Dashboard và hồ sơ học sinh theo khối nội dung |
+| C065 | ✅ Xong | 13/07/2026 | Lọc/sắp xếp bảng, tổng tích cực/tiêu cực, đếm lặp vi phạm và gợi ý xử lý |
 
 ---
 

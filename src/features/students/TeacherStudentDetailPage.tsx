@@ -2,7 +2,6 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, DienHocSinh, HocSinh, PhuHuynh } from '../../data/types'
-import { getStudentGroup } from './studentGroups'
 
 type DetailState =
   | { status: 'loading' }
@@ -139,7 +138,7 @@ export function TeacherStudentDetailPage() {
                     STT {state.student.tt}
                   </span>
                   <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold">
-                    Tổ {state.student.to || getStudentGroup(state.student.ma_hs) || '-'}
+                    Tổ {state.student.to || '-'}
                   </span>
                   <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold">
                     {getRole(state.student.ma_hs, state.banCanSu)}

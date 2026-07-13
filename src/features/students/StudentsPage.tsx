@@ -4,7 +4,6 @@ import { dataSource } from '../../data/client'
 import type { BanCanSu, CauHinhTuan, DanhMucDiem, DienHocSinh, GhiNhan, HocSinh } from '../../data/types'
 import { calculateWeeklyStudentScore } from '../scoring/scoring'
 import { getBadgeClassForGroup } from '../scoring/scoreStyles'
-import { getStudentGroup } from './studentGroups'
 
 type StudentForm = {
   ho: string
@@ -19,6 +18,8 @@ type StudentForm = {
   la_co_do: boolean
   ghi_chu: string
 }
+
+type StudentSortKey = 'tt_asc' | 'name_asc' | 'name_desc' | 'team_asc'
 
 const EMPTY_FORM: StudentForm = {
   ho: '',
@@ -43,6 +44,9 @@ export function StudentsPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [teamFilter, setTeamFilter] = useState('all')
+  const [dienFilter, setDienFilter] = useState('all')
+  const [studentSort, setStudentSort] = useState<StudentSortKey>('tt_asc')
   const [expandedMaHs, setExpandedMaHs] = useState<string | null>(null)
   const [studentListCollapsed, setStudentListCollapsed] = useState(false)
   const [copyMessage, setCopyMessage] = useState<string | null>(null)
@@ -91,19 +95,31 @@ export function StudentsPage() {
 
   const visibleStudents = useMemo(() => {
     const keyword = normalize(query)
-    const sorted = [...students].sort((a, b) => a.tt - b.tt)
+    return students
+      .filter((student) => {
+        if (!keyword) {
+          return true
+        }
 
-    if (!keyword) {
-      return sorted
-    }
+        const haystack = normalize(
+          `${student.tt} ${student.ma_hs} ${student.ho} ${student.ten} ${student.dien} ${student.to || ''}`,
+        )
+        return haystack.includes(keyword)
+      })
+      .filter((student) => {
+        if (teamFilter === 'all') {
+          return true
+        }
 
-    return sorted.filter((student) => {
-      const haystack = normalize(
-        `${student.tt} ${student.ma_hs} ${student.ho} ${student.ten} ${student.dien}`,
-      )
-      return haystack.includes(keyword)
-    })
-  }, [query, students])
+        if (teamFilter === 'missing') {
+          return !student.to
+        }
+
+        return student.to === Number(teamFilter)
+      })
+      .filter((student) => dienFilter === 'all' || student.dien === dienFilter)
+      .sort((left, right) => compareStudents(left, right, studentSort))
+  }, [dienFilter, query, studentSort, students, teamFilter])
 
   const currentWeek = useMemo(() => getLatestWeek(records, weekConfig), [records, weekConfig])
 
@@ -204,8 +220,8 @@ export function StudentsPage() {
         </button>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="flex flex-1 flex-col gap-1 text-sm font-medium text-slate-700">
+      <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 lg:grid-cols-[1fr_160px_160px_200px_auto] lg:items-end">
+        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
           Tìm nhanh
           <input
             value={query}
@@ -214,7 +230,47 @@ export function StudentsPage() {
             className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
         </label>
-        <p className="text-sm font-medium text-blue-700">
+        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+          Lọc tổ
+          <select
+            value={teamFilter}
+            onChange={(event) => setTeamFilter(event.target.value)}
+            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="all">Tất cả tổ</option>
+            <option value="1">Tổ 1</option>
+            <option value="2">Tổ 2</option>
+            <option value="3">Tổ 3</option>
+            <option value="missing">Chưa có tổ</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+          Lọc diện
+          <select
+            value={dienFilter}
+            onChange={(event) => setDienFilter(event.target.value)}
+            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="all">Tất cả diện</option>
+            <option value="2B">2B</option>
+            <option value="BT">BT</option>
+            <option value="NT">NT</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+          Sắp xếp
+          <select
+            value={studentSort}
+            onChange={(event) => setStudentSort(event.target.value as StudentSortKey)}
+            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="tt_asc">STT tăng dần</option>
+            <option value="name_asc">Tên A-Z</option>
+            <option value="name_desc">Tên Z-A</option>
+            <option value="team_asc">Tổ tăng dần</option>
+          </select>
+        </label>
+        <p className="pb-2 text-sm font-medium text-blue-700 lg:text-right">
           {visibleStudents.length}/{students.length} học sinh
         </p>
       </div>
@@ -439,7 +495,7 @@ export function StudentsPage() {
                             </button>
                           </td>
                           <td className="whitespace-nowrap px-3 py-3 text-slate-700">
-                            {resolveStudentGroup(student) || '-'}
+                            {student.to || '-'}
                           </td>
                           <td className="whitespace-nowrap px-3 py-3 text-slate-700">{student.dien}</td>
                           <td className="whitespace-nowrap px-3 py-3 text-slate-700">
@@ -484,7 +540,7 @@ export function StudentsPage() {
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
                                   <span className="rounded-full bg-white px-3 py-1 font-semibold">
-                                    Tổ {resolveStudentGroup(student) || '-'}
+                                    Tổ {student.to || '-'}
                                   </span>
                                   <span className="rounded-full bg-white px-3 py-1 font-semibold">
                                     {role}
@@ -646,8 +702,25 @@ function normalize(value: string): string {
     .replace(/[\u0300-\u036f]/g, '')
 }
 
-function resolveStudentGroup(student: HocSinh): number | null {
-  return student.to || getStudentGroup(student.ma_hs)
+function compareStudents(left: HocSinh, right: HocSinh, sortKey: StudentSortKey): number {
+  if (sortKey === 'name_asc' || sortKey === 'name_desc') {
+    const direction = sortKey === 'name_asc' ? 1 : -1
+    return direction * studentNameForSort(left).localeCompare(studentNameForSort(right), 'vi')
+  }
+
+  if (sortKey === 'team_asc') {
+    const leftTeam = left.to || Number.POSITIVE_INFINITY
+    const rightTeam = right.to || Number.POSITIVE_INFINITY
+    if (leftTeam !== rightTeam) {
+      return leftTeam - rightTeam
+    }
+  }
+
+  return left.tt - right.tt
+}
+
+function studentNameForSort(student: HocSinh): string {
+  return `${student.ten} ${student.ho}`
 }
 
 function getLatestWeek(records: GhiNhan[], weekConfig: CauHinhTuan[]): number {
