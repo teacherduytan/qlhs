@@ -36,6 +36,12 @@ export interface DataSource {
   ): Promise<GhiNhan[]>
 
   getPointCatalog(): Promise<DanhMucDiem[]>
+  addPointCatalogItem(item: DanhMucDiem): Promise<DanhMucDiem>
+  updatePointCatalogItem(
+    maDanhMuc: string,
+    item: Partial<DanhMucDiem>,
+  ): Promise<DanhMucDiem>
+  deletePointCatalogItem(maDanhMuc: string): Promise<void>
   getWeekConfig(): Promise<CauHinhTuan[]>
   getBanCanSu(): Promise<BanCanSu[]>
   getPhuHuynh(maHs?: string): Promise<PhuHuynh[]>

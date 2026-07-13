@@ -119,6 +119,30 @@ function doPost(e) {
       return jsonResponse_({ ok: true, data: null });
     }
 
+    if (body.action === 'add_point_catalog_item' && body.item) {
+      var createdCatalogItem = appendUniqueRow_(
+        SHEET_TABS.DanhMucDiem,
+        normalizePointCatalogItem_(body.item),
+        'ma_danh_muc'
+      );
+      return jsonResponse_({ ok: true, data: createdCatalogItem });
+    }
+
+    if (body.action === 'update_point_catalog_item' && body.ma_danh_muc && body.item) {
+      var updatedCatalogItem = updateRowByKey_(
+        SHEET_TABS.DanhMucDiem,
+        'ma_danh_muc',
+        body.ma_danh_muc,
+        normalizePointCatalogItem_(body.item, body.ma_danh_muc)
+      );
+      return jsonResponse_({ ok: true, data: updatedCatalogItem });
+    }
+
+    if (body.action === 'delete_point_catalog_item' && body.ma_danh_muc) {
+      deletePointCatalogItem_(body.ma_danh_muc);
+      return jsonResponse_({ ok: true, data: null });
+    }
+
     if (body.action === 'process_collective_event' && body.source_record_id && body.status) {
       var generated = processCollectiveEvent_(
         body.source_record_id,
@@ -321,6 +345,62 @@ function deleteRowByKey_(tabName, keyField, keyValue) {
   }
 
   throw new Error('Row not found: ' + keyValue);
+}
+
+function normalizePointCatalogItem_(item, fixedCode) {
+  var code = String(fixedCode || item.ma_danh_muc || '').trim().toUpperCase();
+  if (!code) throw new Error('Thieu ma_danh_muc');
+  if (!/^[A-Z0-9_-]+$/.test(code)) {
+    throw new Error('ma_danh_muc chi nen gom chu in hoa, so, dau gach ngang hoac gach duoi: ' + code);
+  }
+
+  var group = String(item.nhom || '').trim().toUpperCase();
+  if (['CC', 'VS', 'NN', 'KL', 'KT'].indexOf(group) === -1) {
+    throw new Error('Nhom danh muc khong hop le: ' + group);
+  }
+
+  var name = String(item.ten_muc || '').trim();
+  if (!name) throw new Error('Thieu ten_muc');
+
+  var point = Number(item.diem);
+  if (isNaN(point)) throw new Error('Diem danh muc khong hop le: ' + item.diem);
+
+  var scope = String(item.pham_vi || 'ca_nhan').trim();
+  if (['ca_nhan', 'tap_the', 'to_truc'].indexOf(scope) === -1) {
+    throw new Error('Pham vi danh muc khong hop le: ' + scope);
+  }
+
+  return {
+    ma_danh_muc: code,
+    nhom: group,
+    ten_muc: name,
+    diem: point,
+    nghiem_trong: toBoolean_(item.nghiem_trong),
+    pham_vi: scope,
+  };
+}
+
+function deletePointCatalogItem_(maDanhMuc) {
+  var code = String(maDanhMuc || '').trim().toUpperCase();
+  var references = getSheetObjects_(SHEET_TABS.GhiNhan).filter(function (record) {
+    return String(record.ma_danh_muc || '').trim().toUpperCase() === code;
+  });
+
+  if (references.length > 0) {
+    throw new Error(
+      'Khong the xoa danh muc ' + code + ' vi da co ' + references.length + ' ghi nhan dang dung ma nay.'
+    );
+  }
+
+  deleteRowByKey_(SHEET_TABS.DanhMucDiem, 'ma_danh_muc', code);
+}
+
+function toBoolean_(value) {
+  if (value === true) return true;
+  if (value === false || value === null || value === undefined || value === '') return false;
+
+  var text = String(value).trim().toLowerCase();
+  return text === 'true' || text === '1' || text === 'yes' || text === 'x';
 }
 
 function deleteRowsByField_(tabName, keyField, keyValue) {

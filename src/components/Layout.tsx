@@ -11,6 +11,7 @@ import { downloadPrintableForm } from '../features/forms/downloadPrintableForm'
 const navItems = [
   { to: '/', label: 'Tổng quan' },
   { to: '/hoc-sinh', label: 'Học sinh' },
+  { to: '/danh-muc', label: 'Danh mục' },
   { to: '/import', label: 'Import' },
 ]
 

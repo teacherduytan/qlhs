@@ -95,6 +95,28 @@ export class GoogleSheetsDataSource implements DataSource {
     return this.get<DanhMucDiem[]>('danh_muc_diem')
   }
 
+  addPointCatalogItem(item: DanhMucDiem): Promise<DanhMucDiem> {
+    return this.post<DanhMucDiem>({ action: 'add_point_catalog_item', item })
+  }
+
+  updatePointCatalogItem(
+    maDanhMuc: string,
+    item: Partial<DanhMucDiem>,
+  ): Promise<DanhMucDiem> {
+    return this.post<DanhMucDiem>({
+      action: 'update_point_catalog_item',
+      ma_danh_muc: maDanhMuc,
+      item,
+    })
+  }
+
+  async deletePointCatalogItem(maDanhMuc: string): Promise<void> {
+    await this.post<null>({
+      action: 'delete_point_catalog_item',
+      ma_danh_muc: maDanhMuc,
+    })
+  }
+
   getWeekConfig(): Promise<CauHinhTuan[]> {
     return this.get<CauHinhTuan[]>('cau_hinh_tuan')
   }

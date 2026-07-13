@@ -101,6 +101,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C068 | ✅ Xong | 13/07/2026 | Đưa vi phạm học tập tự do như quên dụng cụ vào Xem theo Nhóm vi phạm |
 | C069 | ✅ Xong | 13/07/2026 | Xem theo Nhóm vi phạm hiển thị nội dung vi phạm thay vì chỉ mã |
 | C070 | ✅ Xong | 13/07/2026 | Phân loại Tích cực/Vi phạm ngay trong cột Nội dung vi phạm/ghi nhận |
+| C071 | ✅ Xong | 13/07/2026 | Thêm trang quản lý danh mục vi phạm/tích cực và CRUD tab DanhMucDiem |
 
 ---
 

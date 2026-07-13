@@ -1,5 +1,6 @@
 import { createHashRouter } from 'react-router-dom'
 import { Layout } from './components/Layout'
+import { CatalogPage } from './features/catalog/CatalogPage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { ImportPage } from './features/import/ImportPage'
 import { StudentProfilePage } from './features/students/StudentProfilePage'
@@ -14,6 +15,7 @@ export const router = createHashRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'hoc-sinh', element: <StudentsPage /> },
       { path: 'quan-ly/hoc-sinh/:maHs', element: <TeacherStudentDetailPage /> },
+      { path: 'danh-muc', element: <CatalogPage /> },
       { path: 'import', element: <ImportPage /> },
     ],
   },
