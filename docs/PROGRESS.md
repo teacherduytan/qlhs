@@ -56,8 +56,8 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 
 | ID | Trạng thái | Ngày xong | Ghi chú |
 |---|---|---|---|
-| C028 | ✅ Xong | 11/07/2026 | doPost yêu cầu write_secret khớp Script Property QLHS_WRITE_SECRET |
-| C029 | ✅ Xong | 11/07/2026 | README/hướng dẫn deploy ghi rõ Execute as Me, Anyone, Manage deployments và write secret |
+| C028 | ✅ Xong | 11/07/2026 | Cơ chế write_secret ban đầu cho doPost; đã được thay thế bởi đăng nhập giáo viên + session token ở C060 |
+| C029 | ✅ Xong | 11/07/2026 | README/hướng dẫn deploy ghi rõ Execute as Me, Anyone, Manage deployments; phần bảo mật đã cập nhật lại theo C060 |
 | C030 | ✅ Xong | 11/07/2026 | Danh sách học sinh mở rộng accordion, xem/copy link hồ sơ |
 | C031 | ✅ Xong | 11/07/2026 | Chưa có điểm học tập thì chia 4 thành phần, không còn mặc định 66,67 |
 | C032 | ✅ Xong | 11/07/2026 | Thêm trường to cho HocSinh, hiển thị tổ trên danh sách/hồ sơ và xử lý tổ trực |
@@ -89,7 +89,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C057 | ✅ Xong | 12/07/2026 | Mẫu phiếu in trong app và docs/mau-phieu-ghi-nhan.md chuyển sang 1 bảng duy nhất, không mã |
 | C058 | ✅ Xong | 12/07/2026 | Prompt AI suy luận mã/phạm vi từ phiếu tự do, map thành tích sang KT và bổ sung KT01-KT05 vào seed DanhMucDiem |
 | C059 | ✅ Xong | 12/07/2026 | Cập nhật Vite base path thành /qlhs/ cho GitHub Pages repo teacherduytan/qlhs |
-| C059a | ✅ Xong | 12/07/2026 | Hoàn thiện CI/CD GitHub Pages: deploy bằng Actions, tránh trùng artifact và đọc VITE_APPS_SCRIPT_URL/VITE_WRITE_SECRET từ GitHub Secrets |
+| C059a | ✅ Xong | 12/07/2026 | Hoàn thiện CI/CD GitHub Pages: deploy bằng Actions, tránh trùng artifact và đọc VITE_APPS_SCRIPT_URL từ GitHub Secrets |
 | C060 | ✅ Xong | 13/07/2026 | Thêm đăng nhập giáo viên thật qua Apps Script, session token lưu sessionStorage, bỏ VITE write_secret khỏi bundle, ẩn lối điều hướng từ hồ sơ học sinh sang vùng giáo viên |
 
 ---
