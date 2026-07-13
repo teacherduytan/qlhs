@@ -375,15 +375,16 @@ export function DashboardPage() {
       {state.status === 'success' && body ? (
         <>
           <div className="grid gap-3 sm:grid-cols-3">
-            <SummaryMetric label="Tuần" value={state.tuanSo} />
-            <SummaryMetric label="Sĩ số" value={state.students.length} />
+            <SummaryMetric label="Tuần" tone="week" value={state.tuanSo} />
+            <SummaryMetric label="Sĩ số" tone="class" value={state.students.length} />
             <SummaryMetric
               label="Cần chú ý"
+              tone="attention"
               value={body.sortedScores.filter(needsAttention).length}
             />
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="rounded-lg border border-sky-200 bg-sky-50 p-4 shadow-sm">
             <div className="grid gap-3 md:grid-cols-2">
               <WeekSelector
                 value={state.tuanSo}
@@ -426,8 +427,8 @@ export function DashboardPage() {
             </div>
           ) : null}
 
-          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-            <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="overflow-hidden rounded-lg border border-indigo-200 bg-indigo-50 shadow-sm">
+            <div className="flex flex-col gap-3 border-b border-indigo-200 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Điểm thi đua học sinh</h3>
                 <p className="text-sm text-slate-600">{body.sortedScores.length} học sinh</p>
@@ -451,7 +452,7 @@ export function DashboardPage() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                  <thead className="bg-indigo-100 text-left text-xs font-semibold uppercase text-indigo-900">
                     <tr>
                       <th className="px-3 py-3">STT</th>
                       <th className="px-3 py-3">Học sinh</th>
@@ -465,7 +466,7 @@ export function DashboardPage() {
                       <th className="px-3 py-3">Gợi ý</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-indigo-100 bg-white">
                     {body.sortedScores.map((score, index) => {
                       const student = body.studentById.get(score.ma_hs)
                       const suggestions = buildPedagogySuggestions({
@@ -521,15 +522,15 @@ export function DashboardPage() {
             )}
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 p-4">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 shadow-sm">
+            <div className="border-b border-amber-200 p-4">
               <h3 className="text-base font-bold text-slate-900">Sự kiện của lớp/tổ</h3>
               <p className="text-sm text-slate-600">
                 Các dòng tập thể hoặc tổ trực chưa tính vào điểm cá nhân.
               </p>
             </div>
             {body.collectiveEvents.length ? (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-amber-100 bg-white/70">
                 {body.collectiveEvents.map(({ catalogItem, record }) => (
                   <article key={eventKey(record)} className="space-y-3 p-4">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
@@ -627,8 +628,8 @@ export function DashboardPage() {
             )}
           </div>
 
-          <div ref={dailyLogRef} className="rounded-lg border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 p-4">
+          <div ref={dailyLogRef} className="rounded-lg border border-emerald-200 bg-emerald-50 shadow-sm">
+            <div className="border-b border-emerald-200 p-4">
               <h3 className="text-base font-bold text-slate-900">Nhật ký theo ngày</h3>
               <p className="text-sm text-slate-600">
                 {selectedDate
@@ -636,7 +637,7 @@ export function DashboardPage() {
                   : `Tất cả các ngày trong tuần ${state.tuanSo}.`}
               </p>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-emerald-100 bg-white/70">
               {body.dailyLogs.map((day) => (
                 <section key={day.date} className="p-4">
                   <button
@@ -668,7 +669,7 @@ export function DashboardPage() {
                       {day.records.map((record, index) => (
                         <article
                           key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_hs}-${index}`}
-                          className="rounded-md border border-slate-200 p-3 text-sm"
+                          className="rounded-md border border-emerald-200 bg-white p-3 text-sm"
                         >
                           <p className="font-semibold text-slate-900">
                             {record.ma_hs || `Tổ ${record.to_lien_quan || 'tập thể'}`} ·{' '}
@@ -694,11 +695,34 @@ export function DashboardPage() {
   )
 }
 
-function SummaryMetric({ label, value }: { label: string; value: number }) {
+type SummaryMetricTone = 'week' | 'class' | 'attention'
+
+function SummaryMetric({
+  label,
+  tone,
+  value,
+}: {
+  label: string
+  tone: SummaryMetricTone
+  value: number
+}) {
+  const toneClass =
+    tone === 'week'
+      ? 'border-sky-200 bg-sky-50 text-sky-950'
+      : tone === 'class'
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-950'
+        : 'border-rose-200 bg-rose-50 text-rose-950'
+  const labelClass =
+    tone === 'week'
+      ? 'text-sky-700'
+      : tone === 'class'
+        ? 'text-emerald-700'
+        : 'text-rose-700'
+
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
+    <div className={`rounded-lg border p-4 shadow-sm ${toneClass}`}>
+      <p className={`text-xs font-semibold uppercase ${labelClass}`}>{label}</p>
+      <p className="mt-1 text-2xl font-bold">{value}</p>
     </div>
   )
 }
@@ -740,6 +764,7 @@ function OverviewStats({
         activeCode={activeCode}
         onSelectStat={selectStat}
         stats={stats.action}
+        tone="action"
       />
       <OverviewGroup
         title="Nhóm quan sát chung"
@@ -747,6 +772,7 @@ function OverviewStats({
         activeCode={activeCode}
         onSelectStat={selectStat}
         stats={stats.observation}
+        tone="observation"
       />
       {activeStat?.drillDown ? (
         <OverviewDrillDownModal onClose={() => setActiveCode(null)}>
@@ -766,20 +792,27 @@ function OverviewGroup({
   description,
   onSelectStat,
   stats,
+  tone,
   title,
 }: {
   activeCode: string | null
   description: string
   onSelectStat: (stat: OverviewStat) => void
   stats: OverviewStat[]
+  tone: 'action' | 'observation'
   title: string
 }) {
   if (!stats.length) {
     return null
   }
 
+  const sectionClass =
+    tone === 'action'
+      ? 'border-rose-200 bg-rose-50'
+      : 'border-cyan-200 bg-cyan-50'
+
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
+    <section className={`rounded-lg border p-4 shadow-sm ${sectionClass}`}>
       <div className="mb-3">
         <h3 className="text-base font-bold text-slate-900">{title}</h3>
         <p className="text-sm text-slate-600">{description}</p>
@@ -1071,8 +1104,8 @@ function GroupViolationView({
   const isStudyGroup = group === 'HT'
 
   return (
-    <section ref={sectionRef} className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
+    <section ref={sectionRef} className="rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-violet-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h3 className="text-base font-bold text-slate-900">Xem theo Nhóm vi phạm</h3>
           <p className="text-sm text-slate-600">
@@ -1113,10 +1146,10 @@ function GroupViolationView({
         })}
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-md border border-slate-200">
+      <div className="mt-4 overflow-hidden rounded-md border border-violet-200 bg-white">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+            <thead className="bg-violet-100 text-left text-xs font-semibold uppercase text-violet-900">
               <tr>
                 <th className="px-3 py-3">STT</th>
                 <th className="px-3 py-3">Học sinh</th>

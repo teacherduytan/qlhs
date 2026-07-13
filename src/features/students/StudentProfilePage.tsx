@@ -148,7 +148,7 @@ export function StudentProfilePage() {
 
             {activeTab === 'score' ? (
               <>
-                <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm">
                   <div className="max-w-xs">
                     <WeekSelector
                       label="Tuần tính điểm"
@@ -186,7 +186,7 @@ function StudentProfileHeader({
   student: HocSinh
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-sky-200 bg-sky-50 p-4 shadow-sm">
       <div className="flex items-center gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
           {student.ten.slice(0, 1).toUpperCase()}
@@ -197,7 +197,7 @@ function StudentProfileHeader({
             {student.ho} {student.ten}
           </h2>
         </div>
-        <div className="rounded-md bg-slate-100 px-3 py-2 text-center">
+        <div className="rounded-md bg-white px-3 py-2 text-center ring-1 ring-sky-100">
           <p className="text-lg font-bold text-slate-900">{recordCount}</p>
           <p className="text-xs font-semibold text-slate-500">ghi nhận</p>
         </div>
@@ -212,7 +212,7 @@ function FeaturedRecords({ catalog, records }: { catalog: DanhMucDiem[]; records
 
   return (
     <div className="rounded-lg border border-blue-300 bg-blue-50 shadow-sm">
-      <div className="border-b border-blue-100 p-4">
+      <div className="border-b border-blue-200 p-4">
         <div>
           <p className="text-xs font-semibold uppercase text-blue-700">Ghi nhận của em</p>
           <h2 className="text-xl font-bold text-slate-950">Những ghi nhận mới nhất trên lớp</h2>
@@ -256,7 +256,7 @@ function ProfileTabs({
   ]
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+    <div className="rounded-lg border border-slate-300 bg-slate-100 p-1 shadow-sm">
       <div className="grid grid-cols-3 gap-1">
         {tabs.map((tab) => (
           <button
@@ -287,8 +287,8 @@ function ScoreSummary({ score }: { score: WeeklyStudentScore }) {
   ]
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-lg border border-amber-200 bg-amber-50 shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-amber-200 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-900">Điểm thi đua tuần {score.tuan_so}</h2>
           <p className="text-sm text-slate-600">Tính theo quy chế thi đua của trường</p>
@@ -305,7 +305,7 @@ function ScoreSummary({ score }: { score: WeeklyStudentScore }) {
         </div>
       </div>
 
-      <div className="grid gap-px bg-slate-200 sm:grid-cols-5">
+      <div className="grid gap-px bg-amber-200 sm:grid-cols-5">
         {scoreItems.map((item) => (
           <div key={item.label} className="bg-white p-4">
             <p className="text-xs font-semibold uppercase text-slate-500">{item.label}</p>
@@ -343,8 +343,8 @@ function RecordHistory({
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="space-y-3 border-b border-slate-200 p-4">
+    <div className="rounded-lg border border-emerald-200 bg-emerald-50 shadow-sm">
+      <div className="space-y-3 border-b border-emerald-200 p-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900">Lịch sử ghi nhận</h2>
           <p className="text-sm text-slate-600">
@@ -382,7 +382,7 @@ function RecordHistory({
       </div>
 
       {groupedRecords.length ? (
-        <div className="divide-y divide-slate-200">
+        <div className="divide-y divide-emerald-200 bg-white/70">
           {groupedRecords.map(({ records: weekRecords, tuanSo }) => (
             <section key={tuanSo} className="p-4">
               <h3 className="text-sm font-bold text-blue-700">Tuần {tuanSo}</h3>
@@ -390,7 +390,7 @@ function RecordHistory({
                 {weekRecords.map((record, index) => (
                   <article
                     key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc}-${index}`}
-                    className="rounded-md border border-slate-200 p-3"
+                    className="rounded-md border border-emerald-200 bg-white p-3"
                   >
                     <RecordSummary record={record} catalogByCode={catalogByCode} />
                   </article>
@@ -456,14 +456,14 @@ function Badge({ children, className = 'bg-slate-100 text-slate-700 border-slate
 
 function ProfileCard({ role, student }: { role: string; student: HocSinh }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 bg-blue-50 p-5">
+    <div className="overflow-hidden rounded-lg border border-violet-200 bg-violet-50 shadow-sm">
+      <div className="border-b border-violet-200 bg-violet-100 p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white">
             {student.ten.slice(0, 1).toUpperCase()}
           </div>
           <div>
-            <p className="text-sm font-semibold text-blue-700">{role}</p>
+            <p className="text-sm font-semibold text-violet-700">{role}</p>
             <h2 className="text-2xl font-bold text-slate-950">
               {student.ho} {student.ten}
             </h2>
@@ -472,7 +472,7 @@ function ProfileCard({ role, student }: { role: string; student: HocSinh }) {
         </div>
       </div>
 
-      <dl className="grid gap-px bg-slate-200 sm:grid-cols-2">
+      <dl className="grid gap-px bg-violet-200 sm:grid-cols-2">
         <InfoItem label="Số thứ tự" value={String(student.tt)} />
         <InfoItem label="Diện" value={student.dien} />
         <InfoItem label="Tổ" value={String(resolveStudentGroup(student) || '-')} />
@@ -485,7 +485,7 @@ function ProfileCard({ role, student }: { role: string; student: HocSinh }) {
       </dl>
 
       {student.ghi_chu ? (
-        <div className="border-t border-slate-200 p-4">
+        <div className="border-t border-violet-200 bg-white/70 p-4">
           <p className="text-sm font-semibold text-slate-700">Ghi chú</p>
           <p className="mt-1 text-sm text-slate-600">{student.ghi_chu}</p>
         </div>
