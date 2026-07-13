@@ -1361,9 +1361,9 @@ function GroupViolationView({
           <h3 className="text-base font-bold text-slate-900">Xem theo Nhóm vi phạm</h3>
           <p className="text-sm text-slate-600">
             {group === null
-              ? 'Danh sách mặc định không lọc nhóm, sắp xếp theo điểm tổng hợp từ thấp đến cao.'
+              ? 'Danh sách mặc định không lọc nhóm, có cả các ghi nhận vi phạm tự do trong tuần.'
               : isStudyGroup
-              ? 'Sắp xếp điểm học tập từ thấp đến cao trong tuần đang xem.'
+              ? 'Hiển thị cả điểm học tập và các vi phạm học tập như quên dụng cụ trong tuần đang xem.'
               : 'Danh sách học sinh có ghi nhận thuộc nhóm đã chọn, điểm thấp nhất xếp trước.'}
           </p>
         </div>
@@ -1447,8 +1447,8 @@ function GroupViolationView({
                 <th className="px-3 py-3">
                   {group === null ? 'Điểm tổng hợp' : isStudyGroup ? 'Điểm học tập' : `Điểm ${selectedLabel}`}
                 </th>
-                <th className="px-3 py-3">{isStudyGroup ? 'Số điểm đã ghi' : 'Số ghi nhận'}</th>
-                <th className="px-3 py-3">{isStudyGroup ? 'Điểm môn' : 'Mã liên quan'}</th>
+                <th className="px-3 py-3">Số ghi nhận</th>
+                <th className="px-3 py-3">{isStudyGroup ? 'Điểm/nội dung liên quan' : 'Mã liên quan'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1474,7 +1474,7 @@ function GroupViolationView({
                             code={record.ma_danh_muc || record.loai}
                             label={
                               isStudyGroup
-                                ? `${record.mon_hoc || 'Điểm'}: ${record.diem_so_mon}`
+                                ? getGroupRecordLabel(record)
                                 : record.ma_danh_muc || record.loai
                             }
                           />
@@ -2033,11 +2033,11 @@ function buildGroupViewRows({
         }
 
         if (group === 'HT') {
-          return record.loai === 'hoc_tap' && typeof record.diem_so_mon === 'number'
+          return getGroupForRecord(record, catalogByCode) === 'HT'
         }
 
         const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
-        return catalogItem?.nhom === group && catalogItem.pham_vi === 'ca_nhan'
+        return getGroupForRecord(record, catalogByCode) === group && catalogItem?.pham_vi !== 'tap_the' && catalogItem?.pham_vi !== 'to_truc'
       })
 
       return {
@@ -2087,6 +2087,61 @@ function getScoreForGroup(score: WeeklyStudentScore, group: GroupViewKey | null)
   }
 
   return score.diem_hoc_tap
+}
+
+function getGroupForRecord(
+  record: GhiNhan,
+  catalogByCode: Map<string, DanhMucDiem>,
+): GroupViewKey | null {
+  const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
+
+  if (
+    catalogItem &&
+    (catalogItem.nhom === 'CC' ||
+      catalogItem.nhom === 'VS' ||
+      catalogItem.nhom === 'NN' ||
+      catalogItem.nhom === 'KL')
+  ) {
+    return catalogItem.nhom
+  }
+
+  if (record.loai === 'chuyen_can') {
+    return 'CC'
+  }
+
+  if (record.loai === 've_sinh') {
+    return 'VS'
+  }
+
+  if (record.loai === 'ne_nep') {
+    return 'NN'
+  }
+
+  if (record.loai === 'trat_tu_ky_luat') {
+    return 'KL'
+  }
+
+  if (record.loai === 'hoc_tap') {
+    return 'HT'
+  }
+
+  return null
+}
+
+function getGroupRecordLabel(record: GhiNhan): string {
+  if (record.loai === 'hoc_tap' && typeof record.diem_so_mon === 'number') {
+    return `${record.mon_hoc || 'Điểm'}: ${record.diem_so_mon}`
+  }
+
+  if (record.ma_danh_muc) {
+    return record.ma_danh_muc
+  }
+
+  if (record.noi_dung || record.ly_do) {
+    return record.noi_dung || record.ly_do || record.loai
+  }
+
+  return getRecordTypeLabel(record.loai)
 }
 
 function toAttentionDrillDownItem(
