@@ -13,8 +13,9 @@ Tạo `.env` từ `.env.example` và điền URL Apps Script:
 
 ```env
 VITE_APPS_SCRIPT_URL=https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec
-VITE_APPS_SCRIPT_WRITE_SECRET=CHANGE_ME_TO_A_LONG_RANDOM_STRING
 ```
+
+Mật khẩu giáo viên không đặt trong `.env`. Hãy đặt Script Property `QLHS_TEACHER_PASSWORD` trong Apps Script.
 
 Build kiểm tra trước khi deploy:
 
@@ -48,12 +49,25 @@ Khi cập nhật Apps Script, dùng **Deploy → Manage deployments → Edit →
 - [Mô hình dữ liệu](docs/02-mo-hinh-du-lieu.md)
 - [Hệ thống điểm thi đua](docs/03-he-thong-diem-ren-luyen.md)
 - [Lộ trình giai đoạn 1](docs/04-lo-trinh-giai-doan-1.md)
+- [Quy tắc AI Agent](docs/05-quy-tac-ai-agent.md)
+- [Cải tiến sau triển khai](docs/06-cai-tien-sau-trien-khai.md)
+- [Danh mục thống kê tổng quan](docs/07-danh-muc-thong-ke-tong-quan.md)
 - [Tiến độ](docs/PROGRESS.md)
 - [Hướng dẫn import](docs/huong-dan-quy-trinh-import.md)
+
+## Dùng Với AI Coding Agent
+
+1. Đưa toàn bộ thư mục `docs/` vào context của Claude Code, Cursor hoặc Codex.
+2. Nói với AI: "Đọc file `docs/05-quy-tac-ai-agent.md` trước, sau đó thực hiện commit C00X theo `docs/04-lo-trinh-giai-doan-1.md`".
+3. AI chỉ làm đúng phạm vi commit đó, cập nhật `docs/PROGRESS.md`, rồi dừng lại chờ xác nhận.
+
+Từ sau khi giai đoạn 1 đã chạy xong, các thay đổi mới phát sinh được gom vào [docs/06-cai-tien-sau-trien-khai.md](docs/06-cai-tien-sau-trien-khai.md), không sửa lại roadmap gốc. Quy trình: đọc code hiện tại, đọc `docs/05-quy-tac-ai-agent.md`, sau đó thực hiện các commit trong tài liệu 06 đang ở trạng thái chưa làm trong `docs/PROGRESS.md`.
+
+Lưu ý: AI trong IDE chỉ nhớ trong phiên đang mở. Nếu mở phiên mới, hãy yêu cầu AI đọc code hiện tại trước, rồi đọc tài liệu 06 và tham khảo 01/02/03/05 khi cần chi tiết kỹ thuật.
 
 ## Bảo mật
 
 - Không commit `.env` hoặc secret.
-- `doPost` yêu cầu `write_secret`; đặt Script Property `QLHS_WRITE_SECRET` trong Apps Script và dùng cùng giá trị cho `VITE_APPS_SCRIPT_WRITE_SECRET`.
+- Vùng giáo viên yêu cầu đăng nhập; mật khẩu đặt bằng Script Property `QLHS_TEACHER_PASSWORD` trong Apps Script, không đưa secret vào biến `VITE_*`.
 - Hồ sơ học sinh public theo token không hiển thị SĐT phụ huynh.
 - Apps Script cần deploy đúng quyền theo hướng dẫn trong `docs/huong-dan-deploy-apps-script.md`.

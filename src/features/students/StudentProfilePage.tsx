@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh } from '../../data/types'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
@@ -96,17 +96,11 @@ export function StudentProfilePage() {
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6">
       <section className="mx-auto max-w-3xl space-y-4">
-        <div className="flex items-center justify-between gap-4">
+        <div>
           <div>
             <p className="text-xs font-semibold uppercase text-blue-600">QLHS 11C5</p>
             <h1 className="text-xl font-bold text-slate-900">Hồ sơ học sinh</h1>
           </div>
-          <Link
-            to="/"
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            Về trang chính
-          </Link>
         </div>
 
         {state.status === 'loading' ? (

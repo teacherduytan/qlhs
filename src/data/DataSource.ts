@@ -11,8 +11,16 @@ import type {
   PhuHuynh,
 } from './types'
 
+export type TeacherLoginResult = {
+  token: string
+  expires_in_seconds: number
+}
+
 /** Lớp trung gian dữ liệu — mọi UI chỉ gọi qua interface này (tài liệu 01) */
 export interface DataSource {
+  loginTeacher(password: string): Promise<TeacherLoginResult>
+  verifyTeacherSession(token: string): Promise<boolean>
+
   getStudents(): Promise<HocSinh[]>
   getStudentByToken(token: string): Promise<HocSinh | null>
   addStudent(student: HocSinh): Promise<HocSinh>

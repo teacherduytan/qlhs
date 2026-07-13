@@ -35,6 +35,8 @@ var IMPORT_FOLDER_NAMES = {
   ban_can_su: 'ban-can-su',
 };
 
+var TEACHER_SESSION_TTL_SECONDS = 8 * 60 * 60;
+
 function doGet(e) {
   try {
     var params = e && e.parameter ? e.parameter : {};
@@ -87,8 +89,20 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    var body = JSON.parse(e.postData.contents);
-    verifyWriteSecret_(body);
+    var body = parsePostBody_(e);
+
+    if (body.action === 'teacher_login') {
+      return handleTeacherLogin_(body);
+    }
+
+    if (body.action === 'verify_teacher_session') {
+      return jsonResponse_({
+        ok: true,
+        data: { valid: isValidTeacherSession_(body.teacher_session_token) },
+      });
+    }
+
+    verifyTeacherSession_(body);
 
     if (body.action === 'add_student' && body.student) {
       var createdStudent = appendUniqueRow_(SHEET_TABS.HocSinh, body.student, 'ma_hs');
@@ -132,6 +146,18 @@ function doPost(e) {
     return jsonResponse_({ ok: false, error: 'Invalid POST body' }, 400);
   } catch (err) {
     return jsonResponse_({ ok: false, error: String(err) }, 500);
+  }
+}
+
+function parsePostBody_(e) {
+  if (!e || !e.postData || !e.postData.contents) {
+    throw new Error('Invalid POST body');
+  }
+
+  try {
+    return JSON.parse(e.postData.contents);
+  } catch (err) {
+    throw new Error('Invalid POST body');
   }
 }
 
@@ -181,15 +207,45 @@ function sanitizePublicStudent_(student) {
   return safe;
 }
 
-function verifyWriteSecret_(body) {
-  var expected = PropertiesService.getScriptProperties().getProperty('QLHS_WRITE_SECRET');
+function handleTeacherLogin_(body) {
+  var expected = PropertiesService.getScriptProperties().getProperty('QLHS_TEACHER_PASSWORD');
   if (!expected) {
-    throw new Error('Missing Apps Script property: QLHS_WRITE_SECRET');
+    throw new Error('Missing Apps Script property: QLHS_TEACHER_PASSWORD');
   }
 
-  if (!body || body.write_secret !== expected) {
-    throw new Error('Invalid write secret');
+  if (!body || String(body.password || '') !== expected) {
+    throw new Error('Sai mật khẩu giáo viên');
   }
+
+  var token = Utilities.getUuid() + '-' + Utilities.getUuid();
+  CacheService.getScriptCache().put(
+    getTeacherSessionCacheKey_(token),
+    '1',
+    TEACHER_SESSION_TTL_SECONDS
+  );
+
+  return jsonResponse_({
+    ok: true,
+    data: {
+      token: token,
+      expires_in_seconds: TEACHER_SESSION_TTL_SECONDS,
+    },
+  });
+}
+
+function verifyTeacherSession_(body) {
+  if (!body || !isValidTeacherSession_(body.teacher_session_token)) {
+    throw new Error('Phiên đăng nhập giáo viên đã hết hạn. Vui lòng đăng nhập lại.');
+  }
+}
+
+function isValidTeacherSession_(token) {
+  if (!token) return false;
+  return CacheService.getScriptCache().get(getTeacherSessionCacheKey_(token)) === '1';
+}
+
+function getTeacherSessionCacheKey_(token) {
+  return 'teacher_session_' + token;
 }
 
 // --- Ghi 1 dòng (C012) ---

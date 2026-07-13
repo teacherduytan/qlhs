@@ -1,4 +1,5 @@
-import type { DataSource } from './DataSource'
+import type { DataSource, TeacherLoginResult } from './DataSource'
+import { getTeacherSessionToken } from './teacherSession'
 import type {
   BanCanSu,
   CauHinhTuan,
@@ -25,15 +26,28 @@ type ApiResponse<T> =
 type QueryValue = string | number | boolean | null | undefined
 
 const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined
-const APPS_SCRIPT_WRITE_SECRET = import.meta.env.VITE_APPS_SCRIPT_WRITE_SECRET as
-  | string
-  | undefined
 
 export class GoogleSheetsDataSource implements DataSource {
   private readonly apiUrl: string | undefined
 
   constructor(apiUrl = APPS_SCRIPT_URL) {
     this.apiUrl = apiUrl?.trim()
+  }
+
+  loginTeacher(password: string): Promise<TeacherLoginResult> {
+    return this.post<TeacherLoginResult>(
+      { action: 'teacher_login', password },
+      { requireSession: false },
+    )
+  }
+
+  async verifyTeacherSession(token: string): Promise<boolean> {
+    const result = await this.post<{ valid: boolean }>(
+      { action: 'verify_teacher_session', teacher_session_token: token },
+      { requireSession: false },
+    )
+
+    return result.valid
   }
 
   getStudents(): Promise<HocSinh[]> {
@@ -123,10 +137,15 @@ export class GoogleSheetsDataSource implements DataSource {
     return readApiResponse<T>(response)
   }
 
-  private async post<T>(body: unknown): Promise<T> {
-    const writeSecret = APPS_SCRIPT_WRITE_SECRET?.trim()
-    if (!writeSecret) {
-      throw new Error('Thiếu VITE_APPS_SCRIPT_WRITE_SECRET. Hãy cấu hình mã ghi dữ liệu trong .env.')
+  private async post<T>(
+    body: unknown,
+    options: { requireSession?: boolean } = {},
+  ): Promise<T> {
+    const requireSession = options.requireSession !== false
+    const sessionToken = requireSession ? getTeacherSessionToken()?.trim() : null
+
+    if (requireSession && !sessionToken) {
+      throw new Error('Phiên đăng nhập giáo viên đã hết hạn. Vui lòng đăng nhập lại.')
     }
 
     const response = await fetch(this.requireApiUrl(), {
@@ -134,7 +153,10 @@ export class GoogleSheetsDataSource implements DataSource {
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
       },
-      body: JSON.stringify({ ...(isRecord(body) ? body : {}), write_secret: writeSecret }),
+      body: JSON.stringify({
+        ...(isRecord(body) ? body : {}),
+        ...(sessionToken ? { teacher_session_token: sessionToken } : {}),
+      }),
     })
 
     return readApiResponse<T>(response)
