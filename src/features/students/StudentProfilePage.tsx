@@ -25,10 +25,30 @@ type ProfileState =
 
 type ProfileTab = 'records' | 'score' | 'info'
 
+type ProfileSectionKey = 'summary' | 'featured' | 'records' | 'score' | 'info'
+
+const PROFILE_SECTIONS: Array<{ id: ProfileSectionKey; label: string; tab?: ProfileTab }> = [
+  { id: 'summary', label: 'Tóm tắt' },
+  { id: 'featured', label: 'Ghi nhận' },
+  { id: 'records', label: 'Lịch sử', tab: 'records' },
+  { id: 'score', label: 'Điểm tuần', tab: 'score' },
+  { id: 'info', label: 'Cá nhân', tab: 'info' },
+]
+
+const INITIAL_PROFILE_COLLAPSED: Record<ProfileSectionKey, boolean> = {
+  featured: false,
+  info: false,
+  records: false,
+  score: false,
+  summary: false,
+}
+
 export function StudentProfilePage() {
   const { token } = useParams()
   const [state, setState] = useState<ProfileState>({ status: 'loading' })
   const [activeTab, setActiveTab] = useState<ProfileTab>('records')
+  const [collapsedSections, setCollapsedSections] =
+    useState<Record<ProfileSectionKey, boolean>>(INITIAL_PROFILE_COLLAPSED)
 
   const score = useMemo(() => {
     if (state.status !== 'success') {
@@ -97,6 +117,24 @@ export function StudentProfilePage() {
     }
   }, [token])
 
+  function toggleSection(section: ProfileSectionKey) {
+    setCollapsedSections((current) => ({ ...current, [section]: !current[section] }))
+  }
+
+  function openSection(section: ProfileSectionKey) {
+    const target = PROFILE_SECTIONS.find((item) => item.id === section)
+    if (target?.tab) {
+      setActiveTab(target.tab)
+    }
+    setCollapsedSections((current) => ({ ...current, [section]: false }))
+    window.setTimeout(() => {
+      document.getElementById(`profile-${section}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6">
       <section className="mx-auto max-w-3xl space-y-4">
@@ -130,25 +168,67 @@ export function StudentProfilePage() {
 
         {state.status === 'success' && score ? (
           <>
-            <StudentProfileHeader
-              recordCount={state.records.length}
-              role={state.role}
-              student={state.student}
+            <ProfileSectionNav
+              collapsedSections={collapsedSections}
+              items={PROFILE_SECTIONS}
+              onSelect={openSection}
             />
-            <FeaturedRecords catalog={state.catalog} records={state.records} />
+
+            <section id="profile-summary" className="scroll-mt-4 space-y-3">
+              <ProfileSectionHeader
+                collapsed={collapsedSections.summary}
+                title="Tóm tắt hồ sơ"
+                onToggle={() => toggleSection('summary')}
+              />
+              {!collapsedSections.summary ? (
+                <StudentProfileHeader
+                  recordCount={state.records.length}
+                  role={state.role}
+                  student={state.student}
+                />
+              ) : null}
+            </section>
+
+            <section id="profile-featured" className="scroll-mt-4 space-y-3">
+              <ProfileSectionHeader
+                collapsed={collapsedSections.featured}
+                title="Ghi nhận mới nhất"
+                onToggle={() => toggleSection('featured')}
+              />
+              {!collapsedSections.featured ? (
+                <FeaturedRecords catalog={state.catalog} records={state.records} />
+              ) : null}
+            </section>
+
             <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
 
             {activeTab === 'records' ? (
-              <RecordHistory
-                catalog={state.catalog}
-                records={state.records}
-                selectedWeek={findWeek(state.weekConfig, state.tuanSo)}
-                tuanSo={state.tuanSo}
-              />
+              <section id="profile-records" className="scroll-mt-4 space-y-3">
+                <ProfileSectionHeader
+                  collapsed={collapsedSections.records}
+                  title="Lịch sử ghi nhận"
+                  onToggle={() => toggleSection('records')}
+                />
+                {!collapsedSections.records ? (
+                  <RecordHistory
+                    catalog={state.catalog}
+                    records={state.records}
+                    selectedWeek={findWeek(state.weekConfig, state.tuanSo)}
+                    tuanSo={state.tuanSo}
+                  />
+                ) : null}
+              </section>
             ) : null}
 
             {activeTab === 'score' ? (
-              <>
+              <section id="profile-score" className="scroll-mt-4 space-y-3">
+                <ProfileSectionHeader
+                  collapsed={collapsedSections.score}
+                  title="Điểm tuần"
+                  onToggle={() => toggleSection('score')}
+                />
+                {!collapsedSections.score ? (
+                  <>
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm">
                   <div className="max-w-xs">
                     <WeekSelector
@@ -164,11 +244,22 @@ export function StudentProfilePage() {
                   </div>
                 </div>
                 <ScoreSummary score={score} />
-              </>
+                  </>
+                ) : null}
+              </section>
             ) : null}
 
             {activeTab === 'info' ? (
-              <ProfileCard student={state.student} role={state.role} />
+              <section id="profile-info" className="scroll-mt-4 space-y-3">
+                <ProfileSectionHeader
+                  collapsed={collapsedSections.info}
+                  title="Thông tin cá nhân"
+                  onToggle={() => toggleSection('info')}
+                />
+                {!collapsedSections.info ? (
+                  <ProfileCard student={state.student} role={state.role} />
+                ) : null}
+              </section>
             ) : null}
           </>
         ) : null}
@@ -203,6 +294,57 @@ function StudentProfileHeader({
           <p className="text-xs font-semibold text-slate-500">ghi nhận</p>
         </div>
       </div>
+    </div>
+  )
+}
+
+function ProfileSectionNav({
+  collapsedSections,
+  items,
+  onSelect,
+}: {
+  collapsedSections: Record<ProfileSectionKey, boolean>
+  items: Array<{ id: ProfileSectionKey; label: string }>
+  onSelect: (id: ProfileSectionKey) => void
+}) {
+  return (
+    <nav className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="flex flex-wrap gap-2">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onSelect(item.id)}
+            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+          >
+            {item.label}
+            {collapsedSections[item.id] ? ' (đang gọn)' : ''}
+          </button>
+        ))}
+      </div>
+    </nav>
+  )
+}
+
+function ProfileSectionHeader({
+  collapsed,
+  onToggle,
+  title,
+}: {
+  collapsed: boolean
+  onToggle: () => void
+  title: string
+}) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <h2 className="text-base font-bold text-slate-900">{title}</h2>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+      >
+        {collapsed ? 'Mở rộng' : 'Thu gọn'}
+      </button>
     </div>
   )
 }

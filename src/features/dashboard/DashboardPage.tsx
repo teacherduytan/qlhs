@@ -108,6 +108,28 @@ type ScoreSortKey = 'score_asc' | 'score_desc' | 'name_asc' | 'name_desc' | 'rec
 
 type GroupSortKey = 'score_asc' | 'score_desc' | 'name_asc' | 'records_desc'
 
+type DashboardSectionKey = 'summary' | 'filters' | 'overview' | 'groups' | 'scores' | 'events' | 'daily'
+
+const DASHBOARD_SECTIONS: Array<{ id: DashboardSectionKey; label: string }> = [
+  { id: 'summary', label: 'Tóm tắt' },
+  { id: 'filters', label: 'Bộ lọc' },
+  { id: 'overview', label: 'Thống kê' },
+  { id: 'groups', label: 'Theo nhóm' },
+  { id: 'scores', label: 'Điểm thi đua' },
+  { id: 'events', label: 'Sự kiện' },
+  { id: 'daily', label: 'Nhật ký' },
+]
+
+const INITIAL_DASHBOARD_COLLAPSED: Record<DashboardSectionKey, boolean> = {
+  daily: false,
+  events: false,
+  filters: false,
+  groups: false,
+  overview: false,
+  scores: false,
+  summary: false,
+}
+
 type GroupViewRow = {
   maHs: string
   name: string
@@ -123,15 +145,16 @@ export function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState('')
   const [scoreQuery, setScoreQuery] = useState('')
   const [scoreSort, setScoreSort] = useState<ScoreSortKey>('score_asc')
-  const [scoresCollapsed, setScoresCollapsed] = useState(false)
+  const [collapsedSections, setCollapsedSections] =
+    useState<Record<DashboardSectionKey, boolean>>(INITIAL_DASHBOARD_COLLAPSED)
   const [selectedGroup, setSelectedGroup] = useState<GroupViewKey | null>(null)
   const [showAllGroupStudents, setShowAllGroupStudents] = useState(false)
   const [expandedTeamEventId, setExpandedTeamEventId] = useState<string | null>(null)
   const [selectedStudentByEvent, setSelectedStudentByEvent] = useState<Record<string, string>>({})
   const [processingEventId, setProcessingEventId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
-  const groupViewRef = useRef<HTMLDivElement | null>(null)
-  const dailyLogRef = useRef<HTMLDivElement | null>(null)
+  const groupViewRef = useRef<HTMLElement | null>(null)
+  const dailyLogRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     let active = true
@@ -363,6 +386,20 @@ export function DashboardPage() {
     window.setTimeout(() => dailyLogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
+  function toggleSection(section: DashboardSectionKey) {
+    setCollapsedSections((current) => ({ ...current, [section]: !current[section] }))
+  }
+
+  function openSection(section: DashboardSectionKey) {
+    setCollapsedSections((current) => ({ ...current, [section]: false }))
+    window.setTimeout(() => {
+      document.getElementById(`dashboard-${section}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+  }
+
   return (
     <section className="space-y-4">
       <div>
@@ -386,43 +423,80 @@ export function DashboardPage() {
 
       {state.status === 'success' && body ? (
         <>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <SummaryMetric label="Tuần" tone="week" value={state.tuanSo} />
-            <SummaryMetric label="Sĩ số" tone="class" value={state.students.length} />
-            <SummaryMetric
-              label="Cần chú ý"
-              tone="attention"
-              value={body.sortedScores.filter(needsAttention).length}
-            />
-          </div>
-
-          <div className="rounded-lg border border-sky-200 bg-sky-50 p-4 shadow-sm">
-            <div className="grid gap-3 md:grid-cols-2">
-              <WeekSelector
-                value={state.tuanSo}
-                weeks={state.weekConfig}
-                onChange={selectWeek}
-              />
-              <WeekDatePicker
-                selectedWeek={body.selectedWeek}
-                value={selectedDate}
-                onChange={selectDate}
-              />
-            </div>
-          </div>
-
-          <OverviewStats
-            onSelectDate={openRecordDate}
-            onSelectGroup={openGroupView}
-            stats={body.overviewStats}
+          <SectionQuickNav
+            collapsedSections={collapsedSections}
+            items={DASHBOARD_SECTIONS}
+            onSelect={openSection}
           />
+
+          <section id="dashboard-summary" className="scroll-mt-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <SectionHeader
+              collapsed={collapsedSections.summary}
+              description="Các con số nhanh của tuần đang xem."
+              title="Tóm tắt nhanh"
+              onToggle={() => toggleSection('summary')}
+            />
+            {!collapsedSections.summary ? (
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <SummaryMetric label="Tuần" tone="week" value={state.tuanSo} />
+                <SummaryMetric label="Sĩ số" tone="class" value={state.students.length} />
+                <SummaryMetric
+                  label="Cần chú ý"
+                  tone="attention"
+                  value={body.sortedScores.filter(needsAttention).length}
+                />
+              </div>
+            ) : null}
+          </section>
+
+          <section id="dashboard-filters" className="scroll-mt-4 rounded-lg border border-sky-200 bg-sky-50 p-4 shadow-sm">
+            <SectionHeader
+              collapsed={collapsedSections.filters}
+              description="Chọn tuần và ngày để đổi phạm vi dữ liệu toàn trang."
+              title="Bộ lọc thời gian"
+              onToggle={() => toggleSection('filters')}
+            />
+            {!collapsedSections.filters ? (
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <WeekSelector
+                  value={state.tuanSo}
+                  weeks={state.weekConfig}
+                  onChange={selectWeek}
+                />
+                <WeekDatePicker
+                  selectedWeek={body.selectedWeek}
+                  value={selectedDate}
+                  onChange={selectDate}
+                />
+              </div>
+            ) : null}
+          </section>
+
+          <section id="dashboard-overview" className="scroll-mt-4 space-y-3 rounded-lg border border-cyan-200 bg-cyan-50 p-4 shadow-sm">
+            <SectionHeader
+              collapsed={collapsedSections.overview}
+              description="Các thẻ TK có thể bấm để xem nhanh chi tiết."
+              title="Thống kê tổng quan"
+              onToggle={() => toggleSection('overview')}
+            />
+            {!collapsedSections.overview ? (
+              <OverviewStats
+                onSelectDate={openRecordDate}
+                onSelectGroup={openGroupView}
+                stats={body.overviewStats}
+              />
+            ) : null}
+          </section>
 
           <GroupViolationView
             catalogByCode={body.catalogByCode}
+            collapsed={collapsedSections.groups}
             group={selectedGroup}
             onGroupChange={setSelectedGroup}
+            onToggle={() => toggleSection('groups')}
             rows={body.groupViewRows}
             sectionRef={groupViewRef}
+            sectionId="dashboard-groups"
             showAll={showAllGroupStudents}
             onShowAllChange={setShowAllGroupStudents}
           />
@@ -439,7 +513,7 @@ export function DashboardPage() {
             </div>
           ) : null}
 
-          <div className="overflow-hidden rounded-lg border border-indigo-200 bg-indigo-50 shadow-sm">
+          <section id="dashboard-scores" className="scroll-mt-4 overflow-hidden rounded-lg border border-indigo-200 bg-indigo-50 shadow-sm">
             <div className="flex flex-col gap-3 border-b border-indigo-200 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Điểm thi đua học sinh</h3>
@@ -453,13 +527,13 @@ export function DashboardPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setScoresCollapsed((current) => !current)}
+                onClick={() => toggleSection('scores')}
                 className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
-                {scoresCollapsed ? 'Mở rộng danh sách' : 'Thu gọn danh sách'}
+                {collapsedSections.scores ? 'Mở rộng' : 'Thu gọn'}
               </button>
             </div>
-            {!scoresCollapsed ? (
+            {!collapsedSections.scores ? (
               <div className="grid gap-3 border-b border-indigo-200 bg-white/70 p-4 md:grid-cols-[1fr_220px]">
                 <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
                   Lọc bảng điểm
@@ -486,7 +560,7 @@ export function DashboardPage() {
                 </label>
               </div>
             ) : null}
-            {scoresCollapsed ? (
+            {collapsedSections.scores ? (
               <div className="p-4 text-sm text-slate-600">
                 Danh sách đang thu gọn. Mở rộng để xem từng học sinh.
               </div>
@@ -561,16 +635,18 @@ export function DashboardPage() {
                 </table>
               </div>
             )}
-          </div>
+          </section>
 
-          <div className="rounded-lg border border-amber-200 bg-amber-50 shadow-sm">
+          <section id="dashboard-events" className="scroll-mt-4 rounded-lg border border-amber-200 bg-amber-50 shadow-sm">
             <div className="border-b border-amber-200 p-4">
-              <h3 className="text-base font-bold text-slate-900">Sự kiện của lớp/tổ</h3>
-              <p className="text-sm text-slate-600">
-                Các dòng tập thể hoặc tổ trực chưa tính vào điểm cá nhân.
-              </p>
+              <SectionHeader
+                collapsed={collapsedSections.events}
+                description="Các dòng tập thể hoặc tổ trực chưa tính vào điểm cá nhân."
+                title="Sự kiện của lớp/tổ"
+                onToggle={() => toggleSection('events')}
+              />
             </div>
-            {body.collectiveEvents.length ? (
+            {!collapsedSections.events && body.collectiveEvents.length ? (
               <div className="divide-y divide-amber-100 bg-white/70">
                 {body.collectiveEvents.map(({ catalogItem, record }) => (
                   <article key={eventKey(record)} className="space-y-3 p-4">
@@ -664,20 +740,33 @@ export function DashboardPage() {
                   </article>
                 ))}
               </div>
-            ) : (
+            ) : null}
+            {!collapsedSections.events && !body.collectiveEvents.length ? (
               <div className="p-4 text-sm text-slate-600">Chưa có sự kiện tập thể trong tuần.</div>
-            )}
-          </div>
+            ) : null}
+            {collapsedSections.events ? (
+              <div className="p-4 text-sm text-slate-600">Section đang thu gọn.</div>
+            ) : null}
+          </section>
 
-          <div ref={dailyLogRef} className="rounded-lg border border-emerald-200 bg-emerald-50 shadow-sm">
+          <section
+            id="dashboard-daily"
+            ref={dailyLogRef}
+            className="scroll-mt-4 rounded-lg border border-emerald-200 bg-emerald-50 shadow-sm"
+          >
             <div className="border-b border-emerald-200 p-4">
-              <h3 className="text-base font-bold text-slate-900">Nhật ký theo ngày</h3>
-              <p className="text-sm text-slate-600">
-                {selectedDate
-                  ? `Đang xem riêng ngày ${formatDate(selectedDate)}.`
-                  : `Tất cả các ngày trong tuần ${state.tuanSo}.`}
-              </p>
+              <SectionHeader
+                collapsed={collapsedSections.daily}
+                description={
+                  selectedDate
+                    ? `Đang xem riêng ngày ${formatDate(selectedDate)}.`
+                    : `Tất cả các ngày trong tuần ${state.tuanSo}.`
+                }
+                title="Nhật ký theo ngày"
+                onToggle={() => toggleSection('daily')}
+              />
             </div>
+            {!collapsedSections.daily ? (
             <div className="divide-y divide-emerald-100 bg-white/70">
               {body.dailyLogs.map((day) => {
                 const dayImpact = summarizeRecordImpacts(day.records, body.catalogByCode)
@@ -751,7 +840,10 @@ export function DashboardPage() {
                 )
               })}
             </div>
-          </div>
+            ) : (
+              <div className="p-4 text-sm text-slate-600">Section đang thu gọn.</div>
+            )}
+          </section>
         </>
       ) : null}
     </section>
@@ -786,6 +878,62 @@ function SummaryMetric({
     <div className={`rounded-lg border p-4 shadow-sm ${toneClass}`}>
       <p className={`text-xs font-semibold uppercase ${labelClass}`}>{label}</p>
       <p className="mt-1 text-2xl font-bold">{value}</p>
+    </div>
+  )
+}
+
+function SectionQuickNav<T extends string>({
+  collapsedSections,
+  items,
+  onSelect,
+}: {
+  collapsedSections: Record<T, boolean>
+  items: Array<{ id: T; label: string }>
+  onSelect: (id: T) => void
+}) {
+  return (
+    <nav className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="flex flex-wrap gap-2">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onSelect(item.id)}
+            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+          >
+            {item.label}
+            {collapsedSections[item.id] ? ' (đang gọn)' : ''}
+          </button>
+        ))}
+      </div>
+    </nav>
+  )
+}
+
+function SectionHeader({
+  collapsed,
+  description,
+  onToggle,
+  title,
+}: {
+  collapsed: boolean
+  description?: string
+  onToggle: () => void
+  title: string
+}) {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h3 className="text-base font-bold text-slate-900">{title}</h3>
+        {description ? <p className="text-sm text-slate-600">{description}</p> : null}
+      </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+      >
+        {collapsed ? 'Mở rộng' : 'Thu gọn'}
+      </button>
     </div>
   )
 }
@@ -1172,19 +1320,25 @@ const GROUP_OPTIONS: Array<{ group: GroupViewKey; label: string }> = [
 
 function GroupViolationView({
   catalogByCode,
+  collapsed,
   group,
   onGroupChange,
   onShowAllChange,
+  onToggle,
   rows,
+  sectionId,
   sectionRef,
   showAll,
 }: {
   catalogByCode: Map<string, DanhMucDiem>
+  collapsed: boolean
   group: GroupViewKey | null
   onGroupChange: (group: GroupViewKey | null) => void
   onShowAllChange: (showAll: boolean) => void
+  onToggle: () => void
   rows: GroupViewRow[]
-  sectionRef: { current: HTMLDivElement | null }
+  sectionId: string
+  sectionRef: { current: HTMLElement | null }
   showAll: boolean
 }) {
   const selectedLabel = group ? GROUP_OPTIONS.find((item) => item.group === group)?.label || group : 'tất cả nhóm'
@@ -1197,7 +1351,11 @@ function GroupViolationView({
   )
 
   return (
-    <section ref={sectionRef} className="rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm">
+    <section
+      id={sectionId}
+      ref={sectionRef}
+      className="scroll-mt-4 rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm"
+    >
       <div className="flex flex-col gap-3 border-b border-violet-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h3 className="text-base font-bold text-slate-900">Xem theo Nhóm vi phạm</h3>
@@ -1209,17 +1367,32 @@ function GroupViolationView({
               : 'Danh sách học sinh có ghi nhận thuộc nhóm đã chọn, điểm thấp nhất xếp trước.'}
           </p>
         </div>
-        <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-          <input
-            type="checkbox"
-            checked={showAll}
-            onChange={(event) => onShowAllChange(event.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-blue-600"
-          />
-          Hiện cả học sinh không vi phạm
-        </label>
+        <div className="flex flex-col gap-2 sm:items-end">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            {collapsed ? 'Mở rộng' : 'Thu gọn'}
+          </button>
+          {!collapsed ? (
+            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={showAll}
+                onChange={(event) => onShowAllChange(event.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-blue-600"
+              />
+              Hiện cả học sinh không vi phạm
+            </label>
+          ) : null}
+        </div>
       </div>
 
+      {collapsed ? (
+        <div className="pt-4 text-sm text-slate-600">Section đang thu gọn.</div>
+      ) : (
+        <>
       <div className="mt-4 flex flex-wrap gap-2">
         {GROUP_OPTIONS.map((option) => {
           const selected = option.group === group
@@ -1322,6 +1495,8 @@ function GroupViolationView({
           </div>
         ) : null}
       </div>
+        </>
+      )}
     </section>
   )
 }
