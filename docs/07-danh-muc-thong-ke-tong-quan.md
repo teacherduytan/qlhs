@@ -20,7 +20,8 @@ Dạng **dải thẻ (card)** nằm ngang đầu trang Dashboard, chia 2 nhóm r
 │  ⚪ NHÓM QUAN SÁT CHUNG                                   │
 │  [TK01: sĩ số &   ] [TK05: vi phạm   ] [TK06: điểm TB  ] │
 │  [học sinh sạch   ] [phổ biến nhất   ] [theo nhóm      ] │
-│  [TK07: xu hướng  ] [TK08: nhịp độ ghi nhận             ] │
+│  [TK07: xu hướng  ] [TK08: nhịp độ ghi nhận] [TK09: tích│
+│                                            ] [cực       ] │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -39,10 +40,11 @@ Dạng **dải thẻ (card)** nằm ngang đầu trang Dashboard, chia 2 nhóm r
 | Mã | Chỉ số | Cách tính | Ví dụ hiển thị | Bấm vào đi đâu |
 |---|---|---|---|---|
 | TK01 | **Sĩ số & học sinh "sạch"** | Tổng số học sinh đang học (theo `ngay_nhap_hoc`/`ngay_roi_lop`) / số em không có `GhiNhan` nào trong tuần | "36 học sinh — 22 em không có ghi nhận tuần này" | Không cần bấm, chỉ để biết |
-| TK05 | **Vi phạm phổ biến nhất tuần** | Nhóm theo `ma_danh_muc`, đếm số lần, lấy top 3 | "CC01 (đi trễ): 3 lần — nhiều nhất tuần" | Xem danh sách đầy đủ các lần vi phạm mã đó |
+| TK05 | **Vi phạm phổ biến nhất tuần** | Chỉ nhóm các mã trừ điểm thuộc CC/VS/NN/KL, đếm số lần, lấy top 3. **Không tính `khen_thuong`/KT và không tính `hoc_tap`**, vì đây không phải vi phạm. | "CC01 (đi trễ): 3 lần — nhiều nhất tuần" | Xem danh sách đầy đủ các lần vi phạm mã đó |
 | TK06 | **Điểm trung bình lớp theo từng nhóm** | Trung bình cộng cả lớp cho từng thành phần CC/VS/NN/KL | "CC: 96 · VS: 98 · NN: 97 · KL: 85" (số nào thấp nhất tô đậm) | Không cần bấm, giúp biết lớp đang yếu ở mảng nào |
 | TK07 | **Xu hướng so với tuần trước** | So điểm xếp loại trung bình cả lớp tuần đang xem với tuần liền trước | "↓ giảm 4 điểm so với Tuần 1" (ẩn nếu là tuần đầu tiên, chưa có gì để so) | Không cần bấm |
 | TK08 | **Nhịp độ ghi nhận** | Ngày gần nhất có ghi nhận + số ngày trong tuần có ít nhất 1 dòng dữ liệu | "Ghi nhận gần nhất: 17/07 — 4/5 ngày có dữ liệu" | Nhảy tới khu "Nhật ký theo ngày" (C033) đúng ngày thiếu |
+| TK09 | **Ghi nhận tích cực trong tuần** | Đếm các dòng `GhiNhan` có `loai = khen_thuong` hoặc mã thuộc nhóm `KT`; hiển thị top mã KT/nội dung tích cực nhiều nhất nếu có. | "⭐ 4 ghi nhận tích cực — KT01: 3 lần" | Mở danh sách các ghi nhận tích cực trong tuần, kèm tên học sinh và nội dung |
 
 ## Quy tắc hiển thị khi rỗng (tránh vỡ layout)
 
@@ -51,7 +53,7 @@ Dạng **dải thẻ (card)** nằm ngang đầu trang Dashboard, chia 2 nhóm r
 
 ## Có thể mở rộng sau (KHÔNG làm ở C043, chỉ ghi chú trước)
 
-- TK09 (đề xuất, chưa làm): Số học sinh có xu hướng **tiến bộ** (điểm tăng so với tuần trước) — để cân bằng, không chỉ nhìn mặt tiêu cực.
-- TK10 (đề xuất, chưa làm): Tỷ lệ đúng giờ chào cờ / chuyên cần toàn lớp theo thời gian (biểu đồ nhỏ nhiều tuần).
+- TK10 (đề xuất, chưa làm): Số học sinh có xu hướng **tiến bộ** (điểm tăng so với tuần trước) — để cân bằng, không chỉ nhìn mặt tiêu cực.
+- TK11 (đề xuất, chưa làm): Tỷ lệ đúng giờ chào cờ / chuyên cần toàn lớp theo thời gian (biểu đồ nhỏ nhiều tuần).
 
 Đây chỉ là ghi chú cho tương lai — **không đưa vào phạm vi C043**, tránh việc AI tự làm luôn cả phần chưa cần thiết.

@@ -36,7 +36,7 @@ type DashboardState =
 
 type OverviewStat = {
   code: string
-  tone: 'action' | 'neutral' | 'good'
+  tone: 'action' | 'neutral' | 'good' | 'positive'
   label: string
   value: string
   detail: string
@@ -812,13 +812,17 @@ function OverviewCard({
       ? 'border-red-200 bg-red-50 text-red-900'
       : stat.tone === 'good'
         ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-        : 'border-slate-200 bg-white text-slate-900'
+        : stat.tone === 'positive'
+          ? 'border-teal-200 bg-teal-50 text-teal-950'
+          : 'border-slate-200 bg-white text-slate-900'
   const valueClass =
     stat.tone === 'action'
       ? 'text-red-700'
       : stat.tone === 'good'
         ? 'text-emerald-700'
-        : 'text-blue-700'
+        : stat.tone === 'positive'
+          ? 'text-teal-700'
+          : 'text-blue-700'
   const activeClass = active ? 'ring-2 ring-blue-300' : ''
   const interactiveClass = stat.drillDown || stat.groupTarget || stat.dateTarget ? 'cursor-pointer hover:shadow-sm' : ''
   const content = (
@@ -1342,8 +1346,10 @@ function buildOverviewStats({
   const topViolations = getTopViolations(weekRecords, catalogByCode)
   const topViolationCode = topViolations[0]?.code
   const topViolationRecords = topViolationCode
-    ? weekRecords.filter((record) => record.ma_danh_muc === topViolationCode)
+    ? weekRecords.filter((record) => record.ma_danh_muc === topViolationCode && isViolationRecord(record, catalogByCode))
     : []
+  const positiveRecords = weekRecords.filter((record) => isPositiveRecord(record, catalogByCode))
+  const topPositiveRecognitions = getTopPositiveRecognitions(positiveRecords, catalogByCode)
   const componentAverages = averageComponents(currentScores)
   const previousComponentAverages = averageComponents(Array.from(previousScores.values()))
   const trendItems = buildTrendItems(componentAverages, previousComponentAverages)
@@ -1449,6 +1455,22 @@ function buildOverviewStats({
         },
       },
       {
+        code: 'TK09',
+        tone: positiveRecords.length ? 'positive' : 'neutral',
+        label: 'Ghi nhận tích cực',
+        value: positiveRecords.length ? String(positiveRecords.length) : '0',
+        detail:
+          topPositiveRecognitions.map((item) => `${item.label}: ${item.count}`).join(' · ') ||
+          'Chưa có ghi nhận tích cực trong tuần',
+        drillDown: {
+          kind: 'records',
+          emptyText: 'Chưa có ghi nhận tích cực trong tuần.',
+          items: positiveRecords.map((record, index) =>
+            toRecordDrillDownItem(record, index, studentById, catalogByCode),
+          ),
+        },
+      },
+      {
         code: 'TK06',
         tone: 'neutral',
         label: 'Trung bình nhóm điểm',
@@ -1484,7 +1506,7 @@ function getTopViolations(
   const counts = new Map<string, number>()
 
   records.forEach((record) => {
-    if (!record.ma_danh_muc) {
+    if (!record.ma_danh_muc || !isViolationRecord(record, catalogByCode)) {
       return
     }
 
@@ -1499,6 +1521,54 @@ function getTopViolations(
       label: catalogByCode.get(code)?.ten_muc || code,
       count,
     }))
+}
+
+function getTopPositiveRecognitions(
+  records: GhiNhan[],
+  catalogByCode: Map<string, DanhMucDiem>,
+): Array<{ code: string; label: string; count: number }> {
+  const counts = new Map<string, number>()
+
+  records.forEach((record) => {
+    const code = record.ma_danh_muc || record.loai
+    counts.set(code, (counts.get(code) || 0) + (record.so_lan || 1))
+  })
+
+  return Array.from(counts.entries())
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 3)
+    .map(([code, count]) => ({
+      code,
+      label: catalogByCode.get(code)?.ten_muc || getRecordTypeLabel(code),
+      count,
+    }))
+}
+
+function isViolationRecord(record: GhiNhan, catalogByCode: Map<string, DanhMucDiem>): boolean {
+  const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
+  return Boolean(
+    catalogItem &&
+      ['CC', 'VS', 'NN', 'KL'].includes(catalogItem.nhom) &&
+      catalogItem.diem < 0,
+  )
+}
+
+function isPositiveRecord(record: GhiNhan, catalogByCode: Map<string, DanhMucDiem>): boolean {
+  const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
+  return record.loai === 'khen_thuong' || catalogItem?.nhom === 'KT'
+}
+
+function getRecordTypeLabel(code: string): string {
+  const labels: Record<string, string> = {
+    chuyen_can: 'Chuyên cần',
+    ve_sinh: 'Vệ sinh',
+    ne_nep: 'Nề nếp',
+    trat_tu_ky_luat: 'Trật tự - kỷ luật',
+    hoc_tap: 'Học tập',
+    khen_thuong: 'Khen thưởng',
+  }
+
+  return labels[code] || code
 }
 
 function buildGroupViewRows({
