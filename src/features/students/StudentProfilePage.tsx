@@ -629,7 +629,7 @@ function ImpactSummary({ negative, positive }: { negative: number; positive: num
         <p className="text-lg font-bold text-emerald-700">+{positive}</p>
       </div>
       <div className="px-3 py-2">
-        <p className="text-xs font-semibold uppercase text-red-700">Tiêu cực</p>
+        <p className="text-xs font-semibold uppercase text-red-700">Vi phạm</p>
         <p className="text-lg font-bold text-red-700">-{negative}</p>
       </div>
     </div>
@@ -642,7 +642,7 @@ function ImpactBadge({ insight }: { insight: ReturnType<typeof getRecordInsight>
   }
 
   if (insight.impactValue === -1) {
-    return <Badge className="border-red-200 bg-red-50 text-red-700">-1 tiêu cực</Badge>
+    return <Badge className="border-red-200 bg-red-50 text-red-700">-1 vi phạm</Badge>
   }
 
   return <Badge className="border-slate-200 bg-slate-50 text-slate-600">0 theo dõi</Badge>

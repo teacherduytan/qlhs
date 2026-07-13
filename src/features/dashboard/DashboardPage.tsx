@@ -11,7 +11,7 @@ import type {
   TrangThaiXuLyTapThe,
 } from '../../data/types'
 import { calculateClassWeeklyScores, type WeeklyStudentScore } from '../scoring/scoring'
-import { getRecordInsight, summarizeRecordImpacts } from '../records/recordInsights'
+import { getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
 import {
   getBadgeClassForCatalog,
   getBadgeClassForGroup,
@@ -950,7 +950,7 @@ function RecordImpactBadge({ insight }: { insight: ReturnType<typeof getRecordIn
   if (insight.impactValue === -1) {
     return (
       <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-bold text-red-700">
-        {insight.duplicateCount ? `-1 tiêu cực · lần ${insight.duplicateCount}` : '-1 tiêu cực'}
+        {insight.duplicateCount ? `-1 vi phạm · lần ${insight.duplicateCount}` : '-1 vi phạm'}
       </span>
     )
   }
@@ -1669,11 +1669,8 @@ function buildOverviewStats({
     const item = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
     return Boolean(item?.nghiem_trong)
   })
-  const topViolations = getTopViolations(weekRecords, catalogByCode)
-  const topViolationCode = topViolations[0]?.code
-  const topViolationRecords = topViolationCode
-    ? weekRecords.filter((record) => record.ma_danh_muc === topViolationCode && isViolationRecord(record, catalogByCode))
-    : []
+  const violationRecords = weekRecords.filter((record) => isViolationRecord(record, catalogByCode))
+  const topViolations = getTopViolations(violationRecords, catalogByCode)
   const positiveRecords = weekRecords.filter((record) => isPositiveRecord(record, catalogByCode))
   const topPositiveRecognitions = getTopPositiveRecognitions(positiveRecords, catalogByCode)
   const componentAverages = averageComponents(currentScores)
@@ -1768,14 +1765,14 @@ function buildOverviewStats({
       },
       {
         code: 'TK05',
-        tone: 'neutral',
+        tone: violationRecords.length ? 'action' : 'neutral',
         label: 'Vi phạm phổ biến',
-        value: topViolations[0]?.count ? String(topViolations[0].count) : '0',
+        value: violationRecords.length ? String(violationRecords.length) : '0',
         detail: topViolations.map((item) => `${item.label}: ${item.count}`).join(' · ') || 'Chưa có vi phạm trong tuần',
         drillDown: {
           kind: 'records',
-          emptyText: 'Chưa có vi phạm phổ biến trong tuần.',
-          items: topViolationRecords.map((record, index) =>
+          emptyText: 'Chưa có ghi nhận vi phạm trong tuần.',
+          items: violationRecords.map((record, index) =>
             toRecordDrillDownItem(record, index, studentById, catalogByCode),
           ),
         },
@@ -1926,23 +1923,37 @@ function getTopViolations(
   records: GhiNhan[],
   catalogByCode: Map<string, DanhMucDiem>,
 ): Array<{ code: string; label: string; count: number }> {
-  const counts = new Map<string, number>()
+  const counts = new Map<string, { count: number; label: string }>()
 
   records.forEach((record) => {
-    if (!record.ma_danh_muc || !isViolationRecord(record, catalogByCode)) {
+    if (!isViolationRecord(record, catalogByCode)) {
       return
     }
 
-    counts.set(record.ma_danh_muc, (counts.get(record.ma_danh_muc) || 0) + (record.so_lan || 1))
+    const code = record.ma_danh_muc || normalizeText(record.noi_dung || record.ly_do || record.loai)
+    if (!code) {
+      return
+    }
+
+    const current = counts.get(code)
+    counts.set(code, {
+      count: (current?.count || 0) + (record.so_lan || 1),
+      label:
+        current?.label ||
+        (record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc)?.ten_muc : undefined) ||
+        record.noi_dung ||
+        record.ly_do ||
+        getRecordTypeLabel(record.loai),
+    })
   })
 
   return Array.from(counts.entries())
-    .sort((left, right) => right[1] - left[1])
+    .sort((left, right) => right[1].count - left[1].count)
     .slice(0, 3)
-    .map(([code, count]) => ({
+    .map(([code, item]) => ({
       code,
-      label: catalogByCode.get(code)?.ten_muc || code,
-      count,
+      label: item.label,
+      count: item.count,
     }))
 }
 
@@ -1968,12 +1979,7 @@ function getTopPositiveRecognitions(
 }
 
 function isViolationRecord(record: GhiNhan, catalogByCode: Map<string, DanhMucDiem>): boolean {
-  const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
-  return Boolean(
-    catalogItem &&
-      ['CC', 'VS', 'NN', 'KL'].includes(catalogItem.nhom) &&
-      catalogItem.diem < 0,
-  )
+  return getRecordPolarity(record, catalogByCode) === 'negative'
 }
 
 function isPositiveRecord(record: GhiNhan, catalogByCode: Map<string, DanhMucDiem>): boolean {

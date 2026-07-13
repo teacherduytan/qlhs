@@ -97,6 +97,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C064 | ✅ Xong | 13/07/2026 | Phân màu nền/viền các section Dashboard và hồ sơ học sinh theo khối nội dung |
 | C065 | ✅ Xong | 13/07/2026 | Lọc/sắp xếp bảng, tổng tích cực/tiêu cực, đếm lặp vi phạm và gợi ý xử lý |
 | C066 | ✅ Xong | 13/07/2026 | Thêm điều hướng nhanh tới section và nút thu gọn/mở rộng từng section |
+| C067 | ✅ Xong | 13/07/2026 | TK05 đếm/mở đầy đủ danh sách vi phạm và đổi nhãn tiêu cực thành vi phạm |
 
 ---
 
