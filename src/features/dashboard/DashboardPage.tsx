@@ -962,6 +962,38 @@ function RecordImpactBadge({ insight }: { insight: ReturnType<typeof getRecordIn
   )
 }
 
+function RecordPolarityBadge({
+  catalogByCode,
+  record,
+}: {
+  catalogByCode: Map<string, DanhMucDiem>
+  record: GhiNhan
+}) {
+  const polarity = getRecordPolarity(record, catalogByCode)
+
+  if (polarity === 'positive') {
+    return (
+      <span className="inline-flex w-fit shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">
+        Tích cực
+      </span>
+    )
+  }
+
+  if (polarity === 'negative') {
+    return (
+      <span className="inline-flex w-fit shrink-0 rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-bold text-red-700">
+        Vi phạm
+      </span>
+    )
+  }
+
+  return (
+    <span className="inline-flex w-fit shrink-0 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-600">
+      Theo dõi
+    </span>
+  )
+}
+
 function OverviewStats({
   onSelectDate,
   onSelectGroup,
@@ -1472,9 +1504,12 @@ function GroupViolationView({
                             key={record.ma_ghi_nhan || `${row.maHs}-${record.ngay}-${index}`}
                             className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
                           >
-                            <p className="font-semibold text-slate-900">
-                              {getGroupRecordDescription(record, catalogByCode)}
-                            </p>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <p className="font-semibold text-slate-900">
+                                {getGroupRecordDescription(record, catalogByCode)}
+                              </p>
+                              <RecordPolarityBadge record={record} catalogByCode={catalogByCode} />
+                            </div>
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                               <CatalogCodeBadge
                                 catalogItem={record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined}
