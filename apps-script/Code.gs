@@ -148,6 +148,11 @@ function doPost(e) {
       return jsonResponse_({ ok: true, data: createdRecords });
     }
 
+    if (body.action === 'delete_record' && body.ma_ghi_nhan) {
+      deleteRowByKey_(SHEET_TABS.GhiNhan, 'ma_ghi_nhan', body.ma_ghi_nhan);
+      return jsonResponse_({ ok: true, data: null });
+    }
+
     if (body.action === 'process_collective_event' && body.source_record_id && body.status) {
       var generated = processCollectiveEvent_(
         body.source_record_id,

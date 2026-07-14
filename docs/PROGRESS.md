@@ -105,6 +105,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C072 | ✅ Xong | 13/07/2026 | Gắn ghi nhận vi phạm/tích cực lên học sinh theo cá nhân, tổ hoặc cả lớp |
 | C073 | ✅ Xong | 13/07/2026 | Đồng bộ logic ghi nhận tay với import JSON và chỉ gắn danh mục cá nhân lên học sinh |
 | C074 | ✅ Xong | 13/07/2026 | Liên kết nội dung Xem theo nhóm vi phạm với DanhMucDiem |
+| C075 | ✅ Xong | 14/07/2026 | Xoá ghi nhận/vi phạm trong hồ sơ giáo viên của học sinh |
 
 ---
 

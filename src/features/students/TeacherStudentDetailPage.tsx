@@ -1,7 +1,7 @@
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { BanCanSu, DienHocSinh, HocSinh, PhuHuynh } from '../../data/types'
+import type { BanCanSu, DanhMucDiem, DienHocSinh, GhiNhan, HocSinh, PhuHuynh } from '../../data/types'
 
 type DetailState =
   | { status: 'loading' }
@@ -10,7 +10,9 @@ type DetailState =
   | {
       status: 'success'
       banCanSu: BanCanSu[]
+      catalog: DanhMucDiem[]
       parents: PhuHuynh[]
+      records: GhiNhan[]
       student: HocSinh
     }
 
@@ -35,6 +37,7 @@ export function TeacherStudentDetailPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -44,15 +47,21 @@ export function TeacherStudentDetailPage() {
       return
     }
 
-    Promise.all([dataSource.getStudents(), dataSource.getPhuHuynh(maHs), dataSource.getBanCanSu()])
-      .then(([students, parents, banCanSu]) => {
+    Promise.all([
+      dataSource.getStudents(),
+      dataSource.getPhuHuynh(maHs),
+      dataSource.getBanCanSu(),
+      dataSource.getRecords(maHs),
+      dataSource.getPointCatalog(),
+    ])
+      .then(([students, parents, banCanSu, records, catalog]) => {
         if (!active) return
         const student = students.find((item) => item.ma_hs === maHs)
         if (!student) {
           setState({ status: 'not_found' })
           return
         }
-        setState({ status: 'success', banCanSu, parents, student })
+        setState({ status: 'success', banCanSu, catalog, parents, records, student })
         setForm(formFromStudent(student))
       })
       .catch((error: unknown) => {
@@ -89,6 +98,47 @@ export function TeacherStudentDetailPage() {
       setSaving(false)
     }
   }
+
+  async function deleteRecord(record: GhiNhan) {
+    if (state.status !== 'success') return
+
+    if (!record.ma_ghi_nhan) {
+      window.alert('Ghi nhận này chưa có ma_ghi_nhan nên chưa thể xoá tự động.')
+      return
+    }
+
+    const ok = window.confirm(
+      `Xoá ghi nhận ${record.ma_ghi_nhan} của ${state.student.ho} ${state.student.ten}? Điểm và thống kê sẽ cập nhật theo dữ liệu còn lại.`,
+    )
+    if (!ok) return
+
+    setDeletingRecordId(record.ma_ghi_nhan)
+    try {
+      await dataSource.deleteRecord(record.ma_ghi_nhan)
+      setState((current) =>
+        current.status === 'success'
+          ? {
+              ...current,
+              records: current.records.filter((item) => item.ma_ghi_nhan !== record.ma_ghi_nhan),
+            }
+          : current,
+      )
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Không xoá được ghi nhận.')
+    } finally {
+      setDeletingRecordId(null)
+    }
+  }
+
+  const sortedRecords = useMemo(() => {
+    if (state.status !== 'success') return []
+    return [...state.records].sort(compareRecordsNewest)
+  }, [state])
+
+  const catalogByCode = useMemo(() => {
+    if (state.status !== 'success') return new Map<string, DanhMucDiem>()
+    return new Map(state.catalog.map((item) => [item.ma_danh_muc, item]))
+  }, [state])
 
   return (
     <section className="space-y-4">
@@ -157,6 +207,105 @@ export function TeacherStudentDetailPage() {
                   />
                 ))}
               </div>
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-rose-200 bg-rose-50 p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Ghi nhận và vi phạm</h3>
+                <p className="text-sm text-slate-600">
+                  Xoá các dòng nhập nhầm trong tab GhiNhan của học sinh này.
+                </p>
+              </div>
+              <Link
+                to="/ghi-nhan"
+                className="inline-flex h-10 items-center justify-center rounded-md border border-rose-200 bg-white px-3 text-sm font-semibold text-rose-700 hover:bg-rose-100"
+              >
+                Thêm ghi nhận
+              </Link>
+            </div>
+
+            <div className="mt-4 overflow-x-auto rounded-lg border border-rose-200 bg-white">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-rose-100 text-left text-xs font-semibold uppercase text-rose-900">
+                  <tr>
+                    <th className="px-3 py-3">Ngày</th>
+                    <th className="px-3 py-3">Mã</th>
+                    <th className="px-3 py-3">Nội dung</th>
+                    <th className="px-3 py-3 text-right">Điểm</th>
+                    <th className="px-3 py-3">Nguồn</th>
+                    <th className="px-3 py-3 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {sortedRecords.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-3 py-6 text-center text-slate-500">
+                        Học sinh này chưa có ghi nhận nào.
+                      </td>
+                    </tr>
+                  ) : (
+                    sortedRecords.map((record, index) => {
+                      const catalogItem = record.ma_danh_muc
+                        ? catalogByCode.get(record.ma_danh_muc)
+                        : undefined
+
+                      return (
+                        <tr key={record.ma_ghi_nhan || `${record.ngay}-${index}`} className="align-top">
+                          <td className="whitespace-nowrap px-3 py-3 text-slate-700">
+                            <div className="font-semibold">{formatDate(record.ngay)}</div>
+                            <div className="text-xs text-slate-500">Tuần {record.tuan_so || '-'}</div>
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-3">
+                            <div className="font-mono text-xs font-semibold text-slate-700">
+                              {record.ma_ghi_nhan || 'Chưa có mã'}
+                            </div>
+                            {record.ma_danh_muc ? (
+                              <Link
+                                to={`/danh-muc?ma=${encodeURIComponent(record.ma_danh_muc)}`}
+                                className="mt-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:underline"
+                              >
+                                {record.ma_danh_muc}
+                              </Link>
+                            ) : (
+                              <span className="mt-1 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+                                Chưa liên kết danh mục
+                              </span>
+                            )}
+                          </td>
+                          <td className="min-w-72 px-3 py-3">
+                            <div className="font-semibold text-slate-900">
+                              {getRecordTitle(record, catalogItem)}
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500">
+                              {labelRecordType(record.loai)}
+                              {record.mon_hoc ? ` · ${record.mon_hoc}` : ''}
+                              {record.tiet ? ` · Tiết ${record.tiet}` : ''}
+                            </div>
+                          </td>
+                          <td className={`whitespace-nowrap px-3 py-3 text-right font-bold ${getPointClass(record)}`}>
+                            {formatPoint(record.diem_cong_tru)}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-3 text-slate-600">
+                            {record.nguon || '-'}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => deleteRecord(record)}
+                              disabled={!record.ma_ghi_nhan || deletingRecordId === record.ma_ghi_nhan}
+                              className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                            >
+                              {deletingRecordId === record.ma_ghi_nhan ? 'Đang xoá' : 'Xoá'}
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </section>
 
@@ -274,6 +423,55 @@ function TextField({
       />
     </label>
   )
+}
+
+function compareRecordsNewest(left: GhiNhan, right: GhiNhan): number {
+  return (
+    String(right.ngay || '').localeCompare(String(left.ngay || '')) ||
+    (right.tuan_so || 0) - (left.tuan_so || 0) ||
+    String(right.ma_ghi_nhan || '').localeCompare(String(left.ma_ghi_nhan || ''))
+  )
+}
+
+function getRecordTitle(record: GhiNhan, catalogItem?: DanhMucDiem): string {
+  return (
+    catalogItem?.ten_muc ||
+    toText(record.noi_dung) ||
+    toText(record.ly_do) ||
+    labelRecordType(record.loai)
+  )
+}
+
+function labelRecordType(value: GhiNhan['loai']): string {
+  const labels: Record<GhiNhan['loai'], string> = {
+    chuyen_can: 'Chuyên cần',
+    hoc_tap: 'Học tập',
+    khen_thuong: 'Tích cực',
+    ne_nep: 'Nề nếp',
+    trat_tu_ky_luat: 'Kỷ luật',
+    ve_sinh: 'Vệ sinh',
+  }
+
+  return labels[value] || value
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('vi-VN').format(date)
+}
+
+function formatPoint(value: number | null): string {
+  if (typeof value !== 'number') return '-'
+  return value > 0 ? `+${value}` : String(value)
+}
+
+function getPointClass(record: GhiNhan): string {
+  if (typeof record.diem_cong_tru !== 'number') return 'text-slate-600'
+  if (record.diem_cong_tru > 0) return 'text-emerald-700'
+  if (record.diem_cong_tru < 0) return 'text-red-700'
+  return 'text-slate-600'
 }
 
 function formFromStudent(student: HocSinh): StudentForm {
