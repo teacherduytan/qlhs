@@ -13,6 +13,18 @@ VITE_APPS_SCRIPT_URL=<URL Web app vừa copy>
 
 Không đặt mật khẩu giáo viên hoặc secret ghi dữ liệu trong biến `VITE_*`, vì mọi biến `VITE_*` sẽ bị nhúng vào bundle JavaScript khi build.
 
+## Web App URL Hiện Hành
+
+```txt
+https://script.google.com/macros/s/AKfycby8hopCcnoo_DsnihG0wrDL7bE9VPTbsG3tnZQkK4zEyqalxQV4Ov-zMxrYF57YfRHB/exec
+```
+
+Health check bản đang chạy:
+
+```txt
+https://script.google.com/macros/s/AKfycby8hopCcnoo_DsnihG0wrDL7bE9VPTbsG3tnZQkK4zEyqalxQV4Ov-zMxrYF57YfRHB/exec?action=api_health
+```
+
 ## Cập Nhật Deployment Đúng Cách
 
 Khi sửa `Code.gs`, nên giữ nguyên deployment Web app đang dùng để không phải đổi URL trong frontend.
@@ -66,26 +78,13 @@ Sau khi đổi URL Apps Script:
 | `ban_can_su` | Ban cán sự |
 | `phu_huynh` | Phụ huynh |
 | `nhat_ky_import` | Nhật ký import |
+| `api_health` | Kiểm tra version backend và action hỗ trợ |
+| `teacher_login` | Đăng nhập giáo viên bằng `&password=...` |
+| `verify_teacher_session` | Kiểm tra phiên giáo viên bằng `&teacher_session_token=...` |
 
 ## API — doPost (JSON body)
 
-**Đăng nhập giáo viên**:
-
-```json
-{
-  "action": "teacher_login",
-  "password": "mat_khau_giao_vien"
-}
-```
-
-**Kiểm tra phiên giáo viên**:
-
-```json
-{
-  "action": "verify_teacher_session",
-  "teacher_session_token": "..."
-}
-```
+Từ C078, đăng nhập giáo viên và kiểm tra phiên dùng `doGet` để tránh lỗi `Failed to fetch` do redirect Apps Script trên trình duyệt. `doPost` chỉ dùng cho các thao tác ghi/sửa/xoá/import cần `teacher_session_token`.
 
 **Ghi 1 dòng**:
 
