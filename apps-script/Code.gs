@@ -11,6 +11,8 @@ var API_CONFIG = {
   IMPORT_SUBDIR: 'nhat-ky-nhap-lieu',
 };
 
+var API_VERSION = 'C077-2026-07-14';
+
 var SHEET_TABS = {
   HocSinh: 'HocSinh',
   PhuHuynh: 'PhuHuynh',
@@ -44,6 +46,17 @@ function doGet(e) {
     var data;
 
     switch (action) {
+      case 'api_health':
+        data = {
+          version: API_VERSION,
+          supports: {
+            add_records: true,
+            delete_record: true,
+            point_catalog_crud: true,
+            teacher_session: true,
+          },
+        };
+        break;
       case 'students':
         data = getSheetObjects_(SHEET_TABS.HocSinh);
         break;
@@ -148,7 +161,10 @@ function doPost(e) {
       return jsonResponse_({ ok: true, data: createdRecords });
     }
 
-    if (body.action === 'delete_record' && body.ma_ghi_nhan) {
+    if (body.action === 'delete_record') {
+      if (!body.ma_ghi_nhan) {
+        throw new Error('Missing ma_ghi_nhan for delete_record');
+      }
       deleteRowByKey_(SHEET_TABS.GhiNhan, 'ma_ghi_nhan', body.ma_ghi_nhan);
       return jsonResponse_({ ok: true, data: null });
     }
@@ -188,13 +204,13 @@ function doPost(e) {
 
 function parsePostBody_(e) {
   if (!e || !e.postData || !e.postData.contents) {
-    throw new Error('Invalid POST body');
+    throw new Error('Missing POST body contents');
   }
 
   try {
     return JSON.parse(e.postData.contents);
   } catch (err) {
-    throw new Error('Invalid POST body');
+    throw new Error('POST body is not valid JSON');
   }
 }
 

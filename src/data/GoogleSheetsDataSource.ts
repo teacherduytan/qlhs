@@ -89,7 +89,7 @@ export class GoogleSheetsDataSource implements DataSource {
       const message = error instanceof Error ? error.message : ''
       if (message.includes('Invalid POST body')) {
         throw new Error(
-          'Apps Script Web App chưa deploy bản có action delete_record. Hãy cập nhật/deploy lại apps-script/Code.gs rồi thử xoá ghi nhận lại.',
+          'Apps Script trả Invalid POST body khi xoá ghi nhận. Hãy mở URL Apps Script với ?action=api_health để kiểm tra backend đã là bản C077 trở lên chưa; nếu chưa có api_health/delete_record thì cần deploy lại apps-script/Code.gs.',
         )
       }
       throw error
