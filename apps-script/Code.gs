@@ -11,7 +11,7 @@ var API_CONFIG = {
   IMPORT_SUBDIR: 'nhat-ky-nhap-lieu',
 };
 
-var API_VERSION = 'C077-2026-07-14';
+var API_VERSION = 'C078-2026-07-14';
 
 var SHEET_TABS = {
   HocSinh: 'HocSinh',
@@ -53,9 +53,15 @@ function doGet(e) {
             add_records: true,
             delete_record: true,
             point_catalog_crud: true,
+            teacher_login_get: true,
             teacher_session: true,
           },
         };
+        break;
+      case 'teacher_login':
+        return handleTeacherLogin_(params);
+      case 'verify_teacher_session':
+        data = { valid: isValidTeacherSession_(params.teacher_session_token) };
         break;
       case 'students':
         data = getSheetObjects_(SHEET_TABS.HocSinh);

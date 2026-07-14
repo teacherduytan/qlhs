@@ -108,6 +108,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C075 | ✅ Xong | 14/07/2026 | Xoá ghi nhận/vi phạm trong hồ sơ giáo viên của học sinh |
 | C076 | ✅ Xong | 14/07/2026 | Báo rõ lỗi xoá ghi nhận khi Apps Script chưa deploy action delete_record |
 | C077 | ✅ Xong | 14/07/2026 | Thêm health check Apps Script và lỗi xoá ghi nhận chi tiết hơn |
+| C078 | ✅ Xong | 14/07/2026 | Chuyển đăng nhập/kiểm tra phiên giáo viên sang GET để tránh Failed to fetch |
 
 ---
 

@@ -35,17 +35,13 @@ export class GoogleSheetsDataSource implements DataSource {
   }
 
   loginTeacher(password: string): Promise<TeacherLoginResult> {
-    return this.post<TeacherLoginResult>(
-      { action: 'teacher_login', password },
-      { requireSession: false },
-    )
+    return this.get<TeacherLoginResult>('teacher_login', { password })
   }
 
   async verifyTeacherSession(token: string): Promise<boolean> {
-    const result = await this.post<{ valid: boolean }>(
-      { action: 'verify_teacher_session', teacher_session_token: token },
-      { requireSession: false },
-    )
+    const result = await this.get<{ valid: boolean }>('verify_teacher_session', {
+      teacher_session_token: token,
+    })
 
     return result.valid
   }
