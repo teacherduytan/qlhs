@@ -83,7 +83,17 @@ export class GoogleSheetsDataSource implements DataSource {
   }
 
   async deleteRecord(maGhiNhan: string): Promise<void> {
-    await this.post<null>({ action: 'delete_record', ma_ghi_nhan: maGhiNhan })
+    try {
+      await this.post<null>({ action: 'delete_record', ma_ghi_nhan: maGhiNhan })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : ''
+      if (message.includes('Invalid POST body')) {
+        throw new Error(
+          'Apps Script Web App chưa deploy bản có action delete_record. Hãy cập nhật/deploy lại apps-script/Code.gs rồi thử xoá ghi nhận lại.',
+        )
+      }
+      throw error
+    }
   }
 
   processCollectiveEvent(

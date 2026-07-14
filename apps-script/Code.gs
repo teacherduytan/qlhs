@@ -177,7 +177,10 @@ function doPost(e) {
       return jsonResponse_({ ok: true, data: written });
     }
 
-    return jsonResponse_({ ok: false, error: 'Invalid POST body' }, 400);
+    return jsonResponse_({
+      ok: false,
+      error: 'Unsupported POST action: ' + (body.action || '(missing action)'),
+    }, 400);
   } catch (err) {
     return jsonResponse_({ ok: false, error: String(err) }, 500);
   }
