@@ -11,6 +11,8 @@ type CatalogForm = {
   diem: string
   nghiem_trong: boolean
   pham_vi: PhamViDanhMuc
+  mo_ta: string
+  de_xuat_xu_ly: string
 }
 
 type CatalogSortKey = 'code_asc' | 'group_asc' | 'name_asc' | 'score_asc' | 'score_desc'
@@ -37,6 +39,8 @@ const EMPTY_FORM: CatalogForm = {
   diem: '-1',
   nghiem_trong: false,
   pham_vi: 'ca_nhan',
+  mo_ta: '',
+  de_xuat_xu_ly: '',
 }
 
 const inputClass =
@@ -129,9 +133,11 @@ export function CatalogPage() {
     return [...catalog]
       .filter((item) => {
         if (!keyword) return true
-        return normalize(`${item.ma_danh_muc} ${item.nhom} ${item.ten_muc} ${item.pham_vi}`).includes(
-          keyword,
-        )
+        return normalize(
+          `${item.ma_danh_muc} ${item.nhom} ${item.ten_muc} ${item.pham_vi} ${item.mo_ta || ''} ${
+            item.de_xuat_xu_ly || ''
+          }`,
+        ).includes(keyword)
       })
       .filter((item) => groupFilter === 'all' || item.nhom === groupFilter)
       .filter((item) => {
@@ -240,6 +246,8 @@ export function CatalogPage() {
       diem: String(item.diem),
       nghiem_trong: Boolean(item.nghiem_trong),
       pham_vi: item.pham_vi,
+      mo_ta: item.mo_ta || '',
+      de_xuat_xu_ly: item.de_xuat_xu_ly || '',
     })
     setSaveError(null)
   }
@@ -256,6 +264,13 @@ export function CatalogPage() {
       ...current,
       nhom: group,
       ma_danh_muc: formMode === 'add' ? nextCodeForGroup(group, catalog) : current.ma_danh_muc,
+    }))
+  }
+
+  function applySuggestedHandling() {
+    setForm((current) => ({
+      ...current,
+      de_xuat_xu_ly: suggestCatalogHandling(current),
     }))
   }
 
@@ -672,6 +687,45 @@ export function CatalogPage() {
                 </label>
               </div>
 
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Mô tả / ví dụ áp dụng
+                  <textarea
+                    value={form.mo_ta}
+                    onChange={(event) => setForm((current) => ({ ...current, mo_ta: event.target.value }))}
+                    className="min-h-24 resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="Ví dụ: Không thuộc 1 từ, một ý nhỏ, một đoạn ngắn; giáo viên ghi rõ phần chưa thuộc."
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Đề xuất xử lý / phạt
+                  <textarea
+                    value={form.de_xuat_xu_ly}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, de_xuat_xu_ly: event.target.value }))
+                    }
+                    className="min-h-24 resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="Ví dụ: Lần 1: chép 20 lần/từ; lần 2: chép 50 lần và báo GVCN; lần 3: mời phụ huynh."
+                  />
+                </label>
+              </div>
+
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-amber-900">
+                    Với danh mục điểm âm, có thể dùng gợi ý xử lý theo mức lặp lại rồi chỉnh lại cho đúng thực tế lớp.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={applySuggestedHandling}
+                    className="h-9 rounded-md border border-amber-300 bg-white px-3 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+                  >
+                    Gợi ý xử lý
+                  </button>
+                </div>
+              </div>
+
               <label className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-slate-700">
                 <input
                   type="checkbox"
@@ -816,7 +870,15 @@ export function CatalogPage() {
                     <td className="px-3 py-3 font-semibold text-slate-700">
                       {item.nhom} - {labelGroup(item.nhom)}
                     </td>
-                    <td className="max-w-md px-3 py-3 text-slate-800">{item.ten_muc}</td>
+                    <td className="max-w-md px-3 py-3 text-slate-800">
+                      <p className="font-semibold">{item.ten_muc}</p>
+                      {item.mo_ta ? <p className="mt-1 text-xs text-slate-600">{item.mo_ta}</p> : null}
+                      {item.de_xuat_xu_ly ? (
+                        <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                          <span className="font-semibold">Đề xuất xử lý:</span> {item.de_xuat_xu_ly}
+                        </p>
+                      ) : null}
+                    </td>
                     <td className="px-3 py-3">
                       <ToneBadge item={item} />
                     </td>
@@ -1133,7 +1195,47 @@ function formToCatalogItem(form: CatalogForm, fixedCode: string | null): DanhMuc
     diem: point,
     nghiem_trong: form.nghiem_trong,
     pham_vi: form.pham_vi,
+    mo_ta: form.mo_ta.trim() || null,
+    de_xuat_xu_ly: form.de_xuat_xu_ly.trim() || null,
   }
+}
+
+function suggestCatalogHandling(form: CatalogForm): string {
+  const point = Number(form.diem)
+  const normalizedName = normalize(form.ten_muc)
+
+  if (normalizedName.includes('khong thuoc bai')) {
+    return [
+      'Lần 1: nhắc nhở, ghi rõ phần không thuộc; nếu không thuộc 1 từ/1 ý nhỏ thì chép 20 lần nội dung đó.',
+      'Lần 2: chép phạt 50 lần phần chưa thuộc, trừ điểm nội bộ theo danh mục.',
+      'Lần 3: viết kiểm điểm và báo phụ huynh.',
+      'Tái phạm nhiều lần: mời phụ huynh trao đổi biện pháp học bài tại nhà.',
+    ].join('\n')
+  }
+
+  if (normalizedName.includes('dung cu') || normalizedName.includes('sgk') || normalizedName.includes('may tinh')) {
+    return [
+      'Lần 1: nhắc nhở, yêu cầu bổ sung dụng cụ ở tiết sau.',
+      'Lần 2: đóng 10k quỹ lớp hoặc chép phạt 50 lần nội quy chuẩn bị bài.',
+      'Lần 3: viết kiểm điểm và báo phụ huynh.',
+      'Tái phạm nhiều lần: mời phụ huynh phối hợp chuẩn bị dụng cụ học tập.',
+    ].join('\n')
+  }
+
+  if (point < 0) {
+    return [
+      'Lần 1: nhắc nhở riêng, ghi nhận vào hệ thống.',
+      'Lần 2: chép phạt 50 lần nội dung liên quan hoặc đóng 10k quỹ lớp theo quy ước lớp.',
+      'Lần 3: viết kiểm điểm, báo phụ huynh.',
+      'Tái phạm nhiều lần hoặc nghiêm trọng: mời phụ huynh làm việc với GVCN.',
+    ].join('\n')
+  }
+
+  if (point > 0) {
+    return 'Ghi nhận tích cực, cộng điểm nội bộ; nếu lặp lại nhiều lần có thể tuyên dương trước lớp hoặc trong tổng kết tuần.'
+  }
+
+  return 'Theo dõi thêm; giáo viên quyết định nhắc nhở hoặc chuyển thành vi phạm/tích cực nếu sự việc lặp lại.'
 }
 
 function compareCatalogItems(

@@ -69,6 +69,8 @@ export interface DanhMucDiem {
   diem: number
   nghiem_trong: boolean
   pham_vi: PhamViDanhMuc
+  mo_ta?: string | null
+  de_xuat_xu_ly?: string | null
 }
 
 export interface CauHinhTuan {

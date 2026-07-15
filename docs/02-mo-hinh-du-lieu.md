@@ -24,6 +24,7 @@ erDiagram
         string token_ho_so
         date ngay_nhap_hoc
         date ngay_roi_lop
+        int to
     }
     PHUHUYNH {
         string ma_hs FK
@@ -104,7 +105,7 @@ Nguồn gốc: danh sách Excel gốc anh cung cấp, giữ nguyên các cột c
 | `sdt_2` | text | |
 | `ngay_nhap_hoc` | date | Ngày học sinh chính thức vào lớp. Dùng để tính đúng sĩ số/thành phần lớp tại một tuần cụ thể trong quá khứ — xem tài liệu 01 mục 7. |
 | `ngay_roi_lop` | date | Để trống nếu vẫn đang học. Nếu học sinh chuyển đi, ghi ngày rời lớp — các tuần trước đó vẫn tính em này vào sĩ số, tuần sau đó thì không. |
-| `to` | number | Số tổ (1/2/3) áp dụng cho mọi học sinh; dùng để hiển thị và xử lý sự kiện `to_truc`. |
+| `to` | number | **Sửa sau khi chạy thật**: số tổ (1/2/3) — áp dụng cho **MỌI học sinh**, không chỉ tổ trưởng. Bản trước chỉ lưu `to` trong tab `BanCanSu` cho vai trò Tổ trưởng, thiếu thông tin tổ cho học sinh thường — đây chính là lý do giao diện chưa hiển thị được thông tin tổ. |
 | `token_ho_so` | text | Chuỗi ngẫu nhiên dùng làm link riêng, ví dụ `x7fA9k2Q` → `/#/hs/x7fA9k2Q`. |
 | `la_co_do` | boolean | Theo quy chế trường: cờ đỏ vi phạm bị trừ điểm **gấp đôi**. Dùng để nhân hệ số khi tính điểm (tài liệu 03 mục 2). |
 | `anh_dai_dien` | text (URL) | Tuỳ chọn, để sau. |
@@ -132,7 +133,7 @@ Ghi nhận vai trò cán sự lớp — dùng làm form chuẩn hoá riêng khi 
 |---|---|---|
 | `ma_hs` | text (FK) | |
 | `chuc_vu` | text | Lớp trưởng / Lớp phó học tập / Lớp phó kỷ luật / Lớp phó lao động / Thủ quỹ / Tổ trưởng |
-| `to` | number | Áp dụng cho Tổ trưởng: 1, 2, hoặc 3. |
+| `to` | number | Áp dụng cho Tổ trưởng: 1, 2, hoặc 3 — phải khớp với `HocSinh.to` của chính học sinh đó (tổ trưởng luôn thuộc tổ mình phụ trách). |
 | `ngay_bat_dau` | date | |
 
 ## Tab 4: `DanhMucDiem`
@@ -147,6 +148,8 @@ Danh mục chuẩn hoá các tiêu chí điểm — **lấy nguyên văn từ qu
 | `diem` | number | Âm nếu trừ (đa số), dương nếu cộng (chỉ nhóm `KT` tuỳ chọn). |
 | `nghiem_trong` | boolean | Đánh dấu các mục trừ 20 điểm (KL06, KL09, KL11, KL12, KL13) — dùng để bật cờ cảnh báo ngay, không chờ tổng kết tuần. |
 | `pham_vi` | text | **Quan trọng — mới bổ sung**: `ca_nhan` (gán cho 1 học sinh cụ thể) / `tap_the` (áp dụng cho cả lớp, không gán cho 1 học sinh) / `to_truc` (áp dụng cho tổ trực nhật hôm đó). Xem bảng phân loại đầy đủ ở tài liệu 03 mục 2b. |
+| `mo_ta` | text | Mô tả chi tiết/ví dụ áp dụng cho danh mục. Dùng cho các mục có ý nghĩa rộng như "Không thuộc bài": không thuộc 1 từ, 1 ý nhỏ, 1 đoạn, không làm bài... |
+| `de_xuat_xu_ly` | text | Gợi ý xử lý/phạt theo số lần lặp lại. Ví dụ: lần 1 nhắc nhở/chép 20 lần cho 1 từ; lần 2 chép 50 lần hoặc đóng quỹ; lần 3 viết kiểm điểm/báo phụ huynh; tái phạm nhiều lần thì mời phụ huynh. |
 
 > **Vì sao cần `pham_vi`?** Đối chiếu kỹ với văn bản quy chế trường, một số tiêu chí ghi rõ "/ tập thể" hoặc "/ 1 lần" (không gắn tên học sinh cụ thể) — ví dụ "Lớp gây mất trật tự... / 1 tập thể", "Bán trú lớp ăn trưa không vệ sinh... / 1 lần". Nếu bắt buộc mọi dòng `GhiNhan` phải có `ma_hs`, những sự kiện này sẽ bị gán khiên cưỡng cho 1 học sinh không liên quan, làm sai lệch điểm cá nhân. Trường `pham_vi` giải quyết việc này — xem chi tiết cách xử lý ở tài liệu 03.
 

@@ -11,7 +11,7 @@ var API_CONFIG = {
   IMPORT_SUBDIR: 'nhat-ky-nhap-lieu',
 };
 
-var API_VERSION = 'C082-2026-07-15';
+var API_VERSION = 'C103-2026-07-15';
 
 var SHEET_TABS = {
   HocSinh: 'HocSinh',
@@ -22,6 +22,17 @@ var SHEET_TABS = {
   GhiNhan: 'GhiNhan',
   NhatKyImport: 'NhatKyImport',
 };
+
+var POINT_CATALOG_HEADERS = [
+  'ma_danh_muc',
+  'nhom',
+  'ten_muc',
+  'diem',
+  'nghiem_trong',
+  'pham_vi',
+  'mo_ta',
+  'de_xuat_xu_ly',
+];
 
 var IMPORT_TAB_MAP = {
   hoc_sinh: 'HocSinh',
@@ -53,6 +64,7 @@ function doGet(e) {
             add_records: true,
             delete_record: true,
             point_catalog_crud: true,
+            point_catalog_guidance_fields: true,
             import_requires_catalog_match: true,
             teacher_login_get: true,
             teacher_session: true,
@@ -80,6 +92,7 @@ function doGet(e) {
         }
         break;
       case 'danh_muc_diem':
+        ensurePointCatalogHeaders_();
         data = getSheetObjects_(SHEET_TABS.DanhMucDiem);
         break;
       case 'cau_hinh_tuan':
@@ -140,6 +153,7 @@ function doPost(e) {
     }
 
     if (body.action === 'add_point_catalog_item' && body.item) {
+      ensurePointCatalogHeaders_();
       var createdCatalogItem = appendUniqueRow_(
         SHEET_TABS.DanhMucDiem,
         normalizePointCatalogItem_(body.item),
@@ -149,6 +163,7 @@ function doPost(e) {
     }
 
     if (body.action === 'update_point_catalog_item' && body.ma_danh_muc && body.item) {
+      ensurePointCatalogHeaders_();
       var updatedCatalogItem = updateRowByKey_(
         SHEET_TABS.DanhMucDiem,
         'ma_danh_muc',
@@ -413,7 +428,35 @@ function normalizePointCatalogItem_(item, fixedCode) {
     diem: point,
     nghiem_trong: toBoolean_(item.nghiem_trong),
     pham_vi: scope,
+    mo_ta: String(item.mo_ta || '').trim(),
+    de_xuat_xu_ly: String(item.de_xuat_xu_ly || '').trim(),
   };
+}
+
+function ensurePointCatalogHeaders_() {
+  ensureSheetHeaders_(SHEET_TABS.DanhMucDiem, POINT_CATALOG_HEADERS);
+}
+
+function ensureSheetHeaders_(tabName, expectedHeaders) {
+  var sheet = getSpreadsheet_().getSheetByName(tabName);
+  if (!sheet) throw new Error('Tab not found: ' + tabName);
+
+  var lastColumn = Math.max(sheet.getLastColumn(), 1);
+  var currentHeaders = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].filter(function (header) {
+    return String(header || '').trim() !== '';
+  });
+  var changed = false;
+
+  expectedHeaders.forEach(function (header) {
+    if (currentHeaders.indexOf(header) === -1) {
+      currentHeaders.push(header);
+      changed = true;
+    }
+  });
+
+  if (changed || currentHeaders.length > lastColumn) {
+    sheet.getRange(1, 1, 1, currentHeaders.length).setValues([currentHeaders]);
+  }
 }
 
 function deletePointCatalogItem_(maDanhMuc) {

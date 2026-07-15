@@ -37,6 +37,8 @@ type CatalogSuggestionForm = {
   pham_vi: PhamViDanhMuc
   mo_ta_tho: string
   ly_do_can_tao: string
+  mo_ta: string
+  de_xuat_xu_ly: string
 }
 
 type SimilarCatalogMatch = {
@@ -58,6 +60,8 @@ type MissingCatalogForm = {
   diem: string
   nghiem_trong: boolean
   pham_vi: PhamViDanhMuc
+  mo_ta: string
+  de_xuat_xu_ly: string
   rowIndexes: number[]
   sampleContent: string
 }
@@ -452,6 +456,8 @@ export function ImportPage() {
         diem: point,
         nghiem_trong: form.nghiem_trong,
         pham_vi: form.pham_vi,
+        mo_ta: form.mo_ta.trim() || null,
+        de_xuat_xu_ly: form.de_xuat_xu_ly.trim() || null,
       })
       setPointCatalog((current) => [...current, created].sort(compareCatalogItems))
       setCatalogFixMessage(`Da tao danh muc ${created.ma_danh_muc}. Cac dong dang dung ma nay se duoc kiem tra lai.`)
@@ -612,6 +618,8 @@ export function ImportPage() {
       diem: point,
       nghiem_trong: form.nghiem_trong,
       pham_vi: form.pham_vi,
+      mo_ta: form.mo_ta.trim() || null,
+      de_xuat_xu_ly: form.de_xuat_xu_ly.trim() || null,
     }
 
     setCreatingSuggestionIndex(form.sourceIndex)
@@ -1174,6 +1182,30 @@ export function ImportPage() {
                     </select>
                   </label>
 
+                  <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-2">
+                    Mô tả / ví dụ áp dụng
+                    <textarea
+                      value={activeSuggestionForm.mo_ta}
+                      onChange={(event) =>
+                        updateSuggestionForm(activeSuggestionForm.sourceIndex, { mo_ta: event.target.value })
+                      }
+                      className="min-h-20 resize-y rounded-md border border-slate-300 px-3 py-2 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-2">
+                    Đề xuất xử lý / phạt
+                    <textarea
+                      value={activeSuggestionForm.de_xuat_xu_ly}
+                      onChange={(event) =>
+                        updateSuggestionForm(activeSuggestionForm.sourceIndex, {
+                          de_xuat_xu_ly: event.target.value,
+                        })
+                      }
+                      className="min-h-24 resize-y rounded-md border border-slate-300 px-3 py-2 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                    />
+                  </label>
+
                   {activeSuggestionSimilarMatches.length > 0 ? (
                     <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 md:col-span-2">
                       <div className="flex items-start justify-between gap-3">
@@ -1398,6 +1430,30 @@ export function ImportPage() {
                     className="h-4 w-4 rounded border-slate-300 text-red-700 focus:ring-red-200"
                   />
                   Danh dau nghiem trong
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-2">
+                  Mo ta / vi du ap dung
+                  <textarea
+                    value={activeMissingCatalogForm.mo_ta}
+                    onChange={(event) =>
+                      updateMissingCatalogForm(activeMissingCatalogForm.code, { mo_ta: event.target.value })
+                    }
+                    className="min-h-20 resize-y rounded-md border border-slate-300 px-3 py-2 text-sm font-normal text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-2">
+                  De xuat xu ly / phat
+                  <textarea
+                    value={activeMissingCatalogForm.de_xuat_xu_ly}
+                    onChange={(event) =>
+                      updateMissingCatalogForm(activeMissingCatalogForm.code, {
+                        de_xuat_xu_ly: event.target.value,
+                      })
+                    }
+                    className="min-h-24 resize-y rounded-md border border-slate-300 px-3 py-2 text-sm font-normal text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                  />
                 </label>
 
                 <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 md:col-span-2">
@@ -1854,6 +1910,8 @@ function missingCatalogToForm(item: MissingCatalogItem): MissingCatalogForm {
     diem: point,
     nghiem_trong: false,
     pham_vi: 'ca_nhan',
+    mo_ta: content || item.sampleContent,
+    de_xuat_xu_ly: suggestImportCatalogHandling(content || item.sampleContent, point),
     rowIndexes: [...item.rowIndexes],
     sampleContent: item.sampleContent,
   }
@@ -2178,6 +2236,11 @@ function suggestionToForm(
     pham_vi: toCatalogScope(suggestion.pham_vi_goi_y),
     mo_ta_tho: suggestion.mo_ta_tho,
     ly_do_can_tao: suggestion.ly_do_can_tao,
+    mo_ta: suggestion.mo_ta_tho,
+    de_xuat_xu_ly: suggestImportCatalogHandling(
+      suggestion.ten_muc_goi_y || suggestion.mo_ta_tho,
+      toText(suggestion.diem_goi_y || (group === 'KT' ? 1 : -1)),
+    ),
   }
 }
 
@@ -2218,6 +2281,44 @@ function nextCodeForGroup(group: NhomDiem, catalog: DanhMucDiem[]): string {
   }
 
   return candidate
+}
+
+function suggestImportCatalogHandling(content: string, pointValue: string | number): string {
+  const point = Number(pointValue)
+  const normalized = normalizeForMatch(content)
+
+  if (normalized.includes('khong thuoc bai')) {
+    return [
+      'Lần 1: nhắc nhở, ghi rõ phần không thuộc; nếu không thuộc 1 từ/1 ý nhỏ thì chép 20 lần nội dung đó.',
+      'Lần 2: chép phạt 50 lần phần chưa thuộc, trừ điểm nội bộ theo danh mục.',
+      'Lần 3: viết kiểm điểm và báo phụ huynh.',
+      'Tái phạm nhiều lần: mời phụ huynh trao đổi biện pháp học bài tại nhà.',
+    ].join('\n')
+  }
+
+  if (normalized.includes('dung cu') || normalized.includes('sgk') || normalized.includes('may tinh')) {
+    return [
+      'Lần 1: nhắc nhở, yêu cầu bổ sung dụng cụ ở tiết sau.',
+      'Lần 2: đóng 10k quỹ lớp hoặc chép phạt 50 lần nội quy chuẩn bị bài.',
+      'Lần 3: viết kiểm điểm và báo phụ huynh.',
+      'Tái phạm nhiều lần: mời phụ huynh phối hợp chuẩn bị dụng cụ học tập.',
+    ].join('\n')
+  }
+
+  if (point < 0) {
+    return [
+      'Lần 1: nhắc nhở riêng, ghi nhận vào hệ thống.',
+      'Lần 2: chép phạt 50 lần nội dung liên quan hoặc đóng 10k quỹ lớp theo quy ước lớp.',
+      'Lần 3: viết kiểm điểm, báo phụ huynh.',
+      'Tái phạm nhiều lần hoặc nghiêm trọng: mời phụ huynh làm việc với GVCN.',
+    ].join('\n')
+  }
+
+  if (point > 0) {
+    return 'Ghi nhận tích cực, cộng điểm nội bộ; nếu lặp lại nhiều lần có thể tuyên dương trước lớp hoặc trong tổng kết tuần.'
+  }
+
+  return ''
 }
 
 function applyCatalogCodeToJsonText(

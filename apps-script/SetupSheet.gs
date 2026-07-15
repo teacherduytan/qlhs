@@ -19,7 +19,7 @@ var TAB_SCHEMA = {
   ],
   PhuHuynh: ['ma_hs', 'ho_ten_ph', 'quan_he', 'sdt', 'uu_tien_lien_he'],
   BanCanSu: ['ma_hs', 'chuc_vu', 'to', 'ngay_bat_dau'],
-  DanhMucDiem: ['ma_danh_muc', 'nhom', 'ten_muc', 'diem', 'nghiem_trong', 'pham_vi'],
+  DanhMucDiem: ['ma_danh_muc', 'nhom', 'ten_muc', 'diem', 'nghiem_trong', 'pham_vi', 'mo_ta', 'de_xuat_xu_ly'],
   CauHinhTuan: ['tuan_so', 'tu_ngay', 'den_ngay', 'so_ngay', 'loai_tuan'],
   GhiNhan: [
     'ma_ghi_nhan', 'ma_hs', 'to_lien_quan', 'ngay', 'tuan_so', 'dien_tai_thoi_diem',
