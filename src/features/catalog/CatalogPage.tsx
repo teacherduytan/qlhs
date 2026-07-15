@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { DanhMucDiem, NhomDiem, PhamViDanhMuc } from '../../data/types'
+import type { DanhMucDiem, GhiNhan, HocSinh, NhomDiem, PhamViDanhMuc } from '../../data/types'
 import { getBadgeClassForCatalog } from '../scoring/scoreStyles'
 
 type CatalogForm = {
@@ -60,16 +60,23 @@ export function CatalogPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [deletingCode, setDeletingCode] = useState<string | null>(null)
+  const [students, setStudents] = useState<HocSinh[]>([])
+  const [records, setRecords] = useState<GhiNhan[]>([])
+  const [selectedCatalogCode, setSelectedCatalogCode] = useState<string | null>(null)
+  const [selectedRecordIds, setSelectedRecordIds] = useState<Set<string>>(new Set())
+  const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
   const linkedCode = (searchParams.get('ma') || '').trim().toUpperCase()
 
   useEffect(() => {
     let active = true
 
-    dataSource
-      .getPointCatalog()
-      .then((rows) => {
+    Promise.all([dataSource.getPointCatalog(), dataSource.getRecords(), dataSource.getStudents()])
+      .then(([catalogRows, recordRows, studentRows]) => {
         if (!active) return
-        setCatalog(rows)
+        setCatalog(catalogRows)
+        setRecords(recordRows)
+        setStudents(studentRows)
         setLoadError(null)
       })
       .catch((error) => {
@@ -93,7 +100,16 @@ export function CatalogPage() {
     setGroupFilter('all')
     setToneFilter('all')
     setSortKey('code_asc')
+    setSelectedCatalogCode(linkedCode)
   }, [linkedCode])
+
+  useEffect(() => {
+    setSelectedRecordIds((current) => {
+      const activeIds = new Set(records.map((record) => record.ma_ghi_nhan).filter(Boolean))
+      const next = new Set([...current].filter((id) => activeIds.has(id)))
+      return next.size === current.size ? current : next
+    })
+  }, [records])
 
   const stats = useMemo(() => {
     return catalog.reduce(
@@ -126,6 +142,46 @@ export function CatalogPage() {
       })
       .sort((left, right) => compareCatalogItems(left, right, sortKey))
   }, [catalog, groupFilter, query, sortKey, toneFilter])
+
+  const recordCountByCatalogCode = useMemo(() => {
+    const counts = new Map<string, number>()
+
+    records.forEach((record) => {
+      if (!record.ma_danh_muc) return
+      counts.set(record.ma_danh_muc, (counts.get(record.ma_danh_muc) || 0) + 1)
+    })
+
+    return counts
+  }, [records])
+
+  const studentByCode = useMemo(() => {
+    return new Map(students.map((student) => [student.ma_hs, student]))
+  }, [students])
+
+  const selectedCatalogItem = useMemo(() => {
+    if (!selectedCatalogCode) return null
+    return catalog.find((item) => item.ma_danh_muc === selectedCatalogCode) || null
+  }, [catalog, selectedCatalogCode])
+
+  const selectedCatalogRecords = useMemo(() => {
+    if (!selectedCatalogCode) return []
+
+    return records
+      .filter((record) => record.ma_danh_muc === selectedCatalogCode)
+      .sort(compareRecordsNewest)
+  }, [records, selectedCatalogCode])
+
+  const selectableRecordIds = useMemo(() => {
+    return selectedCatalogRecords
+      .map((record) => record.ma_ghi_nhan)
+      .filter((id): id is string => Boolean(id))
+  }, [selectedCatalogRecords])
+
+  const selectedCount = useMemo(() => {
+    return selectableRecordIds.filter((id) => selectedRecordIds.has(id)).length
+  }, [selectableRecordIds, selectedRecordIds])
+
+  const allSelected = selectableRecordIds.length > 0 && selectedCount === selectableRecordIds.length
 
   function openAddForm() {
     setFormMode('add')
@@ -198,6 +254,86 @@ export function CatalogPage() {
     } finally {
       setDeletingCode(null)
     }
+  }
+
+  function openLinkedRecords(item: DanhMucDiem) {
+    setSelectedCatalogCode(item.ma_danh_muc)
+    setSelectedRecordIds(new Set())
+  }
+
+  function toggleRecordSelection(recordId: string) {
+    setSelectedRecordIds((current) => {
+      const next = new Set(current)
+      if (next.has(recordId)) {
+        next.delete(recordId)
+      } else {
+        next.add(recordId)
+      }
+      return next
+    })
+  }
+
+  function toggleAllRecords() {
+    if (allSelected) {
+      setSelectedRecordIds(new Set())
+      return
+    }
+
+    setSelectedRecordIds(new Set(selectableRecordIds))
+  }
+
+  async function deleteLinkedRecord(record: GhiNhan) {
+    if (!record.ma_ghi_nhan) {
+      window.alert('Ghi nháº­n nÃ y chÆ°a cÃ³ ma_ghi_nhan nÃªn chÆ°a thá»ƒ xoÃ¡ tá»± Ä‘á»™ng.')
+      return
+    }
+
+    const student = record.ma_hs ? studentByCode.get(record.ma_hs) : undefined
+    const studentName = student ? `${student.ho} ${student.ten}` : record.ma_hs || 'dÃ²ng khÃ´ng cÃ³ há»c sinh'
+    const ok = window.confirm(
+      `XoÃ¡ ghi nháº­n ${record.ma_ghi_nhan} khá»i danh má»¥c ${record.ma_danh_muc}? Há»c sinh/danh má»¥c váº«n giá»¯ nguyÃªn, chá»‰ xoÃ¡ dÃ²ng GhiNhan cá»§a ${studentName}.`,
+    )
+    if (!ok) return
+
+    setDeletingRecordId(record.ma_ghi_nhan)
+    try {
+      await dataSource.deleteRecord(record.ma_ghi_nhan)
+      removeRecordsFromState([record.ma_ghi_nhan])
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'KhÃ´ng xoÃ¡ Ä‘Æ°á»£c ghi nháº­n.')
+    } finally {
+      setDeletingRecordId(null)
+    }
+  }
+
+  async function deleteSelectedLinkedRecords() {
+    const ids = selectableRecordIds.filter((id) => selectedRecordIds.has(id))
+    if (ids.length === 0) return
+
+    const ok = window.confirm(
+      `XoÃ¡ ${ids.length} dÃ²ng ghi nháº­n khá»i danh má»¥c ${selectedCatalogCode}? Há»c sinh vÃ  danh má»¥c khÃ´ng bá»‹ xoÃ¡, chá»‰ xoÃ¡ cÃ¡c dÃ²ng GhiNhan Ä‘ang chá»n.`,
+    )
+    if (!ok) return
+
+    setBulkDeleting(true)
+    try {
+      await Promise.all(ids.map((id) => dataSource.deleteRecord(id)))
+      removeRecordsFromState(ids)
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'KhÃ´ng xoÃ¡ Ä‘Æ°á»£c cÃ¡c ghi nháº­n Ä‘Ã£ chá»n.')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
+  function removeRecordsFromState(recordIds: string[]) {
+    const ids = new Set(recordIds)
+    setRecords((current) => current.filter((record) => !record.ma_ghi_nhan || !ids.has(record.ma_ghi_nhan)))
+    setSelectedRecordIds((current) => {
+      const next = new Set(current)
+      ids.forEach((id) => next.delete(id))
+      return next
+    })
   }
 
   if (loading) {
@@ -432,6 +568,7 @@ export function CatalogPage() {
                 <th className="px-3 py-3">Nhóm</th>
                 <th className="px-3 py-3">Nội dung vi phạm/ghi nhận</th>
                 <th className="px-3 py-3">Loại</th>
+                <th className="px-3 py-3 text-right">Đang gắn</th>
                 <th className="px-3 py-3 text-right">Điểm</th>
                 <th className="px-3 py-3">Phạm vi</th>
                 <th className="px-3 py-3">Mức</th>
@@ -441,7 +578,7 @@ export function CatalogPage() {
             <tbody className="divide-y divide-slate-100 bg-white">
               {visibleCatalog.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-sm text-slate-500">
+                  <td colSpan={9} className="px-3 py-6 text-center text-sm text-slate-500">
                     Chưa có danh mục phù hợp bộ lọc hiện tại.
                   </td>
                 </tr>
@@ -451,7 +588,9 @@ export function CatalogPage() {
                     key={item.ma_danh_muc}
                     id={`catalog-${item.ma_danh_muc}`}
                     className={`align-top hover:bg-slate-50 ${
-                      item.ma_danh_muc === linkedCode ? 'bg-blue-50 ring-2 ring-inset ring-blue-300' : ''
+                      item.ma_danh_muc === linkedCode || item.ma_danh_muc === selectedCatalogCode
+                        ? 'bg-blue-50 ring-2 ring-inset ring-blue-300'
+                        : ''
                     }`}
                   >
                     <td className="px-3 py-3">
@@ -469,6 +608,15 @@ export function CatalogPage() {
                     <td className="max-w-md px-3 py-3 text-slate-800">{item.ten_muc}</td>
                     <td className="px-3 py-3">
                       <ToneBadge item={item} />
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => openLinkedRecords(item)}
+                        className="rounded-md border border-violet-200 bg-white px-2 py-1 text-xs font-bold text-violet-700 hover:bg-violet-50"
+                      >
+                        {recordCountByCatalogCode.get(item.ma_danh_muc) || 0} dòng
+                      </button>
                     </td>
                     <td
                       className={`px-3 py-3 text-right font-bold ${
@@ -495,6 +643,13 @@ export function CatalogPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
+                          onClick={() => openLinkedRecords(item)}
+                          className="rounded-md border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50"
+                        >
+                          Xem HS
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => openEditForm(item)}
                           className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
                         >
@@ -516,6 +671,131 @@ export function CatalogPage() {
             </tbody>
           </table>
         </div>
+
+        {selectedCatalogItem ? (
+          <section className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase text-rose-700">Học sinh đang gắn danh mục</p>
+                <h3 className="mt-1 text-base font-bold text-slate-900">
+                  {selectedCatalogItem.ma_danh_muc} - {selectedCatalogItem.ten_muc}
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Xoá ở đây là xoá dòng GhiNhan liên kết, không xoá học sinh và không xoá danh mục.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={toggleAllRecords}
+                  disabled={selectableRecordIds.length === 0}
+                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                >
+                  {allSelected ? 'Bỏ chọn tất cả' : `Chọn ${selectableRecordIds.length} dòng`}
+                </button>
+                <button
+                  type="button"
+                  onClick={deleteSelectedLinkedRecords}
+                  disabled={selectedCount === 0 || bulkDeleting}
+                  className="h-10 rounded-md bg-red-700 px-3 text-sm font-semibold text-white shadow-sm hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  {bulkDeleting ? 'Đang xoá...' : `Xoá đã chọn (${selectedCount})`}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 overflow-x-auto rounded-lg border border-rose-200 bg-white">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-rose-100 text-left text-xs font-semibold uppercase text-rose-900">
+                  <tr>
+                    <th className="w-12 px-3 py-3">Chọn</th>
+                    <th className="px-3 py-3">Học sinh</th>
+                    <th className="px-3 py-3">Ngày/tuần</th>
+                    <th className="px-3 py-3">Nội dung</th>
+                    <th className="px-3 py-3 text-right">Điểm</th>
+                    <th className="px-3 py-3">Nguồn</th>
+                    <th className="px-3 py-3 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {selectedCatalogRecords.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-6 text-center text-slate-500">
+                        Danh mục này chưa gắn với học sinh hoặc ghi nhận nào.
+                      </td>
+                    </tr>
+                  ) : (
+                    selectedCatalogRecords.map((record, index) => {
+                      const student = record.ma_hs ? studentByCode.get(record.ma_hs) : undefined
+                      const recordId = record.ma_ghi_nhan || ''
+
+                      return (
+                        <tr key={record.ma_ghi_nhan || `${record.ngay}-${index}`} className="align-top">
+                          <td className="px-3 py-3">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(recordId && selectedRecordIds.has(recordId))}
+                              disabled={!recordId || bulkDeleting}
+                              onChange={() => recordId && toggleRecordSelection(recordId)}
+                              className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500 disabled:cursor-not-allowed"
+                            />
+                          </td>
+                          <td className="min-w-44 px-3 py-3">
+                            {student ? (
+                              <Link
+                                to={`/quan-ly/hoc-sinh/${encodeURIComponent(student.ma_hs)}`}
+                                className="font-semibold text-blue-700 hover:underline"
+                              >
+                                {student.ho} {student.ten}
+                              </Link>
+                            ) : (
+                              <span className="font-semibold text-slate-700">
+                                {record.ma_hs || 'Không gắn học sinh'}
+                              </span>
+                            )}
+                            <div className="mt-1 font-mono text-xs text-slate-500">
+                              {record.ma_ghi_nhan || 'Chưa có ma_ghi_nhan'}
+                            </div>
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-3 text-slate-700">
+                            <div className="font-semibold">{formatDate(record.ngay)}</div>
+                            <div className="text-xs text-slate-500">Tuần {record.tuan_so || '-'}</div>
+                          </td>
+                          <td className="min-w-72 px-3 py-3">
+                            <div className="font-semibold text-slate-900">
+                              {record.noi_dung || record.ly_do || selectedCatalogItem.ten_muc}
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500">
+                              {labelRecordType(record.loai)}
+                              {record.mon_hoc ? ` · ${record.mon_hoc}` : ''}
+                              {record.tiet ? ` · Tiết ${record.tiet}` : ''}
+                            </div>
+                          </td>
+                          <td className={`whitespace-nowrap px-3 py-3 text-right font-bold ${getPointClass(record)}`}>
+                            {formatPoint(record.diem_cong_tru)}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-3 text-slate-600">
+                            {record.nguon || '-'}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => deleteLinkedRecord(record)}
+                              disabled={!record.ma_ghi_nhan || deletingRecordId === record.ma_ghi_nhan || bulkDeleting}
+                              className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                            >
+                              {deletingRecordId === record.ma_ghi_nhan ? 'Đang xoá' : 'Xoá'}
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
       </div>
     </section>
   )
@@ -643,4 +923,44 @@ function labelScope(value: PhamViDanhMuc): string {
 function formatScore(value: number): string {
   if (value > 0) return `+${value}`
   return String(value)
+}
+
+function compareRecordsNewest(left: GhiNhan, right: GhiNhan): number {
+  return (
+    String(right.ngay || '').localeCompare(String(left.ngay || '')) ||
+    (right.tuan_so || 0) - (left.tuan_so || 0) ||
+    String(right.ma_ghi_nhan || '').localeCompare(String(left.ma_ghi_nhan || ''))
+  )
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('vi-VN').format(date)
+}
+
+function formatPoint(value: number | null): string {
+  if (typeof value !== 'number') return '-'
+  return value > 0 ? `+${value}` : String(value)
+}
+
+function getPointClass(record: GhiNhan): string {
+  if (typeof record.diem_cong_tru !== 'number') return 'text-slate-600'
+  if (record.diem_cong_tru > 0) return 'text-emerald-700'
+  if (record.diem_cong_tru < 0) return 'text-red-700'
+  return 'text-slate-600'
+}
+
+function labelRecordType(value: GhiNhan['loai']): string {
+  const labels: Record<GhiNhan['loai'], string> = {
+    chuyen_can: 'Chuyên cần',
+    hoc_tap: 'Học tập',
+    khen_thuong: 'Tích cực',
+    ne_nep: 'Nề nếp',
+    trat_tu_ky_luat: 'Kỷ luật',
+    ve_sinh: 'Vệ sinh',
+  }
+
+  return labels[value] || value
 }
