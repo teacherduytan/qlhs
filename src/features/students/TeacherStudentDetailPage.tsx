@@ -142,18 +142,31 @@ export function TeacherStudentDetailPage() {
   }, [state])
 
   return (
-    <section className="space-y-4">
+    <section className="mx-auto max-w-5xl space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase text-blue-600">Quản lý học sinh</p>
-          <h2 className="text-xl font-bold text-slate-900">Chi tiết học sinh</h2>
+          <p className="text-xs font-semibold uppercase text-blue-600">QLHS 11C5 · chế độ giáo viên</p>
+          <h2 className="text-xl font-bold text-slate-900">Hồ sơ học sinh</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Cùng bố cục với link học sinh, có thêm quyền chỉnh sửa và xoá ghi nhận.
+          </p>
         </div>
-        <Link
-          to="/hoc-sinh"
-          className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-        >
-          Về danh sách
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {state.status === 'success' ? (
+            <Link
+              to={`/hs/${state.student.token_ho_so}`}
+              className="inline-flex h-10 items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+            >
+              Xem link học sinh
+            </Link>
+          ) : null}
+          <Link
+            to="/hoc-sinh"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Về danh sách
+          </Link>
+        </div>
       </div>
 
       {state.status === 'loading' ? (
@@ -177,24 +190,49 @@ export function TeacherStudentDetailPage() {
 
       {state.status === 'success' && form ? (
         <>
-          <section className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-              <div>
-                <p className="text-sm font-semibold text-blue-700">{state.student.ma_hs}</p>
-                <h3 className="mt-1 text-2xl font-bold text-slate-900">
-                  {state.student.ho} {state.student.ten}
-                </h3>
-                <div className="mt-3 flex flex-wrap gap-2 text-sm text-slate-700">
-                  <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold">
-                    STT {state.student.tt}
-                  </span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold">
-                    Tổ {state.student.to || '-'}
-                  </span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold">
-                    {getRole(state.student.ma_hs, state.banCanSu)}
-                  </span>
+          <section className="overflow-hidden rounded-lg border border-sky-200 bg-sky-50 shadow-sm">
+            <div className="border-b border-sky-200 p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
+                    {state.student.ten.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase text-blue-600">
+                      {getRole(state.student.ma_hs, state.banCanSu)}
+                    </p>
+                    <h3 className="truncate text-2xl font-bold text-slate-950">
+                      {state.student.ho} {state.student.ten}
+                    </h3>
+                    <p className="text-sm text-slate-600">Mã học sinh: {state.student.ma_hs}</p>
+                  </div>
                 </div>
+                <div className="grid min-w-40 grid-cols-2 overflow-hidden rounded-md border border-white/80 bg-white text-center shadow-sm">
+                  <div className="border-r border-slate-100 px-3 py-2">
+                    <p className="text-xs font-semibold uppercase text-slate-500">STT</p>
+                    <p className="text-lg font-bold text-slate-900">{state.student.tt}</p>
+                  </div>
+                  <div className="px-3 py-2">
+                    <p className="text-xs font-semibold uppercase text-slate-500">Ghi nhận</p>
+                    <p className="text-lg font-bold text-slate-900">{state.records.length}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-3 bg-white/70 p-4 md:grid-cols-[1fr_1.3fr]">
+              <div className="flex flex-wrap gap-2 text-sm text-slate-700">
+                <span className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-sky-100">
+                  Tổ {state.student.to || '-'}
+                </span>
+                <span className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-sky-100">
+                  {state.student.dien}
+                </span>
+                <span className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-sky-100">
+                  {state.student.nu ? 'Nữ' : 'Nam'}
+                </span>
+                <span className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-sky-100">
+                  Cờ đỏ: {state.student.la_co_do ? 'Có' : 'Không'}
+                </span>
               </div>
               <div className="grid gap-2 text-sm">
                 <PhoneRow label="SĐT 1" value={state.student.sdt_1} />
@@ -211,25 +249,26 @@ export function TeacherStudentDetailPage() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-rose-200 bg-rose-50 p-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <section className="rounded-lg border border-blue-300 bg-blue-50 shadow-sm">
+            <div className="flex flex-col gap-2 border-b border-blue-200 p-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Ghi nhận tích cực và vi phạm</h3>
+                <p className="text-xs font-semibold uppercase text-blue-700">Ghi nhận của học sinh</p>
+                <h3 className="text-xl font-bold text-slate-950">Ghi nhận tích cực và cần lưu ý trên lớp</h3>
                 <p className="text-sm text-slate-600">
-                  Xoá các dòng nhập nhầm trong tab GhiNhan của học sinh này.
+                  Đồng bộ với hồ sơ học sinh; giáo viên có thêm quyền xoá các dòng nhập nhầm.
                 </p>
               </div>
               <Link
                 to="/ghi-nhan"
-                className="inline-flex h-10 items-center justify-center rounded-md border border-rose-200 bg-white px-3 text-sm font-semibold text-rose-700 hover:bg-rose-100"
+                className="inline-flex h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100"
               >
                 Thêm ghi nhận
               </Link>
             </div>
 
-            <div className="mt-4 overflow-x-auto rounded-lg border border-rose-200 bg-white">
+            <div className="overflow-x-auto bg-white">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-rose-100 text-left text-xs font-semibold uppercase text-rose-900">
+                <thead className="bg-blue-100 text-left text-xs font-semibold uppercase text-blue-900">
                   <tr>
                     <th className="px-3 py-3">Ngày</th>
                     <th className="px-3 py-3">Mã</th>
@@ -310,13 +349,16 @@ export function TeacherStudentDetailPage() {
             </div>
           </section>
 
-          <form onSubmit={saveStudent} className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <form onSubmit={saveStudent} className="rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-base font-bold text-slate-900">Chỉnh sửa thông tin</h3>
+              <div>
+                <p className="text-xs font-semibold uppercase text-violet-700">Thông tin cá nhân</p>
+                <h3 className="text-base font-bold text-slate-900">Chỉnh sửa thông tin</h3>
+              </div>
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-violet-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400"
               >
                 {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
               </button>
