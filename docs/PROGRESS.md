@@ -132,6 +132,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C099 | ✅ Xong | 15/07/2026 | Đổ màu toàn bộ dòng học sinh theo tích cực/vi phạm trong danh sách quản lý |
 | C100 | ✅ Xong | 15/07/2026 | Đổ màu tích cực/vi phạm trong trang chi tiết học sinh |
 | C101 | ✅ Xong | 15/07/2026 | Cập nhật prompt để không dùng mã NN08/NN09 cho lỗi không mang dụng cụ học tập |
+| C102 | ✅ Xong | 15/07/2026 | Import cho so sánh đề xuất danh mục mới với danh mục cũ và chọn dùng mã có sẵn |
 
 ---
 

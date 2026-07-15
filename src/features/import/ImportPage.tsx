@@ -39,6 +39,11 @@ type CatalogSuggestionForm = {
   ly_do_can_tao: string
 }
 
+type SimilarCatalogMatch = {
+  item: DanhMucDiem
+  score: number
+}
+
 type MissingCatalogItem = {
   code: string
   rowIndexes: number[]
@@ -192,6 +197,10 @@ export function ImportPage() {
     () => suggestionForms.find((form) => form.sourceIndex === activeSuggestionIndex) || null,
     [activeSuggestionIndex, suggestionForms],
   )
+  const activeSuggestionSimilarMatches = useMemo(
+    () => (activeSuggestionForm ? getSimilarCatalogMatches(activeSuggestionForm, pointCatalog) : []),
+    [activeSuggestionForm, pointCatalog],
+  )
   const activeMissingCatalogForm = useMemo(
     () => missingCatalogForms.find((form) => form.code === activeMissingCatalogCode) || null,
     [activeMissingCatalogCode, missingCatalogForms],
@@ -240,7 +249,6 @@ export function ImportPage() {
       ),
     )
     setSuggestionError(null)
-    setSuggestionMessage(null)
   }, [jsonText, parseState.status])
 
   useEffect(() => {
@@ -629,6 +637,21 @@ export function ImportPage() {
     } finally {
       setCreatingSuggestionIndex(null)
     }
+  }
+
+  function applyExistingCatalogToSuggestion(form: CatalogSuggestionForm, catalogItem: DanhMucDiem) {
+    const applyResult = applyCatalogCodeToJsonText(jsonText, form, catalogItem.ma_danh_muc)
+
+    setJsonText(applyResult.jsonText)
+    setActiveSuggestionIndex(null)
+    setSuggestionStep(1)
+    setSuggestionError(null)
+    setSubmitError(null)
+    setSuggestionMessage(
+      applyResult.updatedRows > 0
+        ? `Đã dùng danh mục có sẵn ${catalogItem.ma_danh_muc} - ${catalogItem.ten_muc} và gắn mã vào ${applyResult.updatedRows} dòng ghi nhận đang chờ.`
+        : `Đã bỏ đề xuất mới và chọn dùng ${catalogItem.ma_danh_muc} - ${catalogItem.ten_muc}. Chưa tìm thấy dòng ghi nhận khớp tự động, cần kiểm tra lại JSON nếu còn lỗi thiếu mã.`,
+    )
   }
 
   function updateSuggestionForm(sourceIndex: number, patch: Partial<CatalogSuggestionForm>) {
@@ -1150,6 +1173,48 @@ export function ImportPage() {
                       ))}
                     </select>
                   </label>
+
+                  {activeSuggestionSimilarMatches.length > 0 ? (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 md:col-span-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-emerald-950">Danh mục có sẵn gần giống</p>
+                          <p className="mt-1 text-xs text-emerald-800">
+                            Nếu cùng ý nghĩa với đề xuất AI, dùng mã cũ để tránh tạo danh mục trùng.
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-emerald-800">
+                          {activeSuggestionSimilarMatches.length} gợi ý
+                        </span>
+                      </div>
+
+                      <div className="mt-3 space-y-2">
+                        {activeSuggestionSimilarMatches.map(({ item, score }) => (
+                          <div
+                            key={item.ma_danh_muc}
+                            className="flex flex-col gap-3 rounded-md border border-emerald-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-900">
+                                <span className="font-mono">{item.ma_danh_muc}</span> - {item.ten_muc}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-600">
+                                {item.nhom} · {item.diem} điểm · {labelSuggestionScope(item.pham_vi)} · Khớp{' '}
+                                {Math.round(score * 100)}%
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => applyExistingCatalogToSuggestion(activeSuggestionForm, item)}
+                              className="inline-flex h-9 shrink-0 items-center justify-center rounded-md bg-emerald-700 px-3 text-sm font-semibold text-white hover:bg-emerald-800"
+                            >
+                              Dùng mã này
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
 
                   <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                     <input
@@ -2243,6 +2308,59 @@ function rowMatchesSuggestion(row: Record<string, unknown>, form: CatalogSuggest
   const needles = [form.mo_ta_tho, form.ten_muc].map(normalizeForMatch).filter(Boolean)
 
   return needles.some((needle) => haystack.includes(needle))
+}
+
+function getSimilarCatalogMatches(form: CatalogSuggestionForm, catalog: DanhMucDiem[]): SimilarCatalogMatch[] {
+  return catalog
+    .map((item) => ({ item, score: scoreCatalogSimilarity(form, item) }))
+    .filter((match) => match.score >= 0.35)
+    .sort((left, right) => right.score - left.score || compareCatalogItems(left.item, right.item))
+    .slice(0, 5)
+}
+
+function scoreCatalogSimilarity(form: CatalogSuggestionForm, item: DanhMucDiem): number {
+  const formText = `${form.ten_muc} ${form.mo_ta_tho}`
+  const itemText = item.ten_muc
+  const formTokens = tokenizeForMatch(formText)
+  const itemTokens = tokenizeForMatch(itemText)
+
+  if (formTokens.length === 0 || itemTokens.length === 0) {
+    return 0
+  }
+
+  const itemTokenSet = new Set(itemTokens)
+  const overlap = formTokens.filter((token) => itemTokenSet.has(token)).length
+  let score = overlap / Math.max(formTokens.length, itemTokens.length)
+
+  const normalizedFormText = normalizeForMatch(formText).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
+  const normalizedItemText = normalizeForMatch(itemText).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
+  if (normalizedFormText.includes(normalizedItemText) || normalizedItemText.includes(normalizedFormText)) {
+    score += 0.2
+  }
+
+  if (form.nhom === item.nhom) {
+    score += 0.15
+  }
+
+  if (form.pham_vi === item.pham_vi) {
+    score += 0.05
+  }
+
+  const formPoint = Number(form.diem)
+  const itemPoint = Number(item.diem)
+  if (Number.isFinite(formPoint) && Number.isFinite(itemPoint) && Math.sign(formPoint) === Math.sign(itemPoint)) {
+    score += 0.1
+  }
+
+  return Math.min(score, 1)
+}
+
+function tokenizeForMatch(value: string): string[] {
+  return normalizeForMatch(value)
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2)
 }
 
 function cleanupNeedCreatePrefix(value: string): string {
