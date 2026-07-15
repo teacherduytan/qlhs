@@ -9,6 +9,8 @@
 > **Lưu ý khớp tên học sinh**: phiếu giấy có thể ghi tên thiếu dấu, viết tắt, chỉ ghi tên gọi hoặc chữ viết tay khó đọc. Khi dùng AI web phải đính kèm/copy **danh sách HocSinh hiện hành của lớp** gồm tối thiểu `ma_hs`, họ tên, STT, tổ, diện để AI đối chiếu và trả đúng `ma_hs`.
 >
 > **Lưu ý đọc ngữ cảnh**: dù có form in sẵn, học sinh có thể ghi lệch cột, ghi dồn nhiều ý vào một ô hoặc viết thêm ngoài bảng. AI phải đọc theo ngữ cảnh toàn phiếu, không phụ thuộc máy móc vào vị trí cột; trường nào suy luận chưa chắc phải đánh dấu để giáo viên rà lại.
+>
+> **Lưu ý chống lỗi import**: trước khi trả JSON, AI phải tự kiểm tra lại. Mọi dòng vi phạm/tích cực không phải `hoc_tap` phải có `ma_danh_muc` đang tồn tại trong DanhMucDiem, hoặc phải có đề xuất tương ứng trong `de_xuat_danh_muc`. Mọi dòng cá nhân đã khớp được học sinh phải điền `ma_hs`.
 
 ## Cách dùng
 
@@ -81,6 +83,19 @@ DanhMucDiem hiện hành trong app, bảng tra cứu mã nếu có, và danh sá
    mô tả thô học sinh đã ghi, gồm: `nhom_goi_y`, `ten_muc_goi_y`, `diem_goi_y`, `pham_vi_goi_y`, `mo_ta_tho`,
    `ly_do_can_tao`, và `ma_goi_y` nếu có thể gợi ý mã chưa trùng. Không đưa mã gợi ý đó vào `ban_ghi` cho tới khi
    giáo viên đã tạo danh mục trong app.
+
+9. TRƯỚC KHI TRẢ JSON, tự kiểm tra và sửa các lỗi sau:
+   - Không được để `ma_danh_muc = null` cho dòng `loai` là `chuyen_can`, `ve_sinh`, `ne_nep`, `trat_tu_ky_luat`
+     hoặc `khen_thuong`, trừ khi cùng lúc đã thêm mục phù hợp trong `de_xuat_danh_muc` và `noi_dung` có tiền tố
+     "[CẦN TẠO DANH MỤC — lý do]".
+   - Nếu nội dung là "không mang dụng cụ học tập", "quên máy tính", "không mang máy tính" hoặc nghĩa tương tự:
+     trước hết tìm mã phù hợp trong DanhMucDiem hiện hành. Nếu chưa có mã phù hợp, đề xuất tạo danh mục mới với
+     `nhom_goi_y = "NN"`, `ten_muc_goi_y` gần với "Không mang dụng cụ học tập", `diem_goi_y = -1`,
+     `pham_vi_goi_y = "ca_nhan"`, và giữ `ma_danh_muc = null` trong `ban_ghi` chỉ để Import cho giáo viên tạo mã.
+   - Nếu `ho_ten` đã khớp được với danh sách HocSinh thì bắt buộc điền `ma_hs`; không để `ma_hs = null` cho dòng cá nhân
+     đã xác định được học sinh.
+   - Nếu một dòng cá nhân vẫn có `ma_hs = null`, `noi_dung` phải có tiền tố `[CẦN XÁC NHẬN TÊN...]`.
+   - Nếu JSON còn dòng vi phạm/tích cực thiếu mã danh mục mà không có `de_xuat_danh_muc`, coi như JSON chưa đạt và phải sửa lại.
 
 Trả về đúng cấu trúc JSON sau, không thêm chữ nào khác ngoài JSON:
 

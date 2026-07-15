@@ -120,6 +120,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C087 | ✅ Xong | 15/07/2026 | Tự sinh mã danh mục không trùng theo nhóm |
 | C088 | ✅ Xong | 15/07/2026 | Cập nhật prompt: cung cấp danh sách học sinh để AI khớp tên viết tay/viết tắt |
 | C089 | ✅ Xong | 15/07/2026 | Cập nhật prompt: AI đọc ngữ cảnh phiếu viết tay không đúng cấu trúc |
+| C090 | ✅ Xong | 15/07/2026 | Cập nhật prompt: bắt AI tự kiểm tra mã danh mục và mã học sinh trước khi xuất JSON |
 
 ---
 
