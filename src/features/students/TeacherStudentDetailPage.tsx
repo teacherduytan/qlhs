@@ -292,7 +292,10 @@ export function TeacherStudentDetailPage() {
                         : undefined
 
                       return (
-                        <tr key={record.ma_ghi_nhan || `${record.ngay}-${index}`} className="align-top">
+                        <tr
+                          key={record.ma_ghi_nhan || `${record.ngay}-${index}`}
+                          className={`align-top ${getRecordRowClass(record, catalogItem)}`}
+                        >
                           <td className="whitespace-nowrap px-3 py-3 text-slate-700">
                             <div className="font-semibold">{formatDate(record.ngay)}</div>
                             <div className="text-xs text-slate-500">Tuần {record.tuan_so || '-'}</div>
@@ -511,6 +514,21 @@ function labelRecordDisplay(record: GhiNhan, catalogItem?: DanhMucDiem): string 
   }
 
   return labelRecordType(record.loai)
+}
+
+function getRecordRowClass(record: GhiNhan, catalogItem?: DanhMucDiem): string {
+  const catalogByCode = catalogItem ? new Map([[catalogItem.ma_danh_muc, catalogItem]]) : new Map<string, DanhMucDiem>()
+  const polarity = getRecordPolarity(record, catalogByCode)
+
+  if (polarity === 'positive') {
+    return 'bg-emerald-50 hover:bg-emerald-100'
+  }
+
+  if (polarity === 'negative') {
+    return 'bg-red-50 hover:bg-red-100'
+  }
+
+  return 'bg-white hover:bg-slate-50'
 }
 
 function formatDate(value: string | null): string {

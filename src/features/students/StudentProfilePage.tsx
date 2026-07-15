@@ -374,7 +374,10 @@ function FeaturedRecords({ catalog, records }: { catalog: DanhMucDiem[]; records
           {latestRecords.map((record, index) => (
             <article
               key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc}-${index}`}
-              className="rounded-md border border-blue-100 bg-white p-3 shadow-sm"
+              className={`rounded-md border p-3 shadow-sm ${getRecordCardClass(
+                record,
+                record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined,
+              )}`}
             >
               <RecordSummary
                 allRecords={records}
@@ -546,7 +549,10 @@ function RecordHistory({
                 {weekRecords.map((record, index) => (
                   <article
                     key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc}-${index}`}
-                    className="rounded-md border border-emerald-200 bg-white p-3"
+                    className={`rounded-md border p-3 ${getRecordCardClass(
+                      record,
+                      record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined,
+                    )}`}
                   >
                     <RecordSummary
                       allRecords={records}
@@ -797,6 +803,21 @@ function labelRecordDisplay(record: GhiNhan, catalogItem?: DanhMucDiem): string 
   }
 
   return labelRecordType(record.loai)
+}
+
+function getRecordCardClass(record: GhiNhan, catalogItem?: DanhMucDiem): string {
+  const catalogByCode = catalogItem ? new Map([[catalogItem.ma_danh_muc, catalogItem]]) : new Map<string, DanhMucDiem>()
+  const polarity = getRecordPolarity(record, catalogByCode)
+
+  if (polarity === 'positive') {
+    return 'border-emerald-200 bg-emerald-50'
+  }
+
+  if (polarity === 'negative') {
+    return 'border-red-200 bg-red-50'
+  }
+
+  return 'border-slate-200 bg-white'
 }
 
 function getRecordPointText(record: GhiNhan): string | null {
