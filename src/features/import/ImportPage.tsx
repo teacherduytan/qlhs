@@ -2,6 +2,8 @@ import { type ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { dataSource } from '../../data/client'
 import type {
   DanhMucDiem,
+  DienHocSinh,
+  HocSinh,
   ImportResult,
   LoaiDuLieuImport,
   NhatKyImport,
@@ -37,6 +39,33 @@ type CatalogSuggestionForm = {
   ly_do_can_tao: string
 }
 
+type StudentCreateForm = {
+  sourceRowIndex: number
+  ma_hs: string
+  ho: string
+  ten: string
+  dien: DienHocSinh
+  nu: boolean
+  dan_toc: string
+  to: string
+}
+
+type StudentResolutionItem = {
+  rowIndex: number
+  hoTen: string
+  noiDung: string
+  exactMatch: HocSinh | null
+  candidates: HocSinh[]
+}
+
+type StudentCheck = {
+  errors: string[]
+  linkedCount: number
+  allowedBlankCount: number
+  autoMatchItems: StudentResolutionItem[]
+  unresolvedItems: StudentResolutionItem[]
+}
+
 const IMPORT_OPTIONS: Array<{ value: LoaiDuLieuImport; label: string }> = [
   { value: 'ghi_nhan', label: 'Ghi nhận' },
   { value: 'hoc_sinh', label: 'Học sinh' },
@@ -57,6 +86,12 @@ const SCOPE_OPTIONS: Array<{ value: PhamViDanhMuc; label: string }> = [
   { value: 'ca_nhan', label: 'Cá nhân' },
   { value: 'tap_the', label: 'Tập thể' },
   { value: 'to_truc', label: 'Tổ trực' },
+]
+
+const STUDENT_TYPE_OPTIONS: Array<{ value: DienHocSinh; label: string }> = [
+  { value: '2B', label: '2B' },
+  { value: 'BT', label: 'Ban tru' },
+  { value: 'NT', label: 'Noi tru' },
 ]
 
 const STATUS_LABELS: Record<TrangThaiImport, string> = {
@@ -82,12 +117,18 @@ export function ImportPage() {
   const [pointCatalog, setPointCatalog] = useState<DanhMucDiem[]>([])
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [catalogError, setCatalogError] = useState<string | null>(null)
+  const [students, setStudents] = useState<HocSinh[]>([])
+  const [studentsLoading, setStudentsLoading] = useState(false)
+  const [studentsError, setStudentsError] = useState<string | null>(null)
   const [suggestionForms, setSuggestionForms] = useState<CatalogSuggestionForm[]>([])
   const [creatingSuggestionIndex, setCreatingSuggestionIndex] = useState<number | null>(null)
   const [suggestionError, setSuggestionError] = useState<string | null>(null)
   const [suggestionMessage, setSuggestionMessage] = useState<string | null>(null)
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number | null>(null)
   const [suggestionStep, setSuggestionStep] = useState<1 | 2>(1)
+  const [studentMessage, setStudentMessage] = useState<string | null>(null)
+  const [creatingStudent, setCreatingStudent] = useState(false)
+  const [studentCreateForm, setStudentCreateForm] = useState<StudentCreateForm | null>(null)
 
   const parseState = useMemo(() => parseJsonRows(jsonText), [jsonText])
   const previewColumns = useMemo(() => {
@@ -108,8 +149,22 @@ export function ImportPage() {
 
     return checkRecordCatalogLinks(parseState.rows, pointCatalog)
   }, [loai, parseState, pointCatalog])
+  const studentCheck = useMemo(() => {
+    if (loai !== 'ghi_nhan' || parseState.status !== 'valid') {
+      return EMPTY_STUDENT_CHECK
+    }
+
+    return checkRecordStudentLinks(parseState.rows, pointCatalog, students)
+  }, [loai, parseState, pointCatalog, students])
   const hasCatalogBlockingError =
     loai === 'ghi_nhan' && (catalogLoading || Boolean(catalogError) || catalogCheck.errors.length > 0)
+  const hasStudentBlockingError =
+    loai === 'ghi_nhan' &&
+    (studentsLoading ||
+      Boolean(studentsError) ||
+      studentCheck.errors.length > 0 ||
+      studentCheck.autoMatchItems.length > 0 ||
+      studentCheck.unresolvedItems.length > 0)
   const activeSuggestionForm = useMemo(
     () => suggestionForms.find((form) => form.sourceIndex === activeSuggestionIndex) || null,
     [activeSuggestionIndex, suggestionForms],
@@ -122,6 +177,7 @@ export function ImportPage() {
   useEffect(() => {
     void loadImportLogs()
     void loadPointCatalog()
+    void loadStudents()
   }, [])
 
   useEffect(() => {
@@ -143,7 +199,7 @@ export function ImportPage() {
   }, [jsonText, parseState.status])
 
   useEffect(() => {
-    if (!activeSuggestionForm) return
+    if (!activeSuggestionForm && !studentCreateForm) return
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -151,6 +207,7 @@ export function ImportPage() {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         closeSuggestionModal()
+        closeStudentCreateModal()
       }
     }
 
@@ -160,7 +217,7 @@ export function ImportPage() {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [activeSuggestionForm])
+  }, [activeSuggestionForm, studentCreateForm])
 
   async function loadPointCatalog() {
     setCatalogLoading(true)
@@ -172,6 +229,19 @@ export function ImportPage() {
       setCatalogError(error instanceof Error ? error.message : 'Không tải được DanhMucDiem để kiểm tra mã import.')
     } finally {
       setCatalogLoading(false)
+    }
+  }
+
+  async function loadStudents() {
+    setStudentsLoading(true)
+    setStudentsError(null)
+
+    try {
+      setStudents(await dataSource.getStudents())
+    } catch (error) {
+      setStudentsError(error instanceof Error ? error.message : 'Khong tai duoc danh sach hoc sinh de gan ma_hs.')
+    } finally {
+      setStudentsLoading(false)
     }
   }
 
@@ -200,6 +270,7 @@ export function ImportPage() {
     setSubmitError(null)
     setSuggestionError(null)
     setSuggestionMessage(null)
+    setStudentMessage(null)
     event.target.value = ''
   }
 
@@ -211,6 +282,11 @@ export function ImportPage() {
 
     if (hasCatalogBlockingError) {
       setSubmitError('Cần sửa các lỗi liên kết DanhMucDiem trước khi import GhiNhan.')
+      return
+    }
+
+    if (hasStudentBlockingError) {
+      setSubmitError('Can gan hoc sinh cho cac dong ca nhan dang co ma_hs null truoc khi import GhiNhan.')
       return
     }
 
@@ -227,6 +303,99 @@ export function ImportPage() {
       setSubmitError(error instanceof Error ? error.message : 'Import không thành công.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  function applyStudentToRow(rowIndex: number, student: HocSinh) {
+    setJsonText((current) => applyStudentToJsonText(current, rowIndex, student))
+    setStudentMessage(`Da gan ${student.ma_hs} - ${studentFullName(student)} vao dong ${rowIndex + 1}.`)
+    setSubmitError(null)
+  }
+
+  function applyExactStudentMatches() {
+    if (studentCheck.autoMatchItems.length === 0) {
+      return
+    }
+
+    setJsonText((current) =>
+      updateImportRowsInJsonText(current, (row, index) => {
+        const match = studentCheck.autoMatchItems.find((item) => item.rowIndex === index)?.exactMatch
+        return match ? enrichRowWithStudent(row, match) : row
+      }),
+    )
+    setStudentMessage(`Da tu gan ma_hs cho ${studentCheck.autoMatchItems.length} dong khop ten chinh xac.`)
+    setSubmitError(null)
+  }
+
+  function openStudentCreateModal(item: StudentResolutionItem) {
+    const name = splitStudentName(item.hoTen)
+    setStudentCreateForm({
+      sourceRowIndex: item.rowIndex,
+      ma_hs: nextStudentId(students),
+      ho: name.ho,
+      ten: name.ten,
+      dien: '2B',
+      nu: false,
+      dan_toc: 'Kinh',
+      to: '',
+    })
+    setStudentsError(null)
+  }
+
+  function closeStudentCreateModal() {
+    setStudentCreateForm(null)
+    setCreatingStudent(false)
+  }
+
+  function updateStudentCreateForm(patch: Partial<StudentCreateForm>) {
+    setStudentCreateForm((current) => (current ? { ...current, ...patch } : current))
+  }
+
+  async function createStudentFromImport() {
+    if (!studentCreateForm) {
+      return
+    }
+
+    if (!studentCreateForm.ho.trim() || !studentCreateForm.ten.trim()) {
+      setStudentsError('Can co ho va ten hoc sinh truoc khi tao moi.')
+      return
+    }
+
+    const student: HocSinh = {
+      ma_hs: nextStudentId(students),
+      tt: nextStudentOrder(students),
+      ho: studentCreateForm.ho.trim(),
+      ten: studentCreateForm.ten.trim(),
+      dien: studentCreateForm.dien,
+      nu: studentCreateForm.nu,
+      dan_toc: studentCreateForm.dan_toc.trim() || 'Kinh',
+      ngay_sinh: null,
+      sdt_1: null,
+      sdt_2: null,
+      ngay_nhap_hoc: null,
+      ngay_roi_lop: null,
+      to: studentCreateForm.to ? Number(studentCreateForm.to) : null,
+      token_ho_so: randomToken(),
+      la_co_do: false,
+      anh_dai_dien: null,
+      ghi_chu: 'Tao tu man Import khi xu ly ma_hs null',
+    }
+
+    setCreatingStudent(true)
+    setStudentsError(null)
+
+    try {
+      const created = await dataSource.addStudent(student)
+      setStudents((current) => [...current, created].sort(compareStudentsByOrder))
+      setJsonText((current) => applyStudentToJsonText(current, studentCreateForm.sourceRowIndex, created))
+      setStudentMessage(
+        `Da tao ${created.ma_hs} - ${studentFullName(created)} va gan vao dong ${studentCreateForm.sourceRowIndex + 1}.`,
+      )
+      closeStudentCreateModal()
+    } catch (error) {
+      setStudentsError(error instanceof Error ? error.message : 'Khong tao duoc hoc sinh moi tu Import.')
+    } finally {
+      setCreatingStudent(false)
     }
   }
 
@@ -406,6 +575,7 @@ export function ImportPage() {
             setSubmitError(null)
             setSuggestionError(null)
             setSuggestionMessage(null)
+            setStudentMessage(null)
           }}
           spellCheck={false}
           placeholder='[{"ma_hs":"HS001","ngay":"2026-07-13","tuan_so":2}]'
@@ -500,6 +670,133 @@ export function ImportPage() {
 
           {catalogCheck.warnings.length ? (
             <IssueList title="Cảnh báo" items={catalogCheck.warnings} />
+          ) : null}
+        </div>
+      ) : null}
+
+      {loai === 'ghi_nhan' && parseState.status === 'valid' ? (
+        <div
+          className={`rounded-lg border p-4 text-sm ${
+            studentCheck.errors.length || studentCheck.autoMatchItems.length || studentCheck.unresolvedItems.length
+              ? 'border-amber-200 bg-amber-50 text-amber-950'
+              : studentsError
+                ? 'border-red-200 bg-red-50 text-red-900'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+          }`}
+        >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-base font-bold">Kiem tra lien ket hoc sinh</h3>
+              <p className="mt-1">
+                {studentCheck.linkedCount} dong da co ma_hs
+                {studentCheck.allowedBlankCount ? `, ${studentCheck.allowedBlankCount} dong tap the/to truc duoc de trong` : ''}.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {studentCheck.autoMatchItems.length ? (
+                <button
+                  type="button"
+                  onClick={applyExactStudentMatches}
+                  disabled={studentsLoading}
+                  className="h-9 rounded-md bg-amber-700 px-3 text-sm font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  Tu gan {studentCheck.autoMatchItems.length} dong khop ten
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => void loadStudents()}
+                disabled={studentsLoading}
+                className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                {studentsLoading ? 'Dang tai...' : 'Tai lai hoc sinh'}
+              </button>
+            </div>
+          </div>
+
+          {studentMessage ? (
+            <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
+              {studentMessage}
+            </div>
+          ) : null}
+
+          {studentsError ? <p className="mt-2 font-semibold">{studentsError}</p> : null}
+
+          {studentCheck.errors.length ? (
+            <IssueList title="Can sua lien ket hoc sinh" items={studentCheck.errors} />
+          ) : null}
+
+          {[...studentCheck.autoMatchItems, ...studentCheck.unresolvedItems].length ? (
+            <div className="mt-3 overflow-hidden rounded-md border border-amber-200 bg-white">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-amber-100 text-sm">
+                  <thead className="bg-amber-50 text-left text-xs font-semibold uppercase text-amber-800">
+                    <tr>
+                      <th className="px-3 py-3">Dong</th>
+                      <th className="px-3 py-3">Ten tren JSON</th>
+                      <th className="px-3 py-3">Goi y</th>
+                      <th className="px-3 py-3">Gan hoc sinh</th>
+                      <th className="px-3 py-3 text-right">Tao moi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-100">
+                    {[...studentCheck.autoMatchItems, ...studentCheck.unresolvedItems].map((item) => (
+                      <tr key={item.rowIndex}>
+                        <td className="whitespace-nowrap px-3 py-3 font-mono text-xs">{item.rowIndex + 1}</td>
+                        <td className="max-w-56 px-3 py-3">
+                          <p className="font-semibold text-slate-900">{item.hoTen || '-'}</p>
+                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{item.noiDung || '-'}</p>
+                        </td>
+                        <td className="px-3 py-3 text-slate-700">
+                          {item.exactMatch ? (
+                            <button
+                              type="button"
+                              onClick={() => applyStudentToRow(item.rowIndex, item.exactMatch as HocSinh)}
+                              className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+                            >
+                              {item.exactMatch.ma_hs} - {studentFullName(item.exactMatch)}
+                            </button>
+                          ) : item.candidates.length ? (
+                            <span className="text-xs text-slate-600">{item.candidates.length} goi y gan dung</span>
+                          ) : (
+                            <span className="text-xs text-slate-500">Chua co goi y chac</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <select
+                            defaultValue=""
+                            onChange={(event) => {
+                              const student = students.find((candidate) => candidate.ma_hs === event.target.value)
+                              if (student) {
+                                applyStudentToRow(item.rowIndex, student)
+                                event.target.value = ''
+                              }
+                            }}
+                            className="h-9 min-w-56 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                          >
+                            <option value="">Chon hoc sinh...</option>
+                            {students.map((student) => (
+                              <option key={student.ma_hs} value={student.ma_hs}>
+                                {student.ma_hs} - {studentFullName(student)} - To {student.to || '-'}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => openStudentCreateModal(item)}
+                            className="h-9 rounded-md bg-slate-900 px-3 text-sm font-semibold text-white hover:bg-slate-800"
+                          >
+                            Tao hoc sinh
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           ) : null}
         </div>
       ) : null}
@@ -733,6 +1030,133 @@ export function ImportPage() {
         </div>
       ) : null}
 
+      {studentCreateForm ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="student-create-modal-title"
+            className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase text-amber-700">Dong {studentCreateForm.sourceRowIndex + 1}</p>
+                <h3 id="student-create-modal-title" className="text-lg font-bold text-slate-900">
+                  Tao hoc sinh moi tu Import
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeStudentCreateModal}
+                className="rounded-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                Dong
+              </button>
+            </div>
+
+            <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
+              {studentsError ? (
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                  {studentsError}
+                </div>
+              ) : null}
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Ma hoc sinh tu sinh
+                  <input
+                    value={studentCreateForm.ma_hs}
+                    readOnly
+                    className="h-10 rounded-md border border-slate-200 bg-slate-50 px-3 font-mono text-sm font-normal text-slate-700"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  To
+                  <input
+                    type="number"
+                    min={1}
+                    value={studentCreateForm.to}
+                    onChange={(event) => updateStudentCreateForm({ to: event.target.value })}
+                    className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Ho va ten dem
+                  <input
+                    value={studentCreateForm.ho}
+                    onChange={(event) => updateStudentCreateForm({ ho: event.target.value })}
+                    className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Ten
+                  <input
+                    value={studentCreateForm.ten}
+                    onChange={(event) => updateStudentCreateForm({ ten: event.target.value })}
+                    className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Dien
+                  <select
+                    value={studentCreateForm.dien}
+                    onChange={(event) => updateStudentCreateForm({ dien: event.target.value as DienHocSinh })}
+                    className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                  >
+                    {STUDENT_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Dan toc
+                  <input
+                    value={studentCreateForm.dan_toc}
+                    onChange={(event) => updateStudentCreateForm({ dan_toc: event.target.value })}
+                    className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                  />
+                </label>
+
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={studentCreateForm.nu}
+                    onChange={(event) => updateStudentCreateForm({ nu: event.target.checked })}
+                    className="h-4 w-4 rounded border-slate-300 text-amber-700 focus:ring-amber-200"
+                  />
+                  Hoc sinh nu
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={closeStudentCreateModal}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Huy
+              </button>
+              <button
+                type="button"
+                onClick={() => void createStudentFromImport()}
+                disabled={creatingStudent}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-amber-700 px-4 text-sm font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {creatingStudent ? 'Dang tao...' : 'Tao va gan vao JSON'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {submitError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           {submitError}
@@ -754,7 +1178,13 @@ export function ImportPage() {
         <button
           type="button"
           onClick={() => void submitImport()}
-          disabled={submitting || parseState.status !== 'valid' || parseState.rows.length === 0 || hasCatalogBlockingError}
+          disabled={
+            submitting ||
+            parseState.status !== 'valid' ||
+            parseState.rows.length === 0 ||
+            hasCatalogBlockingError ||
+            hasStudentBlockingError
+          }
           className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
           {submitting ? 'Đang import...' : 'Xác nhận import'}
@@ -768,6 +1198,7 @@ export function ImportPage() {
             setResult(null)
             setSuggestionError(null)
             setSuggestionMessage(null)
+            setStudentMessage(null)
           }}
           className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
@@ -893,6 +1324,14 @@ const EMPTY_CATALOG_CHECK: CatalogCheck = {
   warnings: [],
 }
 
+const EMPTY_STUDENT_CHECK: StudentCheck = {
+  errors: [],
+  linkedCount: 0,
+  allowedBlankCount: 0,
+  autoMatchItems: [],
+  unresolvedItems: [],
+}
+
 function IssueList({ items, title }: { items: string[]; title: string }) {
   return (
     <div className="mt-3">
@@ -947,6 +1386,203 @@ function checkRecordCatalogLinks(rows: Record<string, unknown>[], catalog: DanhM
   })
 
   return result
+}
+
+function checkRecordStudentLinks(
+  rows: Record<string, unknown>[],
+  catalog: DanhMucDiem[],
+  students: HocSinh[],
+): StudentCheck {
+  const studentById = new Map(students.map((student) => [student.ma_hs.trim().toUpperCase(), student]))
+  const catalogByCode = new Map(
+    catalog.map((item) => [String(item.ma_danh_muc || '').trim().toUpperCase(), item]),
+  )
+  const result: StudentCheck = {
+    errors: [],
+    linkedCount: 0,
+    allowedBlankCount: 0,
+    autoMatchItems: [],
+    unresolvedItems: [],
+  }
+
+  rows.forEach((row, index) => {
+    const rowNumber = index + 1
+    const maHs = toText(row.ma_hs).trim().toUpperCase()
+    const hoTen = cleanupNeedConfirmPrefix(toText(row.ho_ten).trim())
+
+    if (maHs) {
+      if (studentById.has(maHs)) {
+        result.linkedCount += 1
+      } else {
+        result.errors.push(`Dong ${rowNumber}: ma_hs "${maHs}" khong co trong danh sach HocSinh.`)
+      }
+      return
+    }
+
+    if (!isPersonalRecord(row, catalogByCode)) {
+      result.allowedBlankCount += 1
+      return
+    }
+
+    const item: StudentResolutionItem = {
+      rowIndex: index,
+      hoTen,
+      noiDung: toText(row.noi_dung),
+      exactMatch: findExactStudentByName(hoTen, students),
+      candidates: findStudentCandidates(hoTen, students),
+    }
+
+    if (item.exactMatch) {
+      result.autoMatchItems.push(item)
+    } else {
+      result.unresolvedItems.push(item)
+    }
+  })
+
+  return result
+}
+
+function isPersonalRecord(
+  row: Record<string, unknown>,
+  catalogByCode: Map<string, DanhMucDiem>,
+): boolean {
+  const code = toText(row.ma_danh_muc).trim().toUpperCase()
+  const catalogItem = code ? catalogByCode.get(code) : undefined
+
+  if (catalogItem) {
+    return catalogItem.pham_vi === 'ca_nhan'
+  }
+
+  return !toText(row.to_lien_quan).trim()
+}
+
+function findExactStudentByName(rawName: string, students: HocSinh[]): HocSinh | null {
+  const normalizedName = normalizeForMatch(rawName)
+  if (!normalizedName) return null
+
+  const matches = students.filter((student) => normalizeForMatch(studentFullName(student)) === normalizedName)
+  return matches.length === 1 ? matches[0] : null
+}
+
+function findStudentCandidates(rawName: string, students: HocSinh[]): HocSinh[] {
+  const normalizedName = normalizeForMatch(rawName)
+  if (!normalizedName) return []
+
+  const tokens = normalizedName.split(/\s+/).filter(Boolean)
+  const lastToken = tokens[tokens.length - 1] || normalizedName
+
+  return students
+    .map((student) => {
+      const fullName = normalizeForMatch(studentFullName(student))
+      const score =
+        fullName === normalizedName
+          ? 100
+          : fullName.includes(normalizedName)
+            ? 70
+            : normalizedName.includes(fullName)
+              ? 60
+              : fullName.split(/\s+/).includes(lastToken)
+                ? 30
+                : 0
+
+      return { score, student }
+    })
+    .filter((item) => item.score > 0)
+    .sort((left, right) => right.score - left.score || compareStudentsByOrder(left.student, right.student))
+    .slice(0, 5)
+    .map((item) => item.student)
+}
+
+function applyStudentToJsonText(jsonText: string, rowIndex: number, student: HocSinh): string {
+  return updateImportRowsInJsonText(jsonText, (row, index) =>
+    index === rowIndex ? enrichRowWithStudent(row, student) : row,
+  )
+}
+
+function enrichRowWithStudent(row: Record<string, unknown>, student: HocSinh): Record<string, unknown> {
+  return {
+    ...row,
+    ma_hs: student.ma_hs,
+    ho_ten: studentFullName(student),
+    dien_tai_thoi_diem: row.dien_tai_thoi_diem || student.dien,
+  }
+}
+
+function updateImportRowsInJsonText(
+  jsonText: string,
+  updater: (row: Record<string, unknown>, index: number) => Record<string, unknown>,
+): string {
+  try {
+    const parsed = JSON.parse(jsonText) as unknown
+    const sourceRows = Array.isArray(parsed)
+      ? parsed
+      : isRecord(parsed) && Array.isArray(parsed.ban_ghi)
+        ? parsed.ban_ghi
+        : null
+
+    if (!sourceRows || !sourceRows.every(isRecord)) {
+      return jsonText
+    }
+
+    const rows = sourceRows.map((row, index) => updater(row, index))
+    if (Array.isArray(parsed)) {
+      return JSON.stringify(rows, null, 2)
+    }
+
+    return JSON.stringify({ ...(parsed as Record<string, unknown>), ban_ghi: rows }, null, 2)
+  } catch {
+    return jsonText
+  }
+}
+
+function studentFullName(student: HocSinh): string {
+  return `${student.ho} ${student.ten}`.replace(/\s+/g, ' ').trim()
+}
+
+function splitStudentName(rawName: string): { ho: string; ten: string } {
+  const cleanName = cleanupNeedConfirmPrefix(rawName).replace(/\s+/g, ' ').trim()
+  const parts = cleanName.split(' ').filter(Boolean)
+  if (parts.length <= 1) {
+    return { ho: '', ten: cleanName }
+  }
+
+  return { ho: parts.slice(0, -1).join(' '), ten: parts[parts.length - 1] }
+}
+
+function cleanupNeedConfirmPrefix(value: string): string {
+  return value.replace(/^\s*\[[^\]]*C[ẦA]N X[ÁA]C NH[ẬA]N T[ÊE]N[^\]]*\]\s*/i, '').trim()
+}
+
+function nextStudentId(students: HocSinh[]): string {
+  const existingIds = new Set(students.map((student) => student.ma_hs.trim().toUpperCase()))
+  const maxNumber = students.reduce((currentMax, student) => {
+    const numericId = Number.parseInt(student.ma_hs.replace(/^HS/i, ''), 10)
+    return Number.isNaN(numericId) ? currentMax : Math.max(currentMax, numericId)
+  }, 0)
+
+  let nextNumber = maxNumber + 1
+  let candidate = `HS${String(nextNumber).padStart(3, '0')}`
+  while (existingIds.has(candidate)) {
+    nextNumber += 1
+    candidate = `HS${String(nextNumber).padStart(3, '0')}`
+  }
+
+  return candidate
+}
+
+function nextStudentOrder(students: HocSinh[]): number {
+  return students.reduce((currentMax, student) => Math.max(currentMax, Number(student.tt) || 0), 0) + 1
+}
+
+function randomToken(): string {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  const bytes = new Uint8Array(8)
+  window.crypto.getRandomValues(bytes)
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('')
+}
+
+function compareStudentsByOrder(left: HocSinh, right: HocSinh): number {
+  return (Number(left.tt) || 0) - (Number(right.tt) || 0)
 }
 
 function parseJsonRows(jsonText: string): ParseState {

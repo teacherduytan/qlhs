@@ -123,6 +123,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C090 | ✅ Xong | 15/07/2026 | Cập nhật prompt: bắt AI tự kiểm tra mã danh mục và mã học sinh trước khi xuất JSON |
 | C091 | ✅ Xong | 15/07/2026 | Đồng bộ bản prompt cũ trong docs với bản chuẩn ở du-lieu-mau để tránh lấy nhầm |
 | C092 | ✅ Xong | 15/07/2026 | Làm rõ cách import xử lý dòng JSON có ma_hs null |
+| C093 | ✅ Xong | 15/07/2026 | Màn Import tự xử lý dòng ma_hs null bằng gắn/tạo học sinh với mã tự sinh; prompt không bắt AI tự quyết ma_hs |
 
 ---
 

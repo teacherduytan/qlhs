@@ -43,7 +43,7 @@ Bạn là trợ lý nhập liệu cho app quản lý học sinh lớp 11C5.
 Quy tắc:
 - Ngày ghi nhận: [ĐIỀN NGÀY, ví dụ 2026-07-13]
 - tuan_so: [1 hoặc 2 — tra tab CauHinhTuan]
-- ma_hs: tra khớp họ tên với danh sách lớp (36 em, mã HS001–HS036). Phần tập thể: để null.
+- ma_hs: có thể để null với dòng cá nhân; màn Import sẽ tự gợi ý/gắn học sinh theo `ho_ten` hoặc cho tạo học sinh mới với mã HS tự sinh không trùng. Phần tập thể/tổ trực: để null.
 - dien_tai_thoi_diem: copy dien hiện tại của HS từ danh sách (2B/BT/NT)
 - ma_danh_muc: mã trên phiếu (CC01, NN04...)
 - loai: CC→chuyen_can, VS→ve_sinh, NN→ne_nep, KL→trat_tu_ky_luat, HT→hoc_tap
@@ -82,25 +82,25 @@ Schema mỗi object:
 }
 ```
 
-**Mẹo:** đính kèm file `du-lieu-mau/hocsinh_seed.json` (hoặc danh sách tên lớp) để Claude khớp `ma_hs` chính xác.
+**Mẹo:** đính kèm file `du-lieu-mau/hocsinh_seed.json` (hoặc danh sách tên lớp) để Claude chuẩn hoá `ho_ten`; `ma_hs` là mã nội bộ, có thể để app gắn trên màn Import.
 
 ### Nếu JSON có `ma_hs = null`
 
 Khi import `GhiNhan`, app xử lý `ma_hs = null` theo các trường hợp sau:
 
-- Nếu dòng có `ho_ten`: Apps Script thử khớp chính xác `ho_ten` với tab `HocSinh` theo họ + tên đã chuẩn hoá. Khớp đúng 1 học sinh thì tự điền `ma_hs` trước khi lưu.
-- Nếu `ho_ten` không khớp học sinh nào hoặc khớp nhiều học sinh trùng tên: dòng đó bị lỗi, không ghi vào `GhiNhan`; lần import được ghi log lỗi trong `NhatKyImport`, các dòng hợp lệ khác vẫn tiếp tục.
+- Nếu dòng có `ho_ten`: màn Import tải danh sách `HocSinh`, thử khớp tên, cho bấm tự gắn các dòng khớp chắc hoặc chọn học sinh bằng dropdown trước khi import.
+- Nếu `ho_ten` không khớp học sinh nào hoặc khớp chưa chắc: màn Import cho tạo nhanh học sinh mới bằng modal; `ma_hs` được app tự sinh theo mã kế tiếp chưa trùng rồi gắn lại vào JSON.
 - Nếu danh mục có phạm vi `tap_the` hoặc `to_truc`: `ma_hs` được giữ là `null`, hệ thống đặt `trang_thai_xu_ly_tap_the = chua_xu_ly` để giáo viên xử lý/gán sau nếu cần.
-- Nếu là dòng cá nhân nhưng thiếu cả `ma_hs` lẫn `ho_ten`: dòng không đủ định danh để gắn vào hồ sơ học sinh. Backend hiện không tự đoán trong trường hợp này; nếu mã danh mục hợp lệ, dòng có thể trở thành ghi nhận không gắn học sinh, nên phải sửa trước khi import hoặc để prompt AI đánh dấu `[CẦN XÁC NHẬN TÊN...]`.
+- Nếu là dòng cá nhân nhưng thiếu cả `ma_hs` lẫn `ho_ten`: dòng không đủ định danh để gắn vào hồ sơ học sinh; màn Import sẽ chặn cho tới khi sửa JSON hoặc tạo/chọn học sinh.
 
-Vì vậy prompt mới vẫn yêu cầu AI điền `ma_hs` khi đã khớp chắc. Cơ chế tự khớp bằng `ho_ten` chỉ là lớp dự phòng và chỉ khớp chính xác, không tự đoán viết tắt.
+Vì vậy prompt mới chỉ cần AI trả `ho_ten` rõ nhất có thể. Việc gắn `ma_hs` và tạo mã HS không trùng thuộc trách nhiệm của app Import.
 
 ---
 
 ## Bước 4 — Kiểm tra JSON trước khi import
 
 - Là JSON array hợp lệ (dùng jsonlint.com nếu cần).
-- Mỗi dòng cá nhân có `ma_hs` + `ma_danh_muc`.
+- Mỗi dòng cá nhân có `ma_danh_muc` và được xử lý xong trong khối "Kiểm tra liên kết học sinh" nếu `ma_hs` đang null.
 - Dòng tập thể: `ma_hs` null, `trang_thai_xu_ly_tap_the` = `chua_xu_ly`.
 - `dien_tai_thoi_diem` đã điền (không để trống với dòng cá nhân).
 
