@@ -114,6 +114,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C081 | ✅ Xong | 15/07/2026 | Đổi danh sách học sinh theo danh mục sang modal thay vì section dưới bảng |
 | C082 | ✅ Xong | 15/07/2026 | Rà và ép import GhiNhan khớp DanhMucDiem động, cảnh báo mã chưa có |
 | C083 | ✅ Xong | 15/07/2026 | Rà soát dữ liệu mẫu/dữ liệu giả, cập nhật prompt AI theo import danh mục động |
+| C084 | ✅ Xong | 15/07/2026 | Cập nhật prompt AI: đối chiếu DanhMucDiem hiện hành và đề xuất danh mục mới từ mô tả thô |
 
 ---
 
