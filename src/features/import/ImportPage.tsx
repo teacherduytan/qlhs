@@ -318,6 +318,16 @@ export function ImportPage() {
     )
   }
 
+  function changeSuggestionGroup(sourceIndex: number, group: NhomDiem) {
+    setSuggestionForms((current) =>
+      current.map((form) =>
+        form.sourceIndex === sourceIndex
+          ? { ...form, nhom: group, ma_danh_muc: nextCodeForGroup(group, pointCatalog) }
+          : form,
+      ),
+    )
+  }
+
   function openSuggestionModal(sourceIndex: number) {
     setActiveSuggestionIndex(sourceIndex)
     setSuggestionStep(1)
@@ -601,9 +611,7 @@ export function ImportPage() {
                     <select
                       value={activeSuggestionForm.nhom}
                       onChange={(event) =>
-                        updateSuggestionForm(activeSuggestionForm.sourceIndex, {
-                          nhom: event.target.value as NhomDiem,
-                        })
+                        changeSuggestionGroup(activeSuggestionForm.sourceIndex, event.target.value as NhomDiem)
                       }
                       className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
                     >
@@ -999,10 +1007,14 @@ function suggestionToForm(
   catalog: DanhMucDiem[],
 ): CatalogSuggestionForm {
   const group = toPointGroup(suggestion.nhom_goi_y, suggestion.diem_goi_y)
+  const suggestedCode = normalizeCatalogCode(suggestion.ma_goi_y)
+  const suggestedCodeExists = catalog.some(
+    (item) => item.ma_danh_muc.trim().toUpperCase() === suggestedCode,
+  )
 
   return {
     sourceIndex,
-    ma_danh_muc: normalizeCatalogCode(suggestion.ma_goi_y) || nextCodeForGroup(group, catalog),
+    ma_danh_muc: suggestedCode && !suggestedCodeExists ? suggestedCode : nextCodeForGroup(group, catalog),
     nhom: group,
     ten_muc: suggestion.ten_muc_goi_y || suggestion.mo_ta_tho,
     diem: toText(suggestion.diem_goi_y || (group === 'KT' ? 1 : -1)),
@@ -1034,13 +1046,22 @@ function normalizeCatalogCode(value: string | null): string {
 }
 
 function nextCodeForGroup(group: NhomDiem, catalog: DanhMucDiem[]): string {
+  const existingCodes = new Set(catalog.map((item) => item.ma_danh_muc.trim().toUpperCase()))
   const maxNumber = catalog.reduce((max, item) => {
-    if (item.nhom !== group) return max
-    const match = item.ma_danh_muc.match(/(\d+)$/)
+    const code = item.ma_danh_muc.trim().toUpperCase()
+    if (!code.startsWith(group)) return max
+    const match = code.slice(group.length).match(/^(\d+)$/)
     return match ? Math.max(max, Number(match[1])) : max
   }, 0)
 
-  return `${group}${String(maxNumber + 1).padStart(2, '0')}`
+  let nextNumber = maxNumber + 1
+  let candidate = `${group}${String(nextNumber).padStart(2, '0')}`
+  while (existingCodes.has(candidate)) {
+    nextNumber += 1
+    candidate = `${group}${String(nextNumber).padStart(2, '0')}`
+  }
+
+  return candidate
 }
 
 function applyCatalogCodeToJsonText(

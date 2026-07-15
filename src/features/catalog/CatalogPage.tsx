@@ -226,7 +226,7 @@ export function CatalogPage() {
   function openAddForm() {
     setFormMode('add')
     setEditingCode(null)
-    setForm(EMPTY_FORM)
+    setForm(createCatalogFormForGroup(EMPTY_FORM.nhom, catalog))
     setSaveError(null)
   }
 
@@ -251,6 +251,14 @@ export function CatalogPage() {
     setSaveError(null)
   }
 
+  function changeCatalogGroup(group: NhomDiem) {
+    setForm((current) => ({
+      ...current,
+      nhom: group,
+      ma_danh_muc: formMode === 'add' ? nextCodeForGroup(group, catalog) : current.ma_danh_muc,
+    }))
+  }
+
   async function saveCatalogItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSaveError(null)
@@ -260,6 +268,16 @@ export function CatalogPage() {
       payload = formToCatalogItem(form, editingCode)
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Dữ liệu danh mục chưa hợp lệ.')
+      return
+    }
+
+    const duplicatedCode = catalog.some(
+      (item) =>
+        item.ma_danh_muc.trim().toUpperCase() === payload.ma_danh_muc &&
+        item.ma_danh_muc.trim().toUpperCase() !== (editingCode || '').trim().toUpperCase(),
+    )
+    if (duplicatedCode) {
+      setSaveError(`Mã ${payload.ma_danh_muc} đã tồn tại trong DanhMucDiem. Hãy chọn mã khác.`)
       return
     }
 
@@ -458,9 +476,7 @@ export function CatalogPage() {
             Nhóm
             <select
               value={form.nhom}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, nhom: event.target.value as NhomDiem }))
-              }
+              onChange={(event) => changeCatalogGroup(event.target.value as NhomDiem)}
               className={selectClass}
             >
               {GROUP_OPTIONS.map((option) => (
@@ -602,9 +618,7 @@ export function CatalogPage() {
                   Nhóm
                   <select
                     value={form.nhom}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, nhom: event.target.value as NhomDiem }))
-                    }
+                    onChange={(event) => changeCatalogGroup(event.target.value as NhomDiem)}
                     className={selectClass}
                   >
                     {GROUP_OPTIONS.map((option) => (
@@ -1061,6 +1075,34 @@ function ToneBadge({ item }: { item: DanhMucDiem }) {
       Theo dõi
     </span>
   )
+}
+
+function createCatalogFormForGroup(group: NhomDiem, catalog: DanhMucDiem[]): CatalogForm {
+  return {
+    ...EMPTY_FORM,
+    nhom: group,
+    ma_danh_muc: nextCodeForGroup(group, catalog),
+  }
+}
+
+function nextCodeForGroup(group: NhomDiem, catalog: DanhMucDiem[]): string {
+  const existingCodes = new Set(catalog.map((item) => item.ma_danh_muc.trim().toUpperCase()))
+  const maxNumber = catalog.reduce((max, item) => {
+    const code = item.ma_danh_muc.trim().toUpperCase()
+    if (!code.startsWith(group)) return max
+
+    const match = code.slice(group.length).match(/^(\d+)$/)
+    return match ? Math.max(max, Number(match[1])) : max
+  }, 0)
+
+  let nextNumber = maxNumber + 1
+  let candidate = `${group}${String(nextNumber).padStart(2, '0')}`
+  while (existingCodes.has(candidate)) {
+    nextNumber += 1
+    candidate = `${group}${String(nextNumber).padStart(2, '0')}`
+  }
+
+  return candidate
 }
 
 function formToCatalogItem(form: CatalogForm, fixedCode: string | null): DanhMucDiem {
