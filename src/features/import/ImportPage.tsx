@@ -39,6 +39,24 @@ type CatalogSuggestionForm = {
   ly_do_can_tao: string
 }
 
+type MissingCatalogItem = {
+  code: string
+  rowIndexes: number[]
+  sampleContent: string
+  loai: string
+}
+
+type MissingCatalogForm = {
+  code: string
+  nhom: NhomDiem
+  ten_muc: string
+  diem: string
+  nghiem_trong: boolean
+  pham_vi: PhamViDanhMuc
+  rowIndexes: number[]
+  sampleContent: string
+}
+
 type StudentCreateForm = {
   sourceRowIndex: number
   ma_hs: string
@@ -60,6 +78,7 @@ type StudentResolutionItem = {
 
 type StudentCheck = {
   errors: string[]
+  blockingRowIndexes: number[]
   linkedCount: number
   allowedBlankCount: number
   autoMatchItems: StudentResolutionItem[]
@@ -126,6 +145,10 @@ export function ImportPage() {
   const [suggestionMessage, setSuggestionMessage] = useState<string | null>(null)
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number | null>(null)
   const [suggestionStep, setSuggestionStep] = useState<1 | 2>(1)
+  const [missingCatalogForms, setMissingCatalogForms] = useState<MissingCatalogForm[]>([])
+  const [activeMissingCatalogCode, setActiveMissingCatalogCode] = useState<string | null>(null)
+  const [creatingMissingCatalogCode, setCreatingMissingCatalogCode] = useState<string | null>(null)
+  const [catalogFixMessage, setCatalogFixMessage] = useState<string | null>(null)
   const [studentMessage, setStudentMessage] = useState<string | null>(null)
   const [creatingStudent, setCreatingStudent] = useState(false)
   const [studentCreateForm, setStudentCreateForm] = useState<StudentCreateForm | null>(null)
@@ -169,10 +192,32 @@ export function ImportPage() {
     () => suggestionForms.find((form) => form.sourceIndex === activeSuggestionIndex) || null,
     [activeSuggestionIndex, suggestionForms],
   )
+  const activeMissingCatalogForm = useMemo(
+    () => missingCatalogForms.find((form) => form.code === activeMissingCatalogCode) || null,
+    [activeMissingCatalogCode, missingCatalogForms],
+  )
   const activeSuggestionMatchCount = useMemo(
     () => (activeSuggestionForm ? countSuggestionMatchedRows(jsonText, activeSuggestionForm) : 0),
     [activeSuggestionForm, jsonText],
   )
+  const importReadiness = useMemo(() => {
+    if (parseState.status !== 'valid') {
+      return { blockedCount: 0, blockedRowIndexes: [], validCount: 0, validRows: [] as Record<string, unknown>[] }
+    }
+
+    const blockedRowIndexes = Array.from(
+      new Set([...catalogCheck.blockingRowIndexes, ...studentCheck.blockingRowIndexes]),
+    ).sort((left, right) => left - right)
+    const blockedSet = new Set(blockedRowIndexes)
+    const validRows = parseState.rows.filter((_row, index) => !blockedSet.has(index))
+
+    return {
+      blockedCount: blockedRowIndexes.length,
+      blockedRowIndexes,
+      validCount: validRows.length,
+      validRows,
+    }
+  }, [parseState, catalogCheck.blockingRowIndexes, studentCheck.blockingRowIndexes])
 
   useEffect(() => {
     void loadImportLogs()
@@ -199,7 +244,7 @@ export function ImportPage() {
   }, [jsonText, parseState.status])
 
   useEffect(() => {
-    if (!activeSuggestionForm && !studentCreateForm) return
+    if (!activeSuggestionForm && !activeMissingCatalogForm && !studentCreateForm) return
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -207,6 +252,7 @@ export function ImportPage() {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         closeSuggestionModal()
+        closeMissingCatalogModal()
         closeStudentCreateModal()
       }
     }
@@ -217,7 +263,24 @@ export function ImportPage() {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [activeSuggestionForm, studentCreateForm])
+  }, [activeSuggestionForm, activeMissingCatalogForm, studentCreateForm])
+
+  useEffect(() => {
+    setMissingCatalogForms((current) =>
+      catalogCheck.missingCatalogItems.map((item) => {
+        const existing = current.find((form) => form.code === item.code)
+        return existing
+          ? { ...existing, rowIndexes: item.rowIndexes, sampleContent: item.sampleContent }
+          : missingCatalogToForm(item)
+      }),
+    )
+    if (
+      activeMissingCatalogCode &&
+      !catalogCheck.missingCatalogItems.some((item) => item.code === activeMissingCatalogCode)
+    ) {
+      setActiveMissingCatalogCode(null)
+    }
+  }, [activeMissingCatalogCode, catalogCheck.missingCatalogItems])
 
   async function loadPointCatalog() {
     setCatalogLoading(true)
@@ -270,6 +333,7 @@ export function ImportPage() {
     setSubmitError(null)
     setSuggestionError(null)
     setSuggestionMessage(null)
+    setCatalogFixMessage(null)
     setStudentMessage(null)
     event.target.value = ''
   }
@@ -303,6 +367,92 @@ export function ImportPage() {
       setSubmitError(error instanceof Error ? error.message : 'Import không thành công.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function importValidRowsOnly() {
+    if (parseState.status !== 'valid' || importReadiness.validRows.length === 0) {
+      return
+    }
+
+    if (catalogLoading || studentsLoading || catalogError || studentsError) {
+      setSubmitError('Can tai xong danh muc va hoc sinh truoc khi import tung phan.')
+      return
+    }
+
+    setSubmitting(true)
+    setSubmitError(null)
+    setResult(null)
+
+    try {
+      const importResult = await dataSource.importJson(loai, importReadiness.validRows, nguoiThucHien.trim())
+      setResult(importResult)
+      setDeleteMessage(null)
+      setJsonText(keepOnlyRowsInJsonText(jsonText, importReadiness.blockedRowIndexes))
+      setCatalogFixMessage(
+        `Da import ${importReadiness.validRows.length} dong du dieu kien. O JSON chi con ${importReadiness.blockedCount} dong can xu ly.`,
+      )
+      await loadImportLogs()
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Import cac dong du dieu kien khong thanh cong.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  function openMissingCatalogModal(code: string) {
+    setActiveMissingCatalogCode(code)
+    setCatalogError(null)
+  }
+
+  function closeMissingCatalogModal() {
+    setActiveMissingCatalogCode(null)
+    setCreatingMissingCatalogCode(null)
+  }
+
+  function updateMissingCatalogForm(code: string, patch: Partial<MissingCatalogForm>) {
+    setMissingCatalogForms((current) => current.map((form) => (form.code === code ? { ...form, ...patch } : form)))
+  }
+
+  async function createMissingCatalogFromJson(form: MissingCatalogForm) {
+    const code = form.code.trim().toUpperCase()
+    const point = Number(form.diem)
+
+    if (!code || !form.ten_muc.trim()) {
+      setCatalogError('Can co ma danh muc va ten muc truoc khi tao.')
+      return
+    }
+
+    if (!Number.isFinite(point)) {
+      setCatalogError('Diem danh muc phai la so hop le.')
+      return
+    }
+
+    if (pointCatalog.some((item) => item.ma_danh_muc.trim().toUpperCase() === code)) {
+      setCatalogError(`Ma ${code} da co trong DanhMucDiem. Hay tai lai danh muc.`)
+      return
+    }
+
+    setCreatingMissingCatalogCode(code)
+    setCatalogError(null)
+
+    try {
+      const created = await dataSource.addPointCatalogItem({
+        ma_danh_muc: code,
+        nhom: form.nhom,
+        ten_muc: form.ten_muc.trim(),
+        diem: point,
+        nghiem_trong: form.nghiem_trong,
+        pham_vi: form.pham_vi,
+      })
+      setPointCatalog((current) => [...current, created].sort(compareCatalogItems))
+      setCatalogFixMessage(`Da tao danh muc ${created.ma_danh_muc}. Cac dong dang dung ma nay se duoc kiem tra lai.`)
+      closeMissingCatalogModal()
+      await loadPointCatalog()
+    } catch (error) {
+      setCatalogError(error instanceof Error ? error.message : 'Khong tao duoc danh muc diem tu ma trong JSON.')
+    } finally {
+      setCreatingMissingCatalogCode(null)
     }
   }
 
@@ -575,6 +725,7 @@ export function ImportPage() {
             setSubmitError(null)
             setSuggestionError(null)
             setSuggestionMessage(null)
+            setCatalogFixMessage(null)
             setStudentMessage(null)
           }}
           spellCheck={false}
@@ -664,8 +815,46 @@ export function ImportPage() {
 
           {catalogError ? <p className="mt-2 font-semibold">{catalogError}</p> : null}
 
+          {catalogFixMessage ? (
+            <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
+              {catalogFixMessage}
+            </div>
+          ) : null}
+
           {catalogCheck.errors.length ? (
             <IssueList title="Cần sửa trước khi import" items={catalogCheck.errors} />
+          ) : null}
+
+          {catalogCheck.missingCatalogItems.length ? (
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {catalogCheck.missingCatalogItems.map((item) => {
+                const form = missingCatalogForms.find((candidate) => candidate.code === item.code)
+                const isCreating = creatingMissingCatalogCode === item.code
+
+                return (
+                  <div key={item.code} className="rounded-lg border border-red-200 bg-white p-3 text-slate-700">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-mono text-xs font-bold text-red-700">{item.code}</p>
+                        <p className="mt-1 font-semibold text-slate-900">{form?.ten_muc || item.sampleContent || item.code}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Dong {item.rowIndexes.map((index) => index + 1).join(', ')}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openMissingCatalogModal(item.code)}
+                        disabled={isCreating || catalogLoading}
+                        className="inline-flex h-9 shrink-0 items-center justify-center rounded-md bg-red-700 px-3 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      >
+                        {isCreating ? 'Dang tao...' : 'Tao danh muc'}
+                      </button>
+                    </div>
+                    <p className="mt-2 line-clamp-2 text-xs text-slate-500">{item.sampleContent || '-'}</p>
+                  </div>
+                )
+              })}
+            </div>
           ) : null}
 
           {catalogCheck.warnings.length ? (
@@ -1030,6 +1219,152 @@ export function ImportPage() {
         </div>
       ) : null}
 
+      {activeMissingCatalogForm ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="missing-catalog-modal-title"
+            className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase text-red-700">Ma tu JSON</p>
+                <h3 id="missing-catalog-modal-title" className="text-lg font-bold text-slate-900">
+                  Tao danh muc diem {activeMissingCatalogForm.code}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeMissingCatalogModal}
+                className="rounded-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                Dong
+              </button>
+            </div>
+
+            <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
+              {catalogError ? (
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                  {catalogError}
+                </div>
+              ) : null}
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Ma danh muc
+                  <input
+                    value={activeMissingCatalogForm.code}
+                    readOnly
+                    className="h-10 rounded-md border border-slate-200 bg-slate-50 px-3 font-mono text-sm font-normal text-slate-700"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Nhom
+                  <select
+                    value={activeMissingCatalogForm.nhom}
+                    onChange={(event) =>
+                      updateMissingCatalogForm(activeMissingCatalogForm.code, {
+                        nhom: event.target.value as NhomDiem,
+                      })
+                    }
+                    className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                  >
+                    {GROUP_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.value} - {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-2">
+                  Ten danh muc
+                  <input
+                    value={activeMissingCatalogForm.ten_muc}
+                    onChange={(event) =>
+                      updateMissingCatalogForm(activeMissingCatalogForm.code, { ten_muc: event.target.value })
+                    }
+                    className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Diem
+                  <input
+                    type="number"
+                    value={activeMissingCatalogForm.diem}
+                    onChange={(event) =>
+                      updateMissingCatalogForm(activeMissingCatalogForm.code, { diem: event.target.value })
+                    }
+                    className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Pham vi
+                  <select
+                    value={activeMissingCatalogForm.pham_vi}
+                    onChange={(event) =>
+                      updateMissingCatalogForm(activeMissingCatalogForm.code, {
+                        pham_vi: event.target.value as PhamViDanhMuc,
+                      })
+                    }
+                    className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                  >
+                    {SCOPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={activeMissingCatalogForm.nghiem_trong}
+                    onChange={(event) =>
+                      updateMissingCatalogForm(activeMissingCatalogForm.code, {
+                        nghiem_trong: event.target.checked,
+                      })
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-red-700 focus:ring-red-200"
+                  />
+                  Danh dau nghiem trong
+                </label>
+
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 md:col-span-2">
+                  <p className="font-semibold text-slate-800">
+                    Dang dung o dong {activeMissingCatalogForm.rowIndexes.map((index) => index + 1).join(', ')}
+                  </p>
+                  <p className="mt-1">{activeMissingCatalogForm.sampleContent || '-'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={closeMissingCatalogModal}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Huy
+              </button>
+              <button
+                type="button"
+                onClick={() => void createMissingCatalogFromJson(activeMissingCatalogForm)}
+                disabled={creatingMissingCatalogCode === activeMissingCatalogForm.code || catalogLoading}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {creatingMissingCatalogCode === activeMissingCatalogForm.code ? 'Dang tao...' : 'Tao danh muc'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {studentCreateForm ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
           <div
@@ -1175,6 +1510,19 @@ export function ImportPage() {
       ) : null}
 
       <div className="flex flex-wrap gap-2">
+        {loai === 'ghi_nhan' &&
+        parseState.status === 'valid' &&
+        importReadiness.blockedCount > 0 &&
+        importReadiness.validCount > 0 ? (
+          <button
+            type="button"
+            onClick={() => void importValidRowsOnly()}
+            disabled={submitting || catalogLoading || studentsLoading || Boolean(catalogError) || Boolean(studentsError)}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            Import {importReadiness.validCount} dong du dieu kien
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => void submitImport()}
@@ -1198,6 +1546,7 @@ export function ImportPage() {
             setResult(null)
             setSuggestionError(null)
             setSuggestionMessage(null)
+            setCatalogFixMessage(null)
             setStudentMessage(null)
           }}
           className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
@@ -1311,20 +1660,25 @@ export function ImportPage() {
 }
 
 type CatalogCheck = {
+  blockingRowIndexes: number[]
   errors: string[]
   linkedCount: number
+  missingCatalogItems: MissingCatalogItem[]
   studyCount: number
   warnings: string[]
 }
 
 const EMPTY_CATALOG_CHECK: CatalogCheck = {
+  blockingRowIndexes: [],
   errors: [],
   linkedCount: 0,
+  missingCatalogItems: [],
   studyCount: 0,
   warnings: [],
 }
 
 const EMPTY_STUDENT_CHECK: StudentCheck = {
+  blockingRowIndexes: [],
   errors: [],
   linkedCount: 0,
   allowedBlankCount: 0,
@@ -1352,7 +1706,15 @@ function checkRecordCatalogLinks(rows: Record<string, unknown>[], catalog: DanhM
   const catalogByCode = new Map(
     catalog.map((item) => [String(item.ma_danh_muc || '').trim().toUpperCase(), item]),
   )
-  const result: CatalogCheck = { errors: [], linkedCount: 0, studyCount: 0, warnings: [] }
+  const missingByCode = new Map<string, MissingCatalogItem>()
+  const result: CatalogCheck = {
+    blockingRowIndexes: [],
+    errors: [],
+    linkedCount: 0,
+    missingCatalogItems: [],
+    studyCount: 0,
+    warnings: [],
+  }
 
   rows.forEach((row, index) => {
     const rowNumber = index + 1
@@ -1363,6 +1725,21 @@ function checkRecordCatalogLinks(rows: Record<string, unknown>[], catalog: DanhM
       const catalogItem = catalogByCode.get(code)
       if (!catalogItem) {
         result.errors.push(`Dòng ${rowNumber}: ma_danh_muc "${code}" chưa có trong DanhMucDiem.`)
+        result.blockingRowIndexes.push(index)
+        const existing = missingByCode.get(code)
+        if (existing) {
+          existing.rowIndexes.push(index)
+          if (!existing.sampleContent) {
+            existing.sampleContent = getRecordContent(row) || code
+          }
+        } else {
+          missingByCode.set(code, {
+            code,
+            rowIndexes: [index],
+            sampleContent: getRecordContent(row) || code,
+            loai: type,
+          })
+        }
         return
       }
 
@@ -1383,9 +1760,44 @@ function checkRecordCatalogLinks(rows: Record<string, unknown>[], catalog: DanhM
     result.errors.push(
       `Dòng ${rowNumber}: thiếu ma_danh_muc. Chỉ dòng loai=hoc_tap mới được import không có mã danh mục.`,
     )
+    result.blockingRowIndexes.push(index)
   })
 
+  result.missingCatalogItems = Array.from(missingByCode.values())
   return result
+}
+
+function getRecordContent(row: Record<string, unknown>): string {
+  return (
+    cleanupNeedCreatePrefix(toText(row.noi_dung)).trim() ||
+    cleanupNeedConfirmPrefix(toText(row.ho_ten)).trim() ||
+    toText(row.ly_do).trim() ||
+    toText(row.ghi_chu).trim()
+  )
+}
+
+function missingCatalogToForm(item: MissingCatalogItem): MissingCatalogForm {
+  const code = normalizeCatalogCode(item.code)
+  const group = inferGroupFromCode(code) || toPointGroup('', item.loai === 'khen_thuong' ? 1 : -1)
+  const point = group === 'KT' ? '1' : '-1'
+  const content = cleanupNeedCreatePrefix(item.sampleContent).trim()
+
+  return {
+    code,
+    nhom: group,
+    ten_muc: content || code,
+    diem: point,
+    nghiem_trong: false,
+    pham_vi: 'ca_nhan',
+    rowIndexes: [...item.rowIndexes],
+    sampleContent: item.sampleContent,
+  }
+}
+
+function inferGroupFromCode(code: string): NhomDiem | null {
+  const normalized = code.trim().toUpperCase()
+  const match = GROUP_OPTIONS.find((option) => normalized.startsWith(option.value))
+  return match?.value ?? null
 }
 
 function checkRecordStudentLinks(
@@ -1398,6 +1810,7 @@ function checkRecordStudentLinks(
     catalog.map((item) => [String(item.ma_danh_muc || '').trim().toUpperCase(), item]),
   )
   const result: StudentCheck = {
+    blockingRowIndexes: [],
     errors: [],
     linkedCount: 0,
     allowedBlankCount: 0,
@@ -1415,6 +1828,7 @@ function checkRecordStudentLinks(
         result.linkedCount += 1
       } else {
         result.errors.push(`Dong ${rowNumber}: ma_hs "${maHs}" khong co trong danh sach HocSinh.`)
+        result.blockingRowIndexes.push(index)
       }
       return
     }
@@ -1437,6 +1851,7 @@ function checkRecordStudentLinks(
     } else {
       result.unresolvedItems.push(item)
     }
+    result.blockingRowIndexes.push(index)
   })
 
   return result
@@ -1525,6 +1940,32 @@ function updateImportRowsInJsonText(
     }
 
     const rows = sourceRows.map((row, index) => updater(row, index))
+    if (Array.isArray(parsed)) {
+      return JSON.stringify(rows, null, 2)
+    }
+
+    return JSON.stringify({ ...(parsed as Record<string, unknown>), ban_ghi: rows }, null, 2)
+  } catch {
+    return jsonText
+  }
+}
+
+function keepOnlyRowsInJsonText(jsonText: string, rowIndexes: number[]): string {
+  try {
+    const parsed = JSON.parse(jsonText) as unknown
+    const sourceRows = Array.isArray(parsed)
+      ? parsed
+      : isRecord(parsed) && Array.isArray(parsed.ban_ghi)
+        ? parsed.ban_ghi
+        : null
+
+    if (!sourceRows || !sourceRows.every(isRecord)) {
+      return jsonText
+    }
+
+    const indexSet = new Set(rowIndexes)
+    const rows = sourceRows.filter((_row, index) => indexSet.has(index))
+
     if (Array.isArray(parsed)) {
       return JSON.stringify(rows, null, 2)
     }
