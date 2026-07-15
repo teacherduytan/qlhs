@@ -2,6 +2,7 @@ import { Fragment, type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, CauHinhTuan, DanhMucDiem, DienHocSinh, GhiNhan, HocSinh } from '../../data/types'
+import { summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore } from '../scoring/scoring'
 import { getBadgeClassForGroup } from '../scoring/scoreStyles'
 
@@ -142,6 +143,10 @@ export function StudentsPage() {
   }, [dienFilter, query, studentSort, students, teamFilter])
 
   const currentWeek = useMemo(() => getLatestWeek(records, weekConfig), [records, weekConfig])
+  const catalogByCode = useMemo(
+    () => new Map(catalog.map((item) => [item.ma_danh_muc, item])),
+    [catalog],
+  )
 
   function openAddForm() {
     setFormMode('add')
@@ -612,6 +617,17 @@ export function StudentsPage() {
               {studentListCollapsed ? 'Mở rộng danh sách' : 'Thu gọn danh sách'}
             </button>
           </div>
+          <div className="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold">
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
+              Tích cực / thành tích
+            </span>
+            <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-red-700">
+              Vi phạm cần lưu ý
+            </span>
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600">
+              Chưa có ghi nhận
+            </span>
+          </div>
           {studentListCollapsed ? (
             <div className="p-4 text-sm text-slate-600">
               Danh sách đang thu gọn. Mở rộng để xem và thao tác từng học sinh.
@@ -643,10 +659,11 @@ export function StudentsPage() {
                     const weekRecords = records.filter(
                       (record) => record.ma_hs === student.ma_hs && record.tuan_so === currentWeek,
                     )
+                    const impactSummary = summarizeRecordImpacts(weekRecords, catalogByCode)
 
                     return (
                       <Fragment key={student.ma_hs}>
-                        <tr className={expanded ? 'bg-blue-50' : 'hover:bg-slate-50'}>
+                        <tr className={getStudentRowClass(expanded, impactSummary)}>
                           <td className="whitespace-nowrap px-3 py-3 text-slate-500">{student.tt}</td>
                           <td className="whitespace-nowrap px-3 py-3 font-medium text-slate-700">
                             {student.ma_hs}
@@ -669,6 +686,16 @@ export function StudentsPage() {
                           </td>
                           <td className="whitespace-nowrap px-3 py-3">
                             <div className="flex justify-end gap-2">
+                              {impactSummary.positive > 0 ? (
+                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-xs font-bold text-emerald-700">
+                                  +{impactSummary.positive}
+                                </span>
+                              ) : null}
+                              {impactSummary.negative > 0 ? (
+                                <span className="rounded-full border border-red-200 bg-red-50 px-2 py-1.5 text-xs font-bold text-red-700">
+                                  -{impactSummary.negative}
+                                </span>
+                              ) : null}
                               <button
                                 type="button"
                                 onClick={() => setExpandedMaHs(expanded ? null : student.ma_hs)}
@@ -705,6 +732,16 @@ export function StudentsPage() {
                                   <QuickStat label="KL" value={score.diem_ky_luat} />
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                                  <ImpactStat
+                                    label="Tích cực"
+                                    value={impactSummary.positive}
+                                    tone="positive"
+                                  />
+                                  <ImpactStat
+                                    label="Vi phạm"
+                                    value={impactSummary.negative}
+                                    tone="negative"
+                                  />
                                   <span className="rounded-full bg-white px-3 py-1 font-semibold">
                                     Tổ {student.to || '-'}
                                   </span>
@@ -786,6 +823,47 @@ function QuickStat({ label, value }: { label: string; value: number }) {
       <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
     </div>
   )
+}
+
+function ImpactStat({
+  label,
+  tone,
+  value,
+}: {
+  label: string
+  tone: 'negative' | 'positive'
+  value: number
+}) {
+  const className =
+    tone === 'positive'
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+      : 'border-red-200 bg-red-50 text-red-700'
+
+  return (
+    <span className={`rounded-full border px-3 py-1 font-bold ${className}`}>
+      {tone === 'positive' ? '+' : '-'}
+      {value} {label.toLowerCase()}
+    </span>
+  )
+}
+
+function getStudentRowClass(
+  expanded: boolean,
+  summary: { negative: number; positive: number },
+): string {
+  if (expanded) {
+    return 'bg-blue-50'
+  }
+
+  if (summary.negative > 0) {
+    return 'bg-red-50/70 hover:bg-red-100'
+  }
+
+  if (summary.positive > 0) {
+    return 'bg-emerald-50/70 hover:bg-emerald-100'
+  }
+
+  return 'hover:bg-slate-50'
 }
 
 function formFromStudent(student: HocSinh): StudentForm {
