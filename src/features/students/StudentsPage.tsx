@@ -723,7 +723,7 @@ export function StudentsPage() {
                         </tr>
                         {expanded ? (
                           <tr>
-                            <td colSpan={7} className="bg-blue-50 px-3 py-4">
+                            <td colSpan={7} className={`${getExpandedRowClass(impactSummary)} px-3 py-4`}>
                               <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
                                 <div className="grid gap-2 sm:grid-cols-4">
                                   <QuickStat label="CC" value={score.diem_chuyen_can} />
@@ -851,19 +851,31 @@ function getStudentRowClass(
   expanded: boolean,
   summary: { negative: number; positive: number },
 ): string {
+  if (summary.negative > 0) {
+    return expanded ? 'bg-red-100' : 'bg-red-50 hover:bg-red-100'
+  }
+
+  if (summary.positive > 0) {
+    return expanded ? 'bg-emerald-100' : 'bg-emerald-50 hover:bg-emerald-100'
+  }
+
   if (expanded) {
     return 'bg-blue-50'
   }
 
+  return 'hover:bg-slate-50'
+}
+
+function getExpandedRowClass(summary: { negative: number; positive: number }): string {
   if (summary.negative > 0) {
-    return 'bg-red-50/70 hover:bg-red-100'
+    return 'bg-red-100'
   }
 
   if (summary.positive > 0) {
-    return 'bg-emerald-50/70 hover:bg-emerald-100'
+    return 'bg-emerald-100'
   }
 
-  return 'hover:bg-slate-50'
+  return 'bg-blue-50'
 }
 
 function formFromStudent(student: HocSinh): StudentForm {

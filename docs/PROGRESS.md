@@ -129,6 +129,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C096 | ✅ Xong | 15/07/2026 | Sửa nhãn hồ sơ/chi tiết học sinh để mã KT hoặc điểm dương hiển thị là Tích cực/thành tích |
 | C097 | ✅ Xong | 15/07/2026 | Đồng bộ giao diện chi tiết học sinh của giáo viên với hồ sơ học sinh |
 | C098 | ✅ Xong | 15/07/2026 | Làm rõ màu sắc tích cực và vi phạm trên trang quản lý học sinh |
+| C099 | ✅ Xong | 15/07/2026 | Đổ màu toàn bộ dòng học sinh theo tích cực/vi phạm trong danh sách quản lý |
 
 ---
 
