@@ -686,6 +686,16 @@ export function ImportPage() {
       return
     }
 
+    const duplicated = findHandlingByContent(content, handlingCatalog)
+    if (duplicated) {
+      updateSuggestionForm(form.sourceIndex, { ma_xu_ly_de_xuat: duplicated.ma_xu_ly })
+      setSuggestionError(null)
+      setSuggestionMessage(
+        `Noi dung xu ly nay da co ma ${duplicated.ma_xu_ly} - ${duplicated.ten_xu_ly}. App da chon ma co san, khong tao ma moi.`,
+      )
+      return
+    }
+
     const item: DanhMucXuLy = {
       ma_xu_ly: nextHandlingCode(handlingCatalog),
       ten_xu_ly: `Xử lý: ${form.ten_muc.trim() || form.ma_danh_muc}`,
@@ -712,6 +722,16 @@ export function ImportPage() {
     const content = form.de_xuat_xu_ly.trim()
     if (!content) {
       setCatalogError('Can co noi dung de xuat xu ly/phat truoc khi tao ma xu ly.')
+      return
+    }
+
+    const duplicated = findHandlingByContent(content, handlingCatalog)
+    if (duplicated) {
+      updateMissingCatalogForm(form.code, { ma_xu_ly_de_xuat: duplicated.ma_xu_ly })
+      setCatalogError(null)
+      setCatalogFixMessage(
+        `Noi dung xu ly nay da co ma ${duplicated.ma_xu_ly} - ${duplicated.ten_xu_ly}. App da chon ma co san, khong tao ma moi.`,
+      )
       return
     }
 
@@ -2471,6 +2491,16 @@ function inferHandlingLevel(
 
 function compareHandlingItems(left: DanhMucXuLy, right: DanhMucXuLy): number {
   return left.ma_xu_ly.localeCompare(right.ma_xu_ly)
+}
+
+function findHandlingByContent(content: string, catalog: DanhMucXuLy[]): DanhMucXuLy | null {
+  const normalized = normalizeHandlingContent(content)
+  if (!normalized) return null
+  return catalog.find((item) => normalizeHandlingContent(item.noi_dung_xu_ly) === normalized) || null
+}
+
+function normalizeHandlingContent(value: string): string {
+  return normalizeForMatch(value).replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/\s+/g, ' ')
 }
 
 function suggestImportCatalogHandling(content: string, pointValue: string | number): string {

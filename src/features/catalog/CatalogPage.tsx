@@ -66,6 +66,7 @@ export function CatalogPage() {
   const [form, setForm] = useState<CatalogForm>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [creatingHandling, setCreatingHandling] = useState(false)
   const [deletingCode, setDeletingCode] = useState<string | null>(null)
   const [students, setStudents] = useState<HocSinh[]>([])
@@ -244,6 +245,7 @@ export function CatalogPage() {
     setEditingCode(null)
     setForm(createCatalogFormForGroup(EMPTY_FORM.nhom, catalog))
     setSaveError(null)
+    setSaveMessage(null)
   }
 
   function openEditForm(item: DanhMucDiem) {
@@ -261,6 +263,7 @@ export function CatalogPage() {
       ma_xu_ly_de_xuat: item.ma_xu_ly_de_xuat || '',
     })
     setSaveError(null)
+    setSaveMessage(null)
   }
 
   function closeForm() {
@@ -268,6 +271,7 @@ export function CatalogPage() {
     setEditingCode(null)
     setForm(EMPTY_FORM)
     setSaveError(null)
+    setSaveMessage(null)
   }
 
   function changeCatalogGroup(group: NhomDiem) {
@@ -287,8 +291,19 @@ export function CatalogPage() {
 
   async function createHandlingFromForm() {
     const content = form.de_xuat_xu_ly.trim()
+    setSaveMessage(null)
     if (!content) {
       setSaveError('Cần có nội dung đề xuất xử lý/phạt trước khi tạo mã xử lý.')
+      return
+    }
+
+    const duplicated = findHandlingByContent(content, handlingCatalog)
+    if (duplicated) {
+      setForm((current) => ({ ...current, ma_xu_ly_de_xuat: duplicated.ma_xu_ly }))
+      setSaveError(null)
+      setSaveMessage(
+        `Noi dung xu ly nay da co ma ${duplicated.ma_xu_ly} - ${duplicated.ten_xu_ly}. App da chon ma co san, khong tao ma moi.`,
+      )
       return
     }
 
@@ -302,10 +317,12 @@ export function CatalogPage() {
 
     setCreatingHandling(true)
     setSaveError(null)
+    setSaveMessage(null)
     try {
       const created = await dataSource.addHandlingCatalogItem(item)
       setHandlingCatalog((current) => [...current, created].sort(compareHandlingItems))
       setForm((current) => ({ ...current, ma_xu_ly_de_xuat: created.ma_xu_ly }))
+      setSaveMessage(`Da tao ma xu ly ${created.ma_xu_ly} va gan vao danh muc dang sua.`)
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Không tạo được mã xử lý/phạt.')
     } finally {
@@ -316,6 +333,7 @@ export function CatalogPage() {
   async function saveCatalogItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSaveError(null)
+    setSaveMessage(null)
 
     let payload: DanhMucDiem
     try {
@@ -646,6 +664,11 @@ export function CatalogPage() {
                 {saveError}
               </p>
             ) : null}
+            {saveMessage ? (
+              <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+                {saveMessage}
+              </p>
+            ) : null}
             {formMode === 'edit' ? (
               <button
                 type="button"
@@ -863,6 +886,11 @@ export function CatalogPage() {
               {saveError ? (
                 <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
                   {saveError}
+                </p>
+              ) : null}
+              {saveMessage ? (
+                <p className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+                  {saveMessage}
                 </p>
               ) : null}
             </div>
@@ -1347,6 +1375,16 @@ function nextHandlingCode(catalog: DanhMucXuLy[]): string {
   }
 
   return candidate
+}
+
+function findHandlingByContent(content: string, catalog: DanhMucXuLy[]): DanhMucXuLy | null {
+  const normalized = normalizeHandlingContent(content)
+  if (!normalized) return null
+  return catalog.find((item) => normalizeHandlingContent(item.noi_dung_xu_ly) === normalized) || null
+}
+
+function normalizeHandlingContent(value: string): string {
+  return normalize(value).replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/\s+/g, ' ')
 }
 
 function inferHandlingLevel(form: CatalogForm): DanhMucXuLy['muc_do'] {

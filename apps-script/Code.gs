@@ -11,7 +11,7 @@ var API_CONFIG = {
   IMPORT_SUBDIR: 'nhat-ky-nhap-lieu',
 };
 
-var API_VERSION = 'C105-2026-07-15';
+var API_VERSION = 'C107-2026-07-15';
 
 var SHEET_TABS = {
   HocSinh: 'HocSinh',
@@ -195,9 +195,11 @@ function doPost(e) {
 
     if (body.action === 'add_handling_catalog_item' && body.item) {
       ensureHandlingCatalogHeaders_();
+      var normalizedHandlingItem = normalizeHandlingCatalogItem_(body.item);
+      assertUniqueHandlingContent_(normalizedHandlingItem);
       var createdHandlingItem = appendUniqueRow_(
         SHEET_TABS.DanhMucXuLy,
-        normalizeHandlingCatalogItem_(body.item),
+        normalizedHandlingItem,
         'ma_xu_ly'
       );
       return jsonResponse_({ ok: true, data: createdHandlingItem });
@@ -205,11 +207,13 @@ function doPost(e) {
 
     if (body.action === 'update_handling_catalog_item' && body.ma_xu_ly && body.item) {
       ensureHandlingCatalogHeaders_();
+      var normalizedUpdatedHandlingItem = normalizeHandlingCatalogItem_(body.item, body.ma_xu_ly);
+      assertUniqueHandlingContent_(normalizedUpdatedHandlingItem, body.ma_xu_ly);
       var updatedHandlingItem = updateRowByKey_(
         SHEET_TABS.DanhMucXuLy,
         'ma_xu_ly',
         body.ma_xu_ly,
-        normalizeHandlingCatalogItem_(body.item, body.ma_xu_ly)
+        normalizedUpdatedHandlingItem
       );
       return jsonResponse_({ ok: true, data: updatedHandlingItem });
     }
@@ -500,6 +504,36 @@ function normalizeHandlingCatalogItem_(item, fixedCode) {
     muc_do: level,
     ghi_chu: String(item.ghi_chu || '').trim(),
   };
+}
+
+function assertUniqueHandlingContent_(item, fixedCode) {
+  var normalizedContent = normalizeHandlingContent_(item.noi_dung_xu_ly);
+  if (!normalizedContent) return;
+
+  var currentCode = String(fixedCode || item.ma_xu_ly || '').trim().toUpperCase();
+  var duplicated = getSheetObjects_(SHEET_TABS.DanhMucXuLy).filter(function (row) {
+    var rowCode = String(row.ma_xu_ly || '').trim().toUpperCase();
+    return rowCode !== currentCode && normalizeHandlingContent_(row.noi_dung_xu_ly) === normalizedContent;
+  })[0];
+
+  if (duplicated) {
+    throw new Error(
+      'Noi dung xu ly/phat da co ma ' +
+        duplicated.ma_xu_ly +
+        '. Hay chon ma co san thay vi tao moi.'
+    );
+  }
+}
+
+function normalizeHandlingContent_(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function ensurePointCatalogHeaders_() {
