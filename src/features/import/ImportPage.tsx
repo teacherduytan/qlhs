@@ -1,11 +1,41 @@
 import { type ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { dataSource } from '../../data/client'
-import type { DanhMucDiem, ImportResult, LoaiDuLieuImport, NhatKyImport, TrangThaiImport } from '../../data/types'
+import type {
+  DanhMucDiem,
+  ImportResult,
+  LoaiDuLieuImport,
+  NhatKyImport,
+  NhomDiem,
+  PhamViDanhMuc,
+  TrangThaiImport,
+} from '../../data/types'
 
 type ParseState =
   | { status: 'empty' }
-  | { status: 'valid'; rows: Record<string, unknown>[] }
+  | { status: 'valid'; rows: Record<string, unknown>[]; catalogSuggestions: CatalogSuggestion[] }
   | { status: 'invalid'; message: string }
+
+type CatalogSuggestion = {
+  nhom_goi_y: string
+  ten_muc_goi_y: string
+  diem_goi_y: string | number | null
+  pham_vi_goi_y: string
+  mo_ta_tho: string
+  ly_do_can_tao: string
+  ma_goi_y: string | null
+}
+
+type CatalogSuggestionForm = {
+  sourceIndex: number
+  ma_danh_muc: string
+  nhom: NhomDiem
+  ten_muc: string
+  diem: string
+  nghiem_trong: boolean
+  pham_vi: PhamViDanhMuc
+  mo_ta_tho: string
+  ly_do_can_tao: string
+}
 
 const IMPORT_OPTIONS: Array<{ value: LoaiDuLieuImport; label: string }> = [
   { value: 'ghi_nhan', label: 'Ghi nhận' },
@@ -16,6 +46,18 @@ const IMPORT_OPTIONS: Array<{ value: LoaiDuLieuImport; label: string }> = [
 
 const PREVIEW_LIMIT = 8
 const ISSUE_PREVIEW_LIMIT = 10
+const GROUP_OPTIONS: Array<{ value: NhomDiem; label: string }> = [
+  { value: 'CC', label: 'Chuyên cần' },
+  { value: 'VS', label: 'Vệ sinh' },
+  { value: 'NN', label: 'Nề nếp' },
+  { value: 'KL', label: 'Trật tự kỷ luật' },
+  { value: 'KT', label: 'Tích cực' },
+]
+const SCOPE_OPTIONS: Array<{ value: PhamViDanhMuc; label: string }> = [
+  { value: 'ca_nhan', label: 'Cá nhân' },
+  { value: 'tap_the', label: 'Tập thể' },
+  { value: 'to_truc', label: 'Tổ trực' },
+]
 
 const STATUS_LABELS: Record<TrangThaiImport, string> = {
   thanh_cong: 'Thành công',
@@ -40,6 +82,10 @@ export function ImportPage() {
   const [pointCatalog, setPointCatalog] = useState<DanhMucDiem[]>([])
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [catalogError, setCatalogError] = useState<string | null>(null)
+  const [suggestionForms, setSuggestionForms] = useState<CatalogSuggestionForm[]>([])
+  const [creatingSuggestionIndex, setCreatingSuggestionIndex] = useState<number | null>(null)
+  const [suggestionError, setSuggestionError] = useState<string | null>(null)
+  const [suggestionMessage, setSuggestionMessage] = useState<string | null>(null)
 
   const parseState = useMemo(() => parseJsonRows(jsonText), [jsonText])
   const previewColumns = useMemo(() => {
@@ -67,6 +113,23 @@ export function ImportPage() {
     void loadImportLogs()
     void loadPointCatalog()
   }, [])
+
+  useEffect(() => {
+    if (parseState.status !== 'valid') {
+      setSuggestionForms([])
+      setSuggestionError(null)
+      setSuggestionMessage(null)
+      return
+    }
+
+    setSuggestionForms(
+      parseState.catalogSuggestions.map((suggestion, index) =>
+        suggestionToForm(suggestion, index, pointCatalog),
+      ),
+    )
+    setSuggestionError(null)
+    setSuggestionMessage(null)
+  }, [jsonText, parseState.status])
 
   async function loadPointCatalog() {
     setCatalogLoading(true)
@@ -104,6 +167,8 @@ export function ImportPage() {
     setJsonText(await file.text())
     setResult(null)
     setSubmitError(null)
+    setSuggestionError(null)
+    setSuggestionMessage(null)
     event.target.value = ''
   }
 
@@ -161,6 +226,63 @@ export function ImportPage() {
     } finally {
       setDeletingLog(null)
     }
+  }
+
+  async function createCatalogFromSuggestion(form: CatalogSuggestionForm) {
+    const code = form.ma_danh_muc.trim().toUpperCase()
+    const point = Number(form.diem)
+
+    if (!code || !form.ten_muc.trim()) {
+      setSuggestionError('Cần có mã danh mục và tên mục trước khi tạo.')
+      return
+    }
+
+    if (!Number.isFinite(point)) {
+      setSuggestionError('Điểm gợi ý phải là số hợp lệ.')
+      return
+    }
+
+    if (pointCatalog.some((item) => item.ma_danh_muc.trim().toUpperCase() === code)) {
+      setSuggestionError(`Mã ${code} đã có trong DanhMucDiem. Hãy đổi mã hoặc chọn mã có sẵn trong JSON.`)
+      return
+    }
+
+    const payload: DanhMucDiem = {
+      ma_danh_muc: code,
+      nhom: form.nhom,
+      ten_muc: form.ten_muc.trim(),
+      diem: point,
+      nghiem_trong: form.nghiem_trong,
+      pham_vi: form.pham_vi,
+    }
+
+    setCreatingSuggestionIndex(form.sourceIndex)
+    setSuggestionError(null)
+    setSuggestionMessage(null)
+
+    try {
+      const created = await dataSource.addPointCatalogItem(payload)
+      const applyResult = applyCatalogCodeToJsonText(jsonText, form, created.ma_danh_muc)
+
+      setPointCatalog((current) => [...current, created].sort(compareCatalogItems))
+      setJsonText(applyResult.jsonText)
+      setSuggestionMessage(
+        applyResult.updatedRows > 0
+          ? `Đã tạo ${created.ma_danh_muc} và gắn mã vào ${applyResult.updatedRows} dòng ghi nhận đang chờ.`
+          : `Đã tạo ${created.ma_danh_muc}. Chưa tìm thấy dòng ghi nhận khớp tự động, cần gắn mã thủ công nếu còn lỗi thiếu mã.`,
+      )
+      await loadPointCatalog()
+    } catch (error) {
+      setSuggestionError(error instanceof Error ? error.message : 'Không tạo được danh mục từ đề xuất.')
+    } finally {
+      setCreatingSuggestionIndex(null)
+    }
+  }
+
+  function updateSuggestionForm(sourceIndex: number, patch: Partial<CatalogSuggestionForm>) {
+    setSuggestionForms((current) =>
+      current.map((form) => (form.sourceIndex === sourceIndex ? { ...form, ...patch } : form)),
+    )
   }
 
   return (
@@ -227,6 +349,8 @@ export function ImportPage() {
             setFileName(null)
             setResult(null)
             setSubmitError(null)
+            setSuggestionError(null)
+            setSuggestionMessage(null)
           }}
           spellCheck={false}
           placeholder='[{"ma_hs":"HS001","ngay":"2026-07-13","tuan_so":2}]'
@@ -325,6 +449,133 @@ export function ImportPage() {
         </div>
       ) : null}
 
+      {loai === 'ghi_nhan' && parseState.status === 'valid' && suggestionForms.length > 0 ? (
+        <div className="space-y-3 rounded-lg border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">
+          <div>
+            <h3 className="text-base font-bold">Đề xuất danh mục mới từ AI</h3>
+            <p className="mt-1">
+              Tạo danh mục ngay tại đây để các dòng thiếu mã trong JSON được gắn mã và tiếp tục import.
+            </p>
+          </div>
+
+          {suggestionError ? (
+            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-800">
+              {suggestionError}
+            </div>
+          ) : null}
+
+          {suggestionMessage ? (
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
+              {suggestionMessage}
+            </div>
+          ) : null}
+
+          <div className="space-y-3">
+            {suggestionForms.map((form) => {
+              const isCreating = creatingSuggestionIndex === form.sourceIndex
+
+              return (
+                <div key={form.sourceIndex} className="rounded-lg border border-cyan-200 bg-white p-3">
+                  <div className="grid gap-3 lg:grid-cols-[0.8fr_1.4fr_0.8fr_0.9fr_0.9fr_auto]">
+                    <label className="flex flex-col gap-1 font-medium text-slate-700">
+                      Mã
+                      <input
+                        value={form.ma_danh_muc}
+                        onChange={(event) =>
+                          updateSuggestionForm(form.sourceIndex, {
+                            ma_danh_muc: event.target.value.toUpperCase(),
+                          })
+                        }
+                        className="h-10 rounded-md border border-slate-300 px-3 font-mono text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-1 font-medium text-slate-700">
+                      Tên danh mục
+                      <input
+                        value={form.ten_muc}
+                        onChange={(event) =>
+                          updateSuggestionForm(form.sourceIndex, { ten_muc: event.target.value })
+                        }
+                        className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-1 font-medium text-slate-700">
+                      Nhóm
+                      <select
+                        value={form.nhom}
+                        onChange={(event) =>
+                          updateSuggestionForm(form.sourceIndex, { nhom: event.target.value as NhomDiem })
+                        }
+                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                      >
+                        {GROUP_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.value} - {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="flex flex-col gap-1 font-medium text-slate-700">
+                      Điểm
+                      <input
+                        type="number"
+                        value={form.diem}
+                        onChange={(event) =>
+                          updateSuggestionForm(form.sourceIndex, { diem: event.target.value })
+                        }
+                        className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-1 font-medium text-slate-700">
+                      Phạm vi
+                      <select
+                        value={form.pham_vi}
+                        onChange={(event) =>
+                          updateSuggestionForm(form.sourceIndex, {
+                            pham_vi: event.target.value as PhamViDanhMuc,
+                          })
+                        }
+                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                      >
+                        {SCOPE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => void createCatalogFromSuggestion(form)}
+                      disabled={isCreating || catalogLoading}
+                      className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-cyan-700 px-3 text-sm font-semibold text-white hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                    >
+                      {isCreating ? 'Đang tạo...' : 'Tạo & gắn mã'}
+                    </button>
+                  </div>
+
+                  <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+                    <p>
+                      <span className="font-semibold text-slate-700">Mô tả thô:</span>{' '}
+                      {form.mo_ta_tho || '-'}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-700">Lý do:</span>{' '}
+                      {form.ly_do_can_tao || '-'}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ) : null}
+
       {submitError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           {submitError}
@@ -358,6 +609,8 @@ export function ImportPage() {
             setFileName(null)
             setSubmitError(null)
             setResult(null)
+            setSuggestionError(null)
+            setSuggestionMessage(null)
           }}
           className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
@@ -553,6 +806,10 @@ function parseJsonRows(jsonText: string): ParseState {
       : isRecord(parsed) && Array.isArray(parsed.ban_ghi)
         ? parsed.ban_ghi
         : null
+    const catalogSuggestions =
+      isRecord(parsed) && Array.isArray(parsed.de_xuat_danh_muc)
+        ? parsed.de_xuat_danh_muc.filter(isRecord).map(normalizeCatalogSuggestion)
+        : []
 
     if (!rows) {
       return { status: 'invalid', message: 'JSON cần là array hoặc object có ban_ghi array.' }
@@ -562,7 +819,7 @@ function parseJsonRows(jsonText: string): ParseState {
       return { status: 'invalid', message: 'Mỗi phần tử trong array cần là object.' }
     }
 
-    return { status: 'valid', rows }
+    return { status: 'valid', rows, catalogSuggestions }
   } catch (error) {
     return {
       status: 'invalid',
@@ -573,6 +830,150 @@ function parseJsonRows(jsonText: string): ParseState {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function normalizeCatalogSuggestion(row: Record<string, unknown>): CatalogSuggestion {
+  return {
+    nhom_goi_y: toText(row.nhom_goi_y).trim().toUpperCase(),
+    ten_muc_goi_y: toText(row.ten_muc_goi_y).trim(),
+    diem_goi_y: row.diem_goi_y === undefined ? null : (row.diem_goi_y as string | number | null),
+    pham_vi_goi_y: toText(row.pham_vi_goi_y).trim(),
+    mo_ta_tho: toText(row.mo_ta_tho).trim(),
+    ly_do_can_tao: toText(row.ly_do_can_tao).trim(),
+    ma_goi_y: toText(row.ma_goi_y).trim() || null,
+  }
+}
+
+function suggestionToForm(
+  suggestion: CatalogSuggestion,
+  sourceIndex: number,
+  catalog: DanhMucDiem[],
+): CatalogSuggestionForm {
+  const group = toPointGroup(suggestion.nhom_goi_y, suggestion.diem_goi_y)
+
+  return {
+    sourceIndex,
+    ma_danh_muc: normalizeCatalogCode(suggestion.ma_goi_y) || nextCodeForGroup(group, catalog),
+    nhom: group,
+    ten_muc: suggestion.ten_muc_goi_y || suggestion.mo_ta_tho,
+    diem: toText(suggestion.diem_goi_y || (group === 'KT' ? 1 : -1)),
+    nghiem_trong: Number(suggestion.diem_goi_y) <= -10,
+    pham_vi: toCatalogScope(suggestion.pham_vi_goi_y),
+    mo_ta_tho: suggestion.mo_ta_tho,
+    ly_do_can_tao: suggestion.ly_do_can_tao,
+  }
+}
+
+function toPointGroup(value: string, point: string | number | null): NhomDiem {
+  const normalized = value.trim().toUpperCase()
+  if (normalized === 'CC' || normalized === 'VS' || normalized === 'NN' || normalized === 'KL' || normalized === 'KT') {
+    return normalized
+  }
+
+  return Number(point) > 0 ? 'KT' : 'NN'
+}
+
+function toCatalogScope(value: string): PhamViDanhMuc {
+  const normalized = normalizeForMatch(value).replace(/\s+/g, '_')
+  if (normalized === 'tap_the') return 'tap_the'
+  if (normalized === 'to_truc') return 'to_truc'
+  return 'ca_nhan'
+}
+
+function normalizeCatalogCode(value: string | null): string {
+  return toText(value).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '')
+}
+
+function nextCodeForGroup(group: NhomDiem, catalog: DanhMucDiem[]): string {
+  const maxNumber = catalog.reduce((max, item) => {
+    if (item.nhom !== group) return max
+    const match = item.ma_danh_muc.match(/(\d+)$/)
+    return match ? Math.max(max, Number(match[1])) : max
+  }, 0)
+
+  return `${group}${String(maxNumber + 1).padStart(2, '0')}`
+}
+
+function applyCatalogCodeToJsonText(
+  jsonText: string,
+  form: CatalogSuggestionForm,
+  code: string,
+): { jsonText: string; updatedRows: number } {
+  try {
+    const parsed = JSON.parse(jsonText) as unknown
+    const sourceRows = Array.isArray(parsed)
+      ? parsed
+      : isRecord(parsed) && Array.isArray(parsed.ban_ghi)
+        ? parsed.ban_ghi
+        : null
+
+    if (!sourceRows || !sourceRows.every(isRecord)) {
+      return { jsonText, updatedRows: 0 }
+    }
+
+    const pendingIndexes = sourceRows
+      .map((row, index) => (rowNeedsCatalog(row) ? index : -1))
+      .filter((index) => index >= 0)
+    let updatedRows = 0
+    const matchedIndexes = sourceRows
+      .map((row, index) => (rowNeedsCatalog(row) && rowMatchesSuggestion(row, form) ? index : -1))
+      .filter((index) => index >= 0)
+    const indexesToUpdate = matchedIndexes.length > 0 ? matchedIndexes : pendingIndexes.length === 1 ? pendingIndexes : []
+
+    const rows = sourceRows.map((row, index) => {
+      if (!indexesToUpdate.includes(index)) {
+        return row
+      }
+
+      updatedRows += 1
+      return {
+        ...row,
+        ma_danh_muc: code,
+        noi_dung: cleanupNeedCreatePrefix(toText(row.noi_dung)) || form.mo_ta_tho || form.ten_muc,
+      }
+    })
+
+    if (Array.isArray(parsed)) {
+      return { jsonText: JSON.stringify(rows, null, 2), updatedRows }
+    }
+
+    const nextPayload: Record<string, unknown> = { ...(parsed as Record<string, unknown>), ban_ghi: rows }
+    const suggestions = Array.isArray(nextPayload.de_xuat_danh_muc)
+      ? nextPayload.de_xuat_danh_muc.filter((_item: unknown, index: number) => index !== form.sourceIndex)
+      : []
+
+    nextPayload.de_xuat_danh_muc = suggestions
+    return { jsonText: JSON.stringify(nextPayload, null, 2), updatedRows }
+  } catch {
+    return { jsonText, updatedRows: 0 }
+  }
+}
+
+function rowNeedsCatalog(row: Record<string, unknown>): boolean {
+  return !toText(row.ma_danh_muc).trim() && toText(row.loai).trim() !== 'hoc_tap'
+}
+
+function rowMatchesSuggestion(row: Record<string, unknown>, form: CatalogSuggestionForm): boolean {
+  const haystack = normalizeForMatch(`${toText(row.noi_dung)} ${toText(row.ly_do)}`)
+  const needles = [form.mo_ta_tho, form.ten_muc].map(normalizeForMatch).filter(Boolean)
+
+  return needles.some((needle) => haystack.includes(needle))
+}
+
+function cleanupNeedCreatePrefix(value: string): string {
+  return value.replace(/^\s*\[CẦN TẠO DANH MỤC[^\]]*\]\s*/i, '').trim()
+}
+
+function normalizeForMatch(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+function compareCatalogItems(left: DanhMucDiem, right: DanhMucDiem): number {
+  return `${left.nhom}-${left.ma_danh_muc}`.localeCompare(`${right.nhom}-${right.ma_danh_muc}`)
 }
 
 function collectPreviewColumns(rows: Record<string, unknown>[]): string[] {
