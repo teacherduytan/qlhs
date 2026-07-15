@@ -1861,6 +1861,20 @@ function isPersonalRecord(
   row: Record<string, unknown>,
   catalogByCode: Map<string, DanhMucDiem>,
 ): boolean {
+  const explicitStudentId = toText(row.ma_hs).trim()
+  const explicitStudentName = cleanupNeedConfirmPrefix(toText(row.ho_ten).trim())
+  if (explicitStudentId || explicitStudentName) {
+    return true
+  }
+
+  const rawScope = normalizeForMatch(toText(row.pham_vi)).replace(/\s+/g, '_')
+  if (rawScope === 'ca_nhan') {
+    return true
+  }
+  if (rawScope === 'tap_the' || rawScope === 'to_truc') {
+    return false
+  }
+
   const code = toText(row.ma_danh_muc).trim().toUpperCase()
   const catalogItem = code ? catalogByCode.get(code) : undefined
 
