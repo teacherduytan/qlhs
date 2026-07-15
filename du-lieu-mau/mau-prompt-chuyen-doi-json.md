@@ -1,5 +1,7 @@
 # Prompt mẫu — dùng khi nhờ AI chuyển ảnh phiếu giấy thành JSON
 
+> **Bản chuẩn dùng khi import**: dùng file này trong `du-lieu-mau/`. Nếu có bản sao cùng tên trong `docs/`, bản đó chỉ là bản tham chiếu và phải được đồng bộ y hệt file này.
+
 > **Cập nhật (13/07/2026)**: khi "Nội dung thành tích" có kèm điểm số, phải tách thành **2 dòng JSON riêng**: 1 dòng `khen_thuong` để ghi điểm khích lệ, và 1 dòng `hoc_tap` để ghi `diem_so_mon`. Không gộp điểm số vào dòng `khen_thuong`, vì Điểm học tập chỉ đọc dòng `loai=hoc_tap`.
 >
 > **Cập nhật (15/07/2026)**: hệ thống import hiện kiểm tra `ma_danh_muc` theo **DanhMucDiem hiện hành**. Mọi dòng vi phạm/tích cực phải có mã đã tồn tại trong DanhMucDiem; chỉ dòng `loai=hoc_tap` mới được để `ma_danh_muc = null`.
