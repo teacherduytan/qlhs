@@ -93,6 +93,26 @@ export function StudentsPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!formMode) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closeForm()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [formMode])
+
   const visibleStudents = useMemo(() => {
     const keyword = normalize(query)
     return students
@@ -275,7 +295,7 @@ export function StudentsPage() {
         </p>
       </div>
 
-      {formMode ? (
+      {false ? (
         <form
           onSubmit={saveStudent}
           className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-4"
@@ -407,6 +427,152 @@ export function StudentsPage() {
             </button>
           </div>
         </form>
+      ) : null}
+
+      {formMode ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <form
+            onSubmit={saveStudent}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="student-form-title"
+            className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-lg bg-white shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+              <div>
+                <h3 id="student-form-title" className="text-lg font-bold text-slate-900">
+                  {formMode === 'add' ? 'Thêm học sinh' : `Sửa ${editingStudent?.ma_hs}`}
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Nhập thông tin cơ bản, chọn diện và tổ bằng dropdown để dữ liệu đồng nhất.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeForm}
+                className="rounded-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                Đóng
+              </button>
+            </div>
+
+            <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <TextField
+                  label="Họ"
+                  value={form.ho}
+                  onChange={(value) => setForm((current) => ({ ...current, ho: value }))}
+                  required
+                />
+                <TextField
+                  label="Tên"
+                  value={form.ten}
+                  onChange={(value) => setForm((current) => ({ ...current, ten: value }))}
+                  required
+                />
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Diện
+                  <select
+                    value={form.dien}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, dien: event.target.value as DienHocSinh }))
+                    }
+                    className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="2B">2B</option>
+                    <option value="BT">BT</option>
+                    <option value="NT">NT</option>
+                  </select>
+                </label>
+                <TextField
+                  label="Dân tộc"
+                  value={form.dan_toc}
+                  onChange={(value) => setForm((current) => ({ ...current, dan_toc: value }))}
+                />
+                <TextField
+                  label="Ngày sinh"
+                  value={form.ngay_sinh}
+                  onChange={(value) => setForm((current) => ({ ...current, ngay_sinh: value }))}
+                  type="date"
+                />
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Tổ
+                  <select
+                    value={form.to}
+                    onChange={(event) => setForm((current) => ({ ...current, to: event.target.value }))}
+                    className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="">Chưa có</option>
+                    <option value="1">Tổ 1</option>
+                    <option value="2">Tổ 2</option>
+                    <option value="3">Tổ 3</option>
+                  </select>
+                </label>
+                <TextField
+                  label="SĐT 1"
+                  value={form.sdt_1}
+                  onChange={(value) => setForm((current) => ({ ...current, sdt_1: value }))}
+                />
+                <TextField
+                  label="SĐT 2"
+                  value={form.sdt_2}
+                  onChange={(value) => setForm((current) => ({ ...current, sdt_2: value }))}
+                />
+                <TextField
+                  label="Ghi chú"
+                  value={form.ghi_chu}
+                  onChange={(value) => setForm((current) => ({ ...current, ghi_chu: value }))}
+                />
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-4">
+                <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.nu}
+                    onChange={(event) => setForm((current) => ({ ...current, nu: event.target.checked }))}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                  />
+                  Nữ
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.la_co_do}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, la_co_do: event.target.checked }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                  />
+                  Cờ đỏ
+                </label>
+              </div>
+
+              {saveError ? (
+                <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  {saveError}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={closeForm}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Huỷ
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {saving ? 'Đang lưu...' : 'Lưu'}
+              </button>
+            </div>
+          </form>
+        </div>
       ) : null}
 
       {loading ? (

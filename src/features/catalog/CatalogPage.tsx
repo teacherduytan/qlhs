@@ -54,7 +54,7 @@ export function CatalogPage() {
   const [groupFilter, setGroupFilter] = useState<'all' | NhomDiem>('all')
   const [toneFilter, setToneFilter] = useState<CatalogToneFilter>('all')
   const [sortKey, setSortKey] = useState<CatalogSortKey>('code_asc')
-  const [formMode, setFormMode] = useState<'add' | 'edit'>('add')
+  const [formMode, setFormMode] = useState<'add' | 'edit' | null>(null)
   const [editingCode, setEditingCode] = useState<string | null>(null)
   const [form, setForm] = useState<CatalogForm>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -203,6 +203,26 @@ export function CatalogPage() {
     }
   }, [selectedCatalogItem])
 
+  useEffect(() => {
+    if (!formMode) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closeForm()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [formMode])
+
   function openAddForm() {
     setFormMode('add')
     setEditingCode(null)
@@ -224,6 +244,13 @@ export function CatalogPage() {
     setSaveError(null)
   }
 
+  function closeForm() {
+    setFormMode(null)
+    setEditingCode(null)
+    setForm(EMPTY_FORM)
+    setSaveError(null)
+  }
+
   async function saveCatalogItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSaveError(null)
@@ -241,13 +268,13 @@ export function CatalogPage() {
       if (formMode === 'add') {
         const created = await dataSource.addPointCatalogItem(payload)
         setCatalog((current) => [...current, created])
-        openAddForm()
+        closeForm()
       } else if (editingCode) {
         const updated = await dataSource.updatePointCatalogItem(editingCode, payload)
         setCatalog((current) =>
           current.map((item) => (item.ma_danh_muc === editingCode ? updated : item)),
         )
-        openAddForm()
+        closeForm()
       }
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Không lưu được danh mục.')
@@ -267,7 +294,7 @@ export function CatalogPage() {
       await dataSource.deletePointCatalogItem(item.ma_danh_muc)
       setCatalog((current) => current.filter((row) => row.ma_danh_muc !== item.ma_danh_muc))
       if (editingCode === item.ma_danh_muc) {
-        openAddForm()
+        closeForm()
       }
     } catch (error) {
       window.alert(error instanceof Error ? error.message : 'Không xóa được danh mục.')
@@ -400,6 +427,7 @@ export function CatalogPage() {
         </div>
       </div>
 
+      {false ? (
       <form onSubmit={saveCatalogItem} className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
         <div className="flex flex-col gap-1">
           <h3 className="text-base font-bold text-slate-900">
@@ -524,6 +552,150 @@ export function CatalogPage() {
           </div>
         </div>
       </form>
+      ) : null}
+
+      {formMode ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <form
+            onSubmit={saveCatalogItem}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="catalog-form-title"
+            className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+              <div>
+                <h3 id="catalog-form-title" className="text-lg font-bold text-slate-900">
+                  {formMode === 'add' ? 'Thêm danh mục mới' : `Sửa danh mục ${editingCode}`}
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Điểm dương là ghi nhận tích cực, điểm âm là vi phạm, điểm 0 dùng để theo dõi.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeForm}
+                className="rounded-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                Đóng
+              </button>
+            </div>
+
+            <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
+              <div className="grid gap-3 md:grid-cols-6">
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
+                  Mã
+                  <input
+                    value={form.ma_danh_muc}
+                    disabled={formMode === 'edit'}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        ma_danh_muc: event.target.value.toUpperCase(),
+                      }))
+                    }
+                    className={`${inputClass} disabled:bg-slate-100 disabled:text-slate-500`}
+                    placeholder="NN06"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
+                  Nhóm
+                  <select
+                    value={form.nhom}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, nhom: event.target.value as NhomDiem }))
+                    }
+                    className={selectClass}
+                  >
+                    {GROUP_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.value} - {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-2">
+                  Nội dung danh mục
+                  <input
+                    value={form.ten_muc}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, ten_muc: event.target.value }))
+                    }
+                    className={inputClass}
+                    placeholder="Không mang dụng cụ học tập"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
+                  Điểm
+                  <input
+                    value={form.diem}
+                    type="number"
+                    step="0.5"
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, diem: event.target.value }))
+                    }
+                    className={inputClass}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
+                  Phạm vi
+                  <select
+                    value={form.pham_vi}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        pham_vi: event.target.value as PhamViDanhMuc,
+                      }))
+                    }
+                    className={selectClass}
+                  >
+                    {SCOPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <label className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={form.nghiem_trong}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, nghiem_trong: event.target.checked }))
+                  }
+                  className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                />
+                Vi phạm nghiêm trọng
+              </label>
+
+              {saveError ? (
+                <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+                  {saveError}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={closeForm}
+                className="h-10 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Huỷ
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="h-10 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {saving ? 'Đang lưu...' : formMode === 'add' ? 'Lưu danh mục' : 'Cập nhật'}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
 
       <div className="rounded-lg border border-violet-200 bg-violet-50 p-4">
         {linkedCode ? (

@@ -86,6 +86,8 @@ export function ImportPage() {
   const [creatingSuggestionIndex, setCreatingSuggestionIndex] = useState<number | null>(null)
   const [suggestionError, setSuggestionError] = useState<string | null>(null)
   const [suggestionMessage, setSuggestionMessage] = useState<string | null>(null)
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number | null>(null)
+  const [suggestionStep, setSuggestionStep] = useState<1 | 2>(1)
 
   const parseState = useMemo(() => parseJsonRows(jsonText), [jsonText])
   const previewColumns = useMemo(() => {
@@ -108,6 +110,14 @@ export function ImportPage() {
   }, [loai, parseState, pointCatalog])
   const hasCatalogBlockingError =
     loai === 'ghi_nhan' && (catalogLoading || Boolean(catalogError) || catalogCheck.errors.length > 0)
+  const activeSuggestionForm = useMemo(
+    () => suggestionForms.find((form) => form.sourceIndex === activeSuggestionIndex) || null,
+    [activeSuggestionIndex, suggestionForms],
+  )
+  const activeSuggestionMatchCount = useMemo(
+    () => (activeSuggestionForm ? countSuggestionMatchedRows(jsonText, activeSuggestionForm) : 0),
+    [activeSuggestionForm, jsonText],
+  )
 
   useEffect(() => {
     void loadImportLogs()
@@ -119,6 +129,7 @@ export function ImportPage() {
       setSuggestionForms([])
       setSuggestionError(null)
       setSuggestionMessage(null)
+      setActiveSuggestionIndex(null)
       return
     }
 
@@ -130,6 +141,26 @@ export function ImportPage() {
     setSuggestionError(null)
     setSuggestionMessage(null)
   }, [jsonText, parseState.status])
+
+  useEffect(() => {
+    if (!activeSuggestionForm) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closeSuggestionModal()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [activeSuggestionForm])
 
   async function loadPointCatalog() {
     setCatalogLoading(true)
@@ -266,6 +297,8 @@ export function ImportPage() {
 
       setPointCatalog((current) => [...current, created].sort(compareCatalogItems))
       setJsonText(applyResult.jsonText)
+      setActiveSuggestionIndex(null)
+      setSuggestionStep(1)
       setSuggestionMessage(
         applyResult.updatedRows > 0
           ? `Đã tạo ${created.ma_danh_muc} và gắn mã vào ${applyResult.updatedRows} dòng ghi nhận đang chờ.`
@@ -283,6 +316,18 @@ export function ImportPage() {
     setSuggestionForms((current) =>
       current.map((form) => (form.sourceIndex === sourceIndex ? { ...form, ...patch } : form)),
     )
+  }
+
+  function openSuggestionModal(sourceIndex: number) {
+    setActiveSuggestionIndex(sourceIndex)
+    setSuggestionStep(1)
+    setSuggestionError(null)
+  }
+
+  function closeSuggestionModal() {
+    setActiveSuggestionIndex(null)
+    setSuggestionStep(1)
+    setSuggestionError(null)
   }
 
   return (
@@ -454,15 +499,9 @@ export function ImportPage() {
           <div>
             <h3 className="text-base font-bold">Đề xuất danh mục mới từ AI</h3>
             <p className="mt-1">
-              Tạo danh mục ngay tại đây để các dòng thiếu mã trong JSON được gắn mã và tiếp tục import.
+              Danh sách này chỉ tóm tắt đề xuất. Bấm tạo để mở modal kiểm tra thông tin, sau đó xác nhận gắn mã.
             </p>
           </div>
-
-          {suggestionError ? (
-            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-800">
-              {suggestionError}
-            </div>
-          ) : null}
 
           {suggestionMessage ? (
             <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
@@ -470,96 +509,31 @@ export function ImportPage() {
             </div>
           ) : null}
 
-          <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
             {suggestionForms.map((form) => {
               const isCreating = creatingSuggestionIndex === form.sourceIndex
 
               return (
                 <div key={form.sourceIndex} className="rounded-lg border border-cyan-200 bg-white p-3">
-                  <div className="grid gap-3 lg:grid-cols-[0.8fr_1.4fr_0.8fr_0.9fr_0.9fr_auto]">
-                    <label className="flex flex-col gap-1 font-medium text-slate-700">
-                      Mã
-                      <input
-                        value={form.ma_danh_muc}
-                        onChange={(event) =>
-                          updateSuggestionForm(form.sourceIndex, {
-                            ma_danh_muc: event.target.value.toUpperCase(),
-                          })
-                        }
-                        className="h-10 rounded-md border border-slate-300 px-3 font-mono text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
-                      />
-                    </label>
-
-                    <label className="flex flex-col gap-1 font-medium text-slate-700">
-                      Tên danh mục
-                      <input
-                        value={form.ten_muc}
-                        onChange={(event) =>
-                          updateSuggestionForm(form.sourceIndex, { ten_muc: event.target.value })
-                        }
-                        className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
-                      />
-                    </label>
-
-                    <label className="flex flex-col gap-1 font-medium text-slate-700">
-                      Nhóm
-                      <select
-                        value={form.nhom}
-                        onChange={(event) =>
-                          updateSuggestionForm(form.sourceIndex, { nhom: event.target.value as NhomDiem })
-                        }
-                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
-                      >
-                        {GROUP_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.value} - {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="flex flex-col gap-1 font-medium text-slate-700">
-                      Điểm
-                      <input
-                        type="number"
-                        value={form.diem}
-                        onChange={(event) =>
-                          updateSuggestionForm(form.sourceIndex, { diem: event.target.value })
-                        }
-                        className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
-                      />
-                    </label>
-
-                    <label className="flex flex-col gap-1 font-medium text-slate-700">
-                      Phạm vi
-                      <select
-                        value={form.pham_vi}
-                        onChange={(event) =>
-                          updateSuggestionForm(form.sourceIndex, {
-                            pham_vi: event.target.value as PhamViDanhMuc,
-                          })
-                        }
-                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
-                      >
-                        {SCOPE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-mono text-xs font-bold text-cyan-700">{form.ma_danh_muc}</p>
+                      <p className="mt-1 font-semibold text-slate-900">{form.ten_muc || form.mo_ta_tho}</p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        {form.nhom} · {form.diem} điểm · {labelSuggestionScope(form.pham_vi)}
+                      </p>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => void createCatalogFromSuggestion(form)}
+                      onClick={() => openSuggestionModal(form.sourceIndex)}
                       disabled={isCreating || catalogLoading}
-                      className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-cyan-700 px-3 text-sm font-semibold text-white hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      className="inline-flex h-9 shrink-0 items-center justify-center rounded-md bg-cyan-700 px-3 text-sm font-semibold text-white hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
                     >
-                      {isCreating ? 'Đang tạo...' : 'Tạo & gắn mã'}
+                      {isCreating ? 'Đang tạo...' : 'Tạo danh mục'}
                     </button>
                   </div>
 
-                  <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+                  <div className="mt-3 space-y-1 text-xs text-slate-600">
                     <p>
                       <span className="font-semibold text-slate-700">Mô tả thô:</span>{' '}
                       {form.mo_ta_tho || '-'}
@@ -572,6 +546,181 @@ export function ImportPage() {
                 </div>
               )
             })}
+          </div>
+        </div>
+      ) : null}
+
+      {activeSuggestionForm ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="suggestion-modal-title"
+            className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase text-cyan-700">Bước {suggestionStep}/2</p>
+                <h3 id="suggestion-modal-title" className="text-lg font-bold text-slate-900">
+                  Tạo danh mục từ đề xuất AI
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeSuggestionModal}
+                className="rounded-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                Đóng
+              </button>
+            </div>
+
+            <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
+              {suggestionError ? (
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                  {suggestionError}
+                </div>
+              ) : null}
+
+              {suggestionStep === 1 ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                    Mã danh mục
+                    <input
+                      value={activeSuggestionForm.ma_danh_muc}
+                      onChange={(event) =>
+                        updateSuggestionForm(activeSuggestionForm.sourceIndex, {
+                          ma_danh_muc: event.target.value.toUpperCase(),
+                        })
+                      }
+                      className="h-10 rounded-md border border-slate-300 px-3 font-mono text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                    Nhóm
+                    <select
+                      value={activeSuggestionForm.nhom}
+                      onChange={(event) =>
+                        updateSuggestionForm(activeSuggestionForm.sourceIndex, {
+                          nhom: event.target.value as NhomDiem,
+                        })
+                      }
+                      className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                    >
+                      {GROUP_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.value} - {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-2">
+                    Tên danh mục
+                    <input
+                      value={activeSuggestionForm.ten_muc}
+                      onChange={(event) =>
+                        updateSuggestionForm(activeSuggestionForm.sourceIndex, { ten_muc: event.target.value })
+                      }
+                      className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                    Điểm
+                    <input
+                      type="number"
+                      value={activeSuggestionForm.diem}
+                      onChange={(event) =>
+                        updateSuggestionForm(activeSuggestionForm.sourceIndex, { diem: event.target.value })
+                      }
+                      className="h-10 rounded-md border border-slate-300 px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                    Phạm vi
+                    <select
+                      value={activeSuggestionForm.pham_vi}
+                      onChange={(event) =>
+                        updateSuggestionForm(activeSuggestionForm.sourceIndex, {
+                          pham_vi: event.target.value as PhamViDanhMuc,
+                        })
+                      }
+                      className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                    >
+                      {SCOPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={activeSuggestionForm.nghiem_trong}
+                      onChange={(event) =>
+                        updateSuggestionForm(activeSuggestionForm.sourceIndex, {
+                          nghiem_trong: event.target.checked,
+                        })
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-cyan-700 focus:ring-cyan-200"
+                    />
+                    Đánh dấu nghiêm trọng
+                  </label>
+                </div>
+              ) : (
+                <div className="space-y-3 text-sm text-slate-700">
+                  <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-3">
+                    <p className="font-semibold text-slate-900">
+                      {activeSuggestionForm.ma_danh_muc} - {activeSuggestionForm.ten_muc}
+                    </p>
+                    <p className="mt-1 text-slate-600">
+                      {activeSuggestionForm.nhom} · {activeSuggestionForm.diem} điểm ·{' '}
+                      {labelSuggestionScope(activeSuggestionForm.pham_vi)}
+                    </p>
+                  </div>
+                  <p>
+                    App sẽ tạo danh mục này trong DanhMucDiem và tự gắn mã vào{' '}
+                    <span className="font-bold text-cyan-700">{activeSuggestionMatchCount}</span> dòng ghi nhận đang
+                    chờ trong JSON.
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Nếu số dòng khớp bằng 0, app vẫn tạo danh mục nhưng thầy cần gắn mã thủ công vào dòng JSON còn thiếu.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => (suggestionStep === 1 ? closeSuggestionModal() : setSuggestionStep(1))}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {suggestionStep === 1 ? 'Huỷ' : 'Quay lại'}
+              </button>
+              {suggestionStep === 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setSuggestionStep(2)}
+                  className="inline-flex h-10 items-center justify-center rounded-md bg-cyan-700 px-4 text-sm font-semibold text-white hover:bg-cyan-800"
+                >
+                  Tiếp tục
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void createCatalogFromSuggestion(activeSuggestionForm)}
+                  disabled={creatingSuggestionIndex === activeSuggestionForm.sourceIndex || catalogLoading}
+                  className="inline-flex h-10 items-center justify-center rounded-md bg-cyan-700 px-4 text-sm font-semibold text-white hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  {creatingSuggestionIndex === activeSuggestionForm.sourceIndex ? 'Đang tạo...' : 'Tạo & gắn mã'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       ) : null}
@@ -949,6 +1098,30 @@ function applyCatalogCodeToJsonText(
   }
 }
 
+function countSuggestionMatchedRows(jsonText: string, form: CatalogSuggestionForm): number {
+  try {
+    const parsed = JSON.parse(jsonText) as unknown
+    const sourceRows = Array.isArray(parsed)
+      ? parsed
+      : isRecord(parsed) && Array.isArray(parsed.ban_ghi)
+        ? parsed.ban_ghi
+        : null
+
+    if (!sourceRows || !sourceRows.every(isRecord)) {
+      return 0
+    }
+
+    const matchedCount = sourceRows.filter((row) => rowNeedsCatalog(row) && rowMatchesSuggestion(row, form)).length
+    if (matchedCount > 0) {
+      return matchedCount
+    }
+
+    return sourceRows.filter(rowNeedsCatalog).length === 1 ? 1 : 0
+  } catch {
+    return 0
+  }
+}
+
 function rowNeedsCatalog(row: Record<string, unknown>): boolean {
   return !toText(row.ma_danh_muc).trim() && toText(row.loai).trim() !== 'hoc_tap'
 }
@@ -974,6 +1147,12 @@ function normalizeForMatch(value: string): string {
 
 function compareCatalogItems(left: DanhMucDiem, right: DanhMucDiem): number {
   return `${left.nhom}-${left.ma_danh_muc}`.localeCompare(`${right.nhom}-${right.ma_danh_muc}`)
+}
+
+function labelSuggestionScope(value: PhamViDanhMuc): string {
+  if (value === 'tap_the') return 'Tập thể'
+  if (value === 'to_truc') return 'Tổ trực'
+  return 'Cá nhân'
 }
 
 function collectPreviewColumns(rows: Record<string, unknown>[]): string[] {
