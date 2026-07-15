@@ -136,6 +136,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C103 | ✅ Xong | 15/07/2026 | Bổ sung mô tả và đề xuất xử lý/phạt cho danh mục vi phạm/tích cực |
 | C104 | ✅ Xong | 15/07/2026 | Cập nhật prompt AI để đề xuất danh mục mới có mô tả và đề xuất xử lý |
 | C105 | ✅ Xong | 15/07/2026 | Tạo danh mục mã đề xuất xử lý/phạt và liên kết từ danh mục điểm/import |
+| C106 | ✅ Xong | 15/07/2026 | Báo lỗi rõ khi Apps Script chưa deploy action DanhMucXuLy |
 
 ---
 

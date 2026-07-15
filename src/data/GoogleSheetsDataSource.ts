@@ -136,23 +136,35 @@ export class GoogleSheetsDataSource implements DataSource {
     return this.get<DanhMucXuLy[]>('danh_muc_xu_ly')
   }
 
-  addHandlingCatalogItem(item: DanhMucXuLy): Promise<DanhMucXuLy> {
-    return this.post<DanhMucXuLy>({ action: 'add_handling_catalog_item', item })
+  async addHandlingCatalogItem(item: DanhMucXuLy): Promise<DanhMucXuLy> {
+    try {
+      return await this.post<DanhMucXuLy>({ action: 'add_handling_catalog_item', item })
+    } catch (error) {
+      throw normalizeHandlingCatalogActionError(error)
+    }
   }
 
-  updateHandlingCatalogItem(maXuLy: string, item: Partial<DanhMucXuLy>): Promise<DanhMucXuLy> {
-    return this.post<DanhMucXuLy>({
-      action: 'update_handling_catalog_item',
-      ma_xu_ly: maXuLy,
-      item,
-    })
+  async updateHandlingCatalogItem(maXuLy: string, item: Partial<DanhMucXuLy>): Promise<DanhMucXuLy> {
+    try {
+      return await this.post<DanhMucXuLy>({
+        action: 'update_handling_catalog_item',
+        ma_xu_ly: maXuLy,
+        item,
+      })
+    } catch (error) {
+      throw normalizeHandlingCatalogActionError(error)
+    }
   }
 
   async deleteHandlingCatalogItem(maXuLy: string): Promise<void> {
-    await this.post<null>({
-      action: 'delete_handling_catalog_item',
-      ma_xu_ly: maXuLy,
-    })
+    try {
+      await this.post<null>({
+        action: 'delete_handling_catalog_item',
+        ma_xu_ly: maXuLy,
+      })
+    } catch (error) {
+      throw normalizeHandlingCatalogActionError(error)
+    }
   }
 
   getWeekConfig(): Promise<CauHinhTuan[]> {
@@ -260,4 +272,19 @@ async function readApiResponse<T>(response: Response): Promise<T> {
   }
 
   return payload.data
+}
+
+function normalizeHandlingCatalogActionError(error: unknown): Error {
+  const message = error instanceof Error ? error.message : String(error || '')
+
+  if (
+    message.includes('Unsupported POST action') &&
+    (message.includes('handling_catalog_item') || message.includes('add_handling_catalog_item'))
+  ) {
+    return new Error(
+      'Apps Script Web App chưa deploy bản C105 có DanhMucXuLy/action add_handling_catalog_item. Hãy cập nhật và deploy lại apps-script/Code.gs, rồi mở ?action=api_health kiểm tra version C105-2026-07-15 và supports.handling_catalog_crud = true.',
+    )
+  }
+
+  return error instanceof Error ? error : new Error(message || 'Không thao tác được DanhMucXuLy.')
 }
