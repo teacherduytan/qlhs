@@ -1,6 +1,6 @@
 # Dữ liệu giả để xem giao diện — Tuần 2 (13–17/07/2026)
 
-File `du-lieu-gia-tuan2.json` — nhập thẳng qua màn hình Import (chọn loại "Ghi nhận"), **bỏ qua bước phiếu giấy → AI chuyển đổi**, coi như dữ liệu đã được chuyển sẵn. 21 bản ghi, phủ toàn bộ tình huống hiện app đang đảm nhận.
+File `du-lieu-gia-tuan2.json` — nhập thẳng qua màn hình Import (chọn loại "Ghi nhận"), **bỏ qua bước phiếu giấy → AI chuyển đổi**, coi như dữ liệu đã được chuyển sẵn. 22 bản ghi, phủ toàn bộ tình huống hiện app đang đảm nhận; trong đó có 1 dòng cố ý sai chính tả tên học sinh để test log lỗi import.
 
 ## Bảng đối chiếu — mỗi dòng test cái gì
 

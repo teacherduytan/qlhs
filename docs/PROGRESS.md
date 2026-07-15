@@ -113,6 +113,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C080 | ✅ Xong | 15/07/2026 | Xoá học sinh/ghi nhận khỏi danh mục theo chiều ngược và hỗ trợ xoá nhiều dòng |
 | C081 | ✅ Xong | 15/07/2026 | Đổi danh sách học sinh theo danh mục sang modal thay vì section dưới bảng |
 | C082 | ✅ Xong | 15/07/2026 | Rà và ép import GhiNhan khớp DanhMucDiem động, cảnh báo mã chưa có |
+| C083 | ✅ Xong | 15/07/2026 | Rà soát dữ liệu mẫu/dữ liệu giả, cập nhật prompt AI theo import danh mục động |
 
 ---
 
