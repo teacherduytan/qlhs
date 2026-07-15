@@ -126,6 +126,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C093 | ✅ Xong | 15/07/2026 | Màn Import tự xử lý dòng ma_hs null bằng gắn/tạo học sinh với mã tự sinh; prompt không bắt AI tự quyết ma_hs |
 | C094 | ✅ Xong | 15/07/2026 | Màn Import tạo danh mục thiếu từ mã JSON và cho import trước các dòng đủ điều kiện |
 | C095 | ✅ Xong | 15/07/2026 | Sửa hồi quy C094 để logic xử lý ma_hs null của C093 vẫn nhận diện dòng cá nhân theo ma_hs/ho_ten |
+| C096 | ✅ Xong | 15/07/2026 | Sửa nhãn hồ sơ/chi tiết học sinh để mã KT hoặc điểm dương hiển thị là Tích cực/thành tích |
 
 ---
 

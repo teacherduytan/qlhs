@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh } from '../../data/types'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
-import { getRecordInsight, summarizeRecordImpacts } from '../records/recordInsights'
+import { getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
 import { getBadgeClassForRecord } from '../scoring/scoreStyles'
 import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
@@ -360,7 +360,7 @@ function FeaturedRecords({ catalog, records }: { catalog: DanhMucDiem[]; records
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase text-blue-700">Ghi nhận của em</p>
-            <h2 className="text-xl font-bold text-slate-950">Những ghi nhận mới nhất trên lớp</h2>
+            <h2 className="text-xl font-bold text-slate-950">Ghi nhận tích cực và cần lưu ý trên lớp</h2>
             <p className="mt-1 text-sm text-slate-600">
               Các dòng thầy/cô đã nhập từ phiếu ghi nhận vào hệ thống.
             </p>
@@ -579,6 +579,7 @@ function RecordSummary({
 }) {
   const pointText = getRecordPointText(record)
   const insight = getRecordInsight(record, allRecords, catalogByCode)
+  const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
 
   return (
     <>
@@ -600,7 +601,7 @@ function RecordSummary({
       <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
         <ImpactBadge insight={insight} />
         <Badge className={getBadgeClassForRecord(record, catalogByCode)}>
-          {labelRecordType(record.loai)}
+          {labelRecordDisplay(record, catalogItem)}
         </Badge>
         {record.tiet ? <Badge>{`Tiết ${record.tiet}`}</Badge> : null}
         {record.mon_hoc ? <Badge>{record.mon_hoc}</Badge> : null}
@@ -781,6 +782,21 @@ function labelRecordType(loai: GhiNhan['loai']): string {
   }
 
   return labels[loai]
+}
+
+function labelRecordDisplay(record: GhiNhan, catalogItem?: DanhMucDiem): string {
+  const catalogByCode = catalogItem ? new Map([[catalogItem.ma_danh_muc, catalogItem]]) : new Map<string, DanhMucDiem>()
+  const polarity = getRecordPolarity(record, catalogByCode)
+
+  if (polarity === 'positive') {
+    return 'Tích cực / thành tích'
+  }
+
+  if (polarity === 'negative') {
+    return 'Vi phạm'
+  }
+
+  return labelRecordType(record.loai)
 }
 
 function getRecordPointText(record: GhiNhan): string | null {

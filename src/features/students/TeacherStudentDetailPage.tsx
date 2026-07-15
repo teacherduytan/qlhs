@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, DanhMucDiem, DienHocSinh, GhiNhan, HocSinh, PhuHuynh } from '../../data/types'
+import { getRecordPolarity } from '../records/recordInsights'
 
 type DetailState =
   | { status: 'loading' }
@@ -213,7 +214,7 @@ export function TeacherStudentDetailPage() {
           <section className="rounded-lg border border-rose-200 bg-rose-50 p-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Ghi nhận và vi phạm</h3>
+                <h3 className="text-base font-bold text-slate-900">Ghi nhận tích cực và vi phạm</h3>
                 <p className="text-sm text-slate-600">
                   Xoá các dòng nhập nhầm trong tab GhiNhan của học sinh này.
                 </p>
@@ -279,7 +280,7 @@ export function TeacherStudentDetailPage() {
                               {getRecordTitle(record, catalogItem)}
                             </div>
                             <div className="mt-1 text-xs text-slate-500">
-                              {labelRecordType(record.loai)}
+                              {labelRecordDisplay(record, catalogItem)}
                               {record.mon_hoc ? ` · ${record.mon_hoc}` : ''}
                               {record.tiet ? ` · Tiết ${record.tiet}` : ''}
                             </div>
@@ -453,6 +454,21 @@ function labelRecordType(value: GhiNhan['loai']): string {
   }
 
   return labels[value] || value
+}
+
+function labelRecordDisplay(record: GhiNhan, catalogItem?: DanhMucDiem): string {
+  const catalogByCode = catalogItem ? new Map([[catalogItem.ma_danh_muc, catalogItem]]) : new Map<string, DanhMucDiem>()
+  const polarity = getRecordPolarity(record, catalogByCode)
+
+  if (polarity === 'positive') {
+    return 'Tích cực / thành tích'
+  }
+
+  if (polarity === 'negative') {
+    return 'Vi phạm'
+  }
+
+  return labelRecordType(record.loai)
 }
 
 function formatDate(value: string | null): string {
