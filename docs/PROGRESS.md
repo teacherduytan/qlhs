@@ -111,6 +111,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C078 | ✅ Xong | 14/07/2026 | Chuyển đăng nhập/kiểm tra phiên giáo viên sang GET để tránh Failed to fetch |
 | C079 | ✅ Xong | 14/07/2026 | Cập nhật Web App URL Apps Script hiện hành và hướng dẫn đồng bộ endpoint |
 | C080 | ✅ Xong | 15/07/2026 | Xoá học sinh/ghi nhận khỏi danh mục theo chiều ngược và hỗ trợ xoá nhiều dòng |
+| C081 | ✅ Xong | 15/07/2026 | Đổi danh sách học sinh theo danh mục sang modal thay vì section dưới bảng |
 
 ---
 

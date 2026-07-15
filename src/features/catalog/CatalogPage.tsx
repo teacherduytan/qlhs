@@ -183,6 +183,26 @@ export function CatalogPage() {
 
   const allSelected = selectableRecordIds.length > 0 && selectedCount === selectableRecordIds.length
 
+  useEffect(() => {
+    if (!selectedCatalogItem) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closeLinkedRecords()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [selectedCatalogItem])
+
   function openAddForm() {
     setFormMode('add')
     setEditingCode(null)
@@ -258,6 +278,11 @@ export function CatalogPage() {
 
   function openLinkedRecords(item: DanhMucDiem) {
     setSelectedCatalogCode(item.ma_danh_muc)
+    setSelectedRecordIds(new Set())
+  }
+
+  function closeLinkedRecords() {
+    setSelectedCatalogCode(null)
     setSelectedRecordIds(new Set())
   }
 
@@ -673,7 +698,16 @@ export function CatalogPage() {
         </div>
 
         {selectedCatalogItem ? (
-          <section className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/50 px-3 py-6 sm:px-6"
+            onClick={closeLinkedRecords}
+          >
+            <section
+              className="flex max-h-[calc(100vh-3rem)] w-full max-w-6xl flex-col rounded-lg border border-rose-200 bg-rose-50 p-4 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase text-rose-700">Học sinh đang gắn danh mục</p>
@@ -685,6 +719,13 @@ export function CatalogPage() {
                 </p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={closeLinkedRecords}
+                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Đóng
+                </button>
                 <button
                   type="button"
                   onClick={toggleAllRecords}
@@ -704,7 +745,7 @@ export function CatalogPage() {
               </div>
             </div>
 
-            <div className="mt-4 overflow-x-auto rounded-lg border border-rose-200 bg-white">
+            <div className="mt-4 max-h-[65vh] overflow-auto rounded-lg border border-rose-200 bg-white">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-rose-100 text-left text-xs font-semibold uppercase text-rose-900">
                   <tr>
@@ -794,7 +835,8 @@ export function CatalogPage() {
                 </tbody>
               </table>
             </div>
-          </section>
+            </section>
+          </div>
         ) : null}
       </div>
     </section>
