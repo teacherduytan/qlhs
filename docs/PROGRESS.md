@@ -134,6 +134,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C101 | ✅ Xong | 15/07/2026 | Cập nhật prompt để không dùng mã NN08/NN09 cho lỗi không mang dụng cụ học tập |
 | C102 | ✅ Xong | 15/07/2026 | Import cho so sánh đề xuất danh mục mới với danh mục cũ và chọn dùng mã có sẵn |
 | C103 | ✅ Xong | 15/07/2026 | Bổ sung mô tả và đề xuất xử lý/phạt cho danh mục vi phạm/tích cực |
+| C104 | ✅ Xong | 15/07/2026 | Cập nhật prompt AI để đề xuất danh mục mới có mô tả và đề xuất xử lý |
 
 ---
 
