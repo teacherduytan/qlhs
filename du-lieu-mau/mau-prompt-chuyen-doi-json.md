@@ -5,11 +5,13 @@
 > **Cập nhật (15/07/2026)**: hệ thống import hiện kiểm tra `ma_danh_muc` theo **DanhMucDiem hiện hành**. Mọi dòng vi phạm/tích cực phải có mã đã tồn tại trong DanhMucDiem; chỉ dòng `loai=hoc_tap` mới được để `ma_danh_muc = null`.
 >
 > **Lưu ý nghiệp vụ**: học sinh/ban cán sự ghi nhận bằng mô tả tự do, không chọn từ dropdown. Vì vậy khi dùng AI web phải đính kèm hoặc dán **DanhMucDiem hiện hành trong app** để AI đối chiếu. Nếu mô tả thô chưa có danh mục phù hợp, AI phải giữ nguyên mô tả thô và đề xuất tạo danh mục mới, không tự bịa mã.
+>
+> **Lưu ý khớp tên học sinh**: phiếu giấy có thể ghi tên thiếu dấu, viết tắt, chỉ ghi tên gọi hoặc chữ viết tay khó đọc. Khi dùng AI web phải đính kèm/copy **danh sách HocSinh hiện hành của lớp** gồm tối thiểu `ma_hs`, họ tên, STT, tổ, diện để AI đối chiếu và trả đúng `ma_hs`.
 
 ## Cách dùng
 
 1. Chụp ảnh rõ nét phiếu ghi nhận (mẫu mới — 1 bảng duy nhất: STT, Họ tên, Tiết, Môn, Nội dung vi phạm, Nội dung thành tích).
-2. Mở Claude, đính kèm **ít nhất 3 thứ**: ảnh phiếu, **DanhMucDiem hiện hành trong app** (copy từ trang Danh mục hoặc xuất từ Sheet), và `hocsinh_seed.json` để khớp đúng họ tên học sinh. Có thể đính kèm thêm `bang-tra-cuu-ma-diem.md` để giải thích quy chế, nhưng mã cuối cùng phải theo DanhMucDiem hiện hành.
+2. Mở Claude, đính kèm **ít nhất 3 thứ**: ảnh phiếu, **DanhMucDiem hiện hành trong app** (copy từ trang Danh mục hoặc xuất từ Sheet), và **danh sách HocSinh hiện hành của lớp** (copy từ trang Học sinh/Sheet hoặc file `hocsinh_seed.json`) để khớp đúng `ma_hs`, họ tên, STT, tổ, diện. Có thể đính kèm thêm `bang-tra-cuu-ma-diem.md` để giải thích quy chế, nhưng mã cuối cùng phải theo DanhMucDiem hiện hành.
 3. Copy nguyên đoạn prompt bên dưới, dán vào khung chat, gửi đi.
 4. AI trả về JSON → đọc kỹ các dòng có tiền tố `[CẦN XÁC NHẬN...]`, kiểm tra mã/điểm số, rồi dán vào màn hình Import (chọn loại "Ghi nhận").
 
@@ -20,7 +22,8 @@
 ```
 Bạn hãy đọc ảnh phiếu ghi nhận học sinh tôi đính kèm (1 bảng duy nhất: STT, Họ tên, Tiết,
 Môn, Nội dung vi phạm, Nội dung thành tích — ghi tự do, KHÔNG có mã sẵn trên phiếu), bảng
-DanhMucDiem hiện hành trong app, bảng tra cứu mã nếu có, và danh sách lớp đầy đủ (hocsinh_seed.json), rồi:
+DanhMucDiem hiện hành trong app, bảng tra cứu mã nếu có, và danh sách HocSinh hiện hành đầy đủ của lớp
+(có `ma_hs`, họ tên, STT, tổ, diện; ví dụ copy từ trang Học sinh/Sheet hoặc hocsinh_seed.json), rồi:
 
 1. Với mỗi dòng có "Nội dung vi phạm": đọc mô tả, tự suy luận mã phù hợp nhất trong 4 nhóm
    CC (Chuyên cần) / VS (Vệ sinh) / NN (Nề nếp) / KL (Trật tự kỷ luật) theo đúng bảng tra cứu.
@@ -44,16 +47,20 @@ DanhMucDiem hiện hành trong app, bảng tra cứu mã nếu có, và danh sá
    đây KHÔNG PHẢI phạm vi tập thể cả lớp và KHÔNG PHẢI 1 dòng duy nhất — TÁCH THÀNH NHIỀU DÒNG
    CÁ NHÂN RIÊNG BIỆT, mỗi dòng đúng 1 học sinh, giữ nguyên nội dung/ngày/tiết/môn giống nhau.
 
-5. Tên trên phiếu đôi khi là viết tắt/biệt danh (VD "H.Phúc", "V.Anh", "P.Huy").
-   Đối chiếu với hocsinh_seed.json để suy luận đúng họ tên đầy đủ. Nếu suy luận ra được nhưng
-   không chắc chắn tuyệt đối, vẫn điền ho_ten là tên đầy đủ suy luận được, NHƯNG thêm tiền tố
-   "[CẦN XÁC NHẬN — lý do]" vào đầu noi_dung để giáo viên rà lại. Nếu không suy luận được,
-   để ho_ten giữ nguyên chữ trên phiếu, không bịa tên.
+5. Tên trên phiếu đôi khi là viết tắt/biệt danh/thiếu dấu/chữ viết tay khó đọc (VD "H.Phúc", "V.Anh",
+   "P.Huy", "phuc", "VA", chỉ ghi "Anh"). BẮT BUỘC đối chiếu với danh sách HocSinh hiện hành:
+   - Chuẩn hoá tên bằng cách bỏ dấu, bỏ khoảng trắng thừa, không phân biệt hoa/thường.
+   - So khớp họ tên đầy đủ, tên riêng, chữ cái đầu họ/tên đệm + tên, STT nếu phiếu có ghi, tổ nếu phiếu có gợi ý.
+   - Nếu chỉ có 1 ứng viên hợp lý, điền cả `ma_hs` và `ho_ten` đúng theo danh sách HocSinh.
+   - Nếu có 2 ứng viên trở lên hoặc độ chắc chắn thấp, chọn ứng viên hợp lý nhất, điền `ma_hs`/`ho_ten` của ứng viên đó,
+     nhưng thêm tiền tố "[CẦN XÁC NHẬN TÊN — tên trên phiếu: ..., ứng viên: ...]" vào đầu `noi_dung`.
+   - Nếu không suy luận được, để `ma_hs = null`, `ho_ten` giữ nguyên chữ trên phiếu, không bịa tên, và thêm tiền tố
+     "[CẦN XÁC NHẬN TÊN — không tìm thấy trong danh sách HocSinh]" vào `noi_dung`.
 
 6. Tự xác định phạm vi từng dòng:
    - Mô tả nhắc "cả lớp" / không có tên cụ thể nào → phạm vi TẬP THỂ: ho_ten = null, to_lien_quan = null.
    - Mô tả nhắc "tổ" kèm số → phạm vi TỔ TRỰC: ho_ten = null, điền to_lien_quan đúng số tổ.
-   - Có tên cụ thể (dù viết tắt) → phạm vi CÁ NHÂN: điền ho_ten theo bước 5.
+   - Có tên cụ thể (dù viết tắt) → phạm vi CÁ NHÂN: điền `ma_hs` và `ho_ten` theo bước 5.
 
 7. Không tạo mã ngoài DanhMucDiem/bảng tra cứu. Với vi phạm hoặc tích cực, cố gắng gán một mã đang tồn tại và đánh dấu
    `[CẦN XÁC NHẬN MÃ...]` nếu chưa chắc. Chỉ để `ma_danh_muc = null` khi `loai=hoc_tap` hoặc khi thật sự cần giáo viên
@@ -70,15 +77,15 @@ Trả về đúng cấu trúc JSON sau, không thêm chữ nào khác ngoài JSO
   "loai_du_lieu": "ghi_nhan",
   "ban_ghi": [
     {
-      "ma_hs": null,
-      "ho_ten": "<họ tên đầy đủ suy luận được, hoặc null nếu tập thể>",
+      "ma_hs": "<ma_hs đúng theo danh sách HocSinh nếu khớp chắc, hoặc null nếu tập thể/chưa chắc>",
+      "ho_ten": "<họ tên đầy đủ đúng theo danh sách HocSinh, hoặc chữ trên phiếu nếu chưa chắc, hoặc null nếu tập thể>",
       "to_lien_quan": "<số tổ nếu tổ trực, còn lại null>",
       "ngay": "<yyyy-mm-dd, lấy từ ô Ngày ghi nhận đầu phiếu>",
       "tiet": "<theo phiếu, null nếu trống>",
       "mon_hoc": "<theo phiếu, null nếu trống>",
       "loai": "<chuyen_can | ve_sinh | ne_nep | trat_tu_ky_luat | hoc_tap | khen_thuong>",
       "ma_danh_muc": "<mã đang tồn tại trong DanhMucDiem — chỉ null nếu loai=hoc_tap hoặc cần tạo danh mục trước khi import>",
-      "noi_dung": "<mô tả gốc, thêm tiền tố [CẦN XÁC NHẬN...] nếu tên là suy luận không chắc>",
+      "noi_dung": "<mô tả gốc, thêm tiền tố [CẦN XÁC NHẬN TÊN...] nếu tên là suy luận không chắc>",
       "so_lan": 1,
       "ly_do": null,
       "da_xu_ly": null,
@@ -105,7 +112,8 @@ Trả về đúng cấu trúc JSON sau, không thêm chữ nào khác ngoài JSO
 
 ## Sau khi có JSON
 
-- Đọc kỹ mọi dòng có tiền tố `[CẦN XÁC NHẬN...]` trong `noi_dung` — đây là chỗ AI không chắc 100% tên, cần xác nhận thủ công trước khi import.
+- Đọc kỹ mọi dòng có tiền tố `[CẦN XÁC NHẬN TÊN...]` hoặc `[CẦN XÁC NHẬN...]` trong `noi_dung` — đây là chỗ AI không chắc 100% học sinh/danh mục, cần xác nhận thủ công trước khi import.
+- Kiểm tra cột `ma_hs`/`ho_ten`: nếu AI báo nhiều ứng viên hoặc không tìm thấy trong danh sách HocSinh, cần sửa lại `ma_hs` hoặc `ho_ten` trước khi import để tránh gán nhầm học sinh.
 - Đọc lướt cột `ma_danh_muc` — dòng nào `null` mà không phải `loai=hoc_tap` sẽ bị Import chặn; xem `de_xuat_danh_muc`, tạo danh mục trong app hoặc chọn lại mã có sẵn trước khi import.
 - Nếu JSON có `de_xuat_danh_muc`: tạo/sửa danh mục trong trang Danh mục trước, sau đó thay `ma_danh_muc=null` trong `ban_ghi` bằng mã đã tạo rồi mới import.
 - Nếu có dòng "thành tích kèm điểm số" — xác nhận JSON trả về **2 dòng riêng**: 1 `khen_thuong` không có `diem_so_mon`, và 1 `hoc_tap` có `diem_so_mon`.

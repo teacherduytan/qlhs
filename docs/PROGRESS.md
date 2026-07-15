@@ -118,6 +118,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C085 | ✅ Xong | 15/07/2026 | Tạo nhanh danh mục từ đề xuất AI ngay trong màn hình Import |
 | C086 | ✅ Xong | 15/07/2026 | Chuẩn hoá luồng tạo mới bằng modal và wizard |
 | C087 | ✅ Xong | 15/07/2026 | Tự sinh mã danh mục không trùng theo nhóm |
+| C088 | ✅ Xong | 15/07/2026 | Cập nhật prompt: cung cấp danh sách học sinh để AI khớp tên viết tay/viết tắt |
 
 ---
 
