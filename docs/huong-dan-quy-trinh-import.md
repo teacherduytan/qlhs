@@ -84,6 +84,17 @@ Schema mỗi object:
 
 **Mẹo:** đính kèm file `du-lieu-mau/hocsinh_seed.json` (hoặc danh sách tên lớp) để Claude khớp `ma_hs` chính xác.
 
+### Nếu JSON có `ma_hs = null`
+
+Khi import `GhiNhan`, app xử lý `ma_hs = null` theo các trường hợp sau:
+
+- Nếu dòng có `ho_ten`: Apps Script thử khớp chính xác `ho_ten` với tab `HocSinh` theo họ + tên đã chuẩn hoá. Khớp đúng 1 học sinh thì tự điền `ma_hs` trước khi lưu.
+- Nếu `ho_ten` không khớp học sinh nào hoặc khớp nhiều học sinh trùng tên: dòng đó bị lỗi, không ghi vào `GhiNhan`; lần import được ghi log lỗi trong `NhatKyImport`, các dòng hợp lệ khác vẫn tiếp tục.
+- Nếu danh mục có phạm vi `tap_the` hoặc `to_truc`: `ma_hs` được giữ là `null`, hệ thống đặt `trang_thai_xu_ly_tap_the = chua_xu_ly` để giáo viên xử lý/gán sau nếu cần.
+- Nếu là dòng cá nhân nhưng thiếu cả `ma_hs` lẫn `ho_ten`: dòng không đủ định danh để gắn vào hồ sơ học sinh. Backend hiện không tự đoán trong trường hợp này; nếu mã danh mục hợp lệ, dòng có thể trở thành ghi nhận không gắn học sinh, nên phải sửa trước khi import hoặc để prompt AI đánh dấu `[CẦN XÁC NHẬN TÊN...]`.
+
+Vì vậy prompt mới vẫn yêu cầu AI điền `ma_hs` khi đã khớp chắc. Cơ chế tự khớp bằng `ho_ten` chỉ là lớp dự phòng và chỉ khớp chính xác, không tự đoán viết tắt.
+
 ---
 
 ## Bước 4 — Kiểm tra JSON trước khi import

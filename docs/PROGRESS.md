@@ -122,6 +122,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C089 | ✅ Xong | 15/07/2026 | Cập nhật prompt: AI đọc ngữ cảnh phiếu viết tay không đúng cấu trúc |
 | C090 | ✅ Xong | 15/07/2026 | Cập nhật prompt: bắt AI tự kiểm tra mã danh mục và mã học sinh trước khi xuất JSON |
 | C091 | ✅ Xong | 15/07/2026 | Đồng bộ bản prompt cũ trong docs với bản chuẩn ở du-lieu-mau để tránh lấy nhầm |
+| C092 | ✅ Xong | 15/07/2026 | Làm rõ cách import xử lý dòng JSON có ma_hs null |
 
 ---
 
