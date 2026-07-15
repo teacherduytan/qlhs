@@ -6,6 +6,8 @@
 >
 > **Cập nhật (15/07/2026)**: hệ thống import hiện kiểm tra `ma_danh_muc` theo **DanhMucDiem hiện hành**. Mọi dòng vi phạm/tích cực phải có mã đã tồn tại trong DanhMucDiem; chỉ dòng `loai=hoc_tap` mới được để `ma_danh_muc = null`.
 >
+> **Cập nhật danh mục Nề nếp (15/07/2026)**: nội dung "không mang dụng cụ học tập" / "quên máy tính" chỉ được gán vào **mã duy nhất còn tồn tại trong DanhMucDiem hiện hành**. Không dùng lại `NN08` hoặc `NN09` cho nội dung này vì đây là 2 mã trùng ý nghĩa đã được xoá khỏi app.
+>
 > **Lưu ý nghiệp vụ**: học sinh/ban cán sự ghi nhận bằng mô tả tự do, không chọn từ dropdown. Vì vậy khi dùng AI web phải đính kèm hoặc dán **DanhMucDiem hiện hành trong app** để AI đối chiếu. Nếu mô tả thô chưa có danh mục phù hợp, AI phải giữ nguyên mô tả thô và đề xuất tạo danh mục mới, không tự bịa mã.
 >
 > **Lưu ý khớp tên học sinh**: phiếu giấy có thể ghi tên thiếu dấu, viết tắt, chỉ ghi tên gọi hoặc chữ viết tay khó đọc. Khi dùng AI web phải đính kèm/copy **danh sách HocSinh hiện hành của lớp** gồm tối thiểu `ma_hs`, họ tên, STT, tổ, diện để AI đối chiếu và chuẩn hoá `ho_ten`. `ma_hs` là mã nội bộ do app quản lý; nếu không chắc tuyệt đối thì để `ma_hs = null`, màn Import sẽ gắn học sinh hoặc tạo học sinh mới với mã tự sinh không trùng.
@@ -91,8 +93,9 @@ DanhMucDiem hiện hành trong app, bảng tra cứu mã nếu có, và danh sá
      hoặc `khen_thuong`, trừ khi cùng lúc đã thêm mục phù hợp trong `de_xuat_danh_muc` và `noi_dung` có tiền tố
      "[CẦN TẠO DANH MỤC — lý do]".
    - Nếu nội dung là "không mang dụng cụ học tập", "quên máy tính", "không mang máy tính" hoặc nghĩa tương tự:
-     trước hết tìm mã phù hợp trong DanhMucDiem hiện hành. Nếu chưa có mã phù hợp, đề xuất tạo danh mục mới với
-     `nhom_goi_y = "NN"`, `ten_muc_goi_y` gần với "Không mang dụng cụ học tập", `diem_goi_y = -1`,
+     trước hết tìm **mã duy nhất còn tồn tại** cho nội dung này trong DanhMucDiem hiện hành. Không dùng `NN08`
+     hoặc `NN09` vì 2 mã này đã bị xoá khỏi app do trùng ý nghĩa. Nếu chưa có mã phù hợp, đề xuất tạo danh mục
+     mới với `nhom_goi_y = "NN"`, `ten_muc_goi_y` gần với "Không mang dụng cụ học tập", `diem_goi_y = -1`,
      `pham_vi_goi_y = "ca_nhan"`, và giữ `ma_danh_muc = null` trong `ban_ghi` chỉ để Import cho giáo viên tạo mã.
    - Nếu là dòng cá nhân thì bắt buộc có `ho_ten` đủ rõ; `ma_hs` có thể null để app Import gắn/tạo học sinh bằng mã tự sinh.
    - Nếu một dòng cá nhân vẫn có `ma_hs = null` vì tên chưa chắc, `noi_dung` phải có tiền tố `[CẦN XÁC NHẬN TÊN...]`.
