@@ -11,7 +11,7 @@ var API_CONFIG = {
   IMPORT_SUBDIR: 'nhat-ky-nhap-lieu',
 };
 
-var API_VERSION = 'C078-2026-07-14';
+var API_VERSION = 'C082-2026-07-15';
 
 var SHEET_TABS = {
   HocSinh: 'HocSinh',
@@ -53,6 +53,7 @@ function doGet(e) {
             add_records: true,
             delete_record: true,
             point_catalog_crud: true,
+            import_requires_catalog_match: true,
             teacher_login_get: true,
             teacher_session: true,
           },
@@ -642,7 +643,15 @@ function prepareImportRow_(loai, row, maLog) {
 
 function prepareGhiNhanImportRow_(row, maLog) {
   var enriched = Object.assign({}, row);
-  var catalogItem = enriched.ma_danh_muc ? findByKey_(SHEET_TABS.DanhMucDiem, 'ma_danh_muc', enriched.ma_danh_muc) : null;
+  var catalogCode = String(enriched.ma_danh_muc || '').trim().toUpperCase();
+  var catalogItem = null;
+  if (catalogCode) {
+    enriched.ma_danh_muc = catalogCode;
+    catalogItem = findCatalogItemByCode_(catalogCode);
+    if (!catalogItem) {
+      throw new Error('ma_danh_muc khong ton tai trong DanhMucDiem: ' + catalogCode);
+    }
+  }
   var student = null;
 
   if (!enriched.ma_hs && enriched.ho_ten) {
@@ -667,8 +676,14 @@ function prepareGhiNhanImportRow_(row, maLog) {
     }
   }
 
-  if (catalogItem && (enriched.diem_cong_tru === undefined || enriched.diem_cong_tru === null || enriched.diem_cong_tru === '')) {
+  if (catalogItem) {
+    enriched.loai = getRecordTypeForCatalogGroup_(catalogItem.nhom);
+    enriched.noi_dung = enriched.noi_dung || catalogItem.ten_muc;
     enriched.diem_cong_tru = catalogItem.diem;
+  }
+
+  if (!catalogItem && enriched.loai !== 'hoc_tap') {
+    throw new Error('GhiNhan import can ma_danh_muc hop le trong DanhMucDiem, tru dong loai=hoc_tap.');
   }
 
   if (enriched.loai !== 'hoc_tap' && !isBlank_(enriched.diem_so_mon)) {
@@ -824,6 +839,15 @@ function isBlank_(value) {
 function findByKey_(tabName, keyField, keyValue) {
   return getSheetObjects_(tabName).filter(function (row) {
     return String(row[keyField] || '') === String(keyValue || '');
+  })[0] || null;
+}
+
+function findCatalogItemByCode_(maDanhMuc) {
+  var code = String(maDanhMuc || '').trim().toUpperCase();
+  if (!code) return null;
+
+  return getSheetObjects_(SHEET_TABS.DanhMucDiem).filter(function (row) {
+    return String(row.ma_danh_muc || '').trim().toUpperCase() === code;
   })[0] || null;
 }
 

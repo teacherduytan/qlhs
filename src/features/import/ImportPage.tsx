@@ -1,6 +1,6 @@
 import { type ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { dataSource } from '../../data/client'
-import type { ImportResult, LoaiDuLieuImport, NhatKyImport, TrangThaiImport } from '../../data/types'
+import type { DanhMucDiem, ImportResult, LoaiDuLieuImport, NhatKyImport, TrangThaiImport } from '../../data/types'
 
 type ParseState =
   | { status: 'empty' }
@@ -15,6 +15,7 @@ const IMPORT_OPTIONS: Array<{ value: LoaiDuLieuImport; label: string }> = [
 ]
 
 const PREVIEW_LIMIT = 8
+const ISSUE_PREVIEW_LIMIT = 10
 
 const STATUS_LABELS: Record<TrangThaiImport, string> = {
   thanh_cong: 'Thành công',
@@ -36,6 +37,9 @@ export function ImportPage() {
   const [logsError, setLogsError] = useState<string | null>(null)
   const [deletingLog, setDeletingLog] = useState<string | null>(null)
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
+  const [pointCatalog, setPointCatalog] = useState<DanhMucDiem[]>([])
+  const [catalogLoading, setCatalogLoading] = useState(false)
+  const [catalogError, setCatalogError] = useState<string | null>(null)
 
   const parseState = useMemo(() => parseJsonRows(jsonText), [jsonText])
   const previewColumns = useMemo(() => {
@@ -49,10 +53,33 @@ export function ImportPage() {
     () => [...importLogs].sort((a, b) => sortDateDesc(a.thoi_gian, b.thoi_gian)),
     [importLogs],
   )
+  const catalogCheck = useMemo(() => {
+    if (loai !== 'ghi_nhan' || parseState.status !== 'valid') {
+      return EMPTY_CATALOG_CHECK
+    }
+
+    return checkRecordCatalogLinks(parseState.rows, pointCatalog)
+  }, [loai, parseState, pointCatalog])
+  const hasCatalogBlockingError =
+    loai === 'ghi_nhan' && (catalogLoading || Boolean(catalogError) || catalogCheck.errors.length > 0)
 
   useEffect(() => {
     void loadImportLogs()
+    void loadPointCatalog()
   }, [])
+
+  async function loadPointCatalog() {
+    setCatalogLoading(true)
+    setCatalogError(null)
+
+    try {
+      setPointCatalog(await dataSource.getPointCatalog())
+    } catch (error) {
+      setCatalogError(error instanceof Error ? error.message : 'Không tải được DanhMucDiem để kiểm tra mã import.')
+    } finally {
+      setCatalogLoading(false)
+    }
+  }
 
   async function loadImportLogs() {
     setLogsLoading(true)
@@ -83,6 +110,11 @@ export function ImportPage() {
   async function submitImport() {
     if (parseState.status !== 'valid' || parseState.rows.length === 0) {
       setSubmitError('JSON cần là một array có ít nhất 1 dòng object.')
+      return
+    }
+
+    if (hasCatalogBlockingError) {
+      setSubmitError('Cần sửa các lỗi liên kết DanhMucDiem trước khi import GhiNhan.')
       return
     }
 
@@ -254,6 +286,45 @@ export function ImportPage() {
         </div>
       ) : null}
 
+      {loai === 'ghi_nhan' && parseState.status === 'valid' ? (
+        <div
+          className={`rounded-lg border p-4 text-sm ${
+            catalogCheck.errors.length
+              ? 'border-red-200 bg-red-50 text-red-900'
+              : catalogCheck.warnings.length || catalogError
+                ? 'border-amber-200 bg-amber-50 text-amber-900'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+          }`}
+        >
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-base font-bold">Kiểm tra liên kết DanhMucDiem</h3>
+            <button
+              type="button"
+              onClick={() => void loadPointCatalog()}
+              disabled={catalogLoading}
+              className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+            >
+              {catalogLoading ? 'Đang tải...' : 'Tải lại danh mục'}
+            </button>
+          </div>
+
+          <p className="mt-2">
+            {catalogCheck.linkedCount} dòng có mã khớp danh mục hiện hành
+            {catalogCheck.studyCount ? `, ${catalogCheck.studyCount} dòng điểm học tập không dùng mã` : ''}.
+          </p>
+
+          {catalogError ? <p className="mt-2 font-semibold">{catalogError}</p> : null}
+
+          {catalogCheck.errors.length ? (
+            <IssueList title="Cần sửa trước khi import" items={catalogCheck.errors} />
+          ) : null}
+
+          {catalogCheck.warnings.length ? (
+            <IssueList title="Cảnh báo" items={catalogCheck.warnings} />
+          ) : null}
+        </div>
+      ) : null}
+
       {submitError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           {submitError}
@@ -275,7 +346,7 @@ export function ImportPage() {
         <button
           type="button"
           onClick={() => void submitImport()}
-          disabled={submitting || parseState.status !== 'valid' || parseState.rows.length === 0}
+          disabled={submitting || parseState.status !== 'valid' || parseState.rows.length === 0 || hasCatalogBlockingError}
           className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
           {submitting ? 'Đang import...' : 'Xác nhận import'}
@@ -398,6 +469,76 @@ export function ImportPage() {
   )
 }
 
+type CatalogCheck = {
+  errors: string[]
+  linkedCount: number
+  studyCount: number
+  warnings: string[]
+}
+
+const EMPTY_CATALOG_CHECK: CatalogCheck = {
+  errors: [],
+  linkedCount: 0,
+  studyCount: 0,
+  warnings: [],
+}
+
+function IssueList({ items, title }: { items: string[]; title: string }) {
+  return (
+    <div className="mt-3">
+      <p className="font-bold">{title}</p>
+      <ul className="mt-1 list-disc space-y-1 pl-5">
+        {items.slice(0, ISSUE_PREVIEW_LIMIT).map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+      {items.length > ISSUE_PREVIEW_LIMIT ? (
+        <p className="mt-1 text-xs font-semibold">Còn {items.length - ISSUE_PREVIEW_LIMIT} dòng khác.</p>
+      ) : null}
+    </div>
+  )
+}
+
+function checkRecordCatalogLinks(rows: Record<string, unknown>[], catalog: DanhMucDiem[]): CatalogCheck {
+  const catalogByCode = new Map(
+    catalog.map((item) => [String(item.ma_danh_muc || '').trim().toUpperCase(), item]),
+  )
+  const result: CatalogCheck = { errors: [], linkedCount: 0, studyCount: 0, warnings: [] }
+
+  rows.forEach((row, index) => {
+    const rowNumber = index + 1
+    const code = toText(row.ma_danh_muc).trim().toUpperCase()
+    const type = toText(row.loai).trim()
+
+    if (code) {
+      const catalogItem = catalogByCode.get(code)
+      if (!catalogItem) {
+        result.errors.push(`Dòng ${rowNumber}: ma_danh_muc "${code}" chưa có trong DanhMucDiem.`)
+        return
+      }
+
+      result.linkedCount += 1
+      if (type === 'hoc_tap') {
+        result.warnings.push(
+          `Dòng ${rowNumber}: có ma_danh_muc "${code}" nên loại/điểm sẽ lấy theo DanhMucDiem, không giữ loai=hoc_tap.`,
+        )
+      }
+      return
+    }
+
+    if (type === 'hoc_tap') {
+      result.studyCount += 1
+      return
+    }
+
+    result.errors.push(
+      `Dòng ${rowNumber}: thiếu ma_danh_muc. Chỉ dòng loai=hoc_tap mới được import không có mã danh mục.`,
+    )
+  })
+
+  return result
+}
+
 function parseJsonRows(jsonText: string): ParseState {
   const trimmed = jsonText.trim()
   if (!trimmed) {
@@ -442,6 +583,10 @@ function collectPreviewColumns(rows: Record<string, unknown>[]): string[] {
   })
 
   return Array.from(columns).slice(0, 10)
+}
+
+function toText(value: unknown): string {
+  return value === null || value === undefined ? '' : String(value)
 }
 
 function formatCell(value: unknown): string {
