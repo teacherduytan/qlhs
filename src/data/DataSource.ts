@@ -3,6 +3,7 @@ import type {
   CauHinhTuan,
   DeleteImportResult,
   DanhMucDiem,
+  DanhMucXuLy,
   GhiNhan,
   HocSinh,
   ImportResult,
@@ -44,6 +45,10 @@ export interface DataSource {
     item: Partial<DanhMucDiem>,
   ): Promise<DanhMucDiem>
   deletePointCatalogItem(maDanhMuc: string): Promise<void>
+  getHandlingCatalog(): Promise<DanhMucXuLy[]>
+  addHandlingCatalogItem(item: DanhMucXuLy): Promise<DanhMucXuLy>
+  updateHandlingCatalogItem(maXuLy: string, item: Partial<DanhMucXuLy>): Promise<DanhMucXuLy>
+  deleteHandlingCatalogItem(maXuLy: string): Promise<void>
   getWeekConfig(): Promise<CauHinhTuan[]>
   getBanCanSu(): Promise<BanCanSu[]>
   getPhuHuynh(maHs?: string): Promise<PhuHuynh[]>

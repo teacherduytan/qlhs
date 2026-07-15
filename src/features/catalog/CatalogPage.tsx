@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { DanhMucDiem, GhiNhan, HocSinh, NhomDiem, PhamViDanhMuc } from '../../data/types'
+import type { DanhMucDiem, DanhMucXuLy, GhiNhan, HocSinh, NhomDiem, PhamViDanhMuc } from '../../data/types'
 import { getBadgeClassForCatalog } from '../scoring/scoreStyles'
 
 type CatalogForm = {
@@ -13,6 +13,7 @@ type CatalogForm = {
   pham_vi: PhamViDanhMuc
   mo_ta: string
   de_xuat_xu_ly: string
+  ma_xu_ly_de_xuat: string
 }
 
 type CatalogSortKey = 'code_asc' | 'group_asc' | 'name_asc' | 'score_asc' | 'score_desc'
@@ -41,6 +42,7 @@ const EMPTY_FORM: CatalogForm = {
   pham_vi: 'ca_nhan',
   mo_ta: '',
   de_xuat_xu_ly: '',
+  ma_xu_ly_de_xuat: '',
 }
 
 const inputClass =
@@ -52,6 +54,7 @@ const selectClass =
 export function CatalogPage() {
   const [searchParams] = useSearchParams()
   const [catalog, setCatalog] = useState<DanhMucDiem[]>([])
+  const [handlingCatalog, setHandlingCatalog] = useState<DanhMucXuLy[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -63,6 +66,7 @@ export function CatalogPage() {
   const [form, setForm] = useState<CatalogForm>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [creatingHandling, setCreatingHandling] = useState(false)
   const [deletingCode, setDeletingCode] = useState<string | null>(null)
   const [students, setStudents] = useState<HocSinh[]>([])
   const [records, setRecords] = useState<GhiNhan[]>([])
@@ -75,12 +79,18 @@ export function CatalogPage() {
   useEffect(() => {
     let active = true
 
-    Promise.all([dataSource.getPointCatalog(), dataSource.getRecords(), dataSource.getStudents()])
-      .then(([catalogRows, recordRows, studentRows]) => {
+    Promise.all([
+      dataSource.getPointCatalog(),
+      dataSource.getRecords(),
+      dataSource.getStudents(),
+      dataSource.getHandlingCatalog(),
+    ])
+      .then(([catalogRows, recordRows, studentRows, handlingRows]) => {
         if (!active) return
         setCatalog(catalogRows)
         setRecords(recordRows)
         setStudents(studentRows)
+        setHandlingCatalog(handlingRows)
         setLoadError(null)
       })
       .catch((error) => {
@@ -248,6 +258,7 @@ export function CatalogPage() {
       pham_vi: item.pham_vi,
       mo_ta: item.mo_ta || '',
       de_xuat_xu_ly: item.de_xuat_xu_ly || '',
+      ma_xu_ly_de_xuat: item.ma_xu_ly_de_xuat || '',
     })
     setSaveError(null)
   }
@@ -272,6 +283,34 @@ export function CatalogPage() {
       ...current,
       de_xuat_xu_ly: suggestCatalogHandling(current),
     }))
+  }
+
+  async function createHandlingFromForm() {
+    const content = form.de_xuat_xu_ly.trim()
+    if (!content) {
+      setSaveError('Cần có nội dung đề xuất xử lý/phạt trước khi tạo mã xử lý.')
+      return
+    }
+
+    const item: DanhMucXuLy = {
+      ma_xu_ly: nextHandlingCode(handlingCatalog),
+      ten_xu_ly: `Xử lý: ${form.ten_muc.trim() || form.ma_danh_muc || 'danh mục mới'}`,
+      noi_dung_xu_ly: content,
+      muc_do: inferHandlingLevel(form),
+      ghi_chu: form.ten_muc.trim() ? `Tạo từ danh mục ${form.ten_muc.trim()}` : 'Tạo từ form danh mục',
+    }
+
+    setCreatingHandling(true)
+    setSaveError(null)
+    try {
+      const created = await dataSource.addHandlingCatalogItem(item)
+      setHandlingCatalog((current) => [...current, created].sort(compareHandlingItems))
+      setForm((current) => ({ ...current, ma_xu_ly_de_xuat: created.ma_xu_ly }))
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Không tạo được mã xử lý/phạt.')
+    } finally {
+      setCreatingHandling(false)
+    }
   }
 
   async function saveCatalogItem(event: FormEvent<HTMLFormElement>) {
@@ -457,6 +496,49 @@ export function CatalogPage() {
           <StatBox label="Tích cực" value={stats.positive} tone="emerald" />
           <StatBox label="Vi phạm" value={stats.violation} tone="red" />
           <StatBox label="Theo dõi" value={stats.neutral} tone="amber" />
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+        <div className="flex flex-col gap-1">
+          <p className="text-xs font-semibold uppercase text-indigo-700">DanhMucXuLy</p>
+          <h3 className="text-base font-bold text-slate-900">Danh mục đề xuất xử lý/phạt</h3>
+          <p className="text-sm text-slate-600">
+            Các mã này được gắn vào DanhMucDiem để tái sử dụng cùng một cách xử lý cho nhiều loại vi phạm.
+          </p>
+        </div>
+
+        <div className="mt-3 overflow-x-auto rounded-lg border border-indigo-200 bg-white">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-indigo-100 text-left text-xs font-semibold uppercase text-indigo-900">
+              <tr>
+                <th className="px-3 py-2">Mã</th>
+                <th className="px-3 py-2">Tên xử lý</th>
+                <th className="px-3 py-2">Mức</th>
+                <th className="px-3 py-2">Nội dung</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {handlingCatalog.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-3 py-4 text-center text-slate-500">
+                    Chưa có mã xử lý/phạt. Mở thêm/sửa danh mục và bấm "Tạo mã xử lý" để tạo mã đầu tiên.
+                  </td>
+                </tr>
+              ) : (
+                [...handlingCatalog].sort(compareHandlingItems).map((item) => (
+                  <tr key={item.ma_xu_ly} className="align-top">
+                    <td className="px-3 py-2 font-mono font-bold text-indigo-800">{item.ma_xu_ly}</td>
+                    <td className="px-3 py-2 font-semibold text-slate-900">{item.ten_xu_ly}</td>
+                    <td className="px-3 py-2 text-slate-700">{labelHandlingLevel(item.muc_do)}</td>
+                    <td className="max-w-xl whitespace-pre-line px-3 py-2 text-slate-700">
+                      {item.noi_dung_xu_ly}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -711,6 +793,46 @@ export function CatalogPage() {
                 </label>
               </div>
 
+              <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+                <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                  <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                    Mã xử lý/phạt liên kết
+                    <select
+                      value={form.ma_xu_ly_de_xuat}
+                      onChange={(event) =>
+                        setForm((current) => ({ ...current, ma_xu_ly_de_xuat: event.target.value }))
+                      }
+                      className={selectClass}
+                    >
+                      <option value="">Chưa chọn mã xử lý</option>
+                      {[...handlingCatalog].sort(compareHandlingItems).map((item) => (
+                        <option key={item.ma_xu_ly} value={item.ma_xu_ly}>
+                          {item.ma_xu_ly} - {item.ten_xu_ly}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void createHandlingFromForm()}
+                    disabled={creatingHandling || !form.de_xuat_xu_ly.trim()}
+                    className="h-10 rounded-md bg-indigo-700 px-3 text-sm font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {creatingHandling ? 'Đang tạo...' : 'Tạo mã xử lý'}
+                  </button>
+                </div>
+
+                {form.ma_xu_ly_de_xuat ? (
+                  <p className="mt-2 text-xs text-indigo-900">
+                    Đang liên kết với mã {form.ma_xu_ly_de_xuat}. Nội dung text ở ô trên vẫn được giữ để đọc nhanh.
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs text-indigo-900">
+                    Có thể chọn mã đã có hoặc tạo mã mới từ nội dung AI/gợi ý xử lý hiện tại.
+                  </p>
+                )}
+              </div>
+
               <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-amber-900">
@@ -876,6 +998,14 @@ export function CatalogPage() {
                       {item.de_xuat_xu_ly ? (
                         <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
                           <span className="font-semibold">Đề xuất xử lý:</span> {item.de_xuat_xu_ly}
+                        </p>
+                      ) : null}
+                      {item.ma_xu_ly_de_xuat ? (
+                        <p className="mt-2 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs text-indigo-900">
+                          <span className="font-semibold">Mã xử lý:</span> {item.ma_xu_ly_de_xuat}
+                          {getHandlingTitle(item.ma_xu_ly_de_xuat, handlingCatalog)
+                            ? ` - ${getHandlingTitle(item.ma_xu_ly_de_xuat, handlingCatalog)}`
+                            : ''}
                         </p>
                       ) : null}
                     </td>
@@ -1197,7 +1327,49 @@ function formToCatalogItem(form: CatalogForm, fixedCode: string | null): DanhMuc
     pham_vi: form.pham_vi,
     mo_ta: form.mo_ta.trim() || null,
     de_xuat_xu_ly: form.de_xuat_xu_ly.trim() || null,
+    ma_xu_ly_de_xuat: form.ma_xu_ly_de_xuat.trim() || null,
   }
+}
+
+function nextHandlingCode(catalog: DanhMucXuLy[]): string {
+  const existingCodes = new Set(catalog.map((item) => item.ma_xu_ly.trim().toUpperCase()))
+  const maxNumber = catalog.reduce((max, item) => {
+    const code = item.ma_xu_ly.trim().toUpperCase()
+    const match = code.match(/^XL(\d+)$/)
+    return match ? Math.max(max, Number(match[1])) : max
+  }, 0)
+
+  let nextNumber = maxNumber + 1
+  let candidate = `XL${String(nextNumber).padStart(2, '0')}`
+  while (existingCodes.has(candidate)) {
+    nextNumber += 1
+    candidate = `XL${String(nextNumber).padStart(2, '0')}`
+  }
+
+  return candidate
+}
+
+function inferHandlingLevel(form: CatalogForm): DanhMucXuLy['muc_do'] {
+  const point = Number(form.diem)
+  if (point > 0 || form.nhom === 'KT') return 'tich_cuc'
+  if (form.nghiem_trong || point <= -10) return 'nang'
+  if (point <= -5) return 'vua'
+  return 'nhe'
+}
+
+function compareHandlingItems(left: DanhMucXuLy, right: DanhMucXuLy): number {
+  return left.ma_xu_ly.localeCompare(right.ma_xu_ly)
+}
+
+function labelHandlingLevel(value: DanhMucXuLy['muc_do']): string {
+  if (value === 'nhe') return 'Nhẹ'
+  if (value === 'nang') return 'Nặng'
+  if (value === 'tich_cuc') return 'Tích cực'
+  return 'Vừa'
+}
+
+function getHandlingTitle(code: string, catalog: DanhMucXuLy[]): string {
+  return catalog.find((item) => item.ma_xu_ly === code)?.ten_xu_ly || ''
 }
 
 function suggestCatalogHandling(form: CatalogForm): string {

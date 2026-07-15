@@ -2,6 +2,7 @@ import { type ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { dataSource } from '../../data/client'
 import type {
   DanhMucDiem,
+  DanhMucXuLy,
   DienHocSinh,
   HocSinh,
   ImportResult,
@@ -25,6 +26,9 @@ type CatalogSuggestion = {
   mo_ta_tho: string
   ly_do_can_tao: string
   ma_goi_y: string | null
+  ma_xu_ly_goi_y: string | null
+  mo_ta: string
+  de_xuat_xu_ly: string
 }
 
 type CatalogSuggestionForm = {
@@ -39,6 +43,7 @@ type CatalogSuggestionForm = {
   ly_do_can_tao: string
   mo_ta: string
   de_xuat_xu_ly: string
+  ma_xu_ly_de_xuat: string
 }
 
 type SimilarCatalogMatch = {
@@ -62,6 +67,7 @@ type MissingCatalogForm = {
   pham_vi: PhamViDanhMuc
   mo_ta: string
   de_xuat_xu_ly: string
+  ma_xu_ly_de_xuat: string
   rowIndexes: number[]
   sampleContent: string
 }
@@ -143,6 +149,7 @@ export function ImportPage() {
   const [deletingLog, setDeletingLog] = useState<string | null>(null)
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
   const [pointCatalog, setPointCatalog] = useState<DanhMucDiem[]>([])
+  const [handlingCatalog, setHandlingCatalog] = useState<DanhMucXuLy[]>([])
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [students, setStudents] = useState<HocSinh[]>([])
@@ -158,6 +165,8 @@ export function ImportPage() {
   const [activeMissingCatalogCode, setActiveMissingCatalogCode] = useState<string | null>(null)
   const [creatingMissingCatalogCode, setCreatingMissingCatalogCode] = useState<string | null>(null)
   const [catalogFixMessage, setCatalogFixMessage] = useState<string | null>(null)
+  const [creatingHandlingForSuggestion, setCreatingHandlingForSuggestion] = useState<number | null>(null)
+  const [creatingHandlingForMissingCode, setCreatingHandlingForMissingCode] = useState<string | null>(null)
   const [studentMessage, setStudentMessage] = useState<string | null>(null)
   const [creatingStudent, setCreatingStudent] = useState(false)
   const [studentCreateForm, setStudentCreateForm] = useState<StudentCreateForm | null>(null)
@@ -299,7 +308,12 @@ export function ImportPage() {
     setCatalogError(null)
 
     try {
-      setPointCatalog(await dataSource.getPointCatalog())
+      const [pointRows, handlingRows] = await Promise.all([
+        dataSource.getPointCatalog(),
+        dataSource.getHandlingCatalog(),
+      ])
+      setPointCatalog(pointRows)
+      setHandlingCatalog(handlingRows)
     } catch (error) {
       setCatalogError(error instanceof Error ? error.message : 'Không tải được DanhMucDiem để kiểm tra mã import.')
     } finally {
@@ -420,6 +434,7 @@ export function ImportPage() {
   function closeMissingCatalogModal() {
     setActiveMissingCatalogCode(null)
     setCreatingMissingCatalogCode(null)
+    setCreatingHandlingForMissingCode(null)
   }
 
   function updateMissingCatalogForm(code: string, patch: Partial<MissingCatalogForm>) {
@@ -458,6 +473,7 @@ export function ImportPage() {
         pham_vi: form.pham_vi,
         mo_ta: form.mo_ta.trim() || null,
         de_xuat_xu_ly: form.de_xuat_xu_ly.trim() || null,
+        ma_xu_ly_de_xuat: form.ma_xu_ly_de_xuat.trim() || null,
       })
       setPointCatalog((current) => [...current, created].sort(compareCatalogItems))
       setCatalogFixMessage(`Da tao danh muc ${created.ma_danh_muc}. Cac dong dang dung ma nay se duoc kiem tra lai.`)
@@ -620,6 +636,7 @@ export function ImportPage() {
       pham_vi: form.pham_vi,
       mo_ta: form.mo_ta.trim() || null,
       de_xuat_xu_ly: form.de_xuat_xu_ly.trim() || null,
+      ma_xu_ly_de_xuat: form.ma_xu_ly_de_xuat.trim() || null,
     }
 
     setCreatingSuggestionIndex(form.sourceIndex)
@@ -662,6 +679,64 @@ export function ImportPage() {
     )
   }
 
+  async function createHandlingForSuggestion(form: CatalogSuggestionForm) {
+    const content = form.de_xuat_xu_ly.trim()
+    if (!content) {
+      setSuggestionError('Cần có nội dung đề xuất xử lý/phạt trước khi tạo mã xử lý.')
+      return
+    }
+
+    const item: DanhMucXuLy = {
+      ma_xu_ly: nextHandlingCode(handlingCatalog),
+      ten_xu_ly: `Xử lý: ${form.ten_muc.trim() || form.ma_danh_muc}`,
+      noi_dung_xu_ly: content,
+      muc_do: inferHandlingLevel(form.diem, form.nhom, form.nghiem_trong),
+      ghi_chu: `Tạo từ đề xuất AI cho danh mục ${form.ten_muc.trim() || form.ma_danh_muc}`,
+    }
+
+    setCreatingHandlingForSuggestion(form.sourceIndex)
+    setSuggestionError(null)
+    try {
+      const created = await dataSource.addHandlingCatalogItem(item)
+      setHandlingCatalog((current) => [...current, created].sort(compareHandlingItems))
+      updateSuggestionForm(form.sourceIndex, { ma_xu_ly_de_xuat: created.ma_xu_ly })
+      setSuggestionMessage(`Đã tạo mã xử lý ${created.ma_xu_ly} và gắn vào đề xuất danh mục.`)
+    } catch (error) {
+      setSuggestionError(error instanceof Error ? error.message : 'Không tạo được mã xử lý/phạt.')
+    } finally {
+      setCreatingHandlingForSuggestion(null)
+    }
+  }
+
+  async function createHandlingForMissingCatalog(form: MissingCatalogForm) {
+    const content = form.de_xuat_xu_ly.trim()
+    if (!content) {
+      setCatalogError('Can co noi dung de xuat xu ly/phat truoc khi tao ma xu ly.')
+      return
+    }
+
+    const item: DanhMucXuLy = {
+      ma_xu_ly: nextHandlingCode(handlingCatalog),
+      ten_xu_ly: `Xu ly: ${form.ten_muc.trim() || form.code}`,
+      noi_dung_xu_ly: content,
+      muc_do: inferHandlingLevel(form.diem, form.nhom, form.nghiem_trong),
+      ghi_chu: `Tao tu ma danh muc thieu ${form.code} trong Import`,
+    }
+
+    setCreatingHandlingForMissingCode(form.code)
+    setCatalogError(null)
+    try {
+      const created = await dataSource.addHandlingCatalogItem(item)
+      setHandlingCatalog((current) => [...current, created].sort(compareHandlingItems))
+      updateMissingCatalogForm(form.code, { ma_xu_ly_de_xuat: created.ma_xu_ly })
+      setCatalogFixMessage(`Da tao ma xu ly ${created.ma_xu_ly} va gan vao danh muc dang tao.`)
+    } catch (error) {
+      setCatalogError(error instanceof Error ? error.message : 'Khong tao duoc ma xu ly/phat.')
+    } finally {
+      setCreatingHandlingForMissingCode(null)
+    }
+  }
+
   function updateSuggestionForm(sourceIndex: number, patch: Partial<CatalogSuggestionForm>) {
     setSuggestionForms((current) =>
       current.map((form) => (form.sourceIndex === sourceIndex ? { ...form, ...patch } : form)),
@@ -688,6 +763,7 @@ export function ImportPage() {
     setActiveSuggestionIndex(null)
     setSuggestionStep(1)
     setSuggestionError(null)
+    setCreatingHandlingForSuggestion(null)
   }
 
   return (
@@ -1206,6 +1282,43 @@ export function ImportPage() {
                     />
                   </label>
 
+                  <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 md:col-span-2">
+                    <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                        Mã xử lý/phạt liên kết
+                        <select
+                          value={activeSuggestionForm.ma_xu_ly_de_xuat}
+                          onChange={(event) =>
+                            updateSuggestionForm(activeSuggestionForm.sourceIndex, {
+                              ma_xu_ly_de_xuat: event.target.value,
+                            })
+                          }
+                          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        >
+                          <option value="">Chưa chọn mã xử lý</option>
+                          {[...handlingCatalog].sort(compareHandlingItems).map((item) => (
+                            <option key={item.ma_xu_ly} value={item.ma_xu_ly}>
+                              {item.ma_xu_ly} - {item.ten_xu_ly}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => void createHandlingForSuggestion(activeSuggestionForm)}
+                        disabled={
+                          creatingHandlingForSuggestion === activeSuggestionForm.sourceIndex ||
+                          !activeSuggestionForm.de_xuat_xu_ly.trim()
+                        }
+                        className="inline-flex h-10 items-center justify-center rounded-md bg-indigo-700 px-3 text-sm font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      >
+                        {creatingHandlingForSuggestion === activeSuggestionForm.sourceIndex
+                          ? 'Đang tạo...'
+                          : 'Tạo mã xử lý'}
+                      </button>
+                    </div>
+                  </div>
+
                   {activeSuggestionSimilarMatches.length > 0 ? (
                     <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 md:col-span-2">
                       <div className="flex items-start justify-between gap-3">
@@ -1455,6 +1568,41 @@ export function ImportPage() {
                     className="min-h-24 resize-y rounded-md border border-slate-300 px-3 py-2 text-sm font-normal text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
                   />
                 </label>
+
+                <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 md:col-span-2">
+                  <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                      Ma xu ly/phat lien ket
+                      <select
+                        value={activeMissingCatalogForm.ma_xu_ly_de_xuat}
+                        onChange={(event) =>
+                          updateMissingCatalogForm(activeMissingCatalogForm.code, {
+                            ma_xu_ly_de_xuat: event.target.value,
+                          })
+                        }
+                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                      >
+                        <option value="">Chua chon ma xu ly</option>
+                        {[...handlingCatalog].sort(compareHandlingItems).map((item) => (
+                          <option key={item.ma_xu_ly} value={item.ma_xu_ly}>
+                            {item.ma_xu_ly} - {item.ten_xu_ly}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => void createHandlingForMissingCatalog(activeMissingCatalogForm)}
+                      disabled={
+                        creatingHandlingForMissingCode === activeMissingCatalogForm.code ||
+                        !activeMissingCatalogForm.de_xuat_xu_ly.trim()
+                      }
+                      className="inline-flex h-10 items-center justify-center rounded-md bg-indigo-700 px-3 text-sm font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                    >
+                      {creatingHandlingForMissingCode === activeMissingCatalogForm.code ? 'Dang tao...' : 'Tao ma xu ly'}
+                    </button>
+                  </div>
+                </div>
 
                 <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 md:col-span-2">
                   <p className="font-semibold text-slate-800">
@@ -1912,6 +2060,7 @@ function missingCatalogToForm(item: MissingCatalogItem): MissingCatalogForm {
     pham_vi: 'ca_nhan',
     mo_ta: content || item.sampleContent,
     de_xuat_xu_ly: suggestImportCatalogHandling(content || item.sampleContent, point),
+    ma_xu_ly_de_xuat: '',
     rowIndexes: [...item.rowIndexes],
     sampleContent: item.sampleContent,
   }
@@ -2212,6 +2361,9 @@ function normalizeCatalogSuggestion(row: Record<string, unknown>): CatalogSugges
     mo_ta_tho: toText(row.mo_ta_tho).trim(),
     ly_do_can_tao: toText(row.ly_do_can_tao).trim(),
     ma_goi_y: toText(row.ma_goi_y).trim() || null,
+    ma_xu_ly_goi_y: toText(row.ma_xu_ly_goi_y).trim() || null,
+    mo_ta: toText(row.mo_ta).trim(),
+    de_xuat_xu_ly: toText(row.de_xuat_xu_ly).trim(),
   }
 }
 
@@ -2236,11 +2388,12 @@ function suggestionToForm(
     pham_vi: toCatalogScope(suggestion.pham_vi_goi_y),
     mo_ta_tho: suggestion.mo_ta_tho,
     ly_do_can_tao: suggestion.ly_do_can_tao,
-    mo_ta: suggestion.mo_ta_tho,
-    de_xuat_xu_ly: suggestImportCatalogHandling(
+    mo_ta: suggestion.mo_ta || suggestion.mo_ta_tho,
+    de_xuat_xu_ly: suggestion.de_xuat_xu_ly || suggestImportCatalogHandling(
       suggestion.ten_muc_goi_y || suggestion.mo_ta_tho,
       toText(suggestion.diem_goi_y || (group === 'KT' ? 1 : -1)),
     ),
+    ma_xu_ly_de_xuat: normalizeHandlingCode(suggestion.ma_xu_ly_goi_y),
   }
 }
 
@@ -2264,6 +2417,10 @@ function normalizeCatalogCode(value: string | null): string {
   return toText(value).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '')
 }
 
+function normalizeHandlingCode(value: string | null): string {
+  return toText(value).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '')
+}
+
 function nextCodeForGroup(group: NhomDiem, catalog: DanhMucDiem[]): string {
   const existingCodes = new Set(catalog.map((item) => item.ma_danh_muc.trim().toUpperCase()))
   const maxNumber = catalog.reduce((max, item) => {
@@ -2281,6 +2438,39 @@ function nextCodeForGroup(group: NhomDiem, catalog: DanhMucDiem[]): string {
   }
 
   return candidate
+}
+
+function nextHandlingCode(catalog: DanhMucXuLy[]): string {
+  const existingCodes = new Set(catalog.map((item) => item.ma_xu_ly.trim().toUpperCase()))
+  const maxNumber = catalog.reduce((max, item) => {
+    const match = item.ma_xu_ly.trim().toUpperCase().match(/^XL(\d+)$/)
+    return match ? Math.max(max, Number(match[1])) : max
+  }, 0)
+
+  let nextNumber = maxNumber + 1
+  let candidate = `XL${String(nextNumber).padStart(2, '0')}`
+  while (existingCodes.has(candidate)) {
+    nextNumber += 1
+    candidate = `XL${String(nextNumber).padStart(2, '0')}`
+  }
+
+  return candidate
+}
+
+function inferHandlingLevel(
+  pointValue: string | number,
+  group: NhomDiem,
+  serious: boolean,
+): DanhMucXuLy['muc_do'] {
+  const point = Number(pointValue)
+  if (point > 0 || group === 'KT') return 'tich_cuc'
+  if (serious || point <= -10) return 'nang'
+  if (point <= -5) return 'vua'
+  return 'nhe'
+}
+
+function compareHandlingItems(left: DanhMucXuLy, right: DanhMucXuLy): number {
+  return left.ma_xu_ly.localeCompare(right.ma_xu_ly)
 }
 
 function suggestImportCatalogHandling(content: string, pointValue: string | number): string {

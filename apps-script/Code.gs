@@ -11,13 +11,14 @@ var API_CONFIG = {
   IMPORT_SUBDIR: 'nhat-ky-nhap-lieu',
 };
 
-var API_VERSION = 'C103-2026-07-15';
+var API_VERSION = 'C105-2026-07-15';
 
 var SHEET_TABS = {
   HocSinh: 'HocSinh',
   PhuHuynh: 'PhuHuynh',
   BanCanSu: 'BanCanSu',
   DanhMucDiem: 'DanhMucDiem',
+  DanhMucXuLy: 'DanhMucXuLy',
   CauHinhTuan: 'CauHinhTuan',
   GhiNhan: 'GhiNhan',
   NhatKyImport: 'NhatKyImport',
@@ -32,6 +33,15 @@ var POINT_CATALOG_HEADERS = [
   'pham_vi',
   'mo_ta',
   'de_xuat_xu_ly',
+  'ma_xu_ly_de_xuat',
+];
+
+var HANDLING_CATALOG_HEADERS = [
+  'ma_xu_ly',
+  'ten_xu_ly',
+  'noi_dung_xu_ly',
+  'muc_do',
+  'ghi_chu',
 ];
 
 var IMPORT_TAB_MAP = {
@@ -65,6 +75,7 @@ function doGet(e) {
             delete_record: true,
             point_catalog_crud: true,
             point_catalog_guidance_fields: true,
+            handling_catalog_crud: true,
             import_requires_catalog_match: true,
             teacher_login_get: true,
             teacher_session: true,
@@ -94,6 +105,10 @@ function doGet(e) {
       case 'danh_muc_diem':
         ensurePointCatalogHeaders_();
         data = getSheetObjects_(SHEET_TABS.DanhMucDiem);
+        break;
+      case 'danh_muc_xu_ly':
+        ensureHandlingCatalogHeaders_();
+        data = getSheetObjects_(SHEET_TABS.DanhMucXuLy);
         break;
       case 'cau_hinh_tuan':
         data = getSheetObjects_(SHEET_TABS.CauHinhTuan);
@@ -175,6 +190,32 @@ function doPost(e) {
 
     if (body.action === 'delete_point_catalog_item' && body.ma_danh_muc) {
       deletePointCatalogItem_(body.ma_danh_muc);
+      return jsonResponse_({ ok: true, data: null });
+    }
+
+    if (body.action === 'add_handling_catalog_item' && body.item) {
+      ensureHandlingCatalogHeaders_();
+      var createdHandlingItem = appendUniqueRow_(
+        SHEET_TABS.DanhMucXuLy,
+        normalizeHandlingCatalogItem_(body.item),
+        'ma_xu_ly'
+      );
+      return jsonResponse_({ ok: true, data: createdHandlingItem });
+    }
+
+    if (body.action === 'update_handling_catalog_item' && body.ma_xu_ly && body.item) {
+      ensureHandlingCatalogHeaders_();
+      var updatedHandlingItem = updateRowByKey_(
+        SHEET_TABS.DanhMucXuLy,
+        'ma_xu_ly',
+        body.ma_xu_ly,
+        normalizeHandlingCatalogItem_(body.item, body.ma_xu_ly)
+      );
+      return jsonResponse_({ ok: true, data: updatedHandlingItem });
+    }
+
+    if (body.action === 'delete_handling_catalog_item' && body.ma_xu_ly) {
+      deleteHandlingCatalogItem_(body.ma_xu_ly);
       return jsonResponse_({ ok: true, data: null });
     }
 
@@ -430,6 +471,34 @@ function normalizePointCatalogItem_(item, fixedCode) {
     pham_vi: scope,
     mo_ta: String(item.mo_ta || '').trim(),
     de_xuat_xu_ly: String(item.de_xuat_xu_ly || '').trim(),
+    ma_xu_ly_de_xuat: String(item.ma_xu_ly_de_xuat || '').trim().toUpperCase(),
+  };
+}
+
+function normalizeHandlingCatalogItem_(item, fixedCode) {
+  var code = String(fixedCode || item.ma_xu_ly || '').trim().toUpperCase();
+  if (!code) throw new Error('Thieu ma_xu_ly');
+  if (!/^[A-Z0-9_-]+$/.test(code)) {
+    throw new Error('ma_xu_ly chi nen gom chu in hoa, so, dau gach ngang hoac gach duoi: ' + code);
+  }
+
+  var name = String(item.ten_xu_ly || '').trim();
+  if (!name) throw new Error('Thieu ten_xu_ly');
+
+  var content = String(item.noi_dung_xu_ly || '').trim();
+  if (!content) throw new Error('Thieu noi_dung_xu_ly');
+
+  var level = String(item.muc_do || 'vua').trim();
+  if (['nhe', 'vua', 'nang', 'tich_cuc'].indexOf(level) === -1) {
+    throw new Error('muc_do xu ly khong hop le: ' + level);
+  }
+
+  return {
+    ma_xu_ly: code,
+    ten_xu_ly: name,
+    noi_dung_xu_ly: content,
+    muc_do: level,
+    ghi_chu: String(item.ghi_chu || '').trim(),
   };
 }
 
@@ -437,9 +506,16 @@ function ensurePointCatalogHeaders_() {
   ensureSheetHeaders_(SHEET_TABS.DanhMucDiem, POINT_CATALOG_HEADERS);
 }
 
+function ensureHandlingCatalogHeaders_() {
+  ensureSheetHeaders_(SHEET_TABS.DanhMucXuLy, HANDLING_CATALOG_HEADERS);
+}
+
 function ensureSheetHeaders_(tabName, expectedHeaders) {
-  var sheet = getSpreadsheet_().getSheetByName(tabName);
-  if (!sheet) throw new Error('Tab not found: ' + tabName);
+  var spreadsheet = getSpreadsheet_();
+  var sheet = spreadsheet.getSheetByName(tabName);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(tabName);
+  }
 
   var lastColumn = Math.max(sheet.getLastColumn(), 1);
   var currentHeaders = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].filter(function (header) {
@@ -472,6 +548,22 @@ function deletePointCatalogItem_(maDanhMuc) {
   }
 
   deleteRowByKey_(SHEET_TABS.DanhMucDiem, 'ma_danh_muc', code);
+}
+
+function deleteHandlingCatalogItem_(maXuLy) {
+  var code = String(maXuLy || '').trim().toUpperCase();
+  ensurePointCatalogHeaders_();
+  var references = getSheetObjects_(SHEET_TABS.DanhMucDiem).filter(function (item) {
+    return String(item.ma_xu_ly_de_xuat || '').trim().toUpperCase() === code;
+  });
+
+  if (references.length > 0) {
+    throw new Error(
+      'Khong the xoa ma xu ly ' + code + ' vi da co ' + references.length + ' danh muc diem dang dung ma nay.'
+    );
+  }
+
+  deleteRowByKey_(SHEET_TABS.DanhMucXuLy, 'ma_xu_ly', code);
 }
 
 function toBoolean_(value) {

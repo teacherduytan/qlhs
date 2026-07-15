@@ -5,6 +5,7 @@ import type {
   CauHinhTuan,
   DeleteImportResult,
   DanhMucDiem,
+  DanhMucXuLy,
   GhiNhan,
   HocSinh,
   ImportResult,
@@ -128,6 +129,29 @@ export class GoogleSheetsDataSource implements DataSource {
     await this.post<null>({
       action: 'delete_point_catalog_item',
       ma_danh_muc: maDanhMuc,
+    })
+  }
+
+  getHandlingCatalog(): Promise<DanhMucXuLy[]> {
+    return this.get<DanhMucXuLy[]>('danh_muc_xu_ly')
+  }
+
+  addHandlingCatalogItem(item: DanhMucXuLy): Promise<DanhMucXuLy> {
+    return this.post<DanhMucXuLy>({ action: 'add_handling_catalog_item', item })
+  }
+
+  updateHandlingCatalogItem(maXuLy: string, item: Partial<DanhMucXuLy>): Promise<DanhMucXuLy> {
+    return this.post<DanhMucXuLy>({
+      action: 'update_handling_catalog_item',
+      ma_xu_ly: maXuLy,
+      item,
+    })
+  }
+
+  async deleteHandlingCatalogItem(maXuLy: string): Promise<void> {
+    await this.post<null>({
+      action: 'delete_handling_catalog_item',
+      ma_xu_ly: maXuLy,
     })
   }
 

@@ -19,7 +19,8 @@ var TAB_SCHEMA = {
   ],
   PhuHuynh: ['ma_hs', 'ho_ten_ph', 'quan_he', 'sdt', 'uu_tien_lien_he'],
   BanCanSu: ['ma_hs', 'chuc_vu', 'to', 'ngay_bat_dau'],
-  DanhMucDiem: ['ma_danh_muc', 'nhom', 'ten_muc', 'diem', 'nghiem_trong', 'pham_vi', 'mo_ta', 'de_xuat_xu_ly'],
+  DanhMucDiem: ['ma_danh_muc', 'nhom', 'ten_muc', 'diem', 'nghiem_trong', 'pham_vi', 'mo_ta', 'de_xuat_xu_ly', 'ma_xu_ly_de_xuat'],
+  DanhMucXuLy: ['ma_xu_ly', 'ten_xu_ly', 'noi_dung_xu_ly', 'muc_do', 'ghi_chu'],
   CauHinhTuan: ['tuan_so', 'tu_ngay', 'den_ngay', 'so_ngay', 'loai_tuan'],
   GhiNhan: [
     'ma_ghi_nhan', 'ma_hs', 'to_lien_quan', 'ngay', 'tuan_so', 'dien_tai_thoi_diem',
@@ -76,7 +77,7 @@ var DANH_MUC_DIEM_SEED = [
 function setupQLHSSheet() {
   var ss = SpreadsheetApp.create(SHEET_NAME);
   var defaultSheet = ss.getSheets()[0];
-  var tabOrder = ['HocSinh', 'PhuHuynh', 'BanCanSu', 'DanhMucDiem', 'CauHinhTuan', 'GhiNhan', 'NhatKyImport'];
+  var tabOrder = ['HocSinh', 'PhuHuynh', 'BanCanSu', 'DanhMucDiem', 'DanhMucXuLy', 'CauHinhTuan', 'GhiNhan', 'NhatKyImport'];
   var sheets = {};
 
   tabOrder.forEach(function (tabName, index) {

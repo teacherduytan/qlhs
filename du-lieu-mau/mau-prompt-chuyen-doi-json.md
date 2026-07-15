@@ -10,6 +10,8 @@
 >
 > **Cập nhật mô tả/xử lý danh mục (15/07/2026)**: nếu phải đề xuất danh mục mới trong `de_xuat_danh_muc`, AI phải trả thêm `mo_ta` và `de_xuat_xu_ly` để app tạo danh mục đầy đủ theo C103. Với vi phạm, `de_xuat_xu_ly` nên ghi rõ mức xử lý theo số lần lặp lại.
 >
+> **Cập nhật mã xử lý/phạt (15/07/2026)**: nếu giáo viên cung cấp thêm `DanhMucXuLy` hiện hành, AI hãy đối chiếu gợi ý xử lý với mã xử lý/phạt đã có. Nếu khớp rõ thì điền `ma_xu_ly_goi_y`; nếu chưa có mã phù hợp thì để `ma_xu_ly_goi_y = null`, app Import sẽ cho giáo viên tạo mã xử lý mới từ `de_xuat_xu_ly`.
+>
 > **Lưu ý nghiệp vụ**: học sinh/ban cán sự ghi nhận bằng mô tả tự do, không chọn từ dropdown. Vì vậy khi dùng AI web phải đính kèm hoặc dán **DanhMucDiem hiện hành trong app** để AI đối chiếu. Nếu mô tả thô chưa có danh mục phù hợp, AI phải giữ nguyên mô tả thô và đề xuất tạo danh mục mới, không tự bịa mã.
 >
 > **Lưu ý khớp tên học sinh**: phiếu giấy có thể ghi tên thiếu dấu, viết tắt, chỉ ghi tên gọi hoặc chữ viết tay khó đọc. Khi dùng AI web phải đính kèm/copy **danh sách HocSinh hiện hành của lớp** gồm tối thiểu `ma_hs`, họ tên, STT, tổ, diện để AI đối chiếu và chuẩn hoá `ho_ten`. `ma_hs` là mã nội bộ do app quản lý; nếu không chắc tuyệt đối thì để `ma_hs = null`, màn Import sẽ gắn học sinh hoặc tạo học sinh mới với mã tự sinh không trùng.
@@ -32,7 +34,7 @@
 ```
 Bạn hãy đọc ảnh phiếu ghi nhận học sinh tôi đính kèm (1 bảng duy nhất: STT, Họ tên, Tiết,
 Môn, Nội dung vi phạm, Nội dung thành tích — ghi tự do, KHÔNG có mã sẵn trên phiếu), bảng
-DanhMucDiem hiện hành trong app, bảng tra cứu mã nếu có, và danh sách HocSinh hiện hành đầy đủ của lớp
+DanhMucDiem hiện hành trong app, DanhMucXuLy hiện hành nếu có, bảng tra cứu mã nếu có, và danh sách HocSinh hiện hành đầy đủ của lớp
 (có `ma_hs`, họ tên, STT, tổ, diện; ví dụ copy từ trang Học sinh/Sheet hoặc hocsinh_seed.json), rồi:
 
 0. Trước tiên, đọc toàn bộ phiếu theo NGỮ CẢNH, không phụ thuộc máy móc vào đúng cột in sẵn:
@@ -87,12 +89,14 @@ DanhMucDiem hiện hành trong app, bảng tra cứu mã nếu có, và danh sá
 
 8. Khi phải đề xuất danh mục mới, tạo thêm mảng `de_xuat_danh_muc` ở cuối JSON. Mỗi mục đề xuất phải dựa trên chính
    mô tả thô học sinh đã ghi, gồm: `nhom_goi_y`, `ten_muc_goi_y`, `diem_goi_y`, `pham_vi_goi_y`, `mo_ta_tho`,
-   `mo_ta`, `de_xuat_xu_ly`, `ly_do_can_tao`, và `ma_goi_y` nếu có thể gợi ý mã chưa trùng. Không đưa mã gợi ý đó
+   `mo_ta`, `de_xuat_xu_ly`, `ma_xu_ly_goi_y`, `ly_do_can_tao`, và `ma_goi_y` nếu có thể gợi ý mã chưa trùng. Không đưa mã gợi ý đó
    vào `ban_ghi` cho tới khi giáo viên đã tạo danh mục trong app.
    - `mo_ta`: viết thành mô tả chuẩn hoá/ví dụ áp dụng cho danh mục, không chỉ copy y nguyên chữ thô.
    - `de_xuat_xu_ly`: với vi phạm, gợi ý theo số lần lặp lại. Ví dụ "Không thuộc bài": lần 1 nhắc nhở và chép 20 lần/từ
      hoặc phần chưa thuộc; lần 2 chép 50 lần; lần 3 viết kiểm điểm/báo phụ huynh; tái phạm nhiều lần thì mời phụ huynh.
      Với tích cực, gợi ý ghi nhận/cộng điểm/tuyên dương nếu lặp lại nhiều lần.
+   - `ma_xu_ly_goi_y`: nếu `de_xuat_xu_ly` khớp rõ một mã trong DanhMucXuLy hiện hành thì điền mã đó, ví dụ `XL01`;
+     nếu chưa có mã phù hợp thì để null để app cho giáo viên tạo mã xử lý/phạt mới.
 
 9. TRƯỚC KHI TRẢ JSON, tự kiểm tra và sửa các lỗi sau:
    - Không được để `ma_danh_muc = null` cho dòng `loai` là `chuyen_can`, `ve_sinh`, `ne_nep`, `trat_tu_ky_luat`
@@ -141,6 +145,7 @@ Trả về đúng cấu trúc JSON sau, không thêm chữ nào khác ngoài JSO
       "mo_ta_tho": "<mô tả học sinh/ban cán sự đã ghi trên phiếu>",
       "mo_ta": "<mô tả chuẩn hoá/ví dụ áp dụng cho danh mục nếu giáo viên tạo mới>",
       "de_xuat_xu_ly": "<gợi ý xử lý/phạt theo số lần lặp lại nếu là vi phạm; gợi ý ghi nhận/tuyên dương nếu là tích cực>",
+      "ma_xu_ly_goi_y": "<mã xử lý/phạt đang tồn tại trong DanhMucXuLy nếu khớp rõ, hoặc null nếu cần tạo mới>",
       "ly_do_can_tao": "<vì sao DanhMucDiem hiện hành chưa có mục phù hợp>",
       "ma_goi_y": "<mã gợi ý chưa trùng, hoặc null nếu không chắc>"
     }

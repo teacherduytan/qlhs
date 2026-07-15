@@ -71,6 +71,15 @@ export interface DanhMucDiem {
   pham_vi: PhamViDanhMuc
   mo_ta?: string | null
   de_xuat_xu_ly?: string | null
+  ma_xu_ly_de_xuat?: string | null
+}
+
+export interface DanhMucXuLy {
+  ma_xu_ly: string
+  ten_xu_ly: string
+  noi_dung_xu_ly: string
+  muc_do: 'nhe' | 'vua' | 'nang' | 'tich_cuc'
+  ghi_chu?: string | null
 }
 
 export interface CauHinhTuan {
