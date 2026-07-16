@@ -143,6 +143,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C110 | ✅ Xong | 16/07/2026 | Chặn spam bấm import gây tạo dư dữ liệu |
 | C111 | ✅ Xong | 16/07/2026 | Cập nhật prompt để AI không đưa ghi chú đối chiếu DanhMucDiem vào nội dung |
 | C112 | ✅ Xong | 16/07/2026 | Cập nhật prompt bằng ngữ cảnh DanhMucDiem và logic import hiện tại |
+| C113 | ✅ Xong | 16/07/2026 | Thêm unit test cho logic so khớp DanhMucDiem khi import |
 
 ---
 
