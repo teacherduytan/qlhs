@@ -1,4 +1,4 @@
-import { type ChangeEvent, useEffect, useMemo, useState } from 'react'
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { dataSource } from '../../data/client'
 import type {
   DanhMucDiem,
@@ -178,6 +178,8 @@ export function ImportPage() {
   const [studentMessage, setStudentMessage] = useState<string | null>(null)
   const [creatingStudent, setCreatingStudent] = useState(false)
   const [studentCreateForm, setStudentCreateForm] = useState<StudentCreateForm | null>(null)
+  const [importedPayloadSignatures, setImportedPayloadSignatures] = useState<Set<string>>(new Set())
+  const importInFlightSignatureRef = useRef<string | null>(null)
 
   const parseState = useMemo(() => parseJsonRows(jsonText), [jsonText])
   const previewColumns = useMemo(() => {
@@ -252,6 +254,26 @@ export function ImportPage() {
       validRows,
     }
   }, [parseState, catalogCheck.blockingRowIndexes, studentCheck.blockingRowIndexes])
+  const currentImportPayloadSignature = useMemo(
+    () =>
+      parseState.status === 'valid'
+        ? createImportPayloadSignature(loai, parseState.rows, nguoiThucHien.trim())
+        : null,
+    [loai, nguoiThucHien, parseState],
+  )
+  const currentValidRowsPayloadSignature = useMemo(
+    () =>
+      parseState.status === 'valid' && importReadiness.validRows.length > 0
+        ? createImportPayloadSignature(loai, importReadiness.validRows, nguoiThucHien.trim())
+        : null,
+    [importReadiness.validRows, loai, nguoiThucHien, parseState.status],
+  )
+  const alreadyImportedCurrentPayload = Boolean(
+    currentImportPayloadSignature && importedPayloadSignatures.has(currentImportPayloadSignature),
+  )
+  const alreadyImportedValidRowsPayload = Boolean(
+    currentValidRowsPayloadSignature && importedPayloadSignatures.has(currentValidRowsPayloadSignature),
+  )
   const importActionSummary = useMemo(() => {
     if (parseState.status !== 'valid') {
       return {
@@ -285,6 +307,15 @@ export function ImportPage() {
       }
     }
 
+    if (alreadyImportedCurrentPayload) {
+      return {
+        tone: 'blocked',
+        title: 'Du lieu hien tai da duoc import',
+        detail:
+          'App da khoa import lai cung payload de tranh tao du ban ghi. Hay sua JSON, chon file khac hoac xoa noi dung neu muon lam dot import moi.',
+      }
+    }
+
     if (importReadiness.blockedCount > 0) {
       const reasons = [
         catalogCheck.autoMatchItems.length ? `${catalogCheck.autoMatchItems.length} dòng có thể tự gắn DanhMucDiem` : '',
@@ -313,6 +344,7 @@ export function ImportPage() {
       detail: 'Tất cả dòng hiện có trong JSON đã đủ điều kiện.',
     }
   }, [
+    alreadyImportedCurrentPayload,
     catalogCheck.errors,
     catalogCheck.autoMatchItems,
     catalogError,
@@ -331,6 +363,7 @@ export function ImportPage() {
     parseState.status === 'valid' &&
     parseState.rows.length > 0 &&
     !submitting &&
+    !alreadyImportedCurrentPayload &&
     !hasCatalogBlockingError &&
     !hasStudentBlockingError
   const canImportValidRowsOnly =
@@ -342,7 +375,15 @@ export function ImportPage() {
     !catalogLoading &&
     !studentsLoading &&
     !catalogError &&
-    !studentsError
+    !studentsError &&
+    !alreadyImportedValidRowsPayload
+  const submitButtonLabel = submitting
+    ? 'Dang import...'
+    : alreadyImportedCurrentPayload
+      ? 'Da import du lieu nay'
+      : parseState.status === 'valid' && parseState.rows.length > 0
+        ? `Xac nhan import ${parseState.rows.length} dong con lai`
+        : 'Xac nhan import'
 
   useEffect(() => {
     void loadImportLogs()
@@ -473,6 +514,12 @@ export function ImportPage() {
       return
     }
 
+    const payloadSignature = createImportPayloadSignature(loai, parseState.rows, nguoiThucHien.trim())
+    if (importInFlightSignatureRef.current === payloadSignature || importedPayloadSignatures.has(payloadSignature)) {
+      setSubmitError('Du lieu nay da duoc import hoac dang import. App da chan thao tac lap de tranh tao du ban ghi.')
+      return
+    }
+
     if (hasCatalogBlockingError) {
       setSubmitError('Cần sửa các lỗi liên kết DanhMucDiem trước khi import GhiNhan.')
       return
@@ -484,17 +531,22 @@ export function ImportPage() {
     }
 
     setSubmitting(true)
+    importInFlightSignatureRef.current = payloadSignature
     setSubmitError(null)
     setResult(null)
 
     try {
       const importResult = await dataSource.importJson(loai, parseState.rows, nguoiThucHien.trim())
       setResult(importResult)
+      setImportedPayloadSignatures((current) => new Set(current).add(payloadSignature))
       setDeleteMessage(null)
       await loadImportLogs()
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Import không thành công.')
     } finally {
+      if (importInFlightSignatureRef.current === payloadSignature) {
+        importInFlightSignatureRef.current = null
+      }
       setSubmitting(false)
     }
   }
@@ -504,18 +556,26 @@ export function ImportPage() {
       return
     }
 
+    const payloadSignature = createImportPayloadSignature(loai, importReadiness.validRows, nguoiThucHien.trim())
+    if (importInFlightSignatureRef.current === payloadSignature || importedPayloadSignatures.has(payloadSignature)) {
+      setSubmitError('Cac dong du dieu kien nay da duoc import hoac dang import. App da chan thao tac lap.')
+      return
+    }
+
     if (catalogLoading || studentsLoading || catalogError || studentsError) {
       setSubmitError('Can tai xong danh muc va hoc sinh truoc khi import tung phan.')
       return
     }
 
     setSubmitting(true)
+    importInFlightSignatureRef.current = payloadSignature
     setSubmitError(null)
     setResult(null)
 
     try {
       const importResult = await dataSource.importJson(loai, importReadiness.validRows, nguoiThucHien.trim())
       setResult(importResult)
+      setImportedPayloadSignatures((current) => new Set(current).add(payloadSignature))
       setDeleteMessage(null)
       setJsonText(keepOnlyRowsInJsonText(jsonText, importReadiness.blockedRowIndexes))
       setCatalogFixMessage(
@@ -525,6 +585,9 @@ export function ImportPage() {
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Import cac dong du dieu kien khong thanh cong.')
     } finally {
+      if (importInFlightSignatureRef.current === payloadSignature) {
+        importInFlightSignatureRef.current = null
+      }
       setSubmitting(false)
     }
   }
@@ -2009,7 +2072,9 @@ export function ImportPage() {
             className="inline-flex h-10 items-center justify-center rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             {importReadiness.validCount > 0
-              ? `Import ${importReadiness.validCount} dong du dieu kien`
+              ? alreadyImportedValidRowsPayload
+                ? `Da import ${importReadiness.validCount} dong du dieu kien`
+                : `Import ${importReadiness.validCount} dong du dieu kien`
               : `Can xu ly ${importReadiness.blockedCount} dong con lai`}
           </button>
         ) : null}
@@ -2019,11 +2084,7 @@ export function ImportPage() {
           disabled={!canSubmitCurrentImport}
           className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          {submitting
-            ? 'Đang import...'
-            : parseState.status === 'valid' && parseState.rows.length > 0
-              ? `Xác nhận import ${parseState.rows.length} dòng còn lại`
-              : 'Xác nhận import'}
+          {submitButtonLabel}
         </button>
         <button
           type="button"
@@ -3029,6 +3090,33 @@ function compareCatalogItems(left: DanhMucDiem, right: DanhMucDiem): number {
 
 function formatScore(value: number): string {
   return value > 0 ? `+${value}` : String(value)
+}
+
+function createImportPayloadSignature(
+  loai: LoaiDuLieuImport,
+  rows: Record<string, unknown>[],
+  nguoiThucHien: string,
+): string {
+  return stableStringify({
+    loai,
+    nguoi_thuc_hien: nguoiThucHien.trim(),
+    rows,
+  })
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`
+  }
+
+  if (isRecord(value)) {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+      .join(',')}}`
+  }
+
+  return JSON.stringify(value)
 }
 
 function labelSuggestionScope(value: PhamViDanhMuc): string {
