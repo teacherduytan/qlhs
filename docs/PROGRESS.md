@@ -139,6 +139,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C106 | ✅ Xong | 15/07/2026 | Báo lỗi rõ khi Apps Script chưa deploy action DanhMucXuLy |
 | C107 | ✅ Xong | 15/07/2026 | Chặn tạo mã xử lý/phạt trùng nội dung khi người dùng bấm lặp |
 | C108 | ✅ Xong | 16/07/2026 | Sửa luồng import từng phần để tiếp tục xử lý các dòng còn lại |
+| C109 | ✅ Xong | 16/07/2026 | Tự gợi ý/gắn danh mục cho dòng import thiếu ma_danh_muc |
 
 ---
 

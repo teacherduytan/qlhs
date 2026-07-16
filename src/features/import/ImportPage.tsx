@@ -56,6 +56,14 @@ type MissingCatalogItem = {
   rowIndexes: number[]
   sampleContent: string
   loai: string
+  generatedFromMissingCode?: boolean
+}
+
+type CatalogAutoMatchItem = {
+  rowIndex: number
+  content: string
+  catalogItem: DanhMucDiem
+  score: number
 }
 
 type MissingCatalogForm = {
@@ -218,6 +226,10 @@ export function ImportPage() {
     () => missingCatalogForms.find((form) => form.code === activeMissingCatalogCode) || null,
     [activeMissingCatalogCode, missingCatalogForms],
   )
+  const activeMissingSimilarMatches = useMemo(
+    () => (activeMissingCatalogForm ? getSimilarCatalogMatchesForMissing(activeMissingCatalogForm, pointCatalog) : []),
+    [activeMissingCatalogForm, pointCatalog],
+  )
   const activeSuggestionMatchCount = useMemo(
     () => (activeSuggestionForm ? countSuggestionMatchedRows(jsonText, activeSuggestionForm) : 0),
     [activeSuggestionForm, jsonText],
@@ -275,6 +287,7 @@ export function ImportPage() {
 
     if (importReadiness.blockedCount > 0) {
       const reasons = [
+        catalogCheck.autoMatchItems.length ? `${catalogCheck.autoMatchItems.length} dòng có thể tự gắn DanhMucDiem` : '',
         catalogCheck.errors.length ? `${catalogCheck.errors.length} lỗi DanhMucDiem` : '',
         studentCheck.autoMatchItems.length ? `${studentCheck.autoMatchItems.length} dòng cần xác nhận học sinh` : '',
         studentCheck.unresolvedItems.length ? `${studentCheck.unresolvedItems.length} dòng chưa tìm được học sinh` : '',
@@ -301,6 +314,7 @@ export function ImportPage() {
     }
   }, [
     catalogCheck.errors,
+    catalogCheck.autoMatchItems,
     catalogError,
     catalogLoading,
     importReadiness.blockedCount,
@@ -565,7 +579,13 @@ export function ImportPage() {
         ma_xu_ly_de_xuat: form.ma_xu_ly_de_xuat.trim() || null,
       })
       setPointCatalog((current) => [...current, created].sort(compareCatalogItems))
-      setCatalogFixMessage(`Da tao danh muc ${created.ma_danh_muc}. Cac dong dang dung ma nay se duoc kiem tra lai.`)
+      const rowSet = new Set(form.rowIndexes)
+      setJsonText((current) =>
+        updateImportRowsInJsonText(current, (row, index) =>
+          rowSet.has(index) ? { ...row, ma_danh_muc: created.ma_danh_muc } : row,
+        ),
+      )
+      setCatalogFixMessage(`Da tao danh muc ${created.ma_danh_muc} va gan vao ${form.rowIndexes.length} dong dang cho.`)
       closeMissingCatalogModal()
       await loadPointCatalog()
     } catch (error) {
@@ -573,6 +593,38 @@ export function ImportPage() {
     } finally {
       setCreatingMissingCatalogCode(null)
     }
+  }
+
+  function applyCatalogAutoMatches() {
+    if (catalogCheck.autoMatchItems.length === 0) {
+      return
+    }
+
+    setJsonText((current) =>
+      updateImportRowsInJsonText(current, (row, index) => {
+        const match = catalogCheck.autoMatchItems.find((item) => item.rowIndex === index)
+        return match ? { ...row, ma_danh_muc: match.catalogItem.ma_danh_muc } : row
+      }),
+    )
+    setCatalogFixMessage(`Da tu gan ma_danh_muc cho ${catalogCheck.autoMatchItems.length} dong khop danh muc hien co.`)
+    setCatalogError(null)
+    setSubmitError(null)
+  }
+
+  function applyExistingCatalogToMissing(form: MissingCatalogForm, catalogItem: DanhMucDiem) {
+    const rowSet = new Set(form.rowIndexes)
+
+    setJsonText((current) =>
+      updateImportRowsInJsonText(current, (row, index) =>
+        rowSet.has(index) ? { ...row, ma_danh_muc: catalogItem.ma_danh_muc } : row,
+      ),
+    )
+    setCatalogFixMessage(
+      `Da dung danh muc co san ${catalogItem.ma_danh_muc} - ${catalogItem.ten_muc} cho ${form.rowIndexes.length} dong.`,
+    )
+    setCatalogError(null)
+    setSubmitError(null)
+    closeMissingCatalogModal()
   }
 
   function applyStudentToRow(rowIndex: number, student: HocSinh) {
@@ -1014,6 +1066,16 @@ export function ImportPage() {
         >
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="text-base font-bold">Kiểm tra liên kết DanhMucDiem</h3>
+            {catalogCheck.autoMatchItems.length ? (
+              <button
+                type="button"
+                onClick={applyCatalogAutoMatches}
+                disabled={catalogLoading}
+                className="h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                Tu gan {catalogCheck.autoMatchItems.length} dong khop danh muc
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => void loadPointCatalog()}
@@ -1039,6 +1101,22 @@ export function ImportPage() {
 
           {catalogCheck.errors.length ? (
             <IssueList title="Cần sửa trước khi import" items={catalogCheck.errors} />
+          ) : null}
+
+          {catalogCheck.autoMatchItems.length ? (
+            <div className="mt-3 rounded-lg border border-blue-200 bg-white p-3 text-slate-700">
+              <p className="font-bold text-blue-800">App co the tu gan danh muc</p>
+              <div className="mt-2 space-y-2">
+                {catalogCheck.autoMatchItems.slice(0, 5).map((item) => (
+                  <div key={item.rowIndex} className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs">
+                    <p className="font-semibold text-slate-900">
+                      Dong {item.rowIndex + 1}: {item.catalogItem.ma_danh_muc} - {item.catalogItem.ten_muc}
+                    </p>
+                    <p className="mt-1 text-slate-600">{item.content || '-'}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : null}
 
           {catalogCheck.missingCatalogItems.length ? (
@@ -1569,6 +1647,36 @@ export function ImportPage() {
                 </div>
               ) : null}
 
+              {activeMissingSimilarMatches.length ? (
+                <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950">
+                  <p className="font-bold">Danh muc co san gan giong</p>
+                  <div className="mt-2 space-y-2">
+                    {activeMissingSimilarMatches.map((match) => (
+                      <div
+                        key={match.item.ma_danh_muc}
+                        className="flex flex-col gap-2 rounded-md border border-blue-100 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div>
+                          <p className="font-semibold text-slate-900">
+                            <span className="font-mono">{match.item.ma_danh_muc}</span> - {match.item.ten_muc}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {match.item.nhom} · {formatScore(match.item.diem)} diem · do khop {Math.round(match.score * 100)}%
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => applyExistingCatalogToMissing(activeMissingCatalogForm, match.item)}
+                          className="h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white hover:bg-blue-800"
+                        >
+                          Dung ma nay
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
                   Ma danh muc
@@ -2040,6 +2148,7 @@ export function ImportPage() {
 }
 
 type CatalogCheck = {
+  autoMatchItems: CatalogAutoMatchItem[]
   blockingRowIndexes: number[]
   errors: string[]
   linkedCount: number
@@ -2049,6 +2158,7 @@ type CatalogCheck = {
 }
 
 const EMPTY_CATALOG_CHECK: CatalogCheck = {
+  autoMatchItems: [],
   blockingRowIndexes: [],
   errors: [],
   linkedCount: 0,
@@ -2096,7 +2206,10 @@ function checkRecordCatalogLinks(rows: Record<string, unknown>[], catalog: DanhM
     catalog.map((item) => [String(item.ma_danh_muc || '').trim().toUpperCase(), item]),
   )
   const missingByCode = new Map<string, MissingCatalogItem>()
+  const missingContentToCode = new Map<string, string>()
+  const reservedCatalogCodes = new Set(catalog.map((item) => item.ma_danh_muc.trim().toUpperCase()))
   const result: CatalogCheck = {
+    autoMatchItems: [],
     blockingRowIndexes: [],
     errors: [],
     linkedCount: 0,
@@ -2146,10 +2259,49 @@ function checkRecordCatalogLinks(rows: Record<string, unknown>[], catalog: DanhM
       return
     }
 
+    const content = getRecordContent(row)
+    const bestMatch = findBestCatalogMatchForMissingRow(row, catalog)
+    if (bestMatch && bestMatch.score >= 0.72) {
+      result.autoMatchItems.push({
+        rowIndex: index,
+        content,
+        catalogItem: bestMatch.item,
+        score: bestMatch.score,
+      })
+      result.errors.push(
+        `Dong ${rowNumber}: thieu ma_danh_muc, app co the tu gan ${bestMatch.item.ma_danh_muc} - ${bestMatch.item.ten_muc}.`,
+      )
+      result.blockingRowIndexes.push(index)
+      return
+    }
+
+    const group = inferMissingCatalogGroup(row)
+    const contentKey = `${group}:${normalizeForMatch(content || type || String(rowNumber))}`
+    let generatedCode = missingContentToCode.get(contentKey)
+    if (!generatedCode) {
+      generatedCode = nextCodeForGroupWithReserved(group, reservedCatalogCodes)
+      missingContentToCode.set(contentKey, generatedCode)
+      reservedCatalogCodes.add(generatedCode)
+    }
+
+    const existingMissing = missingByCode.get(generatedCode)
+    if (existingMissing) {
+      existingMissing.rowIndexes.push(index)
+    } else {
+      missingByCode.set(generatedCode, {
+        code: generatedCode,
+        rowIndexes: [index],
+        sampleContent: content || generatedCode,
+        loai: type,
+        generatedFromMissingCode: true,
+      })
+    }
+
     result.errors.push(
-      `Dòng ${rowNumber}: thiếu ma_danh_muc. Chỉ dòng loai=hoc_tap mới được import không có mã danh mục.`,
+      `Dong ${rowNumber}: thieu ma_danh_muc. App da goi y tao/chon danh muc ${generatedCode} tu noi dung dong nay.`,
     )
     result.blockingRowIndexes.push(index)
+    return
   })
 
   result.missingCatalogItems = Array.from(missingByCode.values())
@@ -2184,6 +2336,81 @@ function missingCatalogToForm(item: MissingCatalogItem): MissingCatalogForm {
     rowIndexes: [...item.rowIndexes],
     sampleContent: item.sampleContent,
   }
+}
+
+function findBestCatalogMatchForMissingRow(
+  row: Record<string, unknown>,
+  catalog: DanhMucDiem[],
+): { item: DanhMucDiem; score: number } | null {
+  const content = getRecordContent(row)
+  if (!content) return null
+
+  const group = inferMissingCatalogGroup(row)
+  const matches = catalog
+    .map((item) => ({
+      item,
+      score: scoreCatalogTextSimilarity(content, item) + (item.nhom === group ? 0.15 : 0),
+    }))
+    .filter((match) => match.score >= 0.45)
+    .sort((left, right) => right.score - left.score || compareCatalogItems(left.item, right.item))
+
+  return matches[0] || null
+}
+
+function getSimilarCatalogMatchesForMissing(form: MissingCatalogForm, catalog: DanhMucDiem[]): SimilarCatalogMatch[] {
+  const text = `${form.ten_muc} ${form.mo_ta} ${form.sampleContent}`
+  return catalog
+    .map((item) => ({ item, score: scoreCatalogTextSimilarity(text, item) + (item.nhom === form.nhom ? 0.15 : 0) }))
+    .filter((match) => match.score >= 0.35)
+    .sort((left, right) => right.score - left.score || compareCatalogItems(left.item, right.item))
+    .slice(0, 5)
+}
+
+function scoreCatalogTextSimilarity(text: string, item: DanhMucDiem): number {
+  const sourceTokens = tokenizeForMatch(text)
+  const itemTokens = tokenizeForMatch(`${item.ten_muc} ${item.mo_ta || ''}`)
+  if (sourceTokens.length === 0 || itemTokens.length === 0) return 0
+
+  const itemTokenSet = new Set(itemTokens)
+  const overlap = sourceTokens.filter((token) => itemTokenSet.has(token)).length
+  let score = overlap / Math.max(sourceTokens.length, itemTokens.length)
+
+  const sourceText = normalizeForMatch(text).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
+  const itemText = normalizeForMatch(item.ten_muc).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
+  if (sourceText.includes(itemText) || itemText.includes(sourceText)) score += 0.3
+  if (item.diem > 0 && normalizeForMatch(toText(text)).includes('khen')) score += 0.1
+  if (item.diem < 0 && normalizeForMatch(toText(text)).includes('khong')) score += 0.05
+
+  return Math.min(score, 1)
+}
+
+function inferMissingCatalogGroup(row: Record<string, unknown>): NhomDiem {
+  const type = normalizeForMatch(toText(row.loai))
+  const text = normalizeForMatch(`${getRecordContent(row)} ${toText(row.ly_do)} ${toText(row.ghi_chu)}`)
+  if (type.includes('khen') || type.includes('tich_cuc') || text.includes('gio tay')) return 'KT'
+  if (text.includes('ve sinh')) return 'VS'
+  if (text.includes('di tre') || text.includes('vang')) return 'CC'
+  if (text.includes('mat trat tu') || text.includes('ky luat') || text.includes('noi chuyen')) return 'KL'
+  return 'NN'
+}
+
+function nextCodeForGroupWithReserved(group: NhomDiem, reservedCodes: Set<string>): string {
+  let maxNumber = 0
+  reservedCodes.forEach((code) => {
+    const normalized = code.trim().toUpperCase()
+    if (!normalized.startsWith(group)) return
+    const match = normalized.slice(group.length).match(/^(\d+)$/)
+    if (match) maxNumber = Math.max(maxNumber, Number(match[1]))
+  })
+
+  let nextNumber = maxNumber + 1
+  let candidate = `${group}${String(nextNumber).padStart(2, '0')}`
+  while (reservedCodes.has(candidate)) {
+    nextNumber += 1
+    candidate = `${group}${String(nextNumber).padStart(2, '0')}`
+  }
+
+  return candidate
 }
 
 function inferGroupFromCode(code: string): NhomDiem | null {
@@ -2798,6 +3025,10 @@ function normalizeForMatch(value: string): string {
 
 function compareCatalogItems(left: DanhMucDiem, right: DanhMucDiem): number {
   return `${left.nhom}-${left.ma_danh_muc}`.localeCompare(`${right.nhom}-${right.ma_danh_muc}`)
+}
+
+function formatScore(value: number): string {
+  return value > 0 ? `+${value}` : String(value)
 }
 
 function labelSuggestionScope(value: PhamViDanhMuc): string {
