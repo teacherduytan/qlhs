@@ -138,6 +138,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C105 | ✅ Xong | 15/07/2026 | Tạo danh mục mã đề xuất xử lý/phạt và liên kết từ danh mục điểm/import |
 | C106 | ✅ Xong | 15/07/2026 | Báo lỗi rõ khi Apps Script chưa deploy action DanhMucXuLy |
 | C107 | ✅ Xong | 15/07/2026 | Chặn tạo mã xử lý/phạt trùng nội dung khi người dùng bấm lặp |
+| C108 | ✅ Xong | 16/07/2026 | Sửa luồng import từng phần để tiếp tục xử lý các dòng còn lại |
 
 ---
 

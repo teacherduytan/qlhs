@@ -240,6 +240,95 @@ export function ImportPage() {
       validRows,
     }
   }, [parseState, catalogCheck.blockingRowIndexes, studentCheck.blockingRowIndexes])
+  const importActionSummary = useMemo(() => {
+    if (parseState.status !== 'valid') {
+      return {
+        tone: 'idle',
+        title: 'Chưa có JSON hợp lệ để import',
+        detail: 'Dán JSON hợp lệ hoặc tải file JSON trước khi xác nhận import.',
+      }
+    }
+
+    if (loai !== 'ghi_nhan') {
+      return {
+        tone: 'ready',
+        title: `Sẵn sàng import ${parseState.rows.length} dòng`,
+        detail: 'Dữ liệu loại này không cần kiểm tra DanhMucDiem trước khi import.',
+      }
+    }
+
+    if (catalogLoading || studentsLoading) {
+      return {
+        tone: 'loading',
+        title: 'Đang kiểm tra điều kiện import',
+        detail: 'App đang tải danh mục điểm và danh sách học sinh để kiểm tra các dòng ghi nhận.',
+      }
+    }
+
+    if (catalogError || studentsError) {
+      return {
+        tone: 'error',
+        title: 'Chưa thể import do lỗi tải dữ liệu kiểm tra',
+        detail: catalogError || studentsError || 'Cần tải lại dữ liệu kiểm tra trước khi import.',
+      }
+    }
+
+    if (importReadiness.blockedCount > 0) {
+      const reasons = [
+        catalogCheck.errors.length ? `${catalogCheck.errors.length} lỗi DanhMucDiem` : '',
+        studentCheck.autoMatchItems.length ? `${studentCheck.autoMatchItems.length} dòng cần xác nhận học sinh` : '',
+        studentCheck.unresolvedItems.length ? `${studentCheck.unresolvedItems.length} dòng chưa tìm được học sinh` : '',
+        studentCheck.errors.length ? `${studentCheck.errors.length} lỗi mã học sinh` : '',
+      ].filter(Boolean)
+
+      return {
+        tone: importReadiness.validCount > 0 ? 'partial' : 'blocked',
+        title:
+          importReadiness.validCount > 0
+            ? `${importReadiness.validCount} dòng có thể import trước, ${importReadiness.blockedCount} dòng cần xử lý tiếp`
+            : `Còn ${importReadiness.blockedCount} dòng cần xử lý trước khi xác nhận import`,
+        detail:
+          reasons.length > 0
+            ? `Nguyên nhân: ${reasons.join(', ')}. Sau khi xử lý xong, nút xác nhận import các dòng còn lại sẽ bật.`
+            : 'Sau khi xử lý xong các dòng bị chặn, nút xác nhận import các dòng còn lại sẽ bật.',
+      }
+    }
+
+    return {
+      tone: 'ready',
+      title: `Sẵn sàng import ${parseState.rows.length} dòng còn lại`,
+      detail: 'Tất cả dòng hiện có trong JSON đã đủ điều kiện.',
+    }
+  }, [
+    catalogCheck.errors,
+    catalogError,
+    catalogLoading,
+    importReadiness.blockedCount,
+    importReadiness.validCount,
+    loai,
+    parseState,
+    studentCheck.autoMatchItems,
+    studentCheck.errors,
+    studentCheck.unresolvedItems,
+    studentsError,
+    studentsLoading,
+  ])
+  const canSubmitCurrentImport =
+    parseState.status === 'valid' &&
+    parseState.rows.length > 0 &&
+    !submitting &&
+    !hasCatalogBlockingError &&
+    !hasStudentBlockingError
+  const canImportValidRowsOnly =
+    loai === 'ghi_nhan' &&
+    parseState.status === 'valid' &&
+    importReadiness.blockedCount > 0 &&
+    importReadiness.validCount > 0 &&
+    !submitting &&
+    !catalogLoading &&
+    !studentsLoading &&
+    !catalogError &&
+    !studentsError
 
   useEffect(() => {
     void loadImportLogs()
@@ -1798,33 +1887,35 @@ export function ImportPage() {
         </div>
       ) : null}
 
+      <div className={`rounded-lg border p-4 text-sm ${getImportActionSummaryClass(importActionSummary.tone)}`}>
+        <p className="font-bold">{importActionSummary.title}</p>
+        <p className="mt-1">{importActionSummary.detail}</p>
+      </div>
+
       <div className="flex flex-wrap gap-2">
-        {loai === 'ghi_nhan' &&
-        parseState.status === 'valid' &&
-        importReadiness.blockedCount > 0 &&
-        importReadiness.validCount > 0 ? (
+        {loai === 'ghi_nhan' && parseState.status === 'valid' && importReadiness.blockedCount > 0 ? (
           <button
             type="button"
             onClick={() => void importValidRowsOnly()}
-            disabled={submitting || catalogLoading || studentsLoading || Boolean(catalogError) || Boolean(studentsError)}
+            disabled={!canImportValidRowsOnly}
             className="inline-flex h-10 items-center justify-center rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
-            Import {importReadiness.validCount} dong du dieu kien
+            {importReadiness.validCount > 0
+              ? `Import ${importReadiness.validCount} dong du dieu kien`
+              : `Can xu ly ${importReadiness.blockedCount} dong con lai`}
           </button>
         ) : null}
         <button
           type="button"
           onClick={() => void submitImport()}
-          disabled={
-            submitting ||
-            parseState.status !== 'valid' ||
-            parseState.rows.length === 0 ||
-            hasCatalogBlockingError ||
-            hasStudentBlockingError
-          }
+          disabled={!canSubmitCurrentImport}
           className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          {submitting ? 'Đang import...' : 'Xác nhận import'}
+          {submitting
+            ? 'Đang import...'
+            : parseState.status === 'valid' && parseState.rows.length > 0
+              ? `Xác nhận import ${parseState.rows.length} dòng còn lại`
+              : 'Xác nhận import'}
         </button>
         <button
           type="button"
@@ -1989,6 +2080,15 @@ function IssueList({ items, title }: { items: string[]; title: string }) {
       ) : null}
     </div>
   )
+}
+
+function getImportActionSummaryClass(tone: string): string {
+  if (tone === 'ready') return 'border-emerald-200 bg-emerald-50 text-emerald-900'
+  if (tone === 'partial') return 'border-blue-200 bg-blue-50 text-blue-900'
+  if (tone === 'blocked') return 'border-amber-200 bg-amber-50 text-amber-950'
+  if (tone === 'error') return 'border-red-200 bg-red-50 text-red-900'
+  if (tone === 'loading') return 'border-sky-200 bg-sky-50 text-sky-900'
+  return 'border-slate-200 bg-slate-50 text-slate-700'
 }
 
 function checkRecordCatalogLinks(rows: Record<string, unknown>[], catalog: DanhMucDiem[]): CatalogCheck {
