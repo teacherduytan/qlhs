@@ -8,6 +8,8 @@
 >
 > **Cập nhật danh mục Nề nếp (15/07/2026)**: nội dung "không mang dụng cụ học tập" / "quên máy tính" chỉ được gán vào **mã duy nhất còn tồn tại trong DanhMucDiem hiện hành**. Không dùng lại `NN08` hoặc `NN09` cho nội dung này vì đây là 2 mã trùng ý nghĩa đã được xoá khỏi app.
 >
+> **Cập nhật chống bẩn nội dung (16/07/2026)**: các ghi chú kiểu `[CẦN ĐỐI CHIẾU DANHMUCDIEM...]`, `[DANHMUCDIEM...]`, `[dùng mã duy nhất còn tồn tại...]` chỉ là suy nghĩ nội bộ khi đối chiếu danh mục, **không được đưa vào `noi_dung`**. Nếu đã tìm thấy mã danh mục đúng thì `noi_dung` chỉ giữ mô tả gốc trên phiếu, ví dụ `"Không mang dụng cụ học tập (máy tính)"`.
+>
 > **Cập nhật mô tả/xử lý danh mục (15/07/2026)**: nếu phải đề xuất danh mục mới trong `de_xuat_danh_muc`, AI phải trả thêm `mo_ta` và `de_xuat_xu_ly` để app tạo danh mục đầy đủ theo C103. Với vi phạm, `de_xuat_xu_ly` nên ghi rõ mức xử lý theo số lần lặp lại.
 >
 > **Cập nhật mã xử lý/phạt (15/07/2026)**: nếu giáo viên cung cấp thêm `DanhMucXuLy` hiện hành, AI hãy đối chiếu gợi ý xử lý với mã xử lý/phạt đã có. Nếu khớp rõ thì điền `ma_xu_ly_goi_y`; nếu chưa có mã phù hợp thì để `ma_xu_ly_goi_y = null`, app Import sẽ cho giáo viên tạo mã xử lý mới từ `de_xuat_xu_ly`.
@@ -43,6 +45,7 @@ DanhMucDiem hiện hành trong app, DanhMucXuLy hiện hành nếu có, bảng t
    - Nếu vị trí cột và nội dung mâu thuẫn, ưu tiên ý nghĩa thật của chữ viết. Ví dụ nội dung "không mang máy tính"
      dù nằm nhầm cột thành tích vẫn là vi phạm; "phát biểu xây dựng bài" dù nằm lệch cột vẫn là tích cực.
    - Một ô/dòng có nhiều sự kiện thì tách thành nhiều bản ghi JSON riêng, mỗi bản ghi là 1 học sinh + 1 nội dung ghi nhận.
+   - Không được đưa ghi chú đối chiếu danh mục vào `noi_dung`. Các cụm như "[CẦN ĐỐI CHIẾU DANHMUCDIEM...]", "[dùng mã duy nhất còn tồn tại...]" là ghi chú nội bộ, phải xoá khỏi JSON đầu ra.
    - Trường nào suy luận từ ngữ cảnh nhưng chưa chắc, giữ mô tả thô và thêm tiền tố
      "[CẦN XÁC NHẬN NGỮ CẢNH — lý do]" vào `noi_dung`.
 
@@ -107,6 +110,9 @@ DanhMucDiem hiện hành trong app, DanhMucXuLy hiện hành nếu có, bảng t
      hoặc `NN09` vì 2 mã này đã bị xoá khỏi app do trùng ý nghĩa. Nếu chưa có mã phù hợp, đề xuất tạo danh mục
      mới với `nhom_goi_y = "NN"`, `ten_muc_goi_y` gần với "Không mang dụng cụ học tập", `diem_goi_y = -1`,
      `pham_vi_goi_y = "ca_nhan"`, và giữ `ma_danh_muc = null` trong `ban_ghi` chỉ để Import cho giáo viên tạo mã.
+     Nếu đã có mã phù hợp thì bắt buộc điền mã đó vào `ma_danh_muc`; `noi_dung` chỉ là mô tả sạch, ví dụ
+     "Không mang dụng cụ học tập (máy tính)". Tuyệt đối không xuất `noi_dung` dạng
+     "[CẦN ĐỐI CHIẾU DANHMUCDIEM — ...] Không mang dụng cụ học tập (máy tính)".
    - Nếu là dòng cá nhân thì bắt buộc có `ho_ten` đủ rõ; `ma_hs` có thể null để app Import gắn/tạo học sinh bằng mã tự sinh.
    - Nếu một dòng cá nhân vẫn có `ma_hs = null` vì tên chưa chắc, `noi_dung` phải có tiền tố `[CẦN XÁC NHẬN TÊN...]`.
    - Nếu JSON còn dòng vi phạm/tích cực thiếu mã danh mục mà không có `de_xuat_danh_muc`, coi như JSON chưa đạt và phải sửa lại.

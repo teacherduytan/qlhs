@@ -141,6 +141,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C108 | ✅ Xong | 16/07/2026 | Sửa luồng import từng phần để tiếp tục xử lý các dòng còn lại |
 | C109 | ✅ Xong | 16/07/2026 | Tự gợi ý/gắn danh mục cho dòng import thiếu ma_danh_muc |
 | C110 | ✅ Xong | 16/07/2026 | Chặn spam bấm import gây tạo dư dữ liệu |
+| C111 | ✅ Xong | 16/07/2026 | Cập nhật prompt để AI không đưa ghi chú đối chiếu DanhMucDiem vào nội dung |
 
 ---
 
