@@ -145,6 +145,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C112 | ✅ Xong | 16/07/2026 | Cập nhật prompt bằng ngữ cảnh DanhMucDiem và logic import hiện tại |
 | C113 | ✅ Xong | 16/07/2026 | Thêm unit test cho logic so khớp DanhMucDiem khi import |
 | C114 | ✅ Xong | 17/07/2026 | Rà soát nút Tải phiếu mẫu sau các thay đổi import/danh mục |
+| C115 | ✅ Xong | 17/07/2026 | Chuyển phiếu ghi nhận sang dạng ghi theo nội dung, nhiều học sinh chung một dòng |
 
 ---
 

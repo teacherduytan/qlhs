@@ -12,6 +12,8 @@
 >
 > **Cập nhật ngữ cảnh danh mục hiện hành (16/07/2026)**: theo DanhMucDiem đang chạy trong app, các nội dung thường gặp đã có mã: `NN07` = "Không mang dụng cụ học tập", `NN08` = "Không bao bìa, dán nhãn sách vở", `NN09` = "Nói chuyện/phát biểu không đúng lúc trong giờ", `NN10` = "Tự ý đổi chỗ ngồi khi chưa được cho phép", `NN11` = "Không thuộc bài", `KT01` = "Giơ tay xây dựng bài". Khi giáo viên dán DanhMucDiem mới hơn thì ưu tiên dữ liệu mới đó, nhưng vẫn phải dùng đúng quan hệ mã - tên hiện có, không tự tạo mã trùng nghĩa.
 >
+> **Cập nhật mẫu phiếu (17/07/2026)**: phiếu giấy mới tổ chức theo **nội dung ghi nhận** thay vì theo tên học sinh. Một dòng có thể ghi một nội dung như "Không mang máy tính" và liệt kê nhiều học sinh ở cột "Học sinh / tổ / cả lớp liên quan". Khi chuyển JSON, AI phải tách thành nhiều bản ghi cá nhân nếu cột liên quan có nhiều tên.
+>
 > **Cập nhật mô tả/xử lý danh mục (15/07/2026)**: nếu phải đề xuất danh mục mới trong `de_xuat_danh_muc`, AI phải trả thêm `mo_ta` và `de_xuat_xu_ly` để app tạo danh mục đầy đủ theo C103. Với vi phạm, `de_xuat_xu_ly` nên ghi rõ mức xử lý theo số lần lặp lại.
 >
 > **Cập nhật mã xử lý/phạt (15/07/2026)**: nếu giáo viên cung cấp thêm `DanhMucXuLy` hiện hành, AI hãy đối chiếu gợi ý xử lý với mã xử lý/phạt đã có. Nếu khớp rõ thì điền `ma_xu_ly_goi_y`; nếu chưa có mã phù hợp thì để `ma_xu_ly_goi_y = null`, app Import sẽ cho giáo viên tạo mã xử lý mới từ `de_xuat_xu_ly`.
@@ -26,7 +28,7 @@
 
 ## Cách dùng
 
-1. Chụp ảnh rõ nét phiếu ghi nhận (mẫu mới — 1 bảng duy nhất: STT, Họ tên, Tiết, Môn, Nội dung vi phạm, Nội dung thành tích). Nếu học sinh ghi thêm ngoài bảng hoặc ghi lệch cột, chụp đủ toàn trang để AI đọc ngữ cảnh.
+1. Chụp ảnh rõ nét phiếu ghi nhận (mẫu mới — 1 bảng duy nhất theo nội dung: STT, Tiết, Môn, Loại, Nội dung ghi nhận, Học sinh/tổ/cả lớp liên quan, Ghi chú). Nếu học sinh ghi thêm ngoài bảng hoặc ghi lệch cột, chụp đủ toàn trang để AI đọc ngữ cảnh.
 2. Mở Claude, đính kèm **ít nhất 3 thứ**: ảnh phiếu, **DanhMucDiem hiện hành trong app** (copy từ trang Danh mục hoặc xuất từ Sheet, nên có đủ `ma_danh_muc`, `nhom`, `ten_muc`, `diem`, `pham_vi`, `mo_ta`, `de_xuat_xu_ly`, `ma_xu_ly_de_xuat`), và **danh sách HocSinh hiện hành của lớp** (copy từ trang Học sinh/Sheet hoặc file `hocsinh_seed.json`) để chuẩn hoá họ tên, STT, tổ, diện. Có thể đính kèm thêm `bang-tra-cuu-ma-diem.md` để giải thích quy chế, nhưng mã danh mục cuối cùng phải theo DanhMucDiem hiện hành.
 3. Copy nguyên đoạn prompt bên dưới, dán vào khung chat, gửi đi.
 4. AI trả về JSON → đọc kỹ các dòng có tiền tố `[CẦN XÁC NHẬN...]`, kiểm tra mã/điểm số, rồi dán vào màn hình Import (chọn loại "Ghi nhận").
@@ -36,8 +38,9 @@
 ## Đoạn prompt để copy (dán nguyên văn, không cần sửa)
 
 ```
-Bạn hãy đọc ảnh phiếu ghi nhận học sinh tôi đính kèm (1 bảng duy nhất: STT, Họ tên, Tiết,
-Môn, Nội dung vi phạm, Nội dung thành tích — ghi tự do, KHÔNG có mã sẵn trên phiếu), bảng
+Bạn hãy đọc ảnh phiếu ghi nhận học sinh tôi đính kèm (mẫu mới là 1 bảng theo nội dung: STT, Tiết,
+Môn, Loại, Nội dung ghi nhận, Học sinh/tổ/cả lớp liên quan, Ghi chú — ghi tự do, KHÔNG có mã sẵn trên phiếu;
+nếu gặp mẫu cũ có cột Họ tên/Nội dung vi phạm/Nội dung thành tích thì vẫn đọc theo cùng logic), bảng
 DanhMucDiem hiện hành trong app, DanhMucXuLy hiện hành nếu có, bảng tra cứu mã nếu có, và danh sách HocSinh hiện hành đầy đủ của lớp
 (có `ma_hs`, họ tên, STT, tổ, diện; ví dụ copy từ trang Học sinh/Sheet hoặc hocsinh_seed.json), rồi:
 
@@ -51,6 +54,8 @@ NGỮ CẢNH APP HIỆN TẠI CẦN NHỚ KHI ĐỐI CHIẾU:
 0. Trước tiên, đọc toàn bộ phiếu theo NGỮ CẢNH, không phụ thuộc máy móc vào đúng cột in sẵn:
    - Học sinh/ban cán sự có thể ghi tên ở cột nội dung, ghi lỗi/thành tích lệch cột, ghi dồn nhiều ý vào một ô,
      dùng mũi tên/dấu gạch, ghi thêm ở lề hoặc dưới bảng.
+   - Với mẫu mới theo nội dung, mỗi dòng là 1 nội dung ghi nhận; cột "Học sinh/tổ/cả lớp liên quan" mới là nơi xác định
+     bản ghi áp dụng cho ai. Không được coi cả dòng là tập thể chỉ vì có nhiều tên trong cùng một ô.
    - Nếu vị trí cột và nội dung mâu thuẫn, ưu tiên ý nghĩa thật của chữ viết. Ví dụ nội dung "không mang máy tính"
      dù nằm nhầm cột thành tích vẫn là vi phạm; "phát biểu xây dựng bài" dù nằm lệch cột vẫn là tích cực.
    - Một ô/dòng có nhiều sự kiện thì tách thành nhiều bản ghi JSON riêng, mỗi bản ghi là 1 học sinh + 1 nội dung ghi nhận.
@@ -79,7 +84,8 @@ NGỮ CẢNH APP HIỆN TẠI CẦN NHỚ KHI ĐỐI CHIẾU:
    `noi_dung` giữ mô tả điểm số, `diem_so_mon` bằng điểm số đó. KHÔNG gộp `diem_so_mon` vào dòng
    `khen_thuong` hoặc dòng vi phạm, vì công thức Điểm học tập chỉ đọc dòng `loai=hoc_tap`.
 
-4. Nếu 1 nội dung liệt kê NHIỀU tên học sinh cụ thể cùng lúc (VD: "7 hs: A, B, C..."):
+4. Nếu 1 nội dung liệt kê NHIỀU tên học sinh cụ thể cùng lúc, đặc biệt trong cột "Học sinh/tổ/cả lớp liên quan"
+   (VD: "7 hs: A, B, C..." hoặc "An, Bình, Huy"):
    đây KHÔNG PHẢI phạm vi tập thể cả lớp và KHÔNG PHẢI 1 dòng duy nhất — TÁCH THÀNH NHIỀU DÒNG
    CÁ NHÂN RIÊNG BIỆT, mỗi dòng đúng 1 học sinh, giữ nguyên nội dung/ngày/tiết/môn giống nhau.
 
@@ -94,9 +100,10 @@ NGỮ CẢNH APP HIỆN TẠI CẦN NHỚ KHI ĐỐI CHIẾU:
      "[CẦN XÁC NHẬN TÊN — không tìm thấy trong danh sách HocSinh]" vào `noi_dung`.
 
 6. Tự xác định phạm vi từng dòng:
-   - Mô tả nhắc "cả lớp" / không có tên cụ thể nào → phạm vi TẬP THỂ: ho_ten = null, to_lien_quan = null.
-   - Mô tả nhắc "tổ" kèm số → phạm vi TỔ TRỰC: ho_ten = null, điền to_lien_quan đúng số tổ.
-   - Có tên cụ thể (dù viết tắt) → phạm vi CÁ NHÂN: điền `ho_ten` theo bước 5, `ma_hs` có thể để null để app Import gắn học sinh.
+   - Cột liên quan hoặc mô tả nhắc "cả lớp" / không có tên cụ thể nào → phạm vi TẬP THỂ: ho_ten = null, to_lien_quan = null.
+   - Cột liên quan hoặc mô tả nhắc "tổ" kèm số → phạm vi TỔ TRỰC: ho_ten = null, điền to_lien_quan đúng số tổ.
+   - Cột liên quan có một hoặc nhiều tên cụ thể (dù viết tắt) → phạm vi CÁ NHÂN: tách thành từng học sinh,
+     điền `ho_ten` theo bước 5, `ma_hs` có thể để null để app Import gắn học sinh.
 
 7. Không tạo mã ngoài DanhMucDiem hiện hành. Với vi phạm hoặc tích cực, cố gắng gán một mã đang tồn tại bằng cách đối chiếu
    theo tên, mô tả, nhóm, điểm, phạm vi và ý nghĩa nghiệp vụ; đánh dấu `[CẦN XÁC NHẬN MÃ...]` nếu chưa chắc. Chỉ để `ma_danh_muc = null` khi `loai=hoc_tap` hoặc khi thật sự cần giáo viên

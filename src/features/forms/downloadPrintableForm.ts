@@ -36,27 +36,30 @@ function buildPrintableFormHtml(): string {
     <p><strong>Ngày ghi nhận:</strong> ____ / ____ / 2026</p>
     <p><strong>Người ghi nhận (chức vụ):</strong> ______________________</p>
   </div>
-  <p class="note">Ghi tự do, không cần mã. AI sẽ suy luận mã và phạm vi khi giáo viên chuyển phiếu thành JSON.</p>
+  <p class="note">Ghi theo nội dung trước, không cần mã. Nếu nhiều học sinh cùng một nội dung, ghi chung một dòng và liệt kê tên ở cột liên quan.</p>
 
   <table>
     <thead>
       <tr>
         <th style="width:36px">STT</th>
-        <th style="width:170px">Họ tên</th>
         <th style="width:52px">Tiết</th>
         <th style="width:100px">Môn</th>
-        <th>Nội dung vi phạm</th>
-        <th>Nội dung thành tích</th>
+        <th style="width:82px">Loại</th>
+        <th>Nội dung ghi nhận</th>
+        <th style="width:220px">Học sinh / tổ / cả lớp liên quan</th>
+        <th style="width:130px">Ghi chú</th>
       </tr>
     </thead>
-    <tbody>${blankRows(14, 6)}</tbody>
+    <tbody>${blankRows(14, 7)}</tbody>
   </table>
 
   <div class="guide">
     <p>1. Chỉ ghi dòng có phát sinh.</p>
-    <p>2. Nếu là cả lớp hoặc tổ trực, ghi rõ trong nội dung vi phạm và để trống Họ tên.</p>
-    <p>3. Tiết/Môn chỉ điền khi có tiết học cụ thể.</p>
-    <p>4. Cuối buổi nộp phiếu cho giáo viên chủ nhiệm hoặc lớp phó phụ trách.</p>
+    <p>2. Loại ghi ngắn: Vi phạm, Tích cực hoặc Điểm số.</p>
+    <p>3. Một nội dung có nhiều học sinh thì ghi chung tên ở cột liên quan, ngăn cách bằng dấu phẩy.</p>
+    <p>4. Nếu là cả lớp hoặc tổ trực, ghi "cả lớp" hoặc "tổ 2" ở cột liên quan.</p>
+    <p>5. Tiết/Môn chỉ điền khi có tiết học cụ thể.</p>
+    <p>6. Cuối buổi nộp phiếu cho giáo viên chủ nhiệm hoặc lớp phó phụ trách.</p>
   </div>
 </body>
 </html>`
