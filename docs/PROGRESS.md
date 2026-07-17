@@ -144,6 +144,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C111 | ✅ Xong | 16/07/2026 | Cập nhật prompt để AI không đưa ghi chú đối chiếu DanhMucDiem vào nội dung |
 | C112 | ✅ Xong | 16/07/2026 | Cập nhật prompt bằng ngữ cảnh DanhMucDiem và logic import hiện tại |
 | C113 | ✅ Xong | 16/07/2026 | Thêm unit test cho logic so khớp DanhMucDiem khi import |
+| C114 | ✅ Xong | 17/07/2026 | Rà soát nút Tải phiếu mẫu sau các thay đổi import/danh mục |
 
 ---
 

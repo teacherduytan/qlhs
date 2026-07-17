@@ -1,6 +1,8 @@
 # Mẫu phiếu ghi nhận giấy — In và phát cho ban cán sự lớp
 
 > **Cập nhật quan trọng (12/07/2026)**: thay thế hoàn toàn bản 3 phần + mã trước đó. Bản cũ bắt ban cán sự tra mã (CC/VS/NN/KL...) — quá phức tạp, khiến các em mất tập trung vào việc học chỉ để ghi phiếu. Bản mới: **1 mẫu duy nhất, không mã, ghi tự do** — việc suy luận đúng mã do AI xử lý khi chuyển thành dữ liệu (xem `mau-prompt-chuyen-doi-json.md`), không phải việc của các em.
+>
+> **Rà soát (17/07/2026)**: sau khi app có DanhMucDiem động, tạo danh mục khi import, so khớp mã hiện hành và unit test import, mẫu phiếu này **vẫn giữ nguyên chủ đích**: không đưa danh mục/mã/dropdown lên giấy. Học sinh hoặc ban cán sự chỉ ghi sự việc thật; AI + màn Import mới là nơi đối chiếu danh mục và xử lý mã.
 
 ---
 
