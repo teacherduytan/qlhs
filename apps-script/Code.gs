@@ -11,7 +11,7 @@ var API_CONFIG = {
   IMPORT_SUBDIR: 'nhat-ky-nhap-lieu',
 };
 
-var API_VERSION = 'C116-2026-07-20';
+var API_VERSION = 'C117-2026-07-20';
 
 var SHEET_TABS = {
   HocSinh: 'HocSinh',
@@ -78,6 +78,7 @@ function doGet(e) {
             handling_catalog_crud: true,
             import_requires_catalog_match: true,
             attendance_report: true,
+            week_config_auto_extend: true,
             teacher_login_get: true,
             teacher_session: true,
           },
@@ -112,7 +113,7 @@ function doGet(e) {
         data = getSheetObjects_(SHEET_TABS.DanhMucXuLy);
         break;
       case 'cau_hinh_tuan':
-        data = getSheetObjects_(SHEET_TABS.CauHinhTuan);
+        data = getWeekConfigWithAutoExtension_();
         break;
       case 'ban_can_su':
         data = getSheetObjects_(SHEET_TABS.BanCanSu);
@@ -1270,6 +1271,91 @@ function findWeekNumberByDate_(dateText) {
   return resolveWeekNumberByDate_(dateText).tuan_so;
 }
 
+function getWeekConfigWithAutoExtension_() {
+  ensureSheetHeaders_(SHEET_TABS.CauHinhTuan, [
+    'tuan_so',
+    'tu_ngay',
+    'den_ngay',
+    'so_ngay',
+    'loai_tuan',
+  ]);
+  autoExtendWeekConfigToToday_();
+  return getSheetObjects_(SHEET_TABS.CauHinhTuan);
+}
+
+function autoExtendWeekConfigToToday_(targetDate) {
+  var sheet = getSpreadsheet_().getSheetByName(SHEET_TABS.CauHinhTuan);
+  if (!sheet || sheet.getLastRow() < 2) return;
+
+  var values = sheet.getDataRange().getValues();
+  var headers = values[0];
+  var weekIndex = headers.indexOf('tuan_so');
+  var startIndex = headers.indexOf('tu_ngay');
+  var endIndex = headers.indexOf('den_ngay');
+  var daysIndex = headers.indexOf('so_ngay');
+  var typeIndex = headers.indexOf('loai_tuan');
+  if (weekIndex === -1 || startIndex === -1 || endIndex === -1) return;
+
+  var latest = null;
+  for (var i = 1; i < values.length; i++) {
+    var start = parseDateValue_(values[i][startIndex]);
+    var end = parseDateValue_(values[i][endIndex]);
+    var weekNumber = Number(values[i][weekIndex]);
+    if (!start || !end || isNaN(weekNumber)) continue;
+    if (!latest || end > latest.end || (end.getTime() === latest.end.getTime() && weekNumber > latest.weekNumber)) {
+      latest = {
+        end: end,
+        start: start,
+        weekNumber: weekNumber,
+      };
+    }
+  }
+
+  if (!latest) return;
+
+  var today = parseDateValue_(targetDate || new Date());
+  if (!today) return;
+
+  var rows = [];
+  var nextStart = addDaysForWeekConfig_(latest.start, 7);
+  var nextEnd = addDaysForWeekConfig_(nextStart, 4);
+  var nextWeekNumber = latest.weekNumber + 1;
+
+  while (today > latest.end && rows.length < 80) {
+    var item = {
+      tuan_so: nextWeekNumber,
+      tu_ngay: formatDateForLog_(nextStart),
+      den_ngay: formatDateForLog_(nextEnd),
+      so_ngay: 5,
+      loai_tuan: 'hoc_binh_thuong',
+    };
+    rows.push(headers.map(function (header, index) {
+      if (header === 'so_ngay' && daysIndex === -1) return '';
+      if (header === 'loai_tuan' && typeIndex === -1) return '';
+      return item[header] !== undefined ? item[header] : '';
+    }));
+
+    latest = {
+      end: nextEnd,
+      start: nextStart,
+      weekNumber: nextWeekNumber,
+    };
+    nextStart = addDaysForWeekConfig_(nextStart, 7);
+    nextEnd = addDaysForWeekConfig_(nextStart, 4);
+    nextWeekNumber++;
+  }
+
+  if (rows.length) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, headers.length).setValues(rows);
+  }
+}
+
+function addDaysForWeekConfig_(dateValue, days) {
+  var date = new Date(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate());
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
 function resolveWeekNumberByDate_(dateValue) {
   var target = parseDateValue_(dateValue);
   if (!target) {
@@ -1279,6 +1365,14 @@ function resolveWeekNumberByDate_(dateValue) {
     };
   }
 
+  ensureSheetHeaders_(SHEET_TABS.CauHinhTuan, [
+    'tuan_so',
+    'tu_ngay',
+    'den_ngay',
+    'so_ngay',
+    'loai_tuan',
+  ]);
+  autoExtendWeekConfigToToday_(target);
   var weeks = getSheetObjects_(SHEET_TABS.CauHinhTuan);
   for (var i = 0; i < weeks.length; i++) {
     var start = parseDateValue_(weeks[i].tu_ngay);

@@ -19,7 +19,15 @@ import {
 } from '../scoring/scoreStyles'
 import { buildPedagogySuggestions } from '../scoring/suggestions'
 import { getStudentGroup } from '../students/studentGroups'
-import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
+import {
+  findWeek,
+  findWeekByDate,
+  formatWeekLabel,
+  getTodayIsoDate,
+  selectDefaultWeek,
+  WeekDatePicker,
+  WeekSelector,
+} from '../time/WeekSelector'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
 
 type DashboardState =
@@ -143,6 +151,7 @@ export function DashboardPage() {
   const [state, setState] = useState<DashboardState>({ status: 'loading' })
   const [expandedDay, setExpandedDay] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState('')
+  const [todayIso, setTodayIso] = useState(() => getTodayIsoDate())
   const [scoreQuery, setScoreQuery] = useState('')
   const [scoreSort, setScoreSort] = useState<ScoreSortKey>('score_asc')
   const [collapsedSections, setCollapsedSections] =
@@ -196,6 +205,14 @@ export function DashboardPage() {
     }
   }, [])
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setTodayIso(getTodayIsoDate())
+    }, 60 * 1000)
+
+    return () => window.clearInterval(timer)
+  }, [])
+
   const body = useMemo(() => {
     if (state.status !== 'success') {
       return null
@@ -228,6 +245,7 @@ export function DashboardPage() {
     const collectiveEvents = getCollectiveEvents(state.records, state.catalog, state.tuanSo)
     const missingGroupStudents = state.students.filter((student) => !student.to)
     const selectedWeek = findWeek(state.weekConfig, state.tuanSo)
+    const actualWeek = findWeekByDate(state.weekConfig, todayIso)
     const dailyLogs = buildDailyLogs(state.records, state.weekConfig, state.tuanSo, selectedDate)
     const overviewStats = buildOverviewStats({
       catalog: state.catalog,
@@ -258,11 +276,12 @@ export function DashboardPage() {
       overviewStats,
       previousScores,
       groupViewRows,
+      actualWeek,
       selectedWeek,
       sortedScores,
       studentById,
     }
-  }, [scoreQuery, scoreSort, selectedDate, selectedGroup, showAllGroupStudents, state])
+  }, [scoreQuery, scoreSort, selectedDate, selectedGroup, showAllGroupStudents, state, todayIso])
 
   async function processCollectiveEvent(
     record: GhiNhan,
@@ -370,6 +389,14 @@ export function DashboardPage() {
     setState((current) => (current.status === 'success' ? { ...current, tuanSo } : current))
   }
 
+  function selectActualWeek() {
+    if (state.status !== 'success') {
+      return
+    }
+
+    selectWeek(selectDefaultWeek(state.weekConfig, state.records))
+  }
+
   function selectDate(date: string) {
     setExpandedDay(date || null)
     setSelectedDate(date)
@@ -457,18 +484,17 @@ export function DashboardPage() {
               onToggle={() => toggleSection('filters')}
             />
             {!collapsedSections.filters ? (
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <WeekSelector
-                  value={state.tuanSo}
-                  weeks={state.weekConfig}
-                  onChange={selectWeek}
-                />
-                <WeekDatePicker
-                  selectedWeek={body.selectedWeek}
-                  value={selectedDate}
-                  onChange={selectDate}
-                />
-              </div>
+              <DashboardTimeFilter
+                actualWeek={body.actualWeek}
+                onDateChange={selectDate}
+                onSelectActualWeek={selectActualWeek}
+                onWeekChange={selectWeek}
+                selectedDate={selectedDate}
+                selectedWeek={body.selectedWeek}
+                todayIso={todayIso}
+                tuanSo={state.tuanSo}
+                weeks={state.weekConfig}
+              />
             ) : null}
           </section>
 
@@ -878,6 +904,143 @@ function SummaryMetric({
     <div className={`rounded-lg border p-4 shadow-sm ${toneClass}`}>
       <p className={`text-xs font-semibold uppercase ${labelClass}`}>{label}</p>
       <p className="mt-1 text-2xl font-bold">{value}</p>
+    </div>
+  )
+}
+
+function DashboardTimeFilter({
+  actualWeek,
+  onDateChange,
+  onSelectActualWeek,
+  onWeekChange,
+  selectedDate,
+  selectedWeek,
+  todayIso,
+  tuanSo,
+  weeks,
+}: {
+  actualWeek?: CauHinhTuan
+  onDateChange: (date: string) => void
+  onSelectActualWeek: () => void
+  onWeekChange: (tuanSo: number) => void
+  selectedDate: string
+  selectedWeek?: CauHinhTuan
+  todayIso: string
+  tuanSo: number
+  weeks: CauHinhTuan[]
+}) {
+  const isActualWeek = Boolean(actualWeek && actualWeek.tuan_so === tuanSo)
+  const isTodaySelected = selectedDate === todayIso
+  const selectedDateOutsideWeek =
+    Boolean(selectedDate && selectedWeek && (selectedDate < selectedWeek.tu_ngay || selectedDate > selectedWeek.den_ngay))
+
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="grid gap-3 lg:grid-cols-3">
+        <TimeInfoTile
+          label="Hôm nay"
+          tone="today"
+          value={formatDate(todayIso)}
+          detail={
+            actualWeek
+              ? `Thuộc ${formatWeekLabel(actualWeek)}`
+              : 'Chưa có dòng CauHinhTuan khớp ngày hôm nay.'
+          }
+        />
+        <TimeInfoTile
+          label="Đang xem"
+          tone={isActualWeek ? 'current' : 'manual'}
+          value={selectedWeek ? `Tuần ${selectedWeek.tuan_so}` : `Tuần ${tuanSo}`}
+          detail={
+            selectedWeek
+              ? `${formatDateCompact(selectedWeek.tu_ngay)} - ${formatDateCompact(selectedWeek.den_ngay)}`
+              : 'Tuần này chưa có cấu hình ngày bắt đầu/kết thúc.'
+          }
+        />
+        <TimeInfoTile
+          label="Ngày cụ thể"
+          tone={selectedDate ? 'date' : 'all'}
+          value={selectedDate ? formatDate(selectedDate) : 'Cả tuần'}
+          detail={
+            selectedDate
+              ? isTodaySelected
+                ? 'Đang lọc đúng ngày hôm nay.'
+                : 'Đang lọc một ngày riêng trong tuần.'
+              : 'Nhật ký hiển thị toàn bộ ngày của tuần đang xem.'
+          }
+        />
+      </div>
+
+      {!actualWeek ? (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+          Hôm nay {formatDate(todayIso)} chưa nằm trong cấu hình tuần. Sau khi deploy Apps Script bản mới,
+          hệ thống sẽ tự thêm tuần học tiếp theo khi mở Tổng quan hoặc import dữ liệu mới.
+        </div>
+      ) : null}
+
+      {selectedDateOutsideWeek ? (
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+          Ngày đang lọc nằm ngoài tuần đang xem. Hãy chọn lại ngày hoặc bấm “Cả tuần”.
+        </div>
+      ) : null}
+
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <WeekSelector value={tuanSo} weeks={weeks} onChange={onWeekChange} />
+        <div className="space-y-3">
+          <WeekDatePicker selectedWeek={selectedWeek} value={selectedDate} onChange={onDateChange} />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onSelectActualWeek}
+              disabled={isActualWeek && !selectedDate}
+              className="h-10 rounded-md border border-blue-200 bg-white px-3 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              Về tuần thực tế
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (actualWeek) {
+                  onWeekChange(actualWeek.tuan_so)
+                }
+                onDateChange(todayIso)
+              }}
+              disabled={!actualWeek || (isActualWeek && isTodaySelected)}
+              className="h-10 rounded-md border border-emerald-200 bg-white px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              Xem hôm nay
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TimeInfoTile({
+  detail,
+  label,
+  tone,
+  value,
+}: {
+  detail: string
+  label: string
+  tone: 'all' | 'current' | 'date' | 'manual' | 'today'
+  value: string
+}) {
+  const toneClass: Record<typeof tone, string> = {
+    all: 'border-slate-200 bg-white text-slate-900',
+    current: 'border-emerald-200 bg-emerald-50 text-emerald-950',
+    date: 'border-violet-200 bg-violet-50 text-violet-950',
+    manual: 'border-amber-200 bg-amber-50 text-amber-950',
+    today: 'border-sky-200 bg-sky-50 text-sky-950',
+  }
+
+  return (
+    <div className={`rounded-lg border p-3 shadow-sm ${toneClass[tone]}`}>
+      <p className="text-xs font-semibold uppercase opacity-70">{label}</p>
+      <p className="mt-1 text-base font-bold">{value}</p>
+      <p className="mt-1 text-xs leading-5 opacity-75">{detail}</p>
     </div>
   )
 }
@@ -2433,10 +2596,10 @@ function buildDailyLogs(
 
 function datesBetween(start: string, end: string): string[] {
   const dates: string[] = []
-  const current = new Date(start)
-  const last = new Date(end)
+  const current = parseIsoDate(start)
+  const last = parseIsoDate(end)
 
-  while (!Number.isNaN(current.getTime()) && current <= last) {
+  while (current && last && current <= last) {
     dates.push(toIsoDate(current))
     current.setDate(current.getDate() + 1)
   }
@@ -2476,8 +2639,8 @@ function toIsoDate(date: Date): string {
 }
 
 function formatDate(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
+  const date = parseIsoDate(value)
+  if (!date) {
     return value
   }
 
@@ -2487,6 +2650,29 @@ function formatDate(value: string): string {
     month: '2-digit',
     year: 'numeric',
   }).format(date)
+}
+
+function formatDateCompact(value: string): string {
+  const date = parseIsoDate(value)
+  if (!date) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date)
+}
+
+function parseIsoDate(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) {
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
 }
 
 function getStudentRecords(records: GhiNhan[], maHs: string, weeks: number[]): GhiNhan[] {

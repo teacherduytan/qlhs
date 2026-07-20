@@ -130,7 +130,7 @@ export function WeekDatePicker({
 export function selectDefaultWeek(weeks: CauHinhTuan[], records: GhiNhan[] = []): number {
   const sortedWeeks = getSelectableWeeks(weeks)
   const today = startOfDay(new Date())
-  const currentWeek = sortedWeeks.find((week) => isDateInWeek(today, week))
+  const currentWeek = findWeekByDate(sortedWeeks, today)
 
   if (currentWeek) {
     return currentWeek.tuan_so
@@ -175,6 +175,19 @@ export function findWeek(weeks: CauHinhTuan[], tuanSo: number): CauHinhTuan | un
   return weeks.find((week) => week.tuan_so === tuanSo)
 }
 
+export function findWeekByDate(weeks: CauHinhTuan[], date: Date | string): CauHinhTuan | undefined {
+  const target = typeof date === 'string' ? parseIsoDate(date) : startOfDay(date)
+  if (!target) {
+    return undefined
+  }
+
+  return getSelectableWeeks(weeks).find((week) => isDateInWeek(target, week))
+}
+
+export function getTodayIsoDate(): string {
+  return toIsoDate(startOfDay(new Date()))
+}
+
 export function formatWeekLabel(week: CauHinhTuan): string {
   return `Tuần ${week.tuan_so} (${formatShortDate(week.tu_ngay)} - ${formatShortDate(week.den_ngay)})`
 }
@@ -198,6 +211,13 @@ function parseIsoDate(value: string): Date | null {
 
 function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function toIsoDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function formatShortDate(value: string): string {
