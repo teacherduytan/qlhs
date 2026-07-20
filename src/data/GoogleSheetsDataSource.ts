@@ -8,6 +8,10 @@ import type {
   DanhMucXuLy,
   GhiNhan,
   HocSinh,
+  AttendanceFormPayload,
+  AttendanceFormUrlResult,
+  AttendanceReport,
+  BuoiHoc,
   ImportResult,
   LoaiDuLieuImport,
   NhatKyImport,
@@ -200,6 +204,26 @@ export class GoogleSheetsDataSource implements DataSource {
     return this.post<DeleteImportResult>({
       action: 'delete_import',
       ma_log: maLog,
+    })
+  }
+
+  calculateAttendanceReport(
+    ngay: string,
+    buoi: BuoiHoc,
+    treTinhCoMat = true,
+  ): Promise<AttendanceReport> {
+    return this.post<AttendanceReport>({
+      action: 'calculate_attendance_report',
+      ngay,
+      buoi,
+      tre_tinh_co_mat: treTinhCoMat,
+    })
+  }
+
+  buildAttendanceFormUrl(payload: AttendanceFormPayload): Promise<AttendanceFormUrlResult> {
+    return this.post<AttendanceFormUrlResult>({
+      action: 'build_attendance_form_url',
+      payload,
     })
   }
 

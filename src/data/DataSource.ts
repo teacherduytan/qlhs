@@ -6,6 +6,10 @@ import type {
   DanhMucXuLy,
   GhiNhan,
   HocSinh,
+  AttendanceFormPayload,
+  AttendanceFormUrlResult,
+  AttendanceReport,
+  BuoiHoc,
   ImportResult,
   LoaiDuLieuImport,
   NhatKyImport,
@@ -60,4 +64,11 @@ export interface DataSource {
     nguoiThucHien?: string,
   ): Promise<ImportResult>
   deleteImport(maLog: string): Promise<DeleteImportResult>
+
+  calculateAttendanceReport(
+    ngay: string,
+    buoi: BuoiHoc,
+    treTinhCoMat?: boolean,
+  ): Promise<AttendanceReport>
+  buildAttendanceFormUrl(payload: AttendanceFormPayload): Promise<AttendanceFormUrlResult>
 }

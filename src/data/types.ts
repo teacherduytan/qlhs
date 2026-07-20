@@ -142,3 +142,41 @@ export interface DeleteImportResult {
   trang_thai: TrangThaiImport
   ghi_chu: string | null
 }
+
+export type BuoiHoc = 'SANG' | 'CHIEU'
+
+export type AttendanceMealKey =
+  | 'mon_chinh_1'
+  | 'mon_chinh_2'
+  | 'mon_phu_1'
+  | 'mon_phu_2'
+  | 'mon_chinh_1_ngay_mai'
+  | 'mon_chinh_2_ngay_mai'
+  | 'mon_phu_1_ngay_mai'
+  | 'mon_phu_2_ngay_mai'
+
+export type AttendanceByDien = Record<DienHocSinh, number>
+
+export interface AttendanceReport {
+  ngay: string
+  buoi: BuoiHoc
+  tuan_so: number
+  sheet_name: string
+  tre_tinh_co_mat: boolean
+  co_mat: AttendanceByDien
+  tong: AttendanceByDien
+  vang: string[]
+  generated_at: string
+}
+
+export interface AttendanceFormPayload {
+  ngay: string
+  buoi: BuoiHoc
+  co_mat: AttendanceByDien
+  vang: string[]
+  so_mon: Record<AttendanceMealKey, string>
+}
+
+export interface AttendanceFormUrlResult {
+  url: string
+}

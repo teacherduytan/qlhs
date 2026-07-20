@@ -11,7 +11,7 @@ var API_CONFIG = {
   IMPORT_SUBDIR: 'nhat-ky-nhap-lieu',
 };
 
-var API_VERSION = 'C107-2026-07-15';
+var API_VERSION = 'C116-2026-07-20';
 
 var SHEET_TABS = {
   HocSinh: 'HocSinh',
@@ -77,6 +77,7 @@ function doGet(e) {
             point_catalog_guidance_fields: true,
             handling_catalog_crud: true,
             import_requires_catalog_match: true,
+            attendance_report: true,
             teacher_login_get: true,
             teacher_session: true,
           },
@@ -250,6 +251,16 @@ function doPost(e) {
       return jsonResponse_({ ok: true, data: deleteResult });
     }
 
+    if (body.action === 'calculate_attendance_report') {
+      var attendanceReport = calculateAttendanceReport_(body);
+      return jsonResponse_({ ok: true, data: attendanceReport });
+    }
+
+    if (body.action === 'build_attendance_form_url') {
+      var formUrl = buildAttendanceFormUrl_(body.payload || {});
+      return jsonResponse_({ ok: true, data: { url: formUrl } });
+    }
+
     if (body.import && body.loai && body.rows) {
       var result = importBatch_(body.loai, body.rows, body.nguoi_thuc_hien || '');
       return jsonResponse_({ ok: true, data: result });
@@ -279,6 +290,314 @@ function parsePostBody_(e) {
   } catch (err) {
     throw new Error('POST body is not valid JSON');
   }
+}
+
+// --- Báo cáo sĩ số (C116) ---
+
+function calculateAttendanceReport_(body) {
+  var targetDate = parseIsoDate_(body.ngay);
+  var session = normalizeAttendanceSession_(body.buoi);
+  var lateAsPresent = body.tre_tinh_co_mat !== false;
+  var spreadsheet = getAttendanceSpreadsheet_();
+  var weekNumber = findAttendanceWeekNumber_(spreadsheet, targetDate);
+  var sheetName = 'Chính khóa - Tuần ' + weekNumber;
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  if (!sheet) {
+    throw new Error('Tuần ' + weekNumber + ' chưa được tạo trong hệ thống.');
+  }
+
+  var attendanceColumn = findAttendanceColumn_(sheet, targetDate, session);
+  var values = sheet.getDataRange().getDisplayValues();
+  var present = createAttendanceCount_();
+  var total = createAttendanceCount_();
+  var absent = [];
+  var absentStatuses = { 'Vắng có phép': true, 'Vắng không phép': true };
+
+  for (var rowIndex = 8; rowIndex < values.length; rowIndex++) {
+    var row = values[rowIndex] || [];
+    var studentName = String(row[1] || '').trim();
+    if (!studentName) {
+      continue;
+    }
+
+    var studentType = normalizeStudentType_(row[2]);
+    if (!studentType) {
+      continue;
+    }
+
+    var status = String(row[attendanceColumn] || '').trim();
+    var isAbsent = absentStatuses[status] === true;
+    var isLate = status === 'Trễ';
+    var isPresent = status === '' || (isLate && lateAsPresent);
+
+    total[studentType] += 1;
+    if (isPresent) {
+      present[studentType] += 1;
+    }
+    if (isAbsent || (isLate && !lateAsPresent)) {
+      absent.push(studentName + ' (' + studentType + ')');
+    }
+  }
+
+  return {
+    ngay: targetDate.iso,
+    buoi: session,
+    tuan_so: weekNumber,
+    sheet_name: sheetName,
+    tre_tinh_co_mat: lateAsPresent,
+    co_mat: present,
+    tong: total,
+    vang: absent,
+    generated_at: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss'),
+  };
+}
+
+function buildAttendanceFormUrl_(payload) {
+  var config = getAttendanceFormConfig_();
+  var questions = config.questions;
+  var params = [];
+  var date = parseIsoDate_(payload.ngay);
+  var session = normalizeAttendanceSession_(payload.buoi);
+  var present = payload.co_mat || {};
+  var meals = payload.so_mon || {};
+  var absentList = Array.isArray(payload.vang) ? payload.vang : [];
+  var className = config.className || '11C5';
+
+  addRequiredFormParam_(params, questions, ['Nhập Password', 'Password'], config.password);
+  addRequiredFormParam_(params, questions, ['NGÀY', 'Ngay'], date.iso);
+  addRequiredFormParam_(params, questions, ['LỚP', 'Lop'], className);
+  addRequiredFormParam_(params, questions, ['BUỔI HỌC', 'Buoi hoc'], session === 'SANG' ? 'SÁNG' : 'CHIỀU');
+  addRequiredFormParam_(params, questions, ['NỘI TRÚ (CÓ MẶT)', 'Noi tru co mat'], present.NT || 0);
+  addRequiredFormParam_(params, questions, ['BÁN TRÚ (CÓ MẶT)', 'Ban tru co mat'], present.BT || 0);
+  addRequiredFormParam_(params, questions, ['HAI BUỔI (CÓ MẶT)', 'Hai buoi co mat'], present['2B'] || 0);
+  addRequiredFormParam_(
+    params,
+    questions,
+    ['TÊN HỌC SINH VẮNG (DIỆN)', 'Ten hoc sinh vang dien'],
+    absentList.join(', ')
+  );
+
+  addOptionalFormParam_(params, questions, ['SỐ MÓN CHÍNH 1', 'So mon chinh 1'], meals.mon_chinh_1 || '');
+  addOptionalFormParam_(params, questions, ['SỐ MÓN CHÍNH 2', 'So mon chinh 2'], meals.mon_chinh_2 || '');
+  addOptionalFormParam_(params, questions, ['SỐ MÓN PHỤ 1(Trứng)', 'SỐ MÓN PHỤ 1 (Trứng)', 'So mon phu 1 trung'], meals.mon_phu_1 || '');
+  addOptionalFormParam_(params, questions, ['SỐ MÓN PHỤ 2 (Cá hộp)', 'So mon phu 2 ca hop'], meals.mon_phu_2 || '');
+  addOptionalFormParam_(params, questions, ['SỐ MÓN CHÍNH 1 (NGÀY MAI)', 'So mon chinh 1 ngay mai'], meals.mon_chinh_1_ngay_mai || '');
+  addOptionalFormParam_(params, questions, ['SỐ MÓN CHÍNH 2 (NGÀY MAI)', 'So mon chinh 2 ngay mai'], meals.mon_chinh_2_ngay_mai || '');
+  addOptionalFormParam_(params, questions, ['SỐ MÓN PHỤ 1 (NGÀY MAI) Trứng', 'So mon phu 1 ngay mai trung'], meals.mon_phu_1_ngay_mai || '');
+  addOptionalFormParam_(params, questions, ['SỐ MÓN PHỤ 2 (NGÀY MAI) Cá hộp', 'So mon phu 2 ngay mai ca hop'], meals.mon_phu_2_ngay_mai || '');
+
+  return config.baseUrl + (config.baseUrl.indexOf('?') === -1 ? '?' : '&') + 'usp=pp_url&' + params.join('&');
+}
+
+function getAttendanceSpreadsheet_() {
+  var sheetId = PropertiesService.getScriptProperties().getProperty('ATTENDANCE_SPREADSHEET_ID');
+  if (!sheetId) {
+    throw new Error('Missing Apps Script property: ATTENDANCE_SPREADSHEET_ID');
+  }
+  return SpreadsheetApp.openById(sheetId);
+}
+
+function findAttendanceWeekNumber_(spreadsheet, targetDate) {
+  var sheet = spreadsheet.getSheetByName('Cấu hình tuần');
+  if (!sheet) {
+    throw new Error('Không tìm thấy sheet "Cấu hình tuần" trong file điểm danh.');
+  }
+
+  var values = sheet.getDataRange().getValues();
+  for (var i = 5; i < values.length; i++) {
+    var row = values[i] || [];
+    var weekNumber = Number(row[0]);
+    if (!weekNumber) continue;
+
+    var start = parseSheetDate_(row[1]);
+    var end = parseSheetDate_(row[2]);
+    if (!start || !end) continue;
+
+    if (start.key <= targetDate.key && targetDate.key <= end.key) {
+      return weekNumber;
+    }
+  }
+
+  throw new Error('Ngày này chưa có trong lịch điểm danh.');
+}
+
+function findAttendanceColumn_(sheet, targetDate, session) {
+  var lastColumn = sheet.getLastColumn();
+  var header = sheet.getRange(7, 1, 1, lastColumn).getDisplayValues()[0];
+  var totalColumn = lastColumn;
+  for (var index = 0; index < header.length; index++) {
+    if (normalizeText_(header[index]).indexOf('tong ket') !== -1) {
+      totalColumn = index;
+      break;
+    }
+  }
+
+  for (var col = 5; col < totalColumn; col += 2) {
+    var dayMonth = parseAttendanceHeaderDayMonth_(header[col]);
+    if (!dayMonth) continue;
+    if (dayMonth.day === targetDate.day && dayMonth.month === targetDate.month) {
+      var offset = session === 'SANG' ? 0 : 1;
+      if (col + offset >= totalColumn) {
+        break;
+      }
+      return col + offset;
+    }
+  }
+
+  throw new Error('Không tìm thấy cột điểm danh cho ngày ' + targetDate.display + ' trong sheet "' + sheet.getName() + '".');
+}
+
+function parseAttendanceHeaderDayMonth_(value) {
+  var lines = String(value || '').split(/\r?\n/).map(function (line) {
+    return line.trim();
+  }).filter(Boolean);
+  var text = lines.length ? lines[lines.length - 1] : String(value || '').trim();
+  var match = text.match(/(\d{1,2})[\/\-](\d{1,2})/);
+  if (!match) return null;
+  return { day: Number(match[1]), month: Number(match[2]) };
+}
+
+function getAttendanceFormConfig_() {
+  var props = PropertiesService.getScriptProperties();
+  var raw = props.getProperty('ATTENDANCE_FORM_ENTRIES_JSON');
+  var parsed = raw ? JSON.parse(raw) : {};
+  var baseUrl = String(parsed.form_base_url || props.getProperty('ATTENDANCE_FORM_BASE_URL') || '').trim();
+  var password = String(parsed.form_password || props.getProperty('ATTENDANCE_FORM_PASSWORD') || '').trim();
+  var className = String(parsed.class_name || props.getProperty('ATTENDANCE_CLASS_NAME') || '11C5').trim();
+  var questions = Array.isArray(parsed.questions) ? parsed.questions : [];
+
+  if (!baseUrl) throw new Error('Missing Apps Script property: ATTENDANCE_FORM_BASE_URL or form_base_url');
+  if (!password) throw new Error('Missing Apps Script property: ATTENDANCE_FORM_PASSWORD or form_password');
+  if (!questions.length) throw new Error('Missing questions[] in ATTENDANCE_FORM_ENTRIES_JSON');
+
+  var questionMap = {};
+  questions.forEach(function (question) {
+    var title = normalizeText_(question.title);
+    var entry = String(question.entry || '').trim();
+    if (title && entry) {
+      questionMap[title] = entry;
+    }
+  });
+
+  return {
+    baseUrl: baseUrl,
+    password: password,
+    className: className,
+    questions: questionMap,
+  };
+}
+
+function addRequiredFormParam_(params, questions, titles, value) {
+  var entry = findQuestionEntry_(questions, titles);
+  if (!entry) {
+    throw new Error('Thiếu entry Google Form cho câu hỏi: ' + titles[0]);
+  }
+  addFormParam_(params, entry, value);
+}
+
+function addOptionalFormParam_(params, questions, titles, value) {
+  var entry = findQuestionEntry_(questions, titles);
+  if (entry) {
+    addFormParam_(params, entry, value);
+  }
+}
+
+function findQuestionEntry_(questions, titles) {
+  for (var i = 0; i < titles.length; i++) {
+    var entry = questions[normalizeText_(titles[i])];
+    if (entry) return entry;
+  }
+  return '';
+}
+
+function addFormParam_(params, entry, value) {
+  params.push(encodeURIComponent(entry) + '=' + encodeURIComponent(String(value === null || value === undefined ? '' : value)));
+}
+
+function parseIsoDate_(value) {
+  var match = String(value || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    throw new Error('Ngày không hợp lệ, cần định dạng YYYY-MM-DD.');
+  }
+
+  var year = Number(match[1]);
+  var month = Number(match[2]);
+  var day = Number(match[3]);
+  return {
+    iso: match[0],
+    year: year,
+    month: month,
+    day: day,
+    key: year * 10000 + month * 100 + day,
+    display: String(day).padStart(2, '0') + '/' + String(month).padStart(2, '0') + '/' + year,
+  };
+}
+
+function parseSheetDate_(value) {
+  if (value instanceof Date) {
+    var year = value.getFullYear();
+    var month = value.getMonth() + 1;
+    var day = value.getDate();
+    return {
+      year: year,
+      month: month,
+      day: day,
+      key: year * 10000 + month * 100 + day,
+    };
+  }
+
+  var text = String(value || '').trim();
+  var iso = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (iso) {
+    return {
+      year: Number(iso[1]),
+      month: Number(iso[2]),
+      day: Number(iso[3]),
+      key: Number(iso[1]) * 10000 + Number(iso[2]) * 100 + Number(iso[3]),
+    };
+  }
+
+  var dmy = text.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (dmy) {
+    return {
+      year: Number(dmy[3]),
+      month: Number(dmy[2]),
+      day: Number(dmy[1]),
+      key: Number(dmy[3]) * 10000 + Number(dmy[2]) * 100 + Number(dmy[1]),
+    };
+  }
+
+  return null;
+}
+
+function normalizeAttendanceSession_(value) {
+  var text = normalizeText_(value);
+  if (text === 'sang' || text === 's') return 'SANG';
+  if (text === 'chieu' || text === 'c') return 'CHIEU';
+  if (String(value || '').toUpperCase() === 'SANG') return 'SANG';
+  if (String(value || '').toUpperCase() === 'CHIEU') return 'CHIEU';
+  throw new Error('Buổi học không hợp lệ, chỉ nhận Sáng hoặc Chiều.');
+}
+
+function normalizeStudentType_(value) {
+  var text = String(value || '').trim().toUpperCase();
+  return text === '2B' || text === 'BT' || text === 'NT' ? text : '';
+}
+
+function createAttendanceCount_() {
+  return { NT: 0, BT: 0, '2B': 0 };
+}
+
+function normalizeText_(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // --- Đọc Sheet ---

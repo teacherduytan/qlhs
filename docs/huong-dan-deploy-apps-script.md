@@ -51,6 +51,33 @@ Khi giáo viên đăng nhập, frontend gửi mật khẩu lên Apps Script. App
 
 Property cũ `QLHS_WRITE_SECRET` và biến `VITE_APPS_SCRIPT_WRITE_SECRET` không còn dùng sau C060.
 
+## Script Property Cho Báo Cáo Sĩ Số
+
+Từ C116, tính năng **Báo cáo sĩ số** đọc file điểm danh sống và tạo link Google Form prefill ở backend. Cần thêm các Script properties sau, không đưa vào `.env` frontend:
+
+| Name | Giá trị |
+|---|---|
+| `ATTENDANCE_SPREADSHEET_ID` | ID Google Sheet điểm danh `Diem_danh_11C5` |
+| `ATTENDANCE_FORM_ENTRIES_JSON` | JSON mapping Google Form theo cấu trúc trong `docs/spec-bao-cao-si-so.md`, gồm `form_base_url`, `form_password`, `questions[]` |
+| `ATTENDANCE_FORM_BASE_URL` | Tuỳ chọn nếu không đặt `form_base_url` trong JSON |
+| `ATTENDANCE_FORM_PASSWORD` | Tuỳ chọn nếu không đặt `form_password` trong JSON |
+| `ATTENDANCE_CLASS_NAME` | Tuỳ chọn, mặc định `11C5` |
+
+`ATTENDANCE_FORM_ENTRIES_JSON` có thể dán nguyên JSON:
+
+```json
+{
+  "form_base_url": "https://docs.google.com/forms/d/e/XXXXXXXXXXXX/viewform",
+  "form_password": "mat-khau-form",
+  "questions": [
+    { "title": "Nhập Password", "entry": "entry.111111" },
+    { "title": "NGÀY", "entry": "entry.222222" }
+  ]
+}
+```
+
+Apps Script chỉ trả về URL prefill cuối cùng cho frontend. Frontend không biết entry ID hoặc mật khẩu form, và app không tự bấm Gửi thay giáo viên.
+
 ## GitHub Pages
 
 GitHub Secret cần có:
@@ -109,6 +136,32 @@ Từ C078, đăng nhập giáo viên và kiểm tra phiên dùng `doGet` để t
 ```
 
 `loai`: `hoc_sinh` | `ghi_nhan` | `phu_huynh` | `ban_can_su`
+
+**Báo cáo sĩ số**:
+
+```json
+{
+  "teacher_session_token": "...",
+  "action": "calculate_attendance_report",
+  "ngay": "2026-07-20",
+  "buoi": "SANG",
+  "tre_tinh_co_mat": true
+}
+```
+
+```json
+{
+  "teacher_session_token": "...",
+  "action": "build_attendance_form_url",
+  "payload": {
+    "ngay": "2026-07-20",
+    "buoi": "SANG",
+    "co_mat": { "NT": 10, "BT": 20, "2B": 5 },
+    "vang": ["Nguyễn Văn A (BT)"],
+    "so_mon": {}
+  }
+}
+```
 
 ## Sheet ID
 
