@@ -148,6 +148,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C115 | ✅ Xong | 17/07/2026 | Chuyển phiếu ghi nhận sang dạng ghi theo nội dung, nhiều học sinh chung một dòng |
 | C116 | ✅ Xong | 20/07/2026 | Xây dựng tính năng Báo cáo sĩ số từ spec |
 | C117 | ✅ Xong | 20/07/2026 | Thiết kế lại bộ lọc thời gian Dashboard và tự mở rộng CauHinhTuan theo ngày thực tế |
+| C118 | ✅ Xong | 22/07/2026 | Tạo migration Supabase theo schema thật đã đối chiếu từ Apps Script và docs |
 
 ---
 
