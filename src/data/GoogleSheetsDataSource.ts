@@ -1,5 +1,5 @@
-import type { DataSource, TeacherLoginResult } from './DataSource'
-import { getTeacherSessionToken } from './teacherSession'
+import type { DataSource } from './DataSource'
+import { getSupabaseAccessToken } from '../lib/supabaseClient'
 import type {
   BanCanSu,
   CauHinhTuan,
@@ -37,18 +37,6 @@ export class GoogleSheetsDataSource implements DataSource {
 
   constructor(apiUrl = APPS_SCRIPT_URL) {
     this.apiUrl = apiUrl?.trim()
-  }
-
-  loginTeacher(password: string): Promise<TeacherLoginResult> {
-    return this.get<TeacherLoginResult>('teacher_login', { password })
-  }
-
-  async verifyTeacherSession(token: string): Promise<boolean> {
-    const result = await this.get<{ valid: boolean }>('verify_teacher_session', {
-      teacher_session_token: token,
-    })
-
-    return result.valid
   }
 
   getStudents(): Promise<HocSinh[]> {
@@ -238,10 +226,10 @@ export class GoogleSheetsDataSource implements DataSource {
     options: { requireSession?: boolean } = {},
   ): Promise<T> {
     const requireSession = options.requireSession !== false
-    const sessionToken = requireSession ? getTeacherSessionToken()?.trim() : null
+    const accessToken = requireSession ? await getSupabaseAccessToken() : null
 
-    if (requireSession && !sessionToken) {
-      throw new Error('Phiên đăng nhập giáo viên đã hết hạn. Vui lòng đăng nhập lại.')
+    if (requireSession && !accessToken) {
+      throw new Error('Phiên đăng nhập Supabase đã hết hạn. Vui lòng đăng nhập lại.')
     }
 
     const response = await fetch(this.requireApiUrl(), {
@@ -251,7 +239,7 @@ export class GoogleSheetsDataSource implements DataSource {
       },
       body: JSON.stringify({
         ...(isRecord(body) ? body : {}),
-        ...(sessionToken ? { teacher_session_token: sessionToken } : {}),
+        ...(accessToken ? { supabase_access_token: accessToken } : {}),
       }),
     })
 

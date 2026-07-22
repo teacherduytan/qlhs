@@ -9,9 +9,11 @@ Sau khi dán `Code.gs` vào project Apps Script cùng `SetupSheet.gs` và `SeedD
 
 ```env
 VITE_APPS_SCRIPT_URL=<URL Web app vừa copy>
+VITE_SUPABASE_URL=https://zupkcgfjkckrbemptaiv.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon-key trong Supabase Settings -> API>
 ```
 
-Không đặt mật khẩu giáo viên hoặc secret ghi dữ liệu trong biến `VITE_*`, vì mọi biến `VITE_*` sẽ bị nhúng vào bundle JavaScript khi build.
+Không đặt `service_role` key hoặc secret ghi dữ liệu trong biến `VITE_*`. `anon` key Supabase được phép nằm ở frontend vì quyền thật do Supabase Auth/RLS kiểm soát.
 
 ## Web App URL Hiện Hành
 
@@ -41,15 +43,19 @@ Nếu lỡ tạo deployment mới, URL Web app sẽ đổi. Khi đó cần cập
 
 ## Script Property Bắt Buộc
 
-Từ C060, vùng giáo viên dùng đăng nhập thật qua Apps Script:
+Từ C119, vùng giáo viên đăng nhập bằng **Supabase Auth**. Apps Script vẫn xử lý một số thao tác ghi/Import/Báo cáo sĩ số trong giai đoạn chuyển đổi, nên Apps Script cần xác minh Supabase access token.
 
 1. Apps Script → **Project Settings** → **Script properties** → **Add script property**
-2. Name: `QLHS_TEACHER_PASSWORD`
-3. Value: mật khẩu giáo viên
+2. Thêm các property:
 
-Khi giáo viên đăng nhập, frontend gửi mật khẩu lên Apps Script. Apps Script so khớp với `QLHS_TEACHER_PASSWORD`, đúng thì trả về session token tạm lưu bằng `CacheService`. Frontend lưu token trong `sessionStorage` và gửi `teacher_session_token` cho các request ghi/sửa/xoá/import.
+| Name | Giá trị |
+|---|---|
+| `SUPABASE_URL` | `https://zupkcgfjkckrbemptaiv.supabase.co` |
+| `SUPABASE_ANON_KEY` | anon key trong Supabase Settings → API |
 
-Property cũ `QLHS_WRITE_SECRET` và biến `VITE_APPS_SCRIPT_WRITE_SECRET` không còn dùng sau C060.
+Frontend đăng nhập bằng Supabase Auth, Supabase tự lưu phiên. Khi gọi Apps Script để ghi/sửa/xoá/import, frontend gửi `supabase_access_token`; Apps Script gọi Supabase Auth API để xác minh token còn hợp lệ rồi mới cho ghi dữ liệu.
+
+Property cũ `QLHS_TEACHER_PASSWORD` chỉ còn là fallback legacy cho bản frontend cũ, không còn là luồng đăng nhập chính. Property cũ `QLHS_WRITE_SECRET` và biến `VITE_APPS_SCRIPT_WRITE_SECRET` không còn dùng sau C060.
 
 ## Script Property Cho Báo Cáo Sĩ Số
 
@@ -84,6 +90,8 @@ GitHub Secret cần có:
 
 ```txt
 VITE_APPS_SCRIPT_URL=https://script.google.com/macros/s/<DEPLOYMENT_ID>/exec
+VITE_SUPABASE_URL=https://zupkcgfjkckrbemptaiv.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon-key>
 ```
 
 Sau khi đổi URL Apps Script:
@@ -106,18 +114,18 @@ Sau khi đổi URL Apps Script:
 | `phu_huynh` | Phụ huynh |
 | `nhat_ky_import` | Nhật ký import |
 | `api_health` | Kiểm tra version backend và action hỗ trợ |
-| `teacher_login` | Đăng nhập giáo viên bằng `&password=...` |
-| `verify_teacher_session` | Kiểm tra phiên giáo viên bằng `&teacher_session_token=...` |
+| `teacher_login` | Legacy: đăng nhập giáo viên bằng Apps Script password cho bản frontend cũ |
+| `verify_teacher_session` | Legacy/debug: kiểm tra phiên bằng `teacher_session_token` hoặc `supabase_access_token` |
 
 ## API — doPost (JSON body)
 
-Từ C078, đăng nhập giáo viên và kiểm tra phiên dùng `doGet` để tránh lỗi `Failed to fetch` do redirect Apps Script trên trình duyệt. `doPost` chỉ dùng cho các thao tác ghi/sửa/xoá/import cần `teacher_session_token`.
+Từ C119, frontend đăng nhập bằng Supabase Auth. `doPost` dùng cho các thao tác ghi/sửa/xoá/import cần `supabase_access_token`.
 
 **Ghi 1 dòng**:
 
 ```json
 {
-  "teacher_session_token": "...",
+  "supabase_access_token": "...",
   "tab": "GhiNhan",
   "row": { "ma_hs": "HS001", "ngay": "2026-07-13" }
 }
@@ -127,7 +135,7 @@ Từ C078, đăng nhập giáo viên và kiểm tra phiên dùng `doGet` để t
 
 ```json
 {
-  "teacher_session_token": "...",
+  "supabase_access_token": "...",
   "import": true,
   "loai": "ghi_nhan",
   "nguoi_thuc_hien": "GVCN",
@@ -141,7 +149,7 @@ Từ C078, đăng nhập giáo viên và kiểm tra phiên dùng `doGet` để t
 
 ```json
 {
-  "teacher_session_token": "...",
+  "supabase_access_token": "...",
   "action": "calculate_attendance_report",
   "ngay": "2026-07-20",
   "buoi": "SANG",
@@ -151,7 +159,7 @@ Từ C078, đăng nhập giáo viên và kiểm tra phiên dùng `doGet` để t
 
 ```json
 {
-  "teacher_session_token": "...",
+  "supabase_access_token": "...",
   "action": "build_attendance_form_url",
   "payload": {
     "ngay": "2026-07-20",

@@ -11,7 +11,7 @@ var API_CONFIG = {
   IMPORT_SUBDIR: 'nhat-ky-nhap-lieu',
 };
 
-var API_VERSION = 'C117-2026-07-20';
+var API_VERSION = 'C119-2026-07-22';
 
 var SHEET_TABS = {
   HocSinh: 'HocSinh',
@@ -78,6 +78,7 @@ function doGet(e) {
             handling_catalog_crud: true,
             import_requires_catalog_match: true,
             attendance_report: true,
+            supabase_auth: true,
             week_config_auto_extend: true,
             teacher_login_get: true,
             teacher_session: true,
@@ -87,7 +88,11 @@ function doGet(e) {
       case 'teacher_login':
         return handleTeacherLogin_(params);
       case 'verify_teacher_session':
-        data = { valid: isValidTeacherSession_(params.teacher_session_token) };
+        data = {
+          valid:
+            isValidTeacherSession_(params.teacher_session_token) ||
+            isValidSupabaseAccessToken_(params.supabase_access_token),
+        };
         break;
       case 'students':
         data = getSheetObjects_(SHEET_TABS.HocSinh);
@@ -148,7 +153,11 @@ function doPost(e) {
     if (body.action === 'verify_teacher_session') {
       return jsonResponse_({
         ok: true,
-        data: { valid: isValidTeacherSession_(body.teacher_session_token) },
+        data: {
+          valid:
+            isValidTeacherSession_(body.teacher_session_token) ||
+            isValidSupabaseAccessToken_(body.supabase_access_token),
+        },
       });
     }
 
@@ -674,9 +683,71 @@ function handleTeacherLogin_(body) {
 }
 
 function verifyTeacherSession_(body) {
-  if (!body || !isValidTeacherSession_(body.teacher_session_token)) {
+  if (!body) {
     throw new Error('Phiên đăng nhập giáo viên đã hết hạn. Vui lòng đăng nhập lại.');
   }
+
+  if (isValidSupabaseAccessToken_(body.supabase_access_token)) {
+    return;
+  }
+
+  if (isValidTeacherSession_(body.teacher_session_token)) {
+    return;
+  }
+
+  if (body.supabase_access_token) {
+    throw new Error('Phiên đăng nhập Supabase không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+  }
+
+  throw new Error('Phiên đăng nhập giáo viên đã hết hạn. Vui lòng đăng nhập lại.');
+}
+
+function isValidSupabaseAccessToken_(token) {
+  token = String(token || '').trim();
+  if (!token) return false;
+
+  var cache = CacheService.getScriptCache();
+  var cacheKey = 'supabase_auth_' + hashCacheKey_(token);
+  if (cache.get(cacheKey) === '1') {
+    return true;
+  }
+
+  var props = PropertiesService.getScriptProperties();
+  var supabaseUrl = String(
+    props.getProperty('SUPABASE_URL') ||
+      props.getProperty('VITE_SUPABASE_URL') ||
+      'https://zupkcgfjkckrbemptaiv.supabase.co'
+  ).replace(/\/+$/, '');
+  var anonKey = String(
+    props.getProperty('SUPABASE_ANON_KEY') ||
+      props.getProperty('VITE_SUPABASE_ANON_KEY') ||
+      ''
+  ).trim();
+
+  if (!anonKey) {
+    throw new Error('Missing Apps Script property: SUPABASE_ANON_KEY');
+  }
+
+  var response = UrlFetchApp.fetch(supabaseUrl + '/auth/v1/user', {
+    method: 'get',
+    muteHttpExceptions: true,
+    headers: {
+      apikey: anonKey,
+      Authorization: 'Bearer ' + token,
+    },
+  });
+  var code = response.getResponseCode();
+  if (code < 200 || code >= 300) {
+    return false;
+  }
+
+  var user = JSON.parse(response.getContentText() || '{}');
+  var valid = Boolean(user && user.id);
+  if (valid) {
+    cache.put(cacheKey, '1', 5 * 60);
+  }
+
+  return valid;
 }
 
 function isValidTeacherSession_(token) {
@@ -686,6 +757,11 @@ function isValidTeacherSession_(token) {
 
 function getTeacherSessionCacheKey_(token) {
   return 'teacher_session_' + token;
+}
+
+function hashCacheKey_(value) {
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, value);
+  return Utilities.base64EncodeWebSafe(digest).replace(/=+$/, '');
 }
 
 // --- Ghi 1 dòng (C012) ---

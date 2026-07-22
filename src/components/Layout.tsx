@@ -1,12 +1,12 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { dataSource } from '../data/client'
 import {
-  clearTeacherSessionToken,
-  getTeacherSessionToken,
-  setTeacherSessionToken,
-} from '../data/teacherSession'
+  getTeacherAuthSession,
+  loginTeacherWithSupabase,
+  logoutTeacher,
+} from '../data/teacherAuth'
 import { downloadPrintableForm } from '../features/forms/downloadPrintableForm'
+import { getSupabaseClient } from '../lib/supabaseClient'
 
 const navItems = [
   { to: '/', label: 'Tổng quan' },
@@ -19,47 +19,66 @@ const navItems = [
 
 export function Layout() {
   const { pathname } = useLocation()
-  const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>(
-    'checking',
-  )
+  const [authState, setAuthState] = useState<{
+    email: string | null
+    message?: string
+    status: 'checking' | 'authenticated' | 'unauthenticated'
+  }>({ email: null, status: 'checking' })
 
   useEffect(() => {
     let active = true
-    const token = getTeacherSessionToken()
 
-    if (!token) {
-      setAuthState('unauthenticated')
-      return
+    getTeacherAuthSession()
+      .then((session) => {
+        if (!active) return
+        setAuthState(
+          session
+            ? { email: session.email, status: 'authenticated' }
+            : { email: null, status: 'unauthenticated' },
+        )
+      })
+      .catch((error: unknown) => {
+        if (!active) return
+        setAuthState({
+          email: null,
+          message: error instanceof Error ? error.message : 'Không kiểm tra được phiên đăng nhập.',
+          status: 'unauthenticated',
+        })
+      })
+
+    let subscription: { unsubscribe: () => void } | null = null
+    try {
+      const {
+        data: { subscription: authSubscription },
+      } = getSupabaseClient().auth.onAuthStateChange((_event, session) => {
+        setAuthState(
+          session
+            ? { email: session.user.email || null, status: 'authenticated' }
+            : { email: null, status: 'unauthenticated' },
+        )
+      })
+      subscription = authSubscription
+    } catch {
+      // getTeacherAuthSession already reports missing config in the login view.
     }
-
-    dataSource
-      .verifyTeacherSession(token)
-      .then((valid) => {
-        if (!active) return
-        if (valid) {
-          setAuthState('authenticated')
-        } else {
-          clearTeacherSessionToken()
-          setAuthState('unauthenticated')
-        }
-      })
-      .catch(() => {
-        if (!active) return
-        clearTeacherSessionToken()
-        setAuthState('unauthenticated')
-      })
 
     return () => {
       active = false
+      subscription?.unsubscribe()
     }
   }, [])
 
-  if (authState === 'checking') {
+  if (authState.status === 'checking') {
     return <TeacherAuthShell message="Đang kiểm tra phiên đăng nhập..." />
   }
 
-  if (authState === 'unauthenticated') {
-    return <TeacherLoginPage onSuccess={() => setAuthState('authenticated')} />
+  if (authState.status === 'unauthenticated') {
+    return (
+      <TeacherLoginPage
+        initialError={authState.message}
+        onSuccess={(email) => setAuthState({ email, status: 'authenticated' })}
+      />
+    )
   }
 
   return (
@@ -102,13 +121,17 @@ export function Layout() {
             <button
               type="button"
               onClick={() => {
-                clearTeacherSessionToken()
-                setAuthState('unauthenticated')
+                void logoutTeacher().finally(() =>
+                  setAuthState({ email: null, status: 'unauthenticated' }),
+                )
               }}
               className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100 md:w-auto"
             >
               Đăng xuất
             </button>
+            {authState.email ? (
+              <p className="text-xs font-medium text-slate-500">{authState.email}</p>
+            ) : null}
           </div>
         </div>
       </header>
@@ -124,9 +147,16 @@ export function Layout() {
   )
 }
 
-function TeacherLoginPage({ onSuccess }: { onSuccess: () => void }) {
+function TeacherLoginPage({
+  initialError,
+  onSuccess,
+}: {
+  initialError?: string
+  onSuccess: (email: string | null) => void
+}) {
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialError || null)
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -135,10 +165,10 @@ function TeacherLoginPage({ onSuccess }: { onSuccess: () => void }) {
     setError(null)
 
     try {
-      const result = await dataSource.loginTeacher(password)
-      setTeacherSessionToken(result.token)
+      const session = await loginTeacherWithSupabase(email.trim(), password)
+      setEmail('')
       setPassword('')
-      onSuccess()
+      onSuccess(session.email)
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : 'Không đăng nhập được.')
     } finally {
@@ -155,10 +185,22 @@ function TeacherLoginPage({ onSuccess }: { onSuccess: () => void }) {
         </div>
 
         <label className="mt-5 flex flex-col gap-1 text-sm font-medium text-slate-700">
+          Email
+          <input
+            autoComplete="username"
+            autoFocus
+            required
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
+
+        <label className="mt-3 flex flex-col gap-1 text-sm font-medium text-slate-700">
           Mật khẩu
           <input
             autoComplete="current-password"
-            autoFocus
             required
             type="password"
             value={password}
