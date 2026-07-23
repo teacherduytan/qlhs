@@ -119,4 +119,7 @@ Nếu chưa chắc phần nào nên đặt ở đâu, liệt kê danh sách các
 - C122 đã bỏ unique constraint sai trên `danh_muc_xu_ly.noi_dung_xu_ly` bằng migration `20260723000100_bo_unique_noi_dung_xu_ly.sql`.
 - Đã import bù đủ các mã `XL02`, `XL03`, `XL04`; `danh_muc_xu_ly` hiện có 7/7 dòng gốc từ Sheets, không xoá dòng nào.
 - Kiểm tra lại `DanhMucDiem`: `NN09 - Nói chuyện/phát biểu không đúng lúc trong giờ` vẫn tham chiếu `ma_xu_ly_de_xuat = XL05`; không có tham chiếu gãy sang `DanhMucXuLy`.
-- Còn cần kiểm UI đăng nhập thật để xem đủ 36 học sinh trong trình duyệt.
+- C123 đã chuyển hồ sơ học sinh public sang Supabase RPC `lay_ho_so_cong_khai(p_token text)` theo token. Không thêm policy `select` anon trực tiếp trên `hoc_sinh`/`ghi_nhan`.
+- RPC public trả học sinh đã ẩn `sdt_1`/`sdt_2`, ghi nhận của đúng `ma_hs`, `DanhMucDiem`, `CauHinhTuan`, và chỉ `BanCanSu` của chính học sinh đó nếu có.
+- Kiểm tra bằng anon key: token sai trả 0 dòng; token đúng trả 1 hồ sơ; anon select trực tiếp `hoc_sinh` và `ghi_nhan` vẫn trả 0 dòng.
+- Còn cần kiểm UI đăng nhập thật để xem đủ 36 học sinh trong vùng giáo viên.

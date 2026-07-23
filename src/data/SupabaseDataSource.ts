@@ -18,11 +18,20 @@ import type {
   LoaiGhiNhan,
   NhatKyImport,
   PhuHuynh,
+  PublicStudentProfile,
   TrangThaiImport,
   TrangThaiXuLyTapThe,
 } from './types'
 
 type AnyRow = Record<string, unknown>
+
+interface PublicProfileRpcRow {
+  ban_can_su: BanCanSu[] | null
+  catalog: DanhMucDiem[] | null
+  records: GhiNhan[] | null
+  student: HocSinh | null
+  week_config: CauHinhTuan[] | null
+}
 
 const GHI_NHAN_COLUMNS = [
   'ma_ghi_nhan',
@@ -99,8 +108,33 @@ export class SupabaseDataSource implements DataSource {
     return (data || []) as HocSinh[]
   }
 
-  getStudentByToken(token: string): Promise<HocSinh | null> {
-    return this.fallback.getStudentByToken(token)
+  async getStudentByToken(token: string): Promise<HocSinh | null> {
+    const profile = await this.getPublicStudentProfile(token)
+    return profile?.student || null
+  }
+
+  async getPublicStudentProfile(token: string): Promise<PublicStudentProfile | null> {
+    if (!hasSupabaseConfig()) {
+      return this.fallback.getPublicStudentProfile(token)
+    }
+
+    const { data, error } = await getSupabaseClient().rpc('lay_ho_so_cong_khai', {
+      p_token: token,
+    })
+    assertNoError(error, 'Khong doc duoc ho so cong khai tu Supabase')
+
+    const row = Array.isArray(data) && data.length > 0 ? (data[0] as PublicProfileRpcRow) : null
+    if (!row?.student) {
+      return null
+    }
+
+    return {
+      banCanSu: row.ban_can_su || [],
+      catalog: row.catalog || [],
+      records: row.records || [],
+      student: row.student,
+      weekConfig: row.week_config || [],
+    }
   }
 
   async addStudent(student: HocSinh): Promise<HocSinh> {

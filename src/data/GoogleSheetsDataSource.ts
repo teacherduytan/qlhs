@@ -16,6 +16,7 @@ import type {
   LoaiDuLieuImport,
   NhatKyImport,
   PhuHuynh,
+  PublicStudentProfile,
 } from './types'
 
 type ApiResponse<T> =
@@ -45,6 +46,27 @@ export class GoogleSheetsDataSource implements DataSource {
 
   getStudentByToken(token: string): Promise<HocSinh | null> {
     return this.get<HocSinh | null>('student_by_token', { token })
+  }
+
+  async getPublicStudentProfile(token: string): Promise<PublicStudentProfile | null> {
+    const [student, banCanSu, catalog, weekConfig] = await Promise.all([
+      this.getStudentByToken(token),
+      this.getBanCanSu(),
+      this.getPointCatalog(),
+      this.getWeekConfig(),
+    ])
+
+    if (!student) {
+      return null
+    }
+
+    return {
+      banCanSu,
+      catalog,
+      records: await this.getRecords(student.ma_hs),
+      student,
+      weekConfig,
+    }
   }
 
   addStudent(student: HocSinh): Promise<HocSinh> {

@@ -14,12 +14,14 @@ import type {
   LoaiDuLieuImport,
   NhatKyImport,
   PhuHuynh,
+  PublicStudentProfile,
 } from './types'
 
 /** Lớp trung gian dữ liệu — mọi UI chỉ gọi qua interface này (tài liệu 01) */
 export interface DataSource {
   getStudents(): Promise<HocSinh[]>
   getStudentByToken(token: string): Promise<HocSinh | null>
+  getPublicStudentProfile(token: string): Promise<PublicStudentProfile | null>
   addStudent(student: HocSinh): Promise<HocSinh>
   updateStudent(maHs: string, student: Partial<HocSinh>): Promise<HocSinh>
   deleteStudent(maHs: string): Promise<void>

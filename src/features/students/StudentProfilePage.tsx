@@ -71,36 +71,27 @@ export function StudentProfilePage() {
       return
     }
 
-    Promise.all([
-      dataSource.getStudentByToken(token),
-      dataSource.getBanCanSu(),
-      dataSource.getPointCatalog(),
-      dataSource.getWeekConfig(),
-    ])
-      .then(async ([student, banCanSu, catalog, weekConfig]) => {
+    dataSource
+      .getPublicStudentProfile(token)
+      .then((profile) => {
         if (!active) {
           return
         }
 
-        if (!student) {
+        if (!profile) {
           setState({ status: 'not_found' })
           return
         }
 
-        const records = await dataSource.getRecords(student.ma_hs)
-        if (!active) {
-          return
-        }
-
-        const tuanSo = selectDefaultWeek(weekConfig, records)
+        const tuanSo = selectDefaultWeek(profile.weekConfig, profile.records)
         setState({
           status: 'success',
-          catalog,
-          records,
-          student,
-          role: getStudentRole(student.ma_hs, banCanSu),
+          catalog: profile.catalog,
+          records: profile.records,
+          student: profile.student,
+          role: getStudentRole(profile.student.ma_hs, profile.banCanSu),
           tuanSo,
-          weekConfig,
+          weekConfig: profile.weekConfig,
         })
       })
       .catch((error: unknown) => {

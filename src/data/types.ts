@@ -180,3 +180,11 @@ export interface AttendanceFormPayload {
 export interface AttendanceFormUrlResult {
   url: string
 }
+
+export interface PublicStudentProfile {
+  banCanSu: BanCanSu[]
+  catalog: DanhMucDiem[]
+  records: GhiNhan[]
+  student: HocSinh
+  weekConfig: CauHinhTuan[]
+}
