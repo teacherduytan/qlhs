@@ -155,6 +155,10 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C122 | ✅ Xong | 23/07/2026 | Bỏ unique sai trên DanhMucXuLy.noi_dung_xu_ly và import đủ 7/7 mã xử lý; NN09 vẫn tham chiếu XL05 |
 | C123 | ✅ Xong | 23/07/2026 | Chuyển hồ sơ học sinh public sang RPC Supabase SECURITY DEFINER theo token, không mở select anon trực tiếp |
 | C124 | ✅ Xong | 23/07/2026 | Siết RPC hồ sơ public: bỏ to_jsonb, liệt kê rõ cột public cho records/catalog/ban_can_su/week_config |
+| C125 | ✅ Xong | 23/07/2026 | Ghi nhận cách sinh token hồ sơ public hiện tại và khuyến nghị nâng độ dài token ở bước sau |
+| C126 | ✅ Xong | 23/07/2026 | Cập nhật GitHub Pages workflow để truyền VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY vào bước build |
+| C127 | ✅ Xong | 23/07/2026 | Tạo schema điểm danh Supabase, seed nhóm điểm danh và chuyển báo cáo sĩ số chính khóa sang RPC tinh_bao_cao_si_so |
+| C128 | ⛔ Bị chặn (cần xác nhận) | 23/07/2026 | Import lịch sử điểm danh chính khóa vào bảng diem_danh chưa thực hiện được vì Google Sheet Diem_danh_11C5 trả 401 khi tải CSV và chưa có endpoint Apps Script xuất dữ liệu thô |
 
 ---
 

@@ -443,12 +443,22 @@ export class SupabaseDataSource implements DataSource {
     }
   }
 
-  calculateAttendanceReport(
+  async calculateAttendanceReport(
     ngay: string,
     buoi: BuoiHoc,
     treTinhCoMat = true,
   ): Promise<AttendanceReport> {
-    return this.fallback.calculateAttendanceReport(ngay, buoi, treTinhCoMat)
+    if (await this.shouldUseFallbackRead()) {
+      return this.fallback.calculateAttendanceReport(ngay, buoi, treTinhCoMat)
+    }
+
+    const { data, error } = await getSupabaseClient().rpc('tinh_bao_cao_si_so', {
+      p_buoi: buoi === 'SANG' ? 'sang' : 'chieu',
+      p_ngay: ngay,
+      p_tre_tinh_co_mat: treTinhCoMat,
+    })
+    assertNoError(error, 'Khong tinh duoc bao cao si so tu Supabase')
+    return data as AttendanceReport
   }
 
   buildAttendanceFormUrl(payload: AttendanceFormPayload): Promise<AttendanceFormUrlResult> {
