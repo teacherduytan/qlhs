@@ -122,4 +122,5 @@ Nếu chưa chắc phần nào nên đặt ở đâu, liệt kê danh sách các
 - C123 đã chuyển hồ sơ học sinh public sang Supabase RPC `lay_ho_so_cong_khai(p_token text)` theo token. Không thêm policy `select` anon trực tiếp trên `hoc_sinh`/`ghi_nhan`.
 - RPC public trả học sinh đã ẩn `sdt_1`/`sdt_2`, ghi nhận của đúng `ma_hs`, `DanhMucDiem`, `CauHinhTuan`, và chỉ `BanCanSu` của chính học sinh đó nếu có.
 - Kiểm tra bằng anon key: token sai trả 0 dòng; token đúng trả 1 hồ sơ; anon select trực tiếp `hoc_sinh` và `ghi_nhan` vẫn trả 0 dòng.
+- C124 đã bỏ toàn bộ `to_jsonb(...)` trong RPC public và chuyển sang `jsonb_build_object` liệt kê rõ từng cột. `records` chỉ trả các cột public được duyệt; không trả `nguoi_ghi`, `ma_log_import`, `trang_thai_xu_ly_tap_the`, `to_lien_quan`, `su_kien_goc`. `catalog`, `week_config`, `ban_can_su` cũng liệt kê cột rõ ràng để cột mới trong bảng gốc không tự lộ ra public.
 - Còn cần kiểm UI đăng nhập thật để xem đủ 36 học sinh trong vùng giáo viên.

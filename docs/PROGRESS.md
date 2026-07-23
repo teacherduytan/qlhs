@@ -154,6 +154,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C121 | ⛔ Bị chặn (cần xác nhận) | 23/07/2026 | Export/import dữ liệu thật sang Supabase: enum sạch, 36 học sinh và 29 ghi nhận đã nhập; còn lệch DanhMucXuLy do 3 dòng trùng unique và chưa kiểm UI đăng nhập thật |
 | C122 | ✅ Xong | 23/07/2026 | Bỏ unique sai trên DanhMucXuLy.noi_dung_xu_ly và import đủ 7/7 mã xử lý; NN09 vẫn tham chiếu XL05 |
 | C123 | ✅ Xong | 23/07/2026 | Chuyển hồ sơ học sinh public sang RPC Supabase SECURITY DEFINER theo token, không mở select anon trực tiếp |
+| C124 | ✅ Xong | 23/07/2026 | Siết RPC hồ sơ public: bỏ to_jsonb, liệt kê rõ cột public cho records/catalog/ban_can_su/week_config |
 
 ---
 
