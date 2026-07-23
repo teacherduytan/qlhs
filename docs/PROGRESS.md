@@ -152,6 +152,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C119 | ✅ Xong | 22/07/2026 | Chuyển đăng nhập giáo viên sang Supabase Auth và gửi access token cho Apps Script |
 | C120 | ✅ Xong | 23/07/2026 | Chuyển lớp đọc/ghi dữ liệu chính sang SupabaseDataSource; Apps Script chỉ còn bridge cho hồ sơ công khai và báo cáo sĩ số |
 | C121 | ⛔ Bị chặn (cần xác nhận) | 23/07/2026 | Export/import dữ liệu thật sang Supabase: enum sạch, 36 học sinh và 29 ghi nhận đã nhập; còn lệch DanhMucXuLy do 3 dòng trùng unique và chưa kiểm UI đăng nhập thật |
+| C122 | ✅ Xong | 23/07/2026 | Bỏ unique sai trên DanhMucXuLy.noi_dung_xu_ly và import đủ 7/7 mã xử lý; NN09 vẫn tham chiếu XL05 |
 
 ---
 

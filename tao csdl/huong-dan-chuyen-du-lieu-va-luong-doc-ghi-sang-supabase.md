@@ -116,4 +116,7 @@ Nếu chưa chắc phần nào nên đặt ở đâu, liệt kê danh sách các
   - `ban_can_su`: 0/0
   - `nhat_ky_import`: 26/26
   - `ghi_nhan`: 29/29
-- Chưa đánh dấu hoàn thành vì chưa khớp đủ số dòng 8 bảng và chưa kiểm được UI đăng nhập thật để xem đủ 36 học sinh trong trình duyệt.
+- C122 đã bỏ unique constraint sai trên `danh_muc_xu_ly.noi_dung_xu_ly` bằng migration `20260723000100_bo_unique_noi_dung_xu_ly.sql`.
+- Đã import bù đủ các mã `XL02`, `XL03`, `XL04`; `danh_muc_xu_ly` hiện có 7/7 dòng gốc từ Sheets, không xoá dòng nào.
+- Kiểm tra lại `DanhMucDiem`: `NN09 - Nói chuyện/phát biểu không đúng lúc trong giờ` vẫn tham chiếu `ma_xu_ly_de_xuat = XL05`; không có tham chiếu gãy sang `DanhMucXuLy`.
+- Còn cần kiểm UI đăng nhập thật để xem đủ 36 học sinh trong trình duyệt.
