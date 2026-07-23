@@ -90,3 +90,30 @@ Nếu chưa chắc phần nào nên đặt ở đâu, liệt kê danh sách các
 - `CauHinhTuan` trong Supabase tự nối thêm tuần học bình thường đến ngày thực tế khi giáo viên mở app hoặc import bản ghi theo ngày mới.
 - Trang hồ sơ học sinh công khai (`/#/hs/<token>`) vẫn fallback Apps Script vì route này không có phiên `authenticated`; đây là chủ ý để không nới RLS public trong C120.
 - Báo cáo sĩ số và build URL Google Form vẫn đi qua Apps Script vì còn phụ thuộc Google Sheet điểm danh và Script Properties form.
+
+## 7. Trạng thái export/import dữ liệu thật C121 - 23/07/2026
+
+- Đã export dữ liệu thật từ Apps Script/Google Sheets vào thư mục local `tao csdl/export-c120-20260723/`. Thư mục export đã được ignore bằng `.gitignore` vì có dữ liệu học sinh thật.
+- Số dòng export từ Sheets:
+  - `danh_muc_xu_ly`: 7
+  - `cau_hinh_tuan`: 2
+  - `hoc_sinh`: 36
+  - `danh_muc_diem`: 37
+  - `phu_huynh`: 0
+  - `ban_can_su`: 0
+  - `nhat_ky_import`: 26
+  - `ghi_nhan`: 29
+- Kiểm enum trước import: không có giá trị lệch trong `dien`, `nhom`, `loai`, `pham_vi`, `trang_thai`, `muc_do`; `cau_hinh_tuan.loai_tuan` trong Sheets đang trống và Supabase dùng default `hoc_binh_thuong`.
+- `CauHinhTuan` trong Sheets hiện chỉ có tuần 1 và tuần 2, chưa có đủ toàn bộ năm học 2025-2026. Sau khi app/SupabaseDataSource áp dụng auto-extend theo ngày 23/07/2026, Supabase có thêm tuần 3.
+- Import ban đầu bị chặn bởi unique constraint `danh_muc_xu_ly_noi_dung_xu_ly_key`: các mã `XL02`, `XL03`, `XL04`, `XL05` có cùng `noi_dung_xu_ly` là `Lần 1: nhắc nhở; lần 2 trở lên: trừ điểm.`. Trong đó chỉ `XL05` đang được `DanhMucDiem` tham chiếu.
+- Để khôi phục Supabase không rỗng sau bước replace, đã nhập các dòng chính và giữ dòng xử lý được tham chiếu `XL05`; các mã `XL02`, `XL03`, `XL04` chưa nhập vì bị unique constraint và chưa có xác nhận gộp/xoá/sửa nội dung.
+- Số dòng Supabase sau bước khôi phục:
+  - `danh_muc_xu_ly`: 4/7
+  - `cau_hinh_tuan`: 3/2 do auto-extend tuần 3
+  - `hoc_sinh`: 36/36
+  - `danh_muc_diem`: 37/37
+  - `phu_huynh`: 0/0
+  - `ban_can_su`: 0/0
+  - `nhat_ky_import`: 26/26
+  - `ghi_nhan`: 29/29
+- Chưa đánh dấu hoàn thành vì chưa khớp đủ số dòng 8 bảng và chưa kiểm được UI đăng nhập thật để xem đủ 36 học sinh trong trình duyệt.

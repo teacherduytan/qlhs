@@ -29,3 +29,6 @@ npm-debug.log*
 .cursor/
 mnt/
 supabase/.temp/
+
+# Local data exports with real student data
+tao csdl/export-*/
