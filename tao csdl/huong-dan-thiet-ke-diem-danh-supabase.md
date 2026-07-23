@@ -197,7 +197,7 @@ Luôn khớp thực tế, không cần đồng bộ thủ công.
 ## 8. Checklist trước khi báo hoàn thành (áp dụng riêng cho Ưu tiên 1)
 
 - [x] Bảng `nhom_diem_danh`, `hoc_sinh_ngoai_lop`, `thanh_vien_nhom_diem_danh`, `diem_danh`, `lien_lac_phu_huynh` đã tạo, RLS + grant đầy đủ
-- [ ] Dữ liệu lịch sử "Chính khóa" 4 tuần đã import vào `diem_danh` (chỉ các ô ngoại lệ), đối chiếu số dòng khớp số ô đã điền trong Excel
+- [x] Dữ liệu lịch sử "Chính khóa" 4 tuần đã import vào `diem_danh` (chỉ các ô ngoại lệ), đối chiếu số dòng khớp số ô đã điền trong Excel
 - [x] `calculateAttendanceReport` đã đọc từ Supabase, không còn đọc Sheet khi giáo viên đã đăng nhập Supabase
 - [ ] Tự kiểm tra thật: mở trang Báo cáo sĩ số, chọn 1 ngày/buổi có học sinh vắng trong dữ liệu đã import, xác nhận số liệu đúng
 - [x] Không tự tạo `ghi_nhan` chuyên cần tự động khi chưa xác nhận quy tắc với thầy Tân (mục 4)
@@ -209,5 +209,7 @@ Luôn khớp thực tế, không cần đồng bộ thủ công.
 - Số dòng seed hiện tại: `nhom_diem_danh` = 3, `CHINH_KHOA` = 36 học sinh, `AN_TRUA` = 17 học sinh, `NGU_TRUA` = 7 học sinh.
 - RPC `tinh_bao_cao_si_so` đã kiểm tra với ngày `2026-07-20`, buổi sáng: trả tổng `2B=19`, `BT=16`, `NT=1`.
 - `src/data/SupabaseDataSource.ts` đã chuyển `calculateAttendanceReport` sang gọi RPC Supabase; `buildAttendanceFormUrl` vẫn dùng Apps Script để tạo Google Form prefill.
-- `diem_danh` hiện vẫn 0 dòng ngoại lệ vì chưa lấy được dữ liệu thô từ Google Sheet `Diem_danh_11C5`: tải CSV trực tiếp bị `401 Unauthorized`, máy không có `clasp` để deploy endpoint Apps Script xuất raw attendance. Khi chưa import ngoại lệ, báo cáo Supabase sẽ xem học sinh là có mặt nếu không có dòng vắng/trễ.
-- Bước tiếp theo để hoàn tất import lịch sử: cấp quyền/export file CSV/XLSX các sheet điểm danh, hoặc deploy thêm action Apps Script xuất raw attendance rồi import các ô có giá trị vào `diem_danh`.
+- Ngày 23/07/2026 đã nhận 2 CSV đã trích từ Excel điểm danh gốc và import xong dữ liệu thật: `chinh_khoa_ngoai_le_4tuan.csv` có 22 dòng ngoại lệ, đã upsert thành 22 dòng `diem_danh`; `lien_lac_ph_da_ghi_4tuan.csv` có 15 lượt liên lạc, nở thành 22 dòng `lien_lac_phu_huynh` vì một số lượt áp dụng cho cả sáng và chiều.
+- Không có học sinh nào trong CSV bị lệch tên khi khớp với `hoc_sinh.ho || ' ' || hoc_sinh.ten`.
+- RPC `tinh_bao_cao_si_so('2026-07-09'::date, 'sang', true)` trả tổng `2B=19`, `BT=16`, `NT=1`; có mặt `2B=17`, `BT=15`, `NT=1`; danh sách vắng gồm Đỗ Tâm Nhi, Nguyễn Như Quỳnh, Hoàng Thị Ngọc Trâm.
+- Chưa tự bấm UI bằng trình duyệt tự động vì `.env` chỉ có `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`, không có tài khoản test hoặc session giáo viên Supabase. Khi có session, mở `/#/bao-cao-si-so`, chọn `09/07/2026` + `Sáng`, bấm `Tính toán` để kiểm màn hình hiển thị đúng dữ liệu RPC ở trên.

@@ -158,7 +158,8 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C125 | ✅ Xong | 23/07/2026 | Ghi nhận cách sinh token hồ sơ public hiện tại và khuyến nghị nâng độ dài token ở bước sau |
 | C126 | ✅ Xong | 23/07/2026 | Cập nhật GitHub Pages workflow để truyền VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY vào bước build |
 | C127 | ✅ Xong | 23/07/2026 | Tạo schema điểm danh Supabase, seed nhóm điểm danh và chuyển báo cáo sĩ số chính khóa sang RPC tinh_bao_cao_si_so |
-| C128 | ⛔ Bị chặn (cần xác nhận) | 23/07/2026 | Import lịch sử điểm danh chính khóa vào bảng diem_danh chưa thực hiện được vì Google Sheet Diem_danh_11C5 trả 401 khi tải CSV và chưa có endpoint Apps Script xuất dữ liệu thô |
+| C128 | ✅ Xong | 23/07/2026 | Import CSV điểm danh thật 4 tuần: 22 ngoại lệ vào diem_danh và 22 dòng liên lạc phụ huynh; RPC sĩ số 09/07/2026 buổi sáng trả đúng danh sách vắng |
+| C129 | ⛔ Bị chặn (cần xác nhận) | 23/07/2026 | Chưa tự bấm UI trang Sĩ số bằng trình duyệt tự động vì .env không có tài khoản/session giáo viên Supabase; đã kiểm DB/RPC là nguồn dữ liệu frontend sẽ gọi |
 
 ---
 
