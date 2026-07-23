@@ -1,3 +1,3 @@
-import { GoogleSheetsDataSource } from './GoogleSheetsDataSource'
+import { SupabaseDataSource } from './SupabaseDataSource'
 
-export const dataSource = new GoogleSheetsDataSource()
+export const dataSource = new SupabaseDataSource()
