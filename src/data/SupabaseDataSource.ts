@@ -7,10 +7,13 @@ import type {
   AttendanceReport,
   BanCanSu,
   BuoiHoc,
+  CapNhatDiemDanhInput,
   CauHinhTuan,
   DanhMucDiem,
   DanhMucXuLy,
   DeleteImportResult,
+  DiemDanh,
+  DiemDanhCanLienLac,
   GhiNhan,
   HocSinh,
   ImportResult,
@@ -19,6 +22,7 @@ import type {
   NhatKyImport,
   PhuHuynh,
   PublicStudentProfile,
+  ThemLienLacPhuHuynhInput,
   TrangThaiImport,
   TrangThaiXuLyTapThe,
 } from './types'
@@ -463,6 +467,98 @@ export class SupabaseDataSource implements DataSource {
 
   buildAttendanceFormUrl(payload: AttendanceFormPayload): Promise<AttendanceFormUrlResult> {
     return this.fallback.buildAttendanceFormUrl(payload)
+  }
+
+  async getAttendanceEntries(options: {
+    tuanSo?: number
+    ngayFrom?: string
+    ngayTo?: string
+  } = {}): Promise<DiemDanh[]> {
+    if (await this.shouldUseFallbackRead()) {
+      return this.fallback.getAttendanceEntries(options)
+    }
+
+    let query = getSupabaseClient()
+      .from('diem_danh')
+      .select('*')
+      .eq('ma_nhom', 'CHINH_KHOA')
+      .order('ngay')
+      .order('buoi')
+
+    if (options.tuanSo !== undefined) query = query.eq('tuan_so', options.tuanSo)
+    if (options.ngayFrom) query = query.gte('ngay', options.ngayFrom)
+    if (options.ngayTo) query = query.lte('ngay', options.ngayTo)
+
+    const { data, error } = await query
+    assertNoError(error, 'Khong doc duoc DiemDanh tu Supabase')
+    return (data || []) as DiemDanh[]
+  }
+
+  async getPendingParentContacts(): Promise<DiemDanhCanLienLac[]> {
+    if (await this.shouldUseFallbackRead()) {
+      return this.fallback.getPendingParentContacts()
+    }
+
+    const [{ data: attendanceRows, error: attendanceError }, { data: contactRows, error: contactError }, students] =
+      await Promise.all([
+        getSupabaseClient()
+          .from('diem_danh')
+          .select('*')
+          .eq('ma_nhom', 'CHINH_KHOA')
+          .in('trang_thai', ['vang_co_phep', 'vang_khong_phep'])
+          .order('ngay', { ascending: false })
+          .order('buoi'),
+        getSupabaseClient().from('lien_lac_phu_huynh').select('diem_danh_id'),
+        this.getStudents(),
+      ])
+
+    assertNoError(attendanceError, 'Khong doc duoc danh sach can lien lac tu Supabase')
+    assertNoError(contactError, 'Khong doc duoc lien lac phu huynh tu Supabase')
+
+    const contactedIds = new Set((contactRows || []).map((row) => String(row.diem_danh_id)))
+    const studentById = new Map(students.map((student) => [student.ma_hs, student]))
+
+    return ((attendanceRows || []) as DiemDanh[])
+      .filter((row) => row.ma_hs && !contactedIds.has(row.id))
+      .map((row) => {
+        const student = studentById.get(row.ma_hs || '')
+        return {
+          ...row,
+          da_lien_lac: false,
+          dien: student?.dien || '2B',
+          ho: student?.ho || '',
+          ten: student?.ten || row.ma_hs || '',
+          tt: student?.tt || 0,
+        }
+      })
+  }
+
+  async upsertAttendanceEntry(input: CapNhatDiemDanhInput): Promise<string | null> {
+    const { data, error } = await getSupabaseClient().rpc('upsert_diem_danh', {
+      p_buoi: input.buoi,
+      p_ma_hs: input.ma_hs,
+      p_ngay: input.ngay,
+      p_trang_thai: input.trang_thai,
+      p_tuan_so: input.tuan_so,
+    })
+    assertNoError(error, 'Khong cap nhat duoc diem danh tren Supabase')
+    return (data as string | null) || null
+  }
+
+  async addParentContact(input: ThemLienLacPhuHuynhInput): Promise<void> {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await getSupabaseClient().auth.getSession()
+    assertNoError(sessionError, 'Khong doc duoc phien dang nhap Supabase')
+
+    const { error } = await getSupabaseClient().from('lien_lac_phu_huynh').insert({
+      diem_danh_id: input.diem_danh_id,
+      hinh_thuc: input.hinh_thuc,
+      noi_dung: input.noi_dung?.trim() || null,
+      nguoi_lien_lac: session?.user.email || null,
+    })
+    assertNoError(error, 'Khong ghi duoc lien lac phu huynh tren Supabase')
   }
 
   private async shouldUseFallbackRead(): Promise<boolean> {

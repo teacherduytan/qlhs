@@ -145,6 +145,53 @@ export interface DeleteImportResult {
 
 export type BuoiHoc = 'SANG' | 'CHIEU'
 
+export type BuoiDiemDanh = 'sang' | 'chieu'
+
+export type TrangThaiDiemDanh = 'vang_co_phep' | 'vang_khong_phep' | 'tre'
+
+export type LuaChonDiemDanh = TrangThaiDiemDanh | 'co_mat'
+
+export type HinhThucLienLacPhuHuynh = 'dien_thoai' | 'goi_zalo' | 'nhan_tin_zalo' | 'sms'
+
+export interface DiemDanh {
+  id: string
+  ma_nhom: 'CHINH_KHOA' | 'AN_TRUA' | 'NGU_TRUA'
+  ma_hs: string | null
+  ma_hs_ngoai: string | null
+  ngay: string
+  tuan_so: number
+  buoi: BuoiDiemDanh | 'ca_ngay'
+  trang_thai: TrangThaiDiemDanh | 'vang_co_phep_sang' | 'vang_khong_phep_sang'
+  ghi_chu: string | null
+  nguoi_ghi: string | null
+  created_at: string | null
+}
+
+export interface DiemDanhHocSinh extends DiemDanh {
+  ho: string
+  ten: string
+  dien: DienHocSinh
+  tt: number
+}
+
+export interface DiemDanhCanLienLac extends DiemDanhHocSinh {
+  da_lien_lac: boolean
+}
+
+export interface CapNhatDiemDanhInput {
+  ma_hs: string
+  ngay: string
+  tuan_so: number
+  buoi: BuoiDiemDanh
+  trang_thai: LuaChonDiemDanh | null
+}
+
+export interface ThemLienLacPhuHuynhInput {
+  diem_danh_id: string
+  hinh_thuc: HinhThucLienLacPhuHuynh
+  noi_dung: string | null
+}
+
 export type AttendanceMealKey =
   | 'mon_chinh_1'
   | 'mon_chinh_2'

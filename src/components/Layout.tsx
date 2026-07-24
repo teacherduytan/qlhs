@@ -12,6 +12,7 @@ const navItems = [
   { to: '/', label: 'Tổng quan' },
   { to: '/hoc-sinh', label: 'Học sinh' },
   { to: '/ghi-nhan', label: 'Ghi nhận' },
+  { to: '/diem-danh', label: 'Điểm danh' },
   { to: '/bao-cao-si-so', label: 'Sĩ số' },
   { to: '/danh-muc', label: 'Danh mục' },
   { to: '/import', label: 'Import' },

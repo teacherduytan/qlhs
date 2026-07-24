@@ -12,11 +12,15 @@ import type {
   AttendanceFormUrlResult,
   AttendanceReport,
   BuoiHoc,
+  CapNhatDiemDanhInput,
   ImportResult,
   LoaiDuLieuImport,
   NhatKyImport,
   PhuHuynh,
   PublicStudentProfile,
+  DiemDanh,
+  DiemDanhCanLienLac,
+  ThemLienLacPhuHuynhInput,
 } from './types'
 
 type ApiResponse<T> =
@@ -235,6 +239,26 @@ export class GoogleSheetsDataSource implements DataSource {
       action: 'build_attendance_form_url',
       payload,
     })
+  }
+
+  getAttendanceEntries(_options: {
+    tuanSo?: number
+    ngayFrom?: string
+    ngayTo?: string
+  } = {}): Promise<DiemDanh[]> {
+    return Promise.reject(new Error('Giao diện điểm danh giáo viên chỉ hỗ trợ dữ liệu Supabase.'))
+  }
+
+  getPendingParentContacts(): Promise<DiemDanhCanLienLac[]> {
+    return Promise.reject(new Error('Giao diện điểm danh giáo viên chỉ hỗ trợ dữ liệu Supabase.'))
+  }
+
+  upsertAttendanceEntry(_input: CapNhatDiemDanhInput): Promise<string | null> {
+    return Promise.reject(new Error('Giao diện điểm danh giáo viên chỉ hỗ trợ dữ liệu Supabase.'))
+  }
+
+  addParentContact(_input: ThemLienLacPhuHuynhInput): Promise<void> {
+    return Promise.reject(new Error('Giao diện điểm danh giáo viên chỉ hỗ trợ dữ liệu Supabase.'))
   }
 
   private async get<T>(action: string, params: Record<string, QueryValue> = {}): Promise<T> {

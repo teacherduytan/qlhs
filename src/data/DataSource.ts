@@ -10,11 +10,15 @@ import type {
   AttendanceFormUrlResult,
   AttendanceReport,
   BuoiHoc,
+  CapNhatDiemDanhInput,
   ImportResult,
   LoaiDuLieuImport,
   NhatKyImport,
   PhuHuynh,
   PublicStudentProfile,
+  DiemDanh,
+  DiemDanhCanLienLac,
+  ThemLienLacPhuHuynhInput,
 } from './types'
 
 /** Lớp trung gian dữ liệu — mọi UI chỉ gọi qua interface này (tài liệu 01) */
@@ -65,4 +69,12 @@ export interface DataSource {
     treTinhCoMat?: boolean,
   ): Promise<AttendanceReport>
   buildAttendanceFormUrl(payload: AttendanceFormPayload): Promise<AttendanceFormUrlResult>
+  getAttendanceEntries(options?: {
+    tuanSo?: number
+    ngayFrom?: string
+    ngayTo?: string
+  }): Promise<DiemDanh[]>
+  getPendingParentContacts(): Promise<DiemDanhCanLienLac[]>
+  upsertAttendanceEntry(input: CapNhatDiemDanhInput): Promise<string | null>
+  addParentContact(input: ThemLienLacPhuHuynhInput): Promise<void>
 }

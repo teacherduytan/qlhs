@@ -160,6 +160,8 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C127 | ✅ Xong | 23/07/2026 | Tạo schema điểm danh Supabase, seed nhóm điểm danh và chuyển báo cáo sĩ số chính khóa sang RPC tinh_bao_cao_si_so |
 | C128 | ✅ Xong | 23/07/2026 | Import CSV điểm danh thật 4 tuần: 22 ngoại lệ vào diem_danh và 22 dòng liên lạc phụ huynh; RPC sĩ số 09/07/2026 buổi sáng trả đúng danh sách vắng |
 | C129 | ⛔ Bị chặn (cần xác nhận) | 23/07/2026 | Chưa tự bấm UI trang Sĩ số bằng trình duyệt tự động vì .env không có tài khoản/session giáo viên Supabase; đã kiểm DB/RPC là nguồn dữ liệu frontend sẽ gọi |
+| C130 | ✅ Xong | 24/07/2026 | Tạo trang Điểm danh giáo viên chính khóa: số liệu ngày/tuần/tháng, lưới tuần, sửa vắng/trễ qua RPC upsert_diem_danh và ghi liên lạc phụ huynh |
+| C131 | ⛔ Bị chặn (cần xác nhận) | 24/07/2026 | Chưa tự bấm UI Điểm danh bằng trình duyệt đăng nhập thật vì .env không có tài khoản/session giáo viên Supabase; đã kiểm build, test và DB rollback |
 
 ---
 
