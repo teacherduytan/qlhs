@@ -523,6 +523,10 @@ export class SupabaseDataSource implements DataSource {
       hinh_thuc: input.hinh_thuc,
       noi_dung: input.noi_dung?.trim() || null,
       nguoi_lien_lac: session?.user.email || null,
+      ma_hs: input.ma_hs,
+      ho_ten: input.ho_ten,
+      ngay: input.ngay,
+      buoi: input.buoi,
     })
     assertNoError(error, 'Khong ghi duoc lien lac phu huynh tren Supabase')
   }

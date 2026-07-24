@@ -183,12 +183,12 @@ export function AttendanceManagementPage() {
     setMessage(null)
 
     try {
-      const contactTargets: string[] = []
+      const contactTargets: Array<{ id: string; session: BuoiDiemDanh }> = []
       for (const session of ['sang', 'chieu'] as BuoiDiemDanh[]) {
         const current = entryMap.get(entryKey(student.ma_hs, date, session))
         const next = values[session]
         if ((current?.trang_thai || 'co_mat') === next) {
-          if (next !== 'co_mat' && current?.id) contactTargets.push(current.id)
+          if (next !== 'co_mat' && current?.id) contactTargets.push({ id: current.id, session })
           continue
         }
 
@@ -199,16 +199,20 @@ export function AttendanceManagementPage() {
           trang_thai: next,
           tuan_so: activeWeek.tuan_so,
         })
-        if (id && next !== 'co_mat') contactTargets.push(id)
+        if (id && next !== 'co_mat') contactTargets.push({ id, session })
       }
 
       if (contact.noi_dung.trim()) {
         await Promise.all(
-          contactTargets.map((diemDanhId) =>
+          contactTargets.map((target) =>
             dataSource.addParentContact({
-              diem_danh_id: diemDanhId,
+              diem_danh_id: target.id,
               hinh_thuc: contact.hinh_thuc,
               noi_dung: contact.noi_dung.trim(),
+              ma_hs: student.ma_hs,
+              ho_ten: `${student.ho} ${student.ten}`,
+              ngay: date,
+              buoi: target.session,
             }),
           ),
         )
@@ -251,6 +255,10 @@ export function AttendanceManagementPage() {
           diem_danh_id: id,
           hinh_thuc: contact.hinh_thuc,
           noi_dung: contact.noi_dung.trim(),
+          ma_hs: student.ma_hs,
+          ho_ten: `${student.ho} ${student.ten}`,
+          ngay: date,
+          buoi: session,
         })
       }
 
@@ -277,6 +285,10 @@ export function AttendanceManagementPage() {
         diem_danh_id: target.id,
         hinh_thuc: contact.hinh_thuc,
         noi_dung: contact.noi_dung.trim() || null,
+        ma_hs: target.ma_hs || '',
+        ho_ten: `${target.ho} ${target.ten}`,
+        ngay: target.ngay,
+        buoi: target.buoi,
       })
       await refreshCurrentData()
       setContactTarget(null)

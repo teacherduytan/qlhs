@@ -190,6 +190,10 @@ export interface ThemLienLacPhuHuynhInput {
   diem_danh_id: string
   hinh_thuc: HinhThucLienLacPhuHuynh
   noi_dung: string | null
+  ma_hs: string
+  ho_ten: string
+  ngay: string
+  buoi: BuoiDiemDanh | 'ca_ngay'
 }
 
 export type AttendanceMealKey =
