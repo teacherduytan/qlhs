@@ -299,7 +299,7 @@ export function AttendanceManagementPage() {
       </div>
 
       <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2">
           {[
             ['day', 'Ngày'],
             ['week', 'Tuần'],
@@ -309,7 +309,7 @@ export function AttendanceManagementPage() {
               key={value}
               type="button"
               onClick={() => setScope(value as TimeScope)}
-              className={`h-10 rounded-md px-4 text-sm font-semibold ${
+              className={`h-10 flex-1 rounded-md px-4 text-sm font-semibold sm:flex-none ${
                 scope === value
                   ? 'bg-indigo-600 text-white'
                   : 'border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-100'
@@ -410,11 +410,11 @@ export function AttendanceManagementPage() {
             <table className="min-w-full border-separate border-spacing-0 text-sm">
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-10 min-w-48 border-b border-emerald-200 bg-emerald-50 p-2 text-left font-semibold text-slate-700">
+                  <th className="sticky left-0 z-10 min-w-32 border-b border-emerald-200 bg-emerald-50 p-2 text-left font-semibold text-slate-700 sm:min-w-48">
                     Học sinh
                   </th>
                   {weekDays.map((day) => (
-                    <th key={day} className="min-w-32 border-b border-emerald-200 p-2 text-left font-semibold text-slate-700">
+                    <th key={day} className="min-w-28 border-b border-emerald-200 p-2 text-left font-semibold text-slate-700 sm:min-w-32">
                       {formatWeekday(day)}
                       <span className="block text-xs font-normal text-slate-500">{formatShortDate(day)}</span>
                     </th>
@@ -623,8 +623,8 @@ function SessionBlock({
                 key={entry.id}
                 className="flex items-center justify-between gap-2 rounded border border-slate-200 p-2"
               >
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-900">
                     {student ? `${student.ho} ${student.ten}` : entry.ma_hs}
                   </p>
                   <span className={`inline-block rounded border px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[status]}`}>
@@ -635,7 +635,7 @@ function SessionBlock({
                   <button
                     type="button"
                     onClick={() => onEditCell(student)}
-                    className="h-8 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                    className="h-8 shrink-0 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                   >
                     Sửa
                   </button>
@@ -910,8 +910,12 @@ function ContactOnlyModal({
 
 function ModalShell({ children, onClose }: { children: ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-lg rounded-lg bg-white p-5 shadow-xl">
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 p-4 sm:items-center"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="my-8 w-full max-w-lg rounded-lg bg-white p-4 shadow-xl sm:my-0 sm:p-5">
         <div className="flex justify-end">
           <button
             type="button"

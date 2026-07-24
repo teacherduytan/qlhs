@@ -103,6 +103,19 @@ export function AttendanceReportPage() {
     setError(null)
     setMessage(null)
 
+    // Safari (iOS) chỉ cho window.open() mở tab khi gọi đồng bộ ngay trong
+    // thao tác bấm của người dùng. Nếu đợi xong request rồi mới window.open,
+    // Safari coi đó không còn là thao tác của người dùng và chặn tab lặng lẽ.
+    // Nên phải mở sẵn 1 tab trống ngay bây giờ, rồi điều hướng nó sau khi có URL.
+    const newTab = window.open('', '_blank')
+    if (newTab) {
+      try {
+        newTab.opener = null
+      } catch {
+        // bỏ qua nếu trình duyệt không cho gán, không ảnh hưởng luồng chính
+      }
+    }
+
     const payload: AttendanceFormPayload = {
       ngay: report.ngay,
       buoi: report.buoi,
@@ -113,9 +126,14 @@ export function AttendanceReportPage() {
 
     try {
       const result = await dataSource.buildAttendanceFormUrl(payload)
-      window.open(result.url, '_blank', 'noopener,noreferrer')
-      setMessage('Đã mở Google Form ở tab mới. Giáo viên kiểm tra lại rồi tự bấm Gửi trên Form.')
+      if (newTab) {
+        newTab.location.href = result.url
+        setMessage('Đã mở Google Form ở tab mới. Giáo viên kiểm tra lại rồi tự bấm Gửi trên Form.')
+      } else {
+        setError('Trình duyệt đang chặn mở tab mới. Hãy cho phép pop-up cho trang này rồi bấm lại.')
+      }
     } catch (openError) {
+      newTab?.close()
       setError(openError instanceof Error ? openError.message : 'Không tạo được link Google Form.')
     } finally {
       setOpening(false)
@@ -202,25 +220,23 @@ export function AttendanceReportPage() {
               <p className="text-xs font-medium text-slate-500">{report.sheet_name}</p>
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {DIEN_ORDER.map((dien) => (
-                <label key={dien} className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                  <span className="text-xs font-semibold uppercase text-slate-500">{DIEN_LABELS[dien]}</span>
-                  <span className="mt-1 flex items-end gap-1">
-                    <input
-                      type="number"
-                      min={0}
-                      value={presentCounts[dien]}
-                      onChange={(event) =>
-                        setPresentCounts((current) => ({
-                          ...current,
-                          [dien]: Number(event.target.value) || 0,
-                        }))
-                      }
-                      className="h-10 w-20 rounded-md border border-slate-300 bg-white px-2 text-lg font-bold text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-                    <span className="pb-2 text-sm font-medium text-slate-600">/ {report.tong[dien]} có mặt</span>
-                  </span>
+                <label key={dien} className="block rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <span className="block text-xs font-semibold uppercase text-slate-500">{DIEN_LABELS[dien]}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={presentCounts[dien]}
+                    onChange={(event) =>
+                      setPresentCounts((current) => ({
+                        ...current,
+                        [dien]: Number(event.target.value) || 0,
+                      }))
+                    }
+                    className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-lg font-bold text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <span className="mt-1 block text-xs font-medium text-slate-600">/ {report.tong[dien]} có mặt</span>
                 </label>
               ))}
             </div>
