@@ -7,6 +7,12 @@
 -- (ma_hs, ho_ten, ngay, buoi) ngay luc ghi, de khi dong diem_danh goc bi xoa,
 -- lich su lien lac van doc duoc ro la da lien lac cho ai, ngay nao, buoi nao.
 
+alter table public.lien_lac_phu_huynh
+  add column if not exists ma_hs text,
+  add column if not exists ho_ten text,
+  add column if not exists ngay date,
+  add column if not exists buoi text check (buoi in ('sang', 'chieu', 'ca_ngay'));
+
 update public.lien_lac_phu_huynh llph
 set
   ma_hs = dd.ma_hs,
@@ -16,12 +22,6 @@ set
 from public.diem_danh dd
 left join public.hoc_sinh hs on hs.ma_hs = dd.ma_hs
 where llph.diem_danh_id = dd.id;
-
-alter table public.lien_lac_phu_huynh
-  add column if not exists ma_hs text,
-  add column if not exists ho_ten text,
-  add column if not exists ngay date,
-  add column if not exists buoi text check (buoi in ('sang', 'chieu', 'ca_ngay'));
 
 alter table public.lien_lac_phu_huynh
   alter column diem_danh_id drop not null;
