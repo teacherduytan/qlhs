@@ -162,6 +162,7 @@ Cập nhật file này sau **mỗi commit hoàn thành** (xem quy trình ở [05
 | C129 | ⛔ Bị chặn (cần xác nhận) | 23/07/2026 | Chưa tự bấm UI trang Sĩ số bằng trình duyệt tự động vì .env không có tài khoản/session giáo viên Supabase; đã kiểm DB/RPC là nguồn dữ liệu frontend sẽ gọi |
 | C130 | ✅ Xong | 24/07/2026 | Tạo trang Điểm danh giáo viên chính khóa: số liệu ngày/tuần/tháng, lưới tuần, sửa vắng/trễ qua RPC upsert_diem_danh và ghi liên lạc phụ huynh |
 | C131 | ⛔ Bị chặn (cần xác nhận) | 24/07/2026 | Chưa tự bấm UI Điểm danh bằng trình duyệt đăng nhập thật vì .env không có tài khoản/session giáo viên Supabase; đã kiểm build, test và DB rollback |
+| C132 | ⛔ Bị chặn (cần xác nhận) | 24/07/2026 | Chuyển tạo link Google Form điểm danh từ Apps Script sang RPC Supabase `tao_link_form_diem_danh`; app không còn phụ thuộc Apps Script cho bất kỳ thao tác nào. Cần giáo viên tự INSERT dòng cấu hình thật (form_base_url, form_password, entries) vào bảng `cau_hinh_form_diem_danh` vì chỉ họ có các giá trị bí mật đang lưu trong Apps Script Script Properties |
 
 ---
 

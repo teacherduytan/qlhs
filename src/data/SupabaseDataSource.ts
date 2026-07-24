@@ -1,6 +1,5 @@
 import type { DataSource } from './DataSource'
-import { GoogleSheetsDataSource } from './GoogleSheetsDataSource'
-import { getSupabaseAccessToken, getSupabaseClient, hasSupabaseConfig } from '../lib/supabaseClient'
+import { getSupabaseClient } from '../lib/supabaseClient'
 import type {
   AttendanceFormPayload,
   AttendanceFormUrlResult,
@@ -98,15 +97,7 @@ const RECORD_TYPE_BY_GROUP: Record<DanhMucDiem['nhom'], LoaiGhiNhan> = {
 }
 
 export class SupabaseDataSource implements DataSource {
-  private readonly fallback: GoogleSheetsDataSource
-
-  constructor(fallback = new GoogleSheetsDataSource()) {
-    this.fallback = fallback
-  }
-
   async getStudents(): Promise<HocSinh[]> {
-    if (await this.shouldUseFallbackRead()) return this.fallback.getStudents()
-
     const { data, error } = await getSupabaseClient().from('hoc_sinh').select('*').order('tt')
     assertNoError(error, 'Khong doc duoc HocSinh tu Supabase')
     return (data || []) as HocSinh[]
@@ -118,10 +109,6 @@ export class SupabaseDataSource implements DataSource {
   }
 
   async getPublicStudentProfile(token: string): Promise<PublicStudentProfile | null> {
-    if (!hasSupabaseConfig()) {
-      return this.fallback.getPublicStudentProfile(token)
-    }
-
     const { data, error } = await getSupabaseClient().rpc('lay_ho_so_cong_khai', {
       p_token: token,
     })
@@ -168,8 +155,6 @@ export class SupabaseDataSource implements DataSource {
   }
 
   async getRecords(maHs?: string): Promise<GhiNhan[]> {
-    if (await this.shouldUseFallbackRead()) return this.fallback.getRecords(maHs)
-
     let query = getSupabaseClient().from('ghi_nhan').select('*').order('ngay', { ascending: false })
     if (maHs) query = query.eq('ma_hs', maHs)
 
@@ -232,8 +217,6 @@ export class SupabaseDataSource implements DataSource {
   }
 
   async getPointCatalog(): Promise<DanhMucDiem[]> {
-    if (await this.shouldUseFallbackRead()) return this.fallback.getPointCatalog()
-
     const { data, error } = await getSupabaseClient()
       .from('danh_muc_diem')
       .select('*')
@@ -273,8 +256,6 @@ export class SupabaseDataSource implements DataSource {
   }
 
   async getHandlingCatalog(): Promise<DanhMucXuLy[]> {
-    if (await this.shouldUseFallbackRead()) return this.fallback.getHandlingCatalog()
-
     const { data, error } = await getSupabaseClient()
       .from('danh_muc_xu_ly')
       .select('*')
@@ -310,21 +291,16 @@ export class SupabaseDataSource implements DataSource {
   }
 
   async getWeekConfig(): Promise<CauHinhTuan[]> {
-    if (await this.shouldUseFallbackRead()) return this.fallback.getWeekConfig()
     return this.ensureWeekConfigCoversDate(formatIsoDate(new Date()))
   }
 
   async getBanCanSu(): Promise<BanCanSu[]> {
-    if (await this.shouldUseFallbackRead()) return this.fallback.getBanCanSu()
-
     const { data, error } = await getSupabaseClient().from('ban_can_su').select('*').order('to')
     assertNoError(error, 'Khong doc duoc BanCanSu tu Supabase')
     return (data || []) as BanCanSu[]
   }
 
   async getPhuHuynh(maHs?: string): Promise<PhuHuynh[]> {
-    if (await this.shouldUseFallbackRead()) return this.fallback.getPhuHuynh(maHs)
-
     let query = getSupabaseClient().from('phu_huynh').select('*').order('ma_hs')
     if (maHs) query = query.eq('ma_hs', maHs)
 
@@ -334,8 +310,6 @@ export class SupabaseDataSource implements DataSource {
   }
 
   async getImportLogs(): Promise<NhatKyImport[]> {
-    if (await this.shouldUseFallbackRead()) return this.fallback.getImportLogs()
-
     const { data, error } = await getSupabaseClient()
       .from('nhat_ky_import')
       .select('*')
@@ -452,10 +426,6 @@ export class SupabaseDataSource implements DataSource {
     buoi: BuoiHoc,
     treTinhCoMat = true,
   ): Promise<AttendanceReport> {
-    if (await this.shouldUseFallbackRead()) {
-      return this.fallback.calculateAttendanceReport(ngay, buoi, treTinhCoMat)
-    }
-
     const { data, error } = await getSupabaseClient().rpc('tinh_bao_cao_si_so', {
       p_buoi: buoi === 'SANG' ? 'sang' : 'chieu',
       p_ngay: ngay,
@@ -465,8 +435,12 @@ export class SupabaseDataSource implements DataSource {
     return data as AttendanceReport
   }
 
-  buildAttendanceFormUrl(payload: AttendanceFormPayload): Promise<AttendanceFormUrlResult> {
-    return this.fallback.buildAttendanceFormUrl(payload)
+  async buildAttendanceFormUrl(payload: AttendanceFormPayload): Promise<AttendanceFormUrlResult> {
+    const { data, error } = await getSupabaseClient().rpc('tao_link_form_diem_danh', {
+      p_payload: payload,
+    })
+    assertNoError(error, 'Khong tao duoc link Google Form tu Supabase')
+    return { url: data as string }
   }
 
   async getAttendanceEntries(options: {
@@ -474,10 +448,6 @@ export class SupabaseDataSource implements DataSource {
     ngayFrom?: string
     ngayTo?: string
   } = {}): Promise<DiemDanh[]> {
-    if (await this.shouldUseFallbackRead()) {
-      return this.fallback.getAttendanceEntries(options)
-    }
-
     let query = getSupabaseClient()
       .from('diem_danh')
       .select('*')
@@ -495,10 +465,6 @@ export class SupabaseDataSource implements DataSource {
   }
 
   async getPendingParentContacts(): Promise<DiemDanhCanLienLac[]> {
-    if (await this.shouldUseFallbackRead()) {
-      return this.fallback.getPendingParentContacts()
-    }
-
     const [{ data: attendanceRows, error: attendanceError }, { data: contactRows, error: contactError }, students] =
       await Promise.all([
         getSupabaseClient()
@@ -559,11 +525,6 @@ export class SupabaseDataSource implements DataSource {
       nguoi_lien_lac: session?.user.email || null,
     })
     assertNoError(error, 'Khong ghi duoc lien lac phu huynh tren Supabase')
-  }
-
-  private async shouldUseFallbackRead(): Promise<boolean> {
-    if (!hasSupabaseConfig()) return true
-    return !(await getSupabaseAccessToken())
   }
 
   private async prepareImportRow(

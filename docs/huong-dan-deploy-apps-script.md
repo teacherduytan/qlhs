@@ -1,5 +1,10 @@
 # Triển khai Apps Script Web App
 
+> **Đã ngừng dùng từ C132.** Từ C132, frontend không còn gọi Apps Script cho bất kỳ
+> thao tác nào — kể cả tạo link Google Form điểm danh (nay là RPC Supabase
+> `tao_link_form_diem_danh`, xem `docs/06-cai-tien-sau-trien-khai.md`). Tài liệu này
+> chỉ còn giá trị tham khảo lịch sử; không cần deploy lại Apps Script cho bản mới.
+
 Sau khi dán `Code.gs` vào project Apps Script cùng `SetupSheet.gs` và `SeedData.gs`:
 
 1. **Deploy** → **New deployment** → loại **Web app**
