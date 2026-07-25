@@ -392,6 +392,15 @@ export function AttendanceManagementPage() {
       {message ? <p className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{message}</p> : null}
 
       <div className="grid gap-3 md:grid-cols-3">
+        <SummaryCard color="slate" label="Sĩ số" value={summary.siSo} />
+        <SummaryCard color="emerald" label="Hiện diện" value={summary.hienDien} />
+        <SummaryCard color="rose" label="Vắng" value={summary.vang} />
+      </div>
+      <p className="-mt-3 text-xs text-slate-500">
+        Tính theo số học sinh (không nhân theo ngày). Vắng = có ít nhất 1 lượt vắng có phép/không phép trong khoảng đang xem; Trễ không tính là vắng.
+      </p>
+
+      <div className="grid gap-3 md:grid-cols-3">
         <SummaryCard color="sky" label="Vắng có phép" value={summary.vangCoPhep} />
         <SummaryCard color="rose" label="Vắng không phép" value={summary.vangKhongPhep} />
         <SummaryCard color="amber" label="Trễ" value={summary.tre} />
@@ -476,6 +485,32 @@ export function AttendanceManagementPage() {
             </table>
           </div>
         )}
+
+        {scope === 'week' && weekDays.length > 0 ? (
+          <div className="mt-6 space-y-6 border-t border-emerald-200 pt-4">
+            <p className="text-xs font-semibold uppercase text-emerald-700">
+              Chi tiết từng ngày · sửa/xoá nhanh khi điểm danh nhầm
+            </p>
+            {weekDays.map((day) => (
+              <div key={day}>
+                <h4 className="text-sm font-bold text-slate-800">
+                  {formatWeekday(day)} · {formatShortDate(day)}
+                </h4>
+                <CompactDayAttendance
+                  date={day}
+                  disabled={saving}
+                  entries={weekEntries}
+                  onEditCell={(student) => setEditingCell({ date: day, student })}
+                  onSaveSession={(student, session, status, contact) =>
+                    saveSingleSession(student, day, session, status, contact)
+                  }
+                  pendingContactIds={pendingContactIds}
+                  students={students}
+                />
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
@@ -684,13 +719,28 @@ function SessionBlock({
                   ) : null}
                 </div>
                 {student ? (
-                  <button
-                    type="button"
-                    onClick={() => onEditCell(student)}
-                    className="h-8 shrink-0 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                  >
-                    Sửa
-                  </button>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onEditCell(student)}
+                      className="h-8 shrink-0 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => {
+                        const ok = window.confirm(
+                          `Xoá điểm danh ${SESSION_LABELS[session].toLowerCase()} của ${student.ho} ${student.ten}? Học sinh sẽ chuyển về Có mặt.`,
+                        )
+                        if (ok) onSaveSession(student, session, 'co_mat', { hinh_thuc: 'dien_thoai', noi_dung: '' })
+                      }}
+                      className="h-8 shrink-0 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                    >
+                      Xoá
+                    </button>
+                  </div>
                 ) : null}
               </div>
             )
@@ -761,11 +811,21 @@ function SessionBlock({
   )
 }
 
-function SummaryCard({ color, label, value }: { color: 'amber' | 'rose' | 'sky'; label: string; value: number }) {
+function SummaryCard({
+  color,
+  label,
+  value,
+}: {
+  color: 'amber' | 'emerald' | 'rose' | 'sky' | 'slate'
+  label: string
+  value: number
+}) {
   const classes = {
     amber: 'border-amber-200 bg-amber-50 text-amber-800',
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-800',
     rose: 'border-rose-200 bg-rose-50 text-rose-800',
     sky: 'border-sky-200 bg-sky-50 text-sky-800',
+    slate: 'border-slate-200 bg-slate-50 text-slate-800',
   }[color]
 
   return (
@@ -1042,12 +1102,25 @@ function buildSummary(
   const totalSlots = Math.max(0, studentCount * resolveDayCount(scope, selectedMonth, weeks, range) * 2)
   const rate = totalSlots > 0 ? 1 - totalExceptions / totalSlots : 1
 
+  const absentStudentIds = new Set(
+    entries
+      .filter((entry) => entry.trang_thai === 'vang_co_phep' || entry.trang_thai === 'vang_khong_phep')
+      .map((entry) => entry.ma_hs)
+      .filter((maHs): maHs is string => Boolean(maHs)),
+  )
+  const siSo = studentCount
+  const vang = absentStudentIds.size
+  const hienDien = Math.max(0, siSo - vang)
+
   return {
     rateText: `${Math.max(0, rate * 100).toFixed(1)}%`,
     totalSlots,
     tre,
     vangCoPhep,
     vangKhongPhep,
+    siSo,
+    vang,
+    hienDien,
   }
 }
 
