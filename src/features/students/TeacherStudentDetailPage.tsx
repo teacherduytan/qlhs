@@ -1,8 +1,31 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { BanCanSu, DanhMucDiem, DienHocSinh, GhiNhan, HocSinh, PhuHuynh } from '../../data/types'
+import type {
+  BanCanSu,
+  BuoiDiemDanh,
+  DanhMucDiem,
+  DienHocSinh,
+  GhiNhan,
+  HinhThucLienLacPhuHuynh,
+  HocSinh,
+  LienLacPhuHuynh,
+  PhuHuynh,
+} from '../../data/types'
 import { getRecordPolarity } from '../records/recordInsights'
+
+const CONTACT_LABELS: Record<HinhThucLienLacPhuHuynh, string> = {
+  dien_thoai: 'Điện thoại trực tiếp',
+  goi_zalo: 'Gọi Zalo',
+  nhan_tin_zalo: 'Nhắn tin Zalo',
+  sms: 'SMS',
+}
+
+const SESSION_LABELS: Record<BuoiDiemDanh | 'ca_ngay', string> = {
+  chieu: 'Chiều',
+  ca_ngay: 'Cả ngày',
+  sang: 'Sáng',
+}
 
 type DetailState =
   | { status: 'loading' }
@@ -12,6 +35,7 @@ type DetailState =
       status: 'success'
       banCanSu: BanCanSu[]
       catalog: DanhMucDiem[]
+      contacts: LienLacPhuHuynh[]
       parents: PhuHuynh[]
       records: GhiNhan[]
       student: HocSinh
@@ -54,15 +78,16 @@ export function TeacherStudentDetailPage() {
       dataSource.getBanCanSu(),
       dataSource.getRecords(maHs),
       dataSource.getPointCatalog(),
+      dataSource.getParentContactHistory({ maHs }),
     ])
-      .then(([students, parents, banCanSu, records, catalog]) => {
+      .then(([students, parents, banCanSu, records, catalog, contacts]) => {
         if (!active) return
         const student = students.find((item) => item.ma_hs === maHs)
         if (!student) {
           setState({ status: 'not_found' })
           return
         }
-        setState({ status: 'success', banCanSu, catalog, parents, records, student })
+        setState({ status: 'success', banCanSu, catalog, contacts, parents, records, student })
         setForm(formFromStudent(student))
       })
       .catch((error: unknown) => {
@@ -352,6 +377,49 @@ export function TeacherStudentDetailPage() {
             </div>
           </section>
 
+          <section className="rounded-lg border border-orange-200 bg-orange-50 shadow-sm">
+            <div className="flex flex-col gap-2 border-b border-orange-200 p-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase text-orange-700">Liên lạc phụ huynh</p>
+                <h3 className="text-xl font-bold text-slate-950">Lịch sử đã liên lạc</h3>
+                <p className="text-sm text-slate-600">
+                  Ghi nhận khi đánh dấu vắng/trễ ở trang Điểm danh.
+                </p>
+              </div>
+              <Link
+                to={`/lien-lac-phu-huynh?q=${encodeURIComponent(state.student.ma_hs)}`}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-orange-200 bg-white px-3 text-sm font-semibold text-orange-700 hover:bg-orange-100"
+              >
+                Xem trong Lịch sử liên lạc
+              </Link>
+            </div>
+
+            <div className="space-y-2 bg-white p-4">
+              {state.contacts.length === 0 ? (
+                <p className="rounded-md border border-orange-100 bg-orange-50 p-3 text-sm text-slate-600">
+                  Chưa có lượt liên lạc phụ huynh nào cho học sinh này.
+                </p>
+              ) : (
+                state.contacts.map((item) => (
+                  <div key={item.id} className="rounded-md border border-slate-200 p-3">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {item.ngay ? formatDate(item.ngay) : '—'} ·{' '}
+                        {item.buoi ? SESSION_LABELS[item.buoi] : '—'} ·{' '}
+                        {item.hinh_thuc ? CONTACT_LABELS[item.hinh_thuc] : 'Không rõ hình thức'}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {item.thoi_gian ? formatDateTime(item.thoi_gian) : ''}
+                        {item.nguoi_lien_lac ? ` · ${item.nguoi_lien_lac}` : ''}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-700">{item.noi_dung || 'Không có ghi chú.'}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
           <form onSubmit={saveStudent} className="rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -536,6 +604,18 @@ function formatDate(value: string | null): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
   return new Intl.DateTimeFormat('vi-VN').format(date)
+}
+
+function formatDateTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 function formatPoint(value: number | null): string {

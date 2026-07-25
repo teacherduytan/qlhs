@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BuoiDiemDanh, HinhThucLienLacPhuHuynh, LienLacPhuHuynh } from '../../data/types'
 
@@ -16,10 +17,11 @@ const SESSION_LABELS: Record<BuoiDiemDanh | 'ca_ngay', string> = {
 }
 
 export function ParentContactHistoryPage() {
+  const [searchParams] = useSearchParams()
   const [history, setHistory] = useState<LienLacPhuHuynh[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => searchParams.get('q') || '')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
 

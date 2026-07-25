@@ -78,5 +78,5 @@ export interface DataSource {
   getPendingParentContacts(): Promise<DiemDanhCanLienLac[]>
   upsertAttendanceEntry(input: CapNhatDiemDanhInput): Promise<string | null>
   addParentContact(input: ThemLienLacPhuHuynhInput): Promise<void>
-  getParentContactHistory(): Promise<LienLacPhuHuynh[]>
+  getParentContactHistory(options?: { maHs?: string }): Promise<LienLacPhuHuynh[]>
 }

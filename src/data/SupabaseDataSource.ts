@@ -532,11 +532,14 @@ export class SupabaseDataSource implements DataSource {
     assertNoError(error, 'Khong ghi duoc lien lac phu huynh tren Supabase')
   }
 
-  async getParentContactHistory(): Promise<LienLacPhuHuynh[]> {
-    const { data, error } = await getSupabaseClient()
+  async getParentContactHistory(options: { maHs?: string } = {}): Promise<LienLacPhuHuynh[]> {
+    let query = getSupabaseClient()
       .from('lien_lac_phu_huynh')
       .select('*')
       .order('thoi_gian', { ascending: false })
+    if (options.maHs) query = query.eq('ma_hs', options.maHs)
+
+    const { data, error } = await query
     assertNoError(error, 'Khong doc duoc lich su lien lac phu huynh tu Supabase')
     return (data || []) as LienLacPhuHuynh[]
   }
