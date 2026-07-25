@@ -18,6 +18,7 @@ import type {
   PublicStudentProfile,
   DiemDanh,
   DiemDanhCanLienLac,
+  LienLacPhuHuynh,
   ThemLienLacPhuHuynhInput,
 } from './types'
 
@@ -77,4 +78,5 @@ export interface DataSource {
   getPendingParentContacts(): Promise<DiemDanhCanLienLac[]>
   upsertAttendanceEntry(input: CapNhatDiemDanhInput): Promise<string | null>
   addParentContact(input: ThemLienLacPhuHuynhInput): Promise<void>
+  getParentContactHistory(): Promise<LienLacPhuHuynh[]>
 }

@@ -13,6 +13,7 @@ const navItems = [
   { to: '/hoc-sinh', label: 'Học sinh' },
   { to: '/ghi-nhan', label: 'Ghi nhận' },
   { to: '/diem-danh', label: 'Điểm danh' },
+  { to: '/lien-lac-phu-huynh', label: 'Liên lạc PH' },
   { to: '/bao-cao-si-so', label: 'Sĩ số' },
   { to: '/danh-muc', label: 'Danh mục' },
   { to: '/import', label: 'Import' },

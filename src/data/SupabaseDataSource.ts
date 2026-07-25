@@ -16,6 +16,7 @@ import type {
   GhiNhan,
   HocSinh,
   ImportResult,
+  LienLacPhuHuynh,
   LoaiDuLieuImport,
   LoaiGhiNhan,
   NhatKyImport,
@@ -529,6 +530,15 @@ export class SupabaseDataSource implements DataSource {
       buoi: input.buoi,
     })
     assertNoError(error, 'Khong ghi duoc lien lac phu huynh tren Supabase')
+  }
+
+  async getParentContactHistory(): Promise<LienLacPhuHuynh[]> {
+    const { data, error } = await getSupabaseClient()
+      .from('lien_lac_phu_huynh')
+      .select('*')
+      .order('thoi_gian', { ascending: false })
+    assertNoError(error, 'Khong doc duoc lich su lien lac phu huynh tu Supabase')
+    return (data || []) as LienLacPhuHuynh[]
   }
 
   private async prepareImportRow(

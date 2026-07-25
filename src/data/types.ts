@@ -178,6 +178,19 @@ export interface DiemDanhCanLienLac extends DiemDanhHocSinh {
   da_lien_lac: boolean
 }
 
+export interface LienLacPhuHuynh {
+  id: string
+  diem_danh_id: string | null
+  hinh_thuc: HinhThucLienLacPhuHuynh | null
+  noi_dung: string | null
+  nguoi_lien_lac: string | null
+  thoi_gian: string | null
+  ma_hs: string | null
+  ho_ten: string | null
+  ngay: string | null
+  buoi: BuoiDiemDanh | 'ca_ngay' | null
+}
+
 export interface CapNhatDiemDanhInput {
   ma_hs: string
   ngay: string
