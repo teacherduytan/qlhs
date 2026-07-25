@@ -144,6 +144,11 @@ export function RecordEntryPage() {
     })
   }, [sortedStudents, studentQuery])
 
+  const teamStudentCount = useMemo(() => {
+    const team = Number(form.selectedTeam)
+    return sortedStudents.filter((student) => student.to === team).length
+  }, [form.selectedTeam, sortedStudents])
+
   const targetStudents = useMemo(() => {
     if (attachMode === 'class') return sortedStudents
 
@@ -304,51 +309,59 @@ export function RecordEntryPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {visibleCatalog.map((item) => {
-            const active = item.ma_danh_muc === form.catalogCode
-            return (
-              <button
-                key={item.ma_danh_muc}
-                type="button"
-                onClick={() => {
-                  setForm((current) => ({
-                    ...current,
-                    catalogCode: item.ma_danh_muc,
-                    note: current.note || item.ten_muc,
-                  }))
-                }}
-                className={`rounded-lg border bg-white p-3 text-left transition ${
-                  active ? 'border-cyan-600 ring-2 ring-cyan-200' : 'border-cyan-100 hover:border-cyan-300'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${getBadgeClassForCatalog(item)}`}>
-                    {item.ma_danh_muc}
-                  </span>
-                  <span
-                    className={`rounded-full border px-2 py-1 text-xs font-semibold ${
-                      item.diem > 0
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                        : item.diem < 0
-                          ? 'border-red-200 bg-red-50 text-red-700'
-                          : 'border-amber-200 bg-amber-50 text-amber-700'
-                    }`}
-                  >
-                    {item.diem > 0 ? `+${item.diem}` : item.diem}
-                  </span>
-                </div>
-                <p className="mt-2 font-semibold text-slate-900">{item.ten_muc}</p>
-                <p className="mt-1 text-xs text-slate-600">
-                  {labelGroup(item.nhom)} · {labelScope(item.pham_vi)}
-                  {item.nghiem_trong ? ' · Nghiêm trọng' : ''}
-                </p>
-              </button>
-            )
-          })}
+        <div className="mt-4">
+          <select
+            value={form.catalogCode}
+            onChange={(event) => {
+              const code = event.target.value
+              const item = catalogByCode.get(code)
+              setForm((current) => ({
+                ...current,
+                catalogCode: code,
+                note: item && !current.note ? item.ten_muc : current.note,
+              }))
+            }}
+            className={selectClass + ' w-full'}
+          >
+            <option value="">Chọn danh mục...</option>
+            {visibleCatalog.map((item) => (
+              <option key={item.ma_danh_muc} value={item.ma_danh_muc}>
+                {item.ma_danh_muc} · {item.ten_muc} ({item.diem > 0 ? `+${item.diem}` : item.diem})
+              </option>
+            ))}
+          </select>
+
           {visibleCatalog.length === 0 ? (
-            <div className="rounded-lg border border-cyan-200 bg-white p-4 text-sm font-medium text-slate-600 md:col-span-2 xl:col-span-3">
+            <p className="mt-2 rounded-lg border border-cyan-200 bg-white p-3 text-sm font-medium text-slate-600">
               Chưa có danh mục cá nhân phù hợp. Hãy thêm/sửa phạm vi danh mục ở trang Danh mục.
+            </p>
+          ) : null}
+
+          {selectedCatalog ? (
+            <div className="mt-3 rounded-lg border border-cyan-200 bg-white p-3">
+              <div className="flex items-start justify-between gap-2">
+                <span
+                  className={`rounded-full border px-2 py-1 text-xs font-semibold ${getBadgeClassForCatalog(selectedCatalog)}`}
+                >
+                  {selectedCatalog.ma_danh_muc}
+                </span>
+                <span
+                  className={`rounded-full border px-2 py-1 text-xs font-semibold ${
+                    selectedCatalog.diem > 0
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      : selectedCatalog.diem < 0
+                        ? 'border-red-200 bg-red-50 text-red-700'
+                        : 'border-amber-200 bg-amber-50 text-amber-700'
+                  }`}
+                >
+                  {selectedCatalog.diem > 0 ? `+${selectedCatalog.diem}` : selectedCatalog.diem}
+                </span>
+              </div>
+              <p className="mt-2 font-semibold text-slate-900">{selectedCatalog.ten_muc}</p>
+              <p className="mt-1 text-xs text-slate-600">
+                {labelGroup(selectedCatalog.nhom)} · {labelScope(selectedCatalog.pham_vi)}
+                {selectedCatalog.nghiem_trong ? ' · Nghiêm trọng' : ''}
+              </p>
             </div>
           ) : null}
         </div>
@@ -356,26 +369,15 @@ export function RecordEntryPage() {
 
       <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
         <h3 className="text-base font-bold text-slate-900">2. Chọn cách gắn lên học sinh</h3>
-        <div className="mt-3 grid gap-2 md:grid-cols-3">
-          <ModeButton
-            active={attachMode === 'students'}
-            label="Chọn từng học sinh"
-            detail={`${selectedStudentIds.length} học sinh đã chọn`}
-            onClick={() => setAttachMode('students')}
-          />
-          <ModeButton
-            active={attachMode === 'team'}
-            label="Theo tổ"
-            detail={`Tổ ${form.selectedTeam}: ${targetStudents.length} học sinh`}
-            onClick={() => setAttachMode('team')}
-          />
-          <ModeButton
-            active={attachMode === 'class'}
-            label="Cả lớp"
-            detail={`${targetStudents.length} học sinh`}
-            onClick={() => setAttachMode('class')}
-          />
-        </div>
+        <select
+          value={attachMode}
+          onChange={(event) => setAttachMode(event.target.value as AttachMode)}
+          className={selectClass + ' mt-3 w-full md:w-80'}
+        >
+          <option value="students">Chọn từng học sinh ({selectedStudentIds.length} đã chọn)</option>
+          <option value="team">Theo tổ ({teamStudentCount} học sinh)</option>
+          <option value="class">Cả lớp ({sortedStudents.length} học sinh)</option>
+        </select>
 
         {attachMode === 'students' ? (
           <div className="mt-4 rounded-lg border border-emerald-200 bg-white p-3">
@@ -683,33 +685,6 @@ function InfoBox({ label, value }: { label: string; value: number | string }) {
       <p className="text-xs font-semibold uppercase text-indigo-700">{label}</p>
       <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
     </div>
-  )
-}
-
-function ModeButton({
-  active,
-  detail,
-  label,
-  onClick,
-}: {
-  active: boolean
-  detail: string
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-lg border p-3 text-left transition ${
-        active
-          ? 'border-emerald-600 bg-white ring-2 ring-emerald-200'
-          : 'border-emerald-200 bg-white hover:border-emerald-300'
-      }`}
-    >
-      <span className="block font-bold text-slate-900">{label}</span>
-      <span className="mt-1 block text-sm text-slate-600">{detail}</span>
-    </button>
   )
 }
 
