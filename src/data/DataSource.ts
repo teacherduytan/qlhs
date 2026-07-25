@@ -4,8 +4,11 @@ import type {
   DeleteImportResult,
   DanhMucDiem,
   DanhMucXuLy,
+  DeXuatGhiNhan,
   GhiNhan,
+  GuiDeXuatGhiNhanInput,
   HocSinh,
+  LopTruongData,
   AttendanceFormPayload,
   AttendanceFormUrlResult,
   AttendanceReport,
@@ -55,6 +58,9 @@ export interface DataSource {
   deleteHandlingCatalogItem(maXuLy: string): Promise<void>
   getWeekConfig(): Promise<CauHinhTuan[]>
   getBanCanSu(): Promise<BanCanSu[]>
+  addBanCanSu(item: BanCanSu): Promise<BanCanSu>
+  updateBanCanSu(maHs: string, chucVu: string, patch: Partial<BanCanSu>): Promise<BanCanSu>
+  deleteBanCanSu(maHs: string, chucVu: string): Promise<void>
   getPhuHuynh(maHs?: string): Promise<PhuHuynh[]>
   getImportLogs(): Promise<NhatKyImport[]>
 
@@ -82,4 +88,11 @@ export interface DataSource {
   getParentContactHistory(options?: { maHs?: string }): Promise<LienLacPhuHuynh[]>
   updateParentContact(id: string, patch: SuaLienLacPhuHuynhInput): Promise<void>
   deleteParentContact(id: string): Promise<void>
+
+  verifyLopTruongPin(token: string, pin: string): Promise<boolean>
+  getLopTruongData(token: string, pin: string): Promise<LopTruongData | null>
+  submitDeXuatGhiNhan(input: GuiDeXuatGhiNhanInput): Promise<string>
+  getDeXuatGhiNhan(): Promise<DeXuatGhiNhan[]>
+  approveDeXuatGhiNhan(id: string): Promise<void>
+  rejectDeXuatGhiNhan(id: string, ghiChu?: string): Promise<void>
 }

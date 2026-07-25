@@ -60,6 +60,42 @@ export interface BanCanSu {
   chuc_vu: string
   to: number | null
   ngay_bat_dau: string | null
+  ma_pin?: string | null
+}
+
+export type TrangThaiDeXuatGhiNhan = 'cho_duyet' | 'da_duyet' | 'tu_choi'
+
+export interface DeXuatGhiNhan {
+  id: string
+  ma_hs: string
+  ma_danh_muc: string
+  noi_dung: string | null
+  nguoi_de_xuat: string
+  ma_hs_de_xuat: string
+  trang_thai: TrangThaiDeXuatGhiNhan
+  ghi_chu_giao_vien: string | null
+  ma_ghi_nhan: string | null
+  thoi_gian: string | null
+}
+
+export interface GuiDeXuatGhiNhanInput {
+  token: string
+  pin: string
+  ma_hs: string
+  ma_danh_muc: string
+  noi_dung: string
+}
+
+export interface LopTruongRosterStudent {
+  ma_hs: string
+  ho: string
+  ten: string
+  tt: number
+}
+
+export interface LopTruongData {
+  students: LopTruongRosterStudent[]
+  catalog: DanhMucDiem[]
 }
 
 export interface DanhMucDiem {

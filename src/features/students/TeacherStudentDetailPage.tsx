@@ -27,6 +27,18 @@ const SESSION_LABELS: Record<BuoiDiemDanh | 'ca_ngay', string> = {
   sang: 'Sáng',
 }
 
+const ROLE_OPTIONS = [
+  'Không giữ chức vụ',
+  'Lớp trưởng',
+  'Lớp phó học tập',
+  'Lớp phó lao động',
+  'Bí thư chi đoàn',
+  'Tổ trưởng',
+  'Tổ phó',
+]
+
+const LOP_TRUONG_ROLE = 'Lớp trưởng'
+
 type DetailState =
   | { status: 'loading' }
   | { status: 'not_found' }
@@ -55,6 +67,13 @@ type StudentForm = {
   ghi_chu: string
 }
 
+type RoleForm = {
+  chucVu: string
+  to: string
+  ngayBatDau: string
+  pin: string
+}
+
 export function TeacherStudentDetailPage() {
   const { maHs } = useParams()
   const [state, setState] = useState<DetailState>({ status: 'loading' })
@@ -63,6 +82,10 @@ export function TeacherStudentDetailPage() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null)
+  const [roleForm, setRoleForm] = useState<RoleForm | null>(null)
+  const [roleSaving, setRoleSaving] = useState(false)
+  const [roleError, setRoleError] = useState<string | null>(null)
+  const [roleMessage, setRoleMessage] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -89,6 +112,7 @@ export function TeacherStudentDetailPage() {
         }
         setState({ status: 'success', banCanSu, catalog, contacts, parents, records, student })
         setForm(formFromStudent(student))
+        setRoleForm(roleFormFromBanCanSu(maHs, banCanSu))
       })
       .catch((error: unknown) => {
         if (active) {
@@ -122,6 +146,47 @@ export function TeacherStudentDetailPage() {
       setSaveError(error instanceof Error ? error.message : 'Không lưu được thay đổi.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function saveRole(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (state.status !== 'success' || !roleForm) return
+
+    setRoleSaving(true)
+    setRoleError(null)
+    setRoleMessage(null)
+
+    try {
+      const maHsValue = state.student.ma_hs
+      const existing = state.banCanSu.find((item) => item.ma_hs === maHsValue) || null
+      const patch: Pick<BanCanSu, 'to' | 'ngay_bat_dau' | 'ma_pin'> = {
+        to: roleForm.to ? Number(roleForm.to) : null,
+        ngay_bat_dau: roleForm.ngayBatDau || null,
+        ma_pin: roleForm.chucVu === LOP_TRUONG_ROLE ? roleForm.pin.trim() || null : null,
+      }
+
+      let nextEntry: BanCanSu | null = null
+
+      if (roleForm.chucVu === ROLE_OPTIONS[0]) {
+        if (existing) await dataSource.deleteBanCanSu(maHsValue, existing.chuc_vu)
+      } else if (existing && existing.chuc_vu === roleForm.chucVu) {
+        nextEntry = await dataSource.updateBanCanSu(maHsValue, roleForm.chucVu, patch)
+      } else {
+        if (existing) await dataSource.deleteBanCanSu(maHsValue, existing.chuc_vu)
+        nextEntry = await dataSource.addBanCanSu({ ma_hs: maHsValue, chuc_vu: roleForm.chucVu, ...patch })
+      }
+
+      setState((current) => {
+        if (current.status !== 'success') return current
+        const others = current.banCanSu.filter((item) => item.ma_hs !== maHsValue)
+        return { ...current, banCanSu: nextEntry ? [...others, nextEntry] : others }
+      })
+      setRoleMessage('Đã lưu chức vụ.')
+    } catch (error) {
+      setRoleError(error instanceof Error ? error.message : 'Không lưu được chức vụ.')
+    } finally {
+      setRoleSaving(false)
     }
   }
 
@@ -273,6 +338,69 @@ export function TeacherStudentDetailPage() {
               </div>
             </div>
           </section>
+
+          {roleForm ? (
+            <section className="rounded-lg border border-teal-200 bg-teal-50 shadow-sm">
+              <div className="border-b border-teal-200 p-4">
+                <p className="text-xs font-semibold uppercase text-teal-700">Ban cán sự</p>
+                <h3 className="text-lg font-bold text-slate-950">Chức vụ trong lớp</h3>
+                <p className="text-sm text-slate-600">
+                  Chọn "{LOP_TRUONG_ROLE}" và đặt mã PIN để học sinh này được quyền gửi đề xuất ghi nhận cho bạn
+                  cùng lớp qua link hồ sơ — giáo viên vẫn phải duyệt trước khi tính điểm.
+                </p>
+              </div>
+
+              <form onSubmit={saveRole} className="grid gap-3 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Chức vụ
+                  <select
+                    value={roleForm.chucVu}
+                    onChange={(event) => setRoleForm({ ...roleForm, chucVu: event.target.value })}
+                    className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    {ROLE_OPTIONS.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <TextField
+                  label="Tổ phụ trách (nếu có)"
+                  type="number"
+                  value={roleForm.to}
+                  onChange={(value) => setRoleForm({ ...roleForm, to: value })}
+                />
+                <TextField
+                  label="Ngày bắt đầu"
+                  type="date"
+                  value={roleForm.ngayBatDau}
+                  onChange={(value) => setRoleForm({ ...roleForm, ngayBatDau: value })}
+                />
+                {roleForm.chucVu === LOP_TRUONG_ROLE ? (
+                  <TextField
+                    label="Mã PIN (để gửi đề xuất ghi nhận)"
+                    value={roleForm.pin}
+                    onChange={(value) => setRoleForm({ ...roleForm, pin: value })}
+                  />
+                ) : (
+                  <div />
+                )}
+
+                <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-4">
+                  <button
+                    type="submit"
+                    disabled={roleSaving}
+                    className="inline-flex h-10 items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {roleSaving ? 'Đang lưu...' : 'Lưu chức vụ'}
+                  </button>
+                  {roleError ? <p className="text-sm font-semibold text-red-700">{roleError}</p> : null}
+                  {roleMessage ? <p className="text-sm font-semibold text-emerald-700">{roleMessage}</p> : null}
+                </div>
+              </form>
+            </section>
+          ) : null}
 
           <section className="rounded-lg border border-blue-300 bg-blue-50 shadow-sm">
             <div className="flex flex-col gap-2 border-b border-blue-200 p-4 sm:flex-row sm:items-end sm:justify-between">
@@ -677,4 +805,14 @@ function toText(value: unknown): string {
 
 function getRole(maHs: string, banCanSu: BanCanSu[]): string {
   return banCanSu.find((item) => item.ma_hs === maHs)?.chuc_vu || 'Học sinh'
+}
+
+function roleFormFromBanCanSu(maHs: string, banCanSu: BanCanSu[]): RoleForm {
+  const current = banCanSu.find((item) => item.ma_hs === maHs)
+  return {
+    chucVu: current?.chuc_vu || ROLE_OPTIONS[0],
+    to: current?.to ? String(current.to) : '',
+    ngayBatDau: current?.ngay_bat_dau || '',
+    pin: current?.ma_pin || '',
+  }
 }

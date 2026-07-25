@@ -11,11 +11,14 @@ import type {
   DanhMucDiem,
   DanhMucXuLy,
   DeleteImportResult,
+  DeXuatGhiNhan,
   DiemDanh,
   DiemDanhCanLienLac,
   GhiNhan,
+  GuiDeXuatGhiNhanInput,
   HocSinh,
   ImportResult,
+  LopTruongData,
   LienLacPhuHuynh,
   LoaiDuLieuImport,
   LoaiGhiNhan,
@@ -302,6 +305,37 @@ export class SupabaseDataSource implements DataSource {
     return (data || []) as BanCanSu[]
   }
 
+  async addBanCanSu(item: BanCanSu): Promise<BanCanSu> {
+    const { data, error } = await getSupabaseClient()
+      .from('ban_can_su')
+      .insert(stripUndefined(item as unknown as AnyRow))
+      .select()
+      .single()
+    assertNoError(error, 'Khong tao duoc BanCanSu tren Supabase')
+    return data as BanCanSu
+  }
+
+  async updateBanCanSu(maHs: string, chucVu: string, patch: Partial<BanCanSu>): Promise<BanCanSu> {
+    const { data, error } = await getSupabaseClient()
+      .from('ban_can_su')
+      .update(stripUndefined(patch as AnyRow))
+      .eq('ma_hs', maHs)
+      .eq('chuc_vu', chucVu)
+      .select()
+      .single()
+    assertNoError(error, 'Khong cap nhat duoc BanCanSu tren Supabase')
+    return data as BanCanSu
+  }
+
+  async deleteBanCanSu(maHs: string, chucVu: string): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('ban_can_su')
+      .delete()
+      .eq('ma_hs', maHs)
+      .eq('chuc_vu', chucVu)
+    assertNoError(error, 'Khong xoa duoc BanCanSu tren Supabase')
+  }
+
   async getPhuHuynh(maHs?: string): Promise<PhuHuynh[]> {
     let query = getSupabaseClient().from('phu_huynh').select('*').order('ma_hs')
     if (maHs) query = query.eq('ma_hs', maHs)
@@ -559,6 +593,116 @@ export class SupabaseDataSource implements DataSource {
   async deleteParentContact(id: string): Promise<void> {
     const { error } = await getSupabaseClient().from('lien_lac_phu_huynh').delete().eq('id', id)
     assertNoError(error, 'Khong xoa duoc lien lac phu huynh tren Supabase')
+  }
+
+  async verifyLopTruongPin(token: string, pin: string): Promise<boolean> {
+    const { data, error } = await getSupabaseClient().rpc('xac_thuc_pin_lop_truong', {
+      p_token: token,
+      p_pin: pin,
+    })
+    assertNoError(error, 'Khong xac thuc duoc ma PIN lop truong')
+    return Boolean(data)
+  }
+
+  async getLopTruongData(token: string, pin: string): Promise<LopTruongData | null> {
+    const { data, error } = await getSupabaseClient().rpc('lay_du_lieu_lop_truong', {
+      p_token: token,
+      p_pin: pin,
+    })
+    assertNoError(error, 'Khong lay duoc du lieu lop truong tu Supabase')
+    const row = Array.isArray(data) && data.length > 0 ? data[0] : null
+    if (!row) return null
+    return {
+      students: (row.students || []) as LopTruongData['students'],
+      catalog: (row.catalog || []) as DanhMucDiem[],
+    }
+  }
+
+  async submitDeXuatGhiNhan(input: GuiDeXuatGhiNhanInput): Promise<string> {
+    const { data, error } = await getSupabaseClient().rpc('gui_de_xuat_ghi_nhan', {
+      p_token: input.token,
+      p_pin: input.pin,
+      p_ma_hs: input.ma_hs,
+      p_ma_danh_muc: input.ma_danh_muc,
+      p_noi_dung: input.noi_dung,
+    })
+    assertNoError(error, 'Khong gui duoc de xuat ghi nhan')
+    return data as string
+  }
+
+  async getDeXuatGhiNhan(): Promise<DeXuatGhiNhan[]> {
+    const { data, error } = await getSupabaseClient()
+      .from('de_xuat_ghi_nhan')
+      .select('*')
+      .order('thoi_gian', { ascending: false })
+    assertNoError(error, 'Khong doc duoc de xuat ghi nhan tu Supabase')
+    return (data || []) as DeXuatGhiNhan[]
+  }
+
+  async approveDeXuatGhiNhan(id: string): Promise<void> {
+    const { data: proposalRow, error: proposalError } = await getSupabaseClient()
+      .from('de_xuat_ghi_nhan')
+      .select('*')
+      .eq('id', id)
+      .single()
+    assertNoError(proposalError, 'Khong tim thay de xuat ghi nhan')
+    const proposal = proposalRow as DeXuatGhiNhan
+    if (proposal.trang_thai !== 'cho_duyet') {
+      throw new Error('De xuat nay da duoc xu ly.')
+    }
+
+    const [catalog, students] = await Promise.all([this.getPointCatalog(), this.getStudents()])
+    const catalogItem = catalog.find((item) => item.ma_danh_muc === proposal.ma_danh_muc)
+    if (!catalogItem) throw new Error('Danh muc trong de xuat khong con ton tai.')
+    const student = students.find((item) => item.ma_hs === proposal.ma_hs)
+    if (!student) throw new Error('Hoc sinh trong de xuat khong con ton tai.')
+
+    const ngay = formatIsoDate(new Date())
+    const weekConfig = await this.ensureWeekConfigCoversDate(ngay)
+    const tuanSo = resolveWeekNumber(weekConfig, ngay)
+    if (!tuanSo) throw new Error('Khong xac dinh duoc tuan_so cho ngay hien tai.')
+
+    const created = await this.addRecords([
+      {
+        ma_hs: proposal.ma_hs,
+        to_lien_quan: student.to,
+        ngay,
+        tuan_so: tuanSo,
+        dien_tai_thoi_diem: student.dien,
+        tiet: null,
+        mon_hoc: null,
+        loai: RECORD_TYPE_BY_GROUP[catalogItem.nhom],
+        ma_danh_muc: catalogItem.ma_danh_muc,
+        noi_dung: proposal.noi_dung || catalogItem.ten_muc,
+        so_lan: 1,
+        ly_do: null,
+        da_xu_ly: false,
+        hinh_thuc_xu_ly: null,
+        goi_phu_huynh: false,
+        ghi_so_dau_bai: null,
+        diem_so_mon: null,
+        diem_cong_tru: Number(catalogItem.diem),
+        nguoi_ghi: `Lớp trưởng ${proposal.nguoi_de_xuat} (đã duyệt)`,
+        nguon: 'de_xuat_lop_truong',
+        ma_log_import: null,
+        trang_thai_xu_ly_tap_the: '',
+        su_kien_goc: null,
+      },
+    ])
+
+    const { error: updateError } = await getSupabaseClient()
+      .from('de_xuat_ghi_nhan')
+      .update({ trang_thai: 'da_duyet', ma_ghi_nhan: created[0]?.ma_ghi_nhan || null })
+      .eq('id', id)
+    assertNoError(updateError, 'Khong cap nhat duoc trang thai de xuat')
+  }
+
+  async rejectDeXuatGhiNhan(id: string, ghiChu?: string): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('de_xuat_ghi_nhan')
+      .update({ trang_thai: 'tu_choi', ghi_chu_giao_vien: ghiChu?.trim() || null })
+      .eq('id', id)
+    assertNoError(error, 'Khong tu choi duoc de xuat')
   }
 
   private async prepareImportRow(

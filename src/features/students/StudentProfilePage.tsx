@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh } from '../../data/types'
+import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh, LopTruongData } from '../../data/types'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
 import { getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
@@ -34,6 +34,8 @@ const PROFILE_SECTIONS: Array<{ id: ProfileSectionKey; label: string; tab?: Prof
   { id: 'score', label: 'Điểm tuần', tab: 'score' },
   { id: 'info', label: 'Cá nhân', tab: 'info' },
 ]
+
+const LOP_TRUONG_ROLE = 'Lớp trưởng'
 
 const INITIAL_PROFILE_COLLAPSED: Record<ProfileSectionKey, boolean> = {
   featured: false,
@@ -179,6 +181,12 @@ export function StudentProfilePage() {
                 />
               ) : null}
             </section>
+
+            {state.role === LOP_TRUONG_ROLE && token ? (
+              <section id="profile-lop-truong" className="scroll-mt-4">
+                <LopTruongPanel token={token} />
+              </section>
+            ) : null}
 
             <section id="profile-featured" className="scroll-mt-4 space-y-3">
               <ProfileSectionHeader
@@ -699,6 +707,161 @@ function InfoItem({ label, value }: { label: string; value: string }) {
     <div className="bg-white p-4">
       <dt className="text-xs font-semibold uppercase text-slate-500">{label}</dt>
       <dd className="mt-1 text-sm font-medium text-slate-900">{value || '-'}</dd>
+    </div>
+  )
+}
+
+function LopTruongPanel({ token }: { token: string }) {
+  const [open, setOpen] = useState(false)
+  const [pin, setPin] = useState('')
+  const [verifiedPin, setVerifiedPin] = useState<string | null>(null)
+  const [roster, setRoster] = useState<LopTruongData | null>(null)
+  const [verifying, setVerifying] = useState(false)
+  const [pinError, setPinError] = useState<string | null>(null)
+
+  const [selectedMaHs, setSelectedMaHs] = useState('')
+  const [selectedCatalog, setSelectedCatalog] = useState('')
+  const [noiDung, setNoiDung] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null)
+
+  async function submitPin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setVerifying(true)
+    setPinError(null)
+
+    try {
+      const data = await dataSource.getLopTruongData(token, pin.trim())
+      if (!data) {
+        setPinError('Mã PIN không đúng. Hỏi lại giáo viên nếu quên PIN.')
+        return
+      }
+      setRoster(data)
+      setVerifiedPin(pin.trim())
+    } catch (error) {
+      setPinError(error instanceof Error ? error.message : 'Không xác thực được PIN.')
+    } finally {
+      setVerifying(false)
+    }
+  }
+
+  async function submitProposal(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!verifiedPin || !selectedMaHs || !selectedCatalog) return
+
+    setSubmitting(true)
+    setSubmitError(null)
+    setSubmitMessage(null)
+
+    try {
+      await dataSource.submitDeXuatGhiNhan({
+        token,
+        pin: verifiedPin,
+        ma_hs: selectedMaHs,
+        ma_danh_muc: selectedCatalog,
+        noi_dung: noiDung,
+      })
+      setSubmitMessage('Đã gửi đề xuất, chờ giáo viên duyệt.')
+      setSelectedMaHs('')
+      setSelectedCatalog('')
+      setNoiDung('')
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Không gửi được đề xuất.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full rounded-lg border border-teal-300 bg-teal-50 p-4 text-left shadow-sm hover:bg-teal-100"
+      >
+        <p className="text-xs font-semibold uppercase text-teal-700">Dành cho lớp trưởng</p>
+        <p className="mt-1 font-bold text-slate-900">Nhập đề xuất ghi nhận cho lớp</p>
+        <p className="mt-1 text-sm text-slate-600">Gõ mã PIN riêng để mở form, giáo viên sẽ duyệt trước khi tính điểm.</p>
+      </button>
+    )
+  }
+
+  return (
+    <div className="rounded-lg border border-teal-300 bg-teal-50 p-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase text-teal-700">Dành cho lớp trưởng</p>
+      <h3 className="text-lg font-bold text-slate-950">Nhập đề xuất ghi nhận cho lớp</h3>
+      <p className="mt-1 text-sm text-slate-600">
+        Chọn bạn, chọn danh mục, ghi rõ nội dung. Đề xuất chỉ tính điểm sau khi giáo viên duyệt.
+      </p>
+
+      {!roster ? (
+        <form onSubmit={submitPin} className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <input
+            type="password"
+            inputMode="numeric"
+            value={pin}
+            onChange={(event) => setPin(event.target.value)}
+            placeholder="Nhập mã PIN"
+            className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+          <button
+            type="submit"
+            disabled={verifying || !pin.trim()}
+            className="h-10 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {verifying ? 'Đang kiểm tra...' : 'Xác nhận'}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={submitProposal} className="mt-3 space-y-2">
+          <select
+            value={selectedMaHs}
+            onChange={(event) => setSelectedMaHs(event.target.value)}
+            className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="">Chọn học sinh...</option>
+            {roster.students.map((item) => (
+              <option key={item.ma_hs} value={item.ma_hs}>
+                {item.tt}. {item.ho} {item.ten}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedCatalog}
+            onChange={(event) => setSelectedCatalog(event.target.value)}
+            className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="">Chọn danh mục...</option>
+            {roster.catalog.map((item) => (
+              <option key={item.ma_danh_muc} value={item.ma_danh_muc}>
+                {item.ma_danh_muc} · {item.ten_muc} ({item.diem > 0 ? `+${item.diem}` : item.diem})
+              </option>
+            ))}
+          </select>
+
+          <textarea
+            value={noiDung}
+            onChange={(event) => setNoiDung(event.target.value)}
+            placeholder="Nội dung cụ thể (ví dụ: không mang tập Toán tiết 3)"
+            className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+
+          {submitError ? <p className="text-sm font-semibold text-red-700">{submitError}</p> : null}
+          {submitMessage ? <p className="text-sm font-semibold text-emerald-700">{submitMessage}</p> : null}
+
+          <button
+            type="submit"
+            disabled={submitting || !selectedMaHs || !selectedCatalog}
+            className="h-10 w-full rounded-md bg-teal-700 px-4 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {submitting ? 'Đang gửi...' : 'Gửi đề xuất'}
+          </button>
+        </form>
+      )}
+
+      {pinError ? <p className="mt-2 text-sm font-semibold text-red-700">{pinError}</p> : null}
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh, LoaiGhiNhan } from '../../data/types'
+import type { CauHinhTuan, DanhMucDiem, DeXuatGhiNhan, GhiNhan, HocSinh, LoaiGhiNhan } from '../../data/types'
 import { getRecordInsight } from './recordInsights'
 import { getBadgeClassForCatalog } from '../scoring/scoreStyles'
 import { selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
@@ -59,6 +59,9 @@ export function RecordEntryPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [createdRecords, setCreatedRecords] = useState<GhiNhan[]>([])
+  const [proposals, setProposals] = useState<DeXuatGhiNhan[]>([])
+  const [proposalActionId, setProposalActionId] = useState<string | null>(null)
+  const [proposalError, setProposalError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -68,9 +71,11 @@ export function RecordEntryPage() {
       dataSource.getPointCatalog(),
       dataSource.getWeekConfig(),
       dataSource.getRecords(),
+      dataSource.getDeXuatGhiNhan(),
     ])
-      .then(([students, catalog, weeks, records]) => {
+      .then(([students, catalog, weeks, records, deXuat]) => {
         if (!active) return
+        setProposals(deXuat.filter((item) => item.trang_thai === 'cho_duyet'))
         const weekNumber = selectDefaultWeek(weeks, records)
         const selectedWeek = weeks.find((week) => week.tuan_so === weekNumber)
         const today = toDateInputValue(new Date())
@@ -114,6 +119,8 @@ export function RecordEntryPage() {
     if (state.status !== 'success') return new Map<string, DanhMucDiem>()
     return new Map(state.catalog.map((item) => [item.ma_danh_muc, item]))
   }, [state])
+
+  const studentByCode = useMemo(() => new Map(sortedStudents.map((student) => [student.ma_hs, student])), [sortedStudents])
 
   const selectedCatalog = catalogByCode.get(form.catalogCode) || null
 
@@ -228,6 +235,33 @@ export function RecordEntryPage() {
     }
   }
 
+  async function approveProposal(proposal: DeXuatGhiNhan) {
+    setProposalActionId(proposal.id)
+    setProposalError(null)
+    try {
+      await dataSource.approveDeXuatGhiNhan(proposal.id)
+      setProposals((current) => current.filter((item) => item.id !== proposal.id))
+    } catch (error) {
+      setProposalError(error instanceof Error ? error.message : 'Không duyệt được đề xuất.')
+    } finally {
+      setProposalActionId(null)
+    }
+  }
+
+  async function rejectProposal(proposal: DeXuatGhiNhan) {
+    const ghiChu = window.prompt('Lý do từ chối (có thể để trống):', '') || ''
+    setProposalActionId(proposal.id)
+    setProposalError(null)
+    try {
+      await dataSource.rejectDeXuatGhiNhan(proposal.id, ghiChu)
+      setProposals((current) => current.filter((item) => item.id !== proposal.id))
+    } catch (error) {
+      setProposalError(error instanceof Error ? error.message : 'Không từ chối được đề xuất.')
+    } finally {
+      setProposalActionId(null)
+    }
+  }
+
   if (state.status === 'loading') {
     return <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">Đang tải dữ liệu ghi nhận...</div>
   }
@@ -242,6 +276,81 @@ export function RecordEntryPage() {
 
   return (
     <form onSubmit={saveRecords} className="space-y-4">
+      {proposals.length > 0 ? (
+        <section className="rounded-lg border border-teal-200 bg-teal-50 p-4">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase text-teal-700">Chờ duyệt</p>
+              <h3 className="text-base font-bold text-slate-900">Đề xuất ghi nhận từ lớp trưởng</h3>
+              <p className="text-sm text-slate-600">
+                Học sinh giữ chức vụ "Lớp trưởng" gửi qua link hồ sơ. Duyệt để tạo ghi nhận thật, hoặc từ chối nếu
+                không đúng.
+              </p>
+            </div>
+            <p className="text-sm font-semibold text-teal-700">{proposals.length} đề xuất</p>
+          </div>
+
+          {proposalError ? (
+            <p className="mt-3 rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700">
+              {proposalError}
+            </p>
+          ) : null}
+
+          <div className="mt-3 space-y-2">
+            {proposals.map((proposal) => {
+              const target = studentByCode.get(proposal.ma_hs)
+              const proposer = studentByCode.get(proposal.ma_hs_de_xuat)
+              const catalogItem = catalogByCode.get(proposal.ma_danh_muc)
+              const busy = proposalActionId === proposal.id
+              return (
+                <div key={proposal.id} className="rounded-md border border-teal-100 bg-white p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-900">
+                        {target ? `${target.tt}. ${target.ho} ${target.ten}` : proposal.ma_hs}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        <span
+                          className={`rounded-full border px-2 py-0.5 font-semibold ${getBadgeClassForCatalog(catalogItem)}`}
+                        >
+                          {proposal.ma_danh_muc}
+                        </span>{' '}
+                        {catalogItem?.ten_muc || 'Danh mục không còn tồn tại'}
+                      </p>
+                      {proposal.noi_dung ? (
+                        <p className="mt-1 text-sm text-slate-700">{proposal.noi_dung}</p>
+                      ) : null}
+                      <p className="mt-1 text-xs text-slate-500">
+                        Đề xuất bởi {proposer ? `${proposer.ho} ${proposer.ten}` : proposal.nguoi_de_xuat}
+                        {proposal.thoi_gian ? ` · ${formatProposalTime(proposal.thoi_gian)}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void approveProposal(proposal)}
+                        className="h-9 rounded-md bg-teal-700 px-3 text-xs font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      >
+                        {busy ? 'Đang xử lý...' : 'Duyệt'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void rejectProposal(proposal)}
+                        className="h-9 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                      >
+                        Từ chối
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      ) : null}
+
       <section className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -783,6 +892,17 @@ function toDateInputValue(date: Date): string {
 function formatShortDate(value: string): string {
   const [year, month, day] = value.split('-')
   return year && month && day ? `${day}/${month}` : value
+}
+
+function formatProposalTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 function labelGroup(value: DanhMucDiem['nhom']): string {
