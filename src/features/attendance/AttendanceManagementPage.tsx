@@ -68,6 +68,7 @@ export function AttendanceManagementPage() {
   const [overviewMonthEntries, setOverviewMonthEntries] = useState<DiemDanh[]>([])
   const [pendingContacts, setPendingContacts] = useState<DiemDanhCanLienLac[]>([])
   const [contactTarget, setContactTarget] = useState<DiemDanhCanLienLac | null>(null)
+  const [editingEntry, setEditingEntry] = useState<{ entry: DiemDanh; student: HocSinh } | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -436,19 +437,29 @@ export function AttendanceManagementPage() {
                         </div>
                       </div>
                       {student ? (
-                        <button
-                          type="button"
-                          disabled={saving}
-                          onClick={() => {
-                            const ok = window.confirm(
-                              `Xoá điểm danh ${SESSION_LABELS[selectedBuoi].toLowerCase()} của ${student.ho} ${student.ten}? Học sinh sẽ chuyển về Có mặt.`,
-                            )
-                            if (ok) saveAttendance(student, 'co_mat', { hinh_thuc: 'dien_thoai', noi_dung: '' })
-                          }}
-                          className="h-9 shrink-0 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
-                        >
-                          Xoá
-                        </button>
+                        <div className="flex shrink-0 gap-2">
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => setEditingEntry({ entry, student })}
+                            className="h-9 shrink-0 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+                          >
+                            Sửa
+                          </button>
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => {
+                              const ok = window.confirm(
+                                `Xoá điểm danh ${SESSION_LABELS[selectedBuoi].toLowerCase()} của ${student.ho} ${student.ten}? Học sinh sẽ chuyển về Có mặt.`,
+                              )
+                              if (ok) saveAttendance(student, 'co_mat', { hinh_thuc: 'dien_thoai', noi_dung: '' })
+                            }}
+                            className="h-9 shrink-0 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                          >
+                            Xoá
+                          </button>
+                        </div>
                       ) : null}
                     </div>
                   )
@@ -581,6 +592,21 @@ export function AttendanceManagementPage() {
           target={contactTarget}
         />
       ) : null}
+
+      {editingEntry ? (
+        <EditEntryModal
+          date={selectedDate}
+          disabled={saving}
+          entry={editingEntry.entry}
+          onClose={() => setEditingEntry(null)}
+          onSave={async (status, contact) => {
+            await saveAttendance(editingEntry.student, status, contact)
+            setEditingEntry(null)
+          }}
+          session={selectedBuoi}
+          student={editingEntry.student}
+        />
+      ) : null}
     </section>
   )
 }
@@ -693,6 +719,100 @@ function SummaryCard({
       <p className="text-sm font-semibold">{label}</p>
       <p className="mt-2 text-3xl font-bold">{value}</p>
     </div>
+  )
+}
+
+function EditEntryModal({
+  date,
+  disabled,
+  entry,
+  onClose,
+  onSave,
+  session,
+  student,
+}: {
+  date: string
+  disabled: boolean
+  entry: DiemDanh
+  onClose: () => void
+  onSave: (status: LuaChonDiemDanh, contact: ContactDraft) => void
+  session: BuoiDiemDanh
+  student: HocSinh
+}) {
+  const savedStatus = (entry.trang_thai as LuaChonDiemDanh | undefined) || 'co_mat'
+  const [status, setStatus] = useState<LuaChonDiemDanh>(savedStatus)
+  const [contact, setContact] = useState<ContactDraft>({ hinh_thuc: 'dien_thoai', noi_dung: '' })
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    onSave(status, contact)
+  }
+
+  return (
+    <ModalShell onClose={onClose}>
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <p className="text-xs font-semibold uppercase text-blue-600">Sửa điểm danh</p>
+          <h3 className="text-lg font-bold text-slate-950">
+            {student.ho} {student.ten}
+          </h3>
+          <p className="text-sm text-slate-600">
+            {formatShortDate(date)} · {SESSION_LABELS[session]}
+          </p>
+        </div>
+
+        <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">
+          Trạng thái
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value as LuaChonDiemDanh)}
+            className={inputClass}
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {status !== 'co_mat' ? (
+          <div className="rounded-md border border-orange-200 bg-orange-50 p-3">
+            <p className="text-sm font-bold text-orange-900">Liên lạc phụ huynh</p>
+            <label className="mt-3 flex flex-col gap-1 text-sm font-semibold text-slate-700">
+              Hình thức
+              <select
+                value={contact.hinh_thuc}
+                onChange={(event) =>
+                  setContact((current) => ({
+                    ...current,
+                    hinh_thuc: event.target.value as HinhThucLienLacPhuHuynh,
+                  }))
+                }
+                className={inputClass}
+              >
+                {CONTACT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-3 flex flex-col gap-1 text-sm font-semibold text-slate-700">
+              Nội dung
+              <textarea
+                value={contact.noi_dung}
+                onChange={(event) => setContact((current) => ({ ...current, noi_dung: event.target.value }))}
+                className="min-h-24 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                placeholder="Có thể để trống nếu chỉ cần ghi nhận đã liên lạc."
+              />
+            </label>
+          </div>
+        ) : null}
+
+        <ModalActions disabled={disabled} onClose={onClose} />
+      </form>
+    </ModalShell>
   )
 }
 
