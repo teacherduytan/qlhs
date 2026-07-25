@@ -99,10 +99,7 @@ export function AttendanceManagementPage() {
     }
   }, [])
 
-  const activeWeek = useMemo(
-    () => findWeekForDate(weeks, selectedDate) || weeks[0] || null,
-    [weeks, selectedDate],
-  )
+  const activeWeek = useMemo(() => resolveWeekForDate(weeks, selectedDate), [weeks, selectedDate])
   const dateMonth = selectedDate.slice(0, 7)
 
   useEffect(() => {
@@ -957,6 +954,24 @@ function summarizeAttendance(entries: DiemDanh[], studentCount: number) {
 
 function findWeekForDate(weeks: CauHinhTuan[], date: string): CauHinhTuan | null {
   return weeks.find((week) => week.tu_ngay <= date && date <= week.den_ngay) || null
+}
+
+// CauHinhTuan chỉ cấu hình 5 ngày Thứ Hai-Thứ Sáu (so_ngay: 5), nên Thứ Bảy/Chủ Nhật
+// không nằm trong khoảng tu_ngay..den_ngay của tuần nào. Trước đây rơi vào trường hợp
+// này thì lấy đại weeks[0] (tuần đầu tiên từng cấu hình), sai hẳn sang tuần cũ và làm
+// lệch tuan_so lúc lưu cũng như số liệu Sĩ số/Tuần vắng. Đúng ra phải lấy tuần gần nhất
+// đã bắt đầu (tu_ngay lớn nhất mà vẫn <= date) — tức tuần chứa Thứ Hai-Thứ Sáu ngay trước đó.
+function resolveWeekForDate(weeks: CauHinhTuan[], date: string): CauHinhTuan | null {
+  const exact = findWeekForDate(weeks, date)
+  if (exact) return exact
+
+  const started = weeks
+    .filter((week) => week.tu_ngay <= date)
+    .sort((left, right) => right.tu_ngay.localeCompare(left.tu_ngay))
+  if (started.length > 0) return started[0]
+
+  const sorted = [...weeks].sort((left, right) => left.tu_ngay.localeCompare(right.tu_ngay))
+  return sorted[0] || null
 }
 
 function formatShortDate(date: string): string {
