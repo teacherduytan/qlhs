@@ -8,6 +8,7 @@ import {
 } from '../data/teacherAuth'
 import { downloadPrintableForm } from '../features/forms/downloadPrintableForm'
 import { getSupabaseClient } from '../lib/supabaseClient'
+import type { DanhMucDiem, DeXuatGhiNhan, HocSinh } from '../data/types'
 
 const navItems = [
   { to: '/', label: 'Tổng quan' },
@@ -27,17 +28,23 @@ export function Layout() {
     message?: string
     status: 'checking' | 'authenticated' | 'unauthenticated'
   }>({ email: null, status: 'checking' })
-  const [pendingProposalCount, setPendingProposalCount] = useState(0)
+  const [pendingProposals, setPendingProposals] = useState<DeXuatGhiNhan[]>([])
+  const [notifStudents, setNotifStudents] = useState<HocSinh[]>([])
+  const [notifCatalog, setNotifCatalog] = useState<DanhMucDiem[]>([])
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [notifActionId, setNotifActionId] = useState<string | null>(null)
+  const [notifError, setNotifError] = useState<string | null>(null)
 
   useEffect(() => {
     if (authState.status !== 'authenticated') return
     let active = true
 
-    dataSource
-      .getDeXuatGhiNhan()
-      .then((rows) => {
+    Promise.all([dataSource.getDeXuatGhiNhan(), dataSource.getStudents(), dataSource.getPointCatalog()])
+      .then(([proposals, students, catalog]) => {
         if (!active) return
-        setPendingProposalCount(rows.filter((item) => item.trang_thai === 'cho_duyet').length)
+        setPendingProposals(proposals.filter((item) => item.trang_thai === 'cho_duyet'))
+        setNotifStudents(students)
+        setNotifCatalog(catalog)
       })
       .catch(() => {
         // im lang neu loi, khong chan giao dien chinh vi day chi la badge thong bao
@@ -47,6 +54,33 @@ export function Layout() {
       active = false
     }
   }, [authState.status, pathname])
+
+  async function quickApproveProposal(item: DeXuatGhiNhan) {
+    setNotifActionId(item.id)
+    setNotifError(null)
+    try {
+      await dataSource.approveDeXuatGhiNhan(item.id)
+      setPendingProposals((current) => current.filter((row) => row.id !== item.id))
+    } catch (error) {
+      setNotifError(error instanceof Error ? error.message : 'Không duyệt được đề xuất.')
+    } finally {
+      setNotifActionId(null)
+    }
+  }
+
+  async function quickRejectProposal(item: DeXuatGhiNhan) {
+    const ghiChu = window.prompt('Lý do từ chối (có thể để trống):', '') || ''
+    setNotifActionId(item.id)
+    setNotifError(null)
+    try {
+      await dataSource.rejectDeXuatGhiNhan(item.id, ghiChu)
+      setPendingProposals((current) => current.filter((row) => row.id !== item.id))
+    } catch (error) {
+      setNotifError(error instanceof Error ? error.message : 'Không từ chối được đề xuất.')
+    } finally {
+      setNotifActionId(null)
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -134,22 +168,108 @@ export function Layout() {
                 )
               })}
             </nav>
-            <Link
-              to="/ghi-nhan"
-              className="relative inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100 md:w-auto"
-              aria-label={
-                pendingProposalCount > 0
-                  ? `${pendingProposalCount} đề xuất ghi nhận chờ duyệt`
-                  : 'Không có đề xuất chờ duyệt'
-              }
-            >
-              🔔 Thông báo
-              {pendingProposalCount > 0 ? (
-                <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white">
-                  {pendingProposalCount}
-                </span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setNotifOpen((value) => !value)}
+                className="relative inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100 md:w-auto"
+                aria-label={
+                  pendingProposals.length > 0
+                    ? `${pendingProposals.length} đề xuất ghi nhận chờ duyệt`
+                    : 'Không có đề xuất chờ duyệt'
+                }
+              >
+                🔔 Thông báo
+                {pendingProposals.length > 0 ? (
+                  <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white">
+                    {pendingProposals.length}
+                  </span>
+                ) : null}
+              </button>
+
+              {notifOpen ? (
+                <div className="absolute right-0 top-12 z-50 max-h-96 w-80 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+                  <div className="flex items-center justify-between px-2 py-1">
+                    <p className="text-xs font-semibold uppercase text-slate-500">Đề xuất chờ duyệt</p>
+                    <button
+                      type="button"
+                      onClick={() => setNotifOpen(false)}
+                      className="text-lg font-bold leading-none text-slate-400 hover:text-slate-600"
+                      aria-label="Đóng"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  {notifError ? (
+                    <p className="px-2 pb-1 text-xs font-semibold text-red-700">{notifError}</p>
+                  ) : null}
+
+                  {pendingProposals.length === 0 ? (
+                    <p className="px-2 py-3 text-sm text-slate-500">Không có đề xuất nào.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {pendingProposals.map((item) => {
+                        const target = notifStudents.find((student) => student.ma_hs === item.ma_hs)
+                        const catalogItem = item.ma_danh_muc
+                          ? notifCatalog.find((entry) => entry.ma_danh_muc === item.ma_danh_muc)
+                          : undefined
+                        const busy = notifActionId === item.id
+
+                        return (
+                          <div key={item.id} className="rounded-md border border-slate-100 p-2 hover:bg-slate-50">
+                            <Link
+                              to={target ? `/quan-ly/hoc-sinh/${target.ma_hs}` : '/ghi-nhan'}
+                              onClick={() => setNotifOpen(false)}
+                              className="block"
+                            >
+                              <p className="text-sm font-semibold text-slate-900">
+                                {target ? `${target.ho} ${target.ten}` : item.ma_hs}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {item.ma_danh_muc
+                                  ? `${item.ma_danh_muc} · ${catalogItem?.ten_muc || 'Không rõ tên mục'}`
+                                  : `Đề xuất danh mục mới (${item.de_xuat_nhom || '?'})`}
+                              </p>
+                            </Link>
+                            {item.ma_danh_muc ? (
+                              <div className="mt-1 flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => void quickApproveProposal(item)}
+                                  className="rounded-md bg-teal-700 px-2 py-1 text-xs font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                                >
+                                  {busy ? 'Đang xử lý...' : 'Duyệt'}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => void quickRejectProposal(item)}
+                                  className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                                >
+                                  Từ chối
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="mt-1 flex justify-end">
+                                <Link
+                                  to="/ghi-nhan"
+                                  onClick={() => setNotifOpen(false)}
+                                  className="text-xs font-semibold text-blue-700 hover:underline"
+                                >
+                                  Xử lý ở trang Ghi nhận →
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
               ) : null}
-            </Link>
+            </div>
             <button
               type="button"
               onClick={downloadPrintableForm}

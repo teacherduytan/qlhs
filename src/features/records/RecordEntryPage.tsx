@@ -90,7 +90,6 @@ export function RecordEntryPage() {
           selectedTeam: String(firstExistingTeam(students) || 1),
           weekNumber,
         }))
-        setSelectedStudentIds(students[0] ? [students[0].ma_hs] : [])
       })
       .catch((error) => {
         if (!active) return

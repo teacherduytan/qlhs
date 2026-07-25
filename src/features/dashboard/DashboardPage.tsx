@@ -162,6 +162,7 @@ export function DashboardPage() {
   const [selectedStudentByEvent, setSelectedStudentByEvent] = useState<Record<string, string>>({})
   const [processingEventId, setProcessingEventId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null)
   const groupViewRef = useRef<HTMLElement | null>(null)
   const dailyLogRef = useRef<HTMLElement | null>(null)
 
@@ -330,6 +331,34 @@ export function DashboardPage() {
       setActionError(error instanceof Error ? error.message : 'Không xử lý được sự kiện tập thể.')
     } finally {
       setProcessingEventId(null)
+    }
+  }
+
+  async function deleteRecord(record: GhiNhan) {
+    if (!record.ma_ghi_nhan) {
+      window.alert('Ghi nhận này chưa có ma_ghi_nhan nên chưa thể xoá tự động.')
+      return
+    }
+
+    const ok = window.confirm(
+      `Xoá ghi nhận ${record.ma_ghi_nhan}? Điểm và thống kê sẽ cập nhật theo dữ liệu còn lại.`,
+    )
+    if (!ok) return
+
+    setDeletingRecordId(record.ma_ghi_nhan)
+    setActionError(null)
+
+    try {
+      await dataSource.deleteRecord(record.ma_ghi_nhan)
+      setState((current) =>
+        current.status === 'success'
+          ? { ...current, records: current.records.filter((item) => item.ma_ghi_nhan !== record.ma_ghi_nhan) }
+          : current,
+      )
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Không xoá được ghi nhận.')
+    } finally {
+      setDeletingRecordId(null)
     }
   }
 
@@ -517,7 +546,9 @@ export function DashboardPage() {
           <GroupViolationView
             catalogByCode={body.catalogByCode}
             collapsed={collapsedSections.groups}
+            deletingRecordId={deletingRecordId}
             group={selectedGroup}
+            onDeleteRecord={(record) => void deleteRecord(record)}
             onGroupChange={setSelectedGroup}
             onToggle={() => toggleSection('groups')}
             rows={body.groupViewRows}
@@ -886,6 +917,18 @@ export function DashboardPage() {
                                 <p className="mt-2 rounded-md bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
                                   {insight.intervention.label}: {insight.intervention.action}
                                 </p>
+                              ) : null}
+                              {record.ma_ghi_nhan ? (
+                                <div className="mt-2 flex justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() => void deleteRecord(record)}
+                                    disabled={deletingRecordId === record.ma_ghi_nhan}
+                                    className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                                  >
+                                    {deletingRecordId === record.ma_ghi_nhan ? 'Đang xoá...' : 'Xoá'}
+                                  </button>
+                                </div>
                               ) : null}
                             </article>
                           )
@@ -1546,7 +1589,9 @@ const GROUP_OPTIONS: Array<{ group: GroupViewKey; label: string }> = [
 function GroupViolationView({
   catalogByCode,
   collapsed,
+  deletingRecordId,
   group,
+  onDeleteRecord,
   onGroupChange,
   onShowAllChange,
   onToggle,
@@ -1557,7 +1602,9 @@ function GroupViolationView({
 }: {
   catalogByCode: Map<string, DanhMucDiem>
   collapsed: boolean
+  deletingRecordId: string | null
   group: GroupViewKey | null
+  onDeleteRecord: (record: GhiNhan) => void
   onGroupChange: (group: GroupViewKey | null) => void
   onShowAllChange: (showAll: boolean) => void
   onToggle: () => void
@@ -1747,6 +1794,18 @@ function GroupViolationView({
                                 </span>
                               ) : null}
                             </div>
+                            {record.ma_ghi_nhan ? (
+                              <div className="mt-1 flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => onDeleteRecord(record)}
+                                  disabled={deletingRecordId === record.ma_ghi_nhan}
+                                  className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                                >
+                                  {deletingRecordId === record.ma_ghi_nhan ? 'Đang xoá...' : 'Xoá'}
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
                           )
                         })}
