@@ -61,7 +61,6 @@ export function AttendanceManagementPage() {
   const [selectedDate, setSelectedDate] = useState(todayIso)
   const [selectedBuoi, setSelectedBuoi] = useState<BuoiDiemDanh>('sang')
   const [selectedMonth, setSelectedMonth] = useState(todayIso.slice(0, 7))
-  const [search, setSearch] = useState('')
   const [students, setStudents] = useState<HocSinh[]>([])
   const [weeks, setWeeks] = useState<CauHinhTuan[]>([])
   const [weekEntries, setWeekEntries] = useState<DiemDanh[]>([])
@@ -171,14 +170,6 @@ export function AttendanceManagementPage() {
     () => summarizeAttendance(overviewMonthEntries, students.length),
     [overviewMonthEntries, students.length],
   )
-
-  const filteredStudents = useMemo(() => {
-    const keyword = search.trim().toLowerCase()
-    if (!keyword) return students
-    return students.filter((student) =>
-      `${student.ho} ${student.ten} ${student.ma_hs}`.toLowerCase().includes(keyword),
-    )
-  }, [students, search])
 
   const monthExceptions = useMemo(
     () => [...overviewMonthEntries].sort((left, right) => right.ngay.localeCompare(left.ngay)),
@@ -382,47 +373,88 @@ export function AttendanceManagementPage() {
 
       {scope === 'diem_danh' ? (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase text-emerald-700">Danh sách học sinh</p>
+              <p className="text-xs font-semibold uppercase text-emerald-700">Ghi điểm danh</p>
               <h3 className="text-lg font-bold text-slate-950">
-                Điểm danh {SESSION_LABELS[selectedBuoi].toLowerCase()} · {formatShortDate(selectedDate)}
+                {SESSION_LABELS[selectedBuoi]} · {formatShortDate(selectedDate)}
               </h3>
             </div>
-            <div className="flex items-center gap-2">
-              {loading ? <p className="text-sm font-semibold text-emerald-700">Đang tải...</p> : null}
-              <input
-                type="text"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Tìm tên hoặc mã học sinh..."
-                className="h-10 w-56 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
+            {loading ? <p className="text-sm font-semibold text-emerald-700">Đang tải...</p> : null}
           </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredStudents.length === 0 ? (
-              <p className="rounded-md border border-slate-100 bg-white p-3 text-sm text-slate-600 sm:col-span-2 xl:col-span-3">
-                Không tìm thấy học sinh khớp từ khoá.
-              </p>
-            ) : (
-              filteredStudents.map((student) => (
-                <StudentAttendanceCard
-                  key={`${selectedDate}-${selectedBuoi}-${student.ma_hs}`}
-                  currentEntry={currentEntryByStudent.get(student.ma_hs)}
-                  disabled={saving}
-                  monthAbsentCount={monthAbsentCountByStudent.get(student.ma_hs) || 0}
-                  needsContact={
-                    !!currentEntryByStudent.get(student.ma_hs) &&
-                    pendingContactIds.has(currentEntryByStudent.get(student.ma_hs)!.id)
-                  }
-                  onSave={(status, contact) => saveAttendance(student, status, contact)}
-                  student={student}
-                  weekAbsentCount={weekAbsentCountByStudent.get(student.ma_hs) || 0}
-                />
-              ))
-            )}
+          <QuickMarkForm
+            disabled={saving}
+            onSave={(student, status, contact) => saveAttendance(student, status, contact)}
+            students={students}
+          />
+
+          <div className="mt-5 border-t border-emerald-200 pt-4">
+            <p className="text-xs font-semibold uppercase text-emerald-700">
+              Danh sách đã điểm danh ({currentEntryByStudent.size})
+            </p>
+            <div className="mt-2 space-y-2">
+              {currentEntryByStudent.size === 0 ? (
+                <p className="rounded-md border border-slate-100 bg-white p-3 text-sm text-slate-600">
+                  Chưa có học sinh nào bị đánh dấu vắng cho buổi này.
+                </p>
+              ) : (
+                Array.from(currentEntryByStudent.values()).map((entry) => {
+                  const student = entry.ma_hs ? studentByCode.get(entry.ma_hs) : undefined
+                  const status = entry.trang_thai as TrangThaiDiemDanh
+                  return (
+                    <div
+                      key={entry.id}
+                      className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white p-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        {student ? (
+                          <Link
+                            to={`/quan-ly/hoc-sinh/${student.ma_hs}`}
+                            className="block truncate font-semibold text-blue-700 hover:underline"
+                          >
+                            {student.ho} {student.ten}
+                          </Link>
+                        ) : (
+                          <p className="truncate font-semibold text-slate-900">{entry.ma_hs}</p>
+                        )}
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs font-semibold">
+                          <span className={`rounded border px-2 py-0.5 ${STATUS_STYLES[status]}`}>
+                            {STATUS_LABELS[status]}
+                          </span>
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-slate-600">
+                            Tuần vắng: {entry.ma_hs ? weekAbsentCountByStudent.get(entry.ma_hs) || 0 : 0}
+                          </span>
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-slate-600">
+                            Tháng vắng: {entry.ma_hs ? monthAbsentCountByStudent.get(entry.ma_hs) || 0 : 0}
+                          </span>
+                          {pendingContactIds.has(entry.id) ? (
+                            <span className="rounded-full border border-orange-300 bg-orange-100 px-2 py-0.5 text-orange-800">
+                              ⚠ Chưa gọi PH
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      {student ? (
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => {
+                            const ok = window.confirm(
+                              `Xoá điểm danh ${SESSION_LABELS[selectedBuoi].toLowerCase()} của ${student.ho} ${student.ten}? Học sinh sẽ chuyển về Có mặt.`,
+                            )
+                            if (ok) saveAttendance(student, 'co_mat', { hinh_thuc: 'dien_thoai', noi_dung: '' })
+                          }}
+                          className="h-9 shrink-0 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                        >
+                          Xoá
+                        </button>
+                      ) : null}
+                    </div>
+                  )
+                })
+              )}
+            </div>
           </div>
         </div>
       ) : (
@@ -553,95 +585,73 @@ export function AttendanceManagementPage() {
   )
 }
 
-function StudentAttendanceCard({
-  currentEntry,
+function QuickMarkForm({
   disabled,
-  monthAbsentCount,
-  needsContact,
   onSave,
-  student,
-  weekAbsentCount,
+  students,
 }: {
-  currentEntry?: DiemDanh
   disabled: boolean
-  monthAbsentCount: number
-  needsContact: boolean
-  onSave: (status: LuaChonDiemDanh, contact: ContactDraft) => void
-  student: HocSinh
-  weekAbsentCount: number
+  onSave: (student: HocSinh, status: LuaChonDiemDanh, contact: ContactDraft) => void
+  students: HocSinh[]
 }) {
-  const savedStatus: LuaChonDiemDanh = (currentEntry?.trang_thai as LuaChonDiemDanh | undefined) || 'co_mat'
-  const [status, setStatus] = useState<LuaChonDiemDanh>(savedStatus)
+  const [selectedCode, setSelectedCode] = useState('')
+  const [status, setStatus] = useState<LuaChonDiemDanh>('vang_co_phep')
   const [contact, setContact] = useState<ContactDraft>({ hinh_thuc: 'dien_thoai', noi_dung: '' })
-  const dirty = status !== savedStatus
+  const studentByCode = useMemo(() => new Map(students.map((student) => [student.ma_hs, student])), [students])
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    onSave(status, contact)
+    const student = studentByCode.get(selectedCode)
+    if (!student) return
+    onSave(student, status, contact)
+    setSelectedCode('')
+    setStatus('vang_co_phep')
+    setContact({ hinh_thuc: 'dien_thoai', noi_dung: '' })
   }
 
   return (
-    <form onSubmit={submit} className="rounded-md border border-slate-200 bg-white p-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <Link
-            to={`/quan-ly/hoc-sinh/${student.ma_hs}`}
-            className="block truncate font-semibold text-blue-700 hover:underline"
-          >
-            {student.ho} {student.ten}
-          </Link>
-          <p className="text-xs text-slate-500">
-            {student.ma_hs} · {student.dien}
-          </p>
-        </div>
-        {!dirty && savedStatus !== 'co_mat' ? (
-          <span className={`shrink-0 rounded border px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[savedStatus]}`}>
-            {STATUS_LABELS[savedStatus]}
-          </span>
-        ) : null}
-      </div>
+    <form onSubmit={submit} className="mt-4 grid gap-3 rounded-md border border-emerald-100 bg-white p-3 md:grid-cols-3">
+      <select
+        value={selectedCode}
+        onChange={(event) => setSelectedCode(event.target.value)}
+        className={inputClass}
+      >
+        <option value="">Chọn học sinh...</option>
+        {students.map((student) => (
+          <option key={student.ma_hs} value={student.ma_hs}>
+            {student.ho} {student.ten} ({student.ma_hs})
+          </option>
+        ))}
+      </select>
 
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-600">
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1">Tuần vắng: {weekAbsentCount}</span>
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1">Tháng vắng: {monthAbsentCount}</span>
-        {needsContact ? (
-          <span className="rounded-full border border-orange-300 bg-orange-100 px-2 py-1 text-orange-800">
-            ⚠ Chưa gọi PH
-          </span>
-        ) : null}
-      </div>
+      <select
+        value={status}
+        onChange={(event) => setStatus(event.target.value as LuaChonDiemDanh)}
+        className={inputClass}
+      >
+        {STATUS_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
 
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <select
-          value={status}
-          onChange={(event) => setStatus(event.target.value as LuaChonDiemDanh)}
-          className="h-9 flex-1 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-        >
-          {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        {dirty ? (
-          <button
-            type="submit"
-            disabled={disabled}
-            className="h-9 shrink-0 rounded-md bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            {disabled ? 'Đang lưu...' : 'Lưu'}
-          </button>
-        ) : null}
-      </div>
+      <button
+        type="submit"
+        disabled={disabled || !selectedCode}
+        className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+      >
+        {disabled ? 'Đang lưu...' : 'Ghi điểm danh'}
+      </button>
 
-      {dirty && status !== 'co_mat' ? (
-        <div className="mt-2 space-y-2 rounded-md border border-orange-100 bg-orange-50 p-2">
+      {status !== 'co_mat' ? (
+        <div className="space-y-2 md:col-span-3">
           <select
             value={contact.hinh_thuc}
             onChange={(event) =>
               setContact((current) => ({ ...current, hinh_thuc: event.target.value as HinhThucLienLacPhuHuynh }))
             }
-            className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className={inputClass + ' w-full'}
           >
             {CONTACT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -653,7 +663,7 @@ function StudentAttendanceCard({
             value={contact.noi_dung}
             onChange={(event) => setContact((current) => ({ ...current, noi_dung: event.target.value }))}
             placeholder="Nội dung liên lạc phụ huynh (có thể để trống)"
-            className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
         </div>
       ) : null}
