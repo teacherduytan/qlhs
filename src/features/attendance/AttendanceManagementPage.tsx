@@ -12,12 +12,7 @@ import type {
   TrangThaiDiemDanh,
 } from '../../data/types'
 
-type TimeScope = 'day' | 'week' | 'month'
-
-type EditingCell = {
-  date: string
-  student: HocSinh
-}
+type TimeScope = 'diem_danh' | 'thang'
 
 type ContactDraft = {
   hinh_thuc: HinhThucLienLacPhuHuynh
@@ -28,7 +23,6 @@ const STATUS_OPTIONS: Array<{ label: string; value: LuaChonDiemDanh }> = [
   { label: 'Có mặt', value: 'co_mat' },
   { label: 'Vắng có phép', value: 'vang_co_phep' },
   { label: 'Vắng không phép', value: 'vang_khong_phep' },
-  { label: 'Trễ', value: 'tre' },
 ]
 
 const CONTACT_OPTIONS: Array<{ label: string; value: HinhThucLienLacPhuHuynh }> = [
@@ -38,6 +32,8 @@ const CONTACT_OPTIONS: Array<{ label: string; value: HinhThucLienLacPhuHuynh }> 
   { label: 'SMS', value: 'sms' },
 ]
 
+// Nhãn/màu vẫn giữ 'tre' để các bản ghi Trễ ghi từ trước (trước khi bỏ lựa chọn
+// này khỏi form) tiếp tục hiển thị đúng trong lịch sử, dù không còn chọn mới được.
 const STATUS_LABELS: Record<TrangThaiDiemDanh, string> = {
   tre: 'Trễ',
   vang_co_phep: 'Vắng có phép',
@@ -61,16 +57,17 @@ const inputClass =
 const todayIso = toDateInputValue(new Date())
 
 export function AttendanceManagementPage() {
-  const [scope, setScope] = useState<TimeScope>('day')
+  const [scope, setScope] = useState<TimeScope>('diem_danh')
   const [selectedDate, setSelectedDate] = useState(todayIso)
-  const [selectedWeek, setSelectedWeek] = useState<number | null>(null)
+  const [selectedBuoi, setSelectedBuoi] = useState<BuoiDiemDanh>('sang')
   const [selectedMonth, setSelectedMonth] = useState(todayIso.slice(0, 7))
+  const [search, setSearch] = useState('')
   const [students, setStudents] = useState<HocSinh[]>([])
   const [weeks, setWeeks] = useState<CauHinhTuan[]>([])
-  const [summaryEntries, setSummaryEntries] = useState<DiemDanh[]>([])
   const [weekEntries, setWeekEntries] = useState<DiemDanh[]>([])
+  const [dateMonthEntries, setDateMonthEntries] = useState<DiemDanh[]>([])
+  const [overviewMonthEntries, setOverviewMonthEntries] = useState<DiemDanh[]>([])
   const [pendingContacts, setPendingContacts] = useState<DiemDanhCanLienLac[]>([])
-  const [editingCell, setEditingCell] = useState<EditingCell | null>(null)
   const [contactTarget, setContactTarget] = useState<DiemDanhCanLienLac | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -88,9 +85,6 @@ export function AttendanceManagementPage() {
         setStudents(loadedStudents)
         setWeeks(loadedWeeks)
         setPendingContacts(contacts)
-
-        const currentWeek = findWeekForDate(loadedWeeks, selectedDate) || loadedWeeks[0] || null
-        setSelectedWeek((value) => value ?? currentWeek?.tuan_so ?? null)
       })
       .catch((loadError: unknown) => {
         if (!active) return
@@ -106,137 +100,114 @@ export function AttendanceManagementPage() {
   }, [])
 
   const activeWeek = useMemo(
-    () => resolveGridWeek(scope, weeks, selectedDate, selectedWeek, selectedMonth),
-    [scope, selectedDate, selectedMonth, selectedWeek, weeks],
+    () => findWeekForDate(weeks, selectedDate) || weeks[0] || null,
+    [weeks, selectedDate],
   )
-
-  const summaryRange = useMemo(
-    () => resolveSummaryRange(scope, selectedDate, selectedWeek, selectedMonth, weeks),
-    [scope, selectedDate, selectedMonth, selectedWeek, weeks],
-  )
+  const dateMonth = selectedDate.slice(0, 7)
 
   useEffect(() => {
-    if (!activeWeek || !summaryRange) return
-
     let active = true
     setLoading(true)
     setError(null)
 
-    Promise.all([
-      dataSource.getAttendanceEntries({
-        ngayFrom: summaryRange.from,
-        ngayTo: summaryRange.to,
-      }),
-      dataSource.getAttendanceEntries({ tuanSo: activeWeek.tuan_so }),
-      dataSource.getPendingParentContacts(),
-    ])
-      .then(([summaryRows, weekRows, contacts]) => {
-        if (!active) return
-        setSummaryEntries(summaryRows)
-        setWeekEntries(weekRows)
-        setPendingContacts(contacts)
-      })
-      .catch((loadError: unknown) => {
-        if (!active) return
-        setError(loadError instanceof Error ? loadError.message : 'Không tải được dữ liệu điểm danh.')
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
+    if (scope === 'diem_danh') {
+      if (!activeWeek) {
+        setLoading(false)
+        return
+      }
+      Promise.all([
+        dataSource.getAttendanceEntries({ tuanSo: activeWeek.tuan_so }),
+        dataSource.getAttendanceEntries({ ngayFrom: `${dateMonth}-01`, ngayTo: lastDayOfMonth(dateMonth) }),
+      ])
+        .then(([weekRows, monthRows]) => {
+          if (!active) return
+          setWeekEntries(weekRows)
+          setDateMonthEntries(monthRows)
+        })
+        .catch((loadError: unknown) => {
+          if (active) setError(loadError instanceof Error ? loadError.message : 'Không tải được dữ liệu điểm danh.')
+        })
+        .finally(() => {
+          if (active) setLoading(false)
+        })
+    } else {
+      dataSource
+        .getAttendanceEntries({ ngayFrom: `${selectedMonth}-01`, ngayTo: lastDayOfMonth(selectedMonth) })
+        .then((monthRows) => {
+          if (active) setOverviewMonthEntries(monthRows)
+        })
+        .catch((loadError: unknown) => {
+          if (active) setError(loadError instanceof Error ? loadError.message : 'Không tải được dữ liệu điểm danh.')
+        })
+        .finally(() => {
+          if (active) setLoading(false)
+        })
+    }
 
     return () => {
       active = false
     }
-  }, [activeWeek, summaryRange])
+  }, [scope, activeWeek, dateMonth, selectedMonth])
 
-  const weekDays = useMemo(() => (activeWeek ? daysInWeek(activeWeek) : []), [activeWeek])
-  const entryMap = useMemo(() => buildEntryMap(weekEntries), [weekEntries])
   const pendingContactIds = useMemo(() => new Set(pendingContacts.map((item) => item.id)), [pendingContacts])
-  const summary = useMemo(
-    () => buildSummary(summaryEntries, students.length, scope, selectedMonth, weeks, summaryRange),
-    [scope, selectedMonth, students.length, summaryEntries, summaryRange, weeks],
+
+  const currentEntryByStudent = useMemo(() => {
+    const map = new Map<string, DiemDanh>()
+    for (const entry of weekEntries) {
+      if (entry.ngay !== selectedDate || entry.buoi !== selectedBuoi || !entry.ma_hs) continue
+      map.set(entry.ma_hs, entry)
+    }
+    return map
+  }, [weekEntries, selectedDate, selectedBuoi])
+
+  const weekAbsentCountByStudent = useMemo(() => countAbsencesByStudent(weekEntries), [weekEntries])
+  const monthAbsentCountByStudent = useMemo(() => countAbsencesByStudent(dateMonthEntries), [dateMonthEntries])
+
+  const sessionSummary = useMemo(
+    () => summarizeAttendance(Array.from(currentEntryByStudent.values()), students.length),
+    [currentEntryByStudent, students.length],
+  )
+  const monthSummary = useMemo(
+    () => summarizeAttendance(overviewMonthEntries, students.length),
+    [overviewMonthEntries, students.length],
   )
 
+  const filteredStudents = useMemo(() => {
+    const keyword = search.trim().toLowerCase()
+    if (!keyword) return students
+    return students.filter((student) =>
+      `${student.ho} ${student.ten} ${student.ma_hs}`.toLowerCase().includes(keyword),
+    )
+  }, [students, search])
+
+  const monthExceptions = useMemo(
+    () => [...overviewMonthEntries].sort((left, right) => right.ngay.localeCompare(left.ngay)),
+    [overviewMonthEntries],
+  )
+  const studentByCode = useMemo(() => new Map(students.map((student) => [student.ma_hs, student])), [students])
+
   async function refreshCurrentData() {
-    if (!activeWeek || !summaryRange) return
-    const [summaryRows, weekRows, contacts] = await Promise.all([
-      dataSource.getAttendanceEntries({
-        ngayFrom: summaryRange.from,
-        ngayTo: summaryRange.to,
-      }),
-      dataSource.getAttendanceEntries({ tuanSo: activeWeek.tuan_so }),
-      dataSource.getPendingParentContacts(),
-    ])
-    setSummaryEntries(summaryRows)
-    setWeekEntries(weekRows)
+    const contacts = await dataSource.getPendingParentContacts()
     setPendingContacts(contacts)
-  }
 
-  async function saveCell(
-    student: HocSinh,
-    date: string,
-    values: Record<BuoiDiemDanh, LuaChonDiemDanh>,
-    contact: ContactDraft,
-  ) {
-    if (!activeWeek) return
-
-    setSaving(true)
-    setError(null)
-    setMessage(null)
-
-    try {
-      const contactTargets: Array<{ id: string; session: BuoiDiemDanh }> = []
-      for (const session of ['sang', 'chieu'] as BuoiDiemDanh[]) {
-        const current = entryMap.get(entryKey(student.ma_hs, date, session))
-        const next = values[session]
-        if ((current?.trang_thai || 'co_mat') === next) {
-          if (next !== 'co_mat' && current?.id) contactTargets.push({ id: current.id, session })
-          continue
-        }
-
-        const id = await dataSource.upsertAttendanceEntry({
-          buoi: session,
-          ma_hs: student.ma_hs,
-          ngay: date,
-          trang_thai: next,
-          tuan_so: activeWeek.tuan_so,
-        })
-        if (id && next !== 'co_mat') contactTargets.push({ id, session })
-      }
-
-      if (contact.noi_dung.trim()) {
-        await Promise.all(
-          contactTargets.map((target) =>
-            dataSource.addParentContact({
-              diem_danh_id: target.id,
-              hinh_thuc: contact.hinh_thuc,
-              noi_dung: contact.noi_dung.trim(),
-              ma_hs: student.ma_hs,
-              ho_ten: `${student.ho} ${student.ten}`,
-              ngay: date,
-              buoi: target.session,
-            }),
-          ),
-        )
-      }
-
-      await refreshCurrentData()
-      setEditingCell(null)
-      setMessage('Đã cập nhật điểm danh.')
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Không lưu được điểm danh.')
-    } finally {
-      setSaving(false)
+    if (scope === 'diem_danh') {
+      if (!activeWeek) return
+      const [weekRows, monthRows] = await Promise.all([
+        dataSource.getAttendanceEntries({ tuanSo: activeWeek.tuan_so }),
+        dataSource.getAttendanceEntries({ ngayFrom: `${dateMonth}-01`, ngayTo: lastDayOfMonth(dateMonth) }),
+      ])
+      setWeekEntries(weekRows)
+      setDateMonthEntries(monthRows)
+    } else {
+      const monthRows = await dataSource.getAttendanceEntries({
+        ngayFrom: `${selectedMonth}-01`,
+        ngayTo: lastDayOfMonth(selectedMonth),
+      })
+      setOverviewMonthEntries(monthRows)
     }
   }
 
-  async function saveSingleSession(
-    student: HocSinh,
-    date: string,
-    session: BuoiDiemDanh,
-    status: LuaChonDiemDanh,
-    contact: ContactDraft,
-  ) {
+  async function saveAttendance(student: HocSinh, status: LuaChonDiemDanh, contact: ContactDraft) {
     if (!activeWeek) return
 
     setSaving(true)
@@ -245,9 +216,9 @@ export function AttendanceManagementPage() {
 
     try {
       const id = await dataSource.upsertAttendanceEntry({
-        buoi: session,
+        buoi: selectedBuoi,
         ma_hs: student.ma_hs,
-        ngay: date,
+        ngay: selectedDate,
         trang_thai: status,
         tuan_so: activeWeek.tuan_so,
       })
@@ -259,8 +230,8 @@ export function AttendanceManagementPage() {
           noi_dung: contact.noi_dung.trim(),
           ma_hs: student.ma_hs,
           ho_ten: `${student.ho} ${student.ten}`,
-          ngay: date,
-          buoi: session,
+          ngay: selectedDate,
+          buoi: selectedBuoi,
         })
       }
 
@@ -268,7 +239,7 @@ export function AttendanceManagementPage() {
       setMessage(
         status === 'co_mat'
           ? `Đã chuyển ${student.ho} ${student.ten} về có mặt.`
-          : `Đã ghi điểm danh ${SESSION_LABELS[session].toLowerCase()} cho ${student.ho} ${student.ten}.`,
+          : `Đã ghi điểm danh ${SESSION_LABELS[selectedBuoi].toLowerCase()} cho ${student.ho} ${student.ten}.`,
       )
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Không lưu được điểm danh.')
@@ -302,22 +273,28 @@ export function AttendanceManagementPage() {
     }
   }
 
+  function jumpToDate(date: string, buoi: BuoiDiemDanh) {
+    setScope('diem_danh')
+    setSelectedDate(date)
+    setSelectedBuoi(buoi)
+  }
+
   return (
     <section className="space-y-5">
       <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-4">
         <p className="text-xs font-semibold uppercase text-cyan-700">Điểm danh chính khóa</p>
         <h2 className="mt-1 text-2xl font-bold text-slate-950">Điểm danh giáo viên</h2>
         <p className="mt-2 text-sm text-slate-700">
-          Không có dòng nghĩa là có mặt. Trang này chỉ lưu các ngoại lệ vắng hoặc trễ.
+          Không có dòng nghĩa là có mặt. Trang này chỉ lưu ngoại lệ vắng có phép hoặc không phép. Học sinh đi trễ
+          vẫn điểm danh là Có mặt, ghi nhận Trễ ở trang Ghi nhận (danh mục vi phạm).
         </p>
       </div>
 
       <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
         <div className="flex gap-2">
           {[
-            ['day', 'Ngày'],
-            ['week', 'Tuần'],
-            ['month', 'Tháng'],
+            ['diem_danh', 'Điểm danh'],
+            ['thang', 'Tháng'],
           ].map(([value, label]) => (
             <button
               key={value}
@@ -334,8 +311,8 @@ export function AttendanceManagementPage() {
           ))}
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {scope === 'day' ? (
+        {scope === 'diem_danh' ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
             <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">
               Chọn ngày
               <input
@@ -345,26 +322,29 @@ export function AttendanceManagementPage() {
                 className={inputClass}
               />
             </label>
-          ) : null}
-
-          {scope === 'week' ? (
             <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">
-              Chọn tuần
+              Buổi
               <select
-                value={selectedWeek ?? ''}
-                onChange={(event) => setSelectedWeek(Number(event.target.value))}
+                value={selectedBuoi}
+                onChange={(event) => setSelectedBuoi(event.target.value as BuoiDiemDanh)}
                 className={inputClass}
               >
-                {weeks.map((week) => (
-                  <option key={week.tuan_so} value={week.tuan_so}>
-                    Tuần {week.tuan_so} ({formatShortDate(week.tu_ngay)} - {formatShortDate(week.den_ngay)})
-                  </option>
-                ))}
+                <option value="sang">Sáng</option>
+                <option value="chieu">Chiều</option>
               </select>
             </label>
-          ) : null}
-
-          {scope === 'month' ? (
+            <div className="rounded-md border border-indigo-200 bg-white px-3 py-2 text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">
+                {activeWeek ? `Tuần ${activeWeek.tuan_so}` : 'Chưa có cấu hình tuần'}
+              </p>
+              <p>
+                {formatWeekday(selectedDate)} · {formatShortDate(selectedDate)} ·{' '}
+                {SESSION_LABELS[selectedBuoi]}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
             <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">
               Chọn tháng
               <input
@@ -374,144 +354,141 @@ export function AttendanceManagementPage() {
                 className={inputClass}
               />
             </label>
-          ) : null}
-
-          <div className="rounded-md border border-indigo-200 bg-white px-3 py-2 text-sm text-slate-700 md:col-span-2">
-            <p className="font-semibold text-slate-900">
-              Lưới đang xem: {activeWeek ? `Tuần ${activeWeek.tuan_so}` : 'chưa có tuần'}
-            </p>
-            <p>
-              Tỷ lệ chuyên cần: <span className="font-bold">{summary.rateText}</span> · Tổng lượt có thể:{' '}
-              {summary.totalSlots}
-            </p>
+            <div className="rounded-md border border-indigo-200 bg-white px-3 py-2 text-sm text-slate-700 md:col-span-2">
+              <p className="font-semibold text-slate-900">Tổng quan tháng {selectedMonth}</p>
+              <p>{monthExceptions.length} lượt ngoại lệ vắng có phép/không phép trong tháng.</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {error ? <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
       {message ? <p className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{message}</p> : null}
 
       <div className="grid gap-3 md:grid-cols-3">
-        <SummaryCard color="slate" label="Sĩ số" value={summary.siSo} />
-        <SummaryCard color="emerald" label="Hiện diện" value={summary.hienDien} />
-        <SummaryCard color="rose" label="Vắng" value={summary.vang} />
+        <SummaryCard color="slate" label="Sĩ số" value={scope === 'diem_danh' ? sessionSummary.siSo : monthSummary.siSo} />
+        <SummaryCard
+          color="emerald"
+          label="Hiện diện"
+          value={scope === 'diem_danh' ? sessionSummary.hienDien : monthSummary.hienDien}
+        />
+        <SummaryCard color="rose" label="Vắng" value={scope === 'diem_danh' ? sessionSummary.vang : monthSummary.vang} />
       </div>
       <p className="-mt-3 text-xs text-slate-500">
-        Tính theo số học sinh (không nhân theo ngày). Vắng = có ít nhất 1 lượt vắng có phép/không phép trong khoảng đang xem; Trễ không tính là vắng.
+        {scope === 'diem_danh'
+          ? `Tính theo đúng buổi ${SESSION_LABELS[selectedBuoi].toLowerCase()} ngày ${formatShortDate(selectedDate)}.`
+          : 'Tính theo số học sinh duy nhất có ít nhất 1 lượt vắng trong tháng (không nhân theo ngày).'}
       </p>
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <SummaryCard color="sky" label="Vắng có phép" value={summary.vangCoPhep} />
-        <SummaryCard color="rose" label="Vắng không phép" value={summary.vangKhongPhep} />
-        <SummaryCard color="amber" label="Trễ" value={summary.tre} />
-      </div>
-
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase text-emerald-700">Lưới tuần</p>
-            <h3 className="text-lg font-bold text-slate-950">
-              {activeWeek ? `Tuần ${activeWeek.tuan_so}` : 'Chưa có cấu hình tuần'}
-            </h3>
+      {scope === 'diem_danh' ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase text-emerald-700">Danh sách học sinh</p>
+              <h3 className="text-lg font-bold text-slate-950">
+                Điểm danh {SESSION_LABELS[selectedBuoi].toLowerCase()} · {formatShortDate(selectedDate)}
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              {loading ? <p className="text-sm font-semibold text-emerald-700">Đang tải...</p> : null}
+              <input
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Tìm tên hoặc mã học sinh..."
+                className="h-10 w-56 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
           </div>
-          {loading ? <p className="text-sm font-semibold text-emerald-700">Đang tải...</p> : null}
-        </div>
 
-        {scope === 'day' ? (
-          <CompactDayAttendance
-            date={selectedDate}
-            disabled={saving}
-            entries={summaryEntries}
-            onEditCell={(student) => setEditingCell({ date: selectedDate, student })}
-            onSaveSession={(student, session, status, contact) =>
-              saveSingleSession(student, selectedDate, session, status, contact)
-            }
-            pendingContactIds={pendingContactIds}
-            students={students}
-          />
-        ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-0 text-sm">
-              <thead>
-                <tr>
-                  <th className="sticky left-0 z-10 min-w-32 border-b border-emerald-200 bg-emerald-50 p-2 text-left font-semibold text-slate-700 sm:min-w-48">
-                    Học sinh
-                  </th>
-                  {weekDays.map((day) => (
-                    <th key={day} className="min-w-28 border-b border-emerald-200 p-2 text-left font-semibold text-slate-700 sm:min-w-32">
-                      {formatWeekday(day)}
-                      <span className="block text-xs font-normal text-slate-500">{formatShortDate(day)}</span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((student) => (
-                  <tr key={student.ma_hs} className="align-top">
-                    <td className="sticky left-0 z-10 border-b border-emerald-100 bg-white p-2">
-                      <Link
-                        to={`/quan-ly/hoc-sinh/${student.ma_hs}`}
-                        className="font-semibold text-blue-700 hover:underline"
-                      >
-                        {student.ho} {student.ten}
-                      </Link>
-                      <p className="text-xs text-slate-500">
-                        {student.ma_hs} · {student.dien}
-                      </p>
-                    </td>
-                    {weekDays.map((day) => (
-                      <td key={`${student.ma_hs}-${day}`} className="border-b border-emerald-100 bg-white p-2">
-                        <button
-                          type="button"
-                          onClick={() => setEditingCell({ date: day, student })}
-                          className="min-h-16 w-full rounded-md border border-slate-200 bg-slate-50 p-2 text-left hover:border-emerald-300 hover:bg-emerald-50"
-                        >
-                          <SessionBadge
-                            entry={entryMap.get(entryKey(student.ma_hs, day, 'sang'))}
-                            pendingContactIds={pendingContactIds}
-                            session="sang"
-                          />
-                          <SessionBadge
-                            entry={entryMap.get(entryKey(student.ma_hs, day, 'chieu'))}
-                            pendingContactIds={pendingContactIds}
-                            session="chieu"
-                          />
-                        </button>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {scope === 'week' && weekDays.length > 0 ? (
-          <div className="mt-6 space-y-6 border-t border-emerald-200 pt-4">
-            <p className="text-xs font-semibold uppercase text-emerald-700">
-              Chi tiết từng ngày · sửa/xoá nhanh khi điểm danh nhầm
-            </p>
-            {weekDays.map((day) => (
-              <div key={day}>
-                <h4 className="text-sm font-bold text-slate-800">
-                  {formatWeekday(day)} · {formatShortDate(day)}
-                </h4>
-                <CompactDayAttendance
-                  date={day}
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredStudents.length === 0 ? (
+              <p className="rounded-md border border-slate-100 bg-white p-3 text-sm text-slate-600 sm:col-span-2 xl:col-span-3">
+                Không tìm thấy học sinh khớp từ khoá.
+              </p>
+            ) : (
+              filteredStudents.map((student) => (
+                <StudentAttendanceCard
+                  key={`${selectedDate}-${selectedBuoi}-${student.ma_hs}`}
+                  currentEntry={currentEntryByStudent.get(student.ma_hs)}
                   disabled={saving}
-                  entries={weekEntries}
-                  onEditCell={(student) => setEditingCell({ date: day, student })}
-                  onSaveSession={(student, session, status, contact) =>
-                    saveSingleSession(student, day, session, status, contact)
+                  monthAbsentCount={monthAbsentCountByStudent.get(student.ma_hs) || 0}
+                  needsContact={
+                    !!currentEntryByStudent.get(student.ma_hs) &&
+                    pendingContactIds.has(currentEntryByStudent.get(student.ma_hs)!.id)
                   }
-                  pendingContactIds={pendingContactIds}
-                  students={students}
+                  onSave={(status, contact) => saveAttendance(student, status, contact)}
+                  student={student}
+                  weekAbsentCount={weekAbsentCountByStudent.get(student.ma_hs) || 0}
                 />
-              </div>
-            ))}
+              ))
+            )}
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase text-emerald-700">Ngoại lệ trong tháng</p>
+              <h3 className="text-lg font-bold text-slate-950">Tháng {selectedMonth}</h3>
+            </div>
+            {loading ? <p className="text-sm font-semibold text-emerald-700">Đang tải...</p> : null}
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {monthExceptions.length === 0 ? (
+              <p className="rounded-md border border-emerald-100 bg-white p-3 text-sm text-slate-600">
+                Không có ngoại lệ vắng nào trong tháng này.
+              </p>
+            ) : (
+              monthExceptions.map((entry) => {
+                const student = entry.ma_hs ? studentByCode.get(entry.ma_hs) : undefined
+                const status = entry.trang_thai as TrangThaiDiemDanh
+                const buoi = entry.buoi as BuoiDiemDanh
+                return (
+                  <div
+                    key={entry.id}
+                    className="flex flex-col gap-2 rounded-md border border-emerald-100 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      {student ? (
+                        <Link
+                          to={`/quan-ly/hoc-sinh/${student.ma_hs}`}
+                          className="font-semibold text-blue-700 hover:underline"
+                        >
+                          {student.ho} {student.ten}
+                        </Link>
+                      ) : (
+                        <p className="font-semibold text-slate-900">{entry.ma_hs}</p>
+                      )}
+                      <p className="text-xs text-slate-500">
+                        {formatWeekday(entry.ngay)} · {formatShortDate(entry.ngay)} · {SESSION_LABELS[buoi]} ·{' '}
+                        <span className={`rounded border px-1.5 py-0.5 font-semibold ${STATUS_STYLES[status]}`}>
+                          {STATUS_LABELS[status]}
+                        </span>
+                        {pendingContactIds.has(entry.id) ? (
+                          <span className="ml-1 rounded border border-orange-300 bg-orange-100 px-1.5 py-0.5 font-semibold text-orange-800">
+                            Chưa gọi PH
+                          </span>
+                        ) : null}
+                      </p>
+                    </div>
+                    {student ? (
+                      <button
+                        type="button"
+                        onClick={() => jumpToDate(entry.ngay, buoi)}
+                        className="h-9 shrink-0 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                      >
+                        Sửa ở Điểm danh
+                      </button>
+                    ) : null}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -564,20 +541,6 @@ export function AttendanceManagementPage() {
         </div>
       </div>
 
-      {editingCell ? (
-        <EditAttendanceModal
-          date={editingCell.date}
-          disabled={saving}
-          entries={{
-            chieu: entryMap.get(entryKey(editingCell.student.ma_hs, editingCell.date, 'chieu')),
-            sang: entryMap.get(entryKey(editingCell.student.ma_hs, editingCell.date, 'sang')),
-          }}
-          onClose={() => setEditingCell(null)}
-          onSave={(values, contact) => saveCell(editingCell.student, editingCell.date, values, contact)}
-          student={editingCell.student}
-        />
-      ) : null}
-
       {contactTarget ? (
         <ContactOnlyModal
           disabled={saving}
@@ -590,183 +553,69 @@ export function AttendanceManagementPage() {
   )
 }
 
-function CompactDayAttendance({
-  date,
+function StudentAttendanceCard({
+  currentEntry,
   disabled,
-  entries,
-  onEditCell,
-  onSaveSession,
-  pendingContactIds,
-  students,
+  monthAbsentCount,
+  needsContact,
+  onSave,
+  student,
+  weekAbsentCount,
 }: {
-  date: string
+  currentEntry?: DiemDanh
   disabled: boolean
-  entries: DiemDanh[]
-  onEditCell: (student: HocSinh) => void
-  onSaveSession: (
-    student: HocSinh,
-    session: BuoiDiemDanh,
-    status: LuaChonDiemDanh,
-    contact: ContactDraft,
-  ) => void
-  pendingContactIds: Set<string>
-  students: HocSinh[]
+  monthAbsentCount: number
+  needsContact: boolean
+  onSave: (status: LuaChonDiemDanh, contact: ContactDraft) => void
+  student: HocSinh
+  weekAbsentCount: number
 }) {
-  const studentByCode = useMemo(() => new Map(students.map((student) => [student.ma_hs, student])), [students])
-
-  const entriesBySession = useMemo(() => {
-    const result: Record<BuoiDiemDanh, DiemDanh[]> = { chieu: [], sang: [] }
-    for (const entry of entries) {
-      if (entry.ngay !== date) continue
-      if (entry.buoi !== 'sang' && entry.buoi !== 'chieu') continue
-      result[entry.buoi].push(entry)
-    }
-    return result
-  }, [entries, date])
-
-  return (
-    <div className="mt-4 grid gap-4 md:grid-cols-2">
-      {(['sang', 'chieu'] as BuoiDiemDanh[]).map((session) => (
-        <SessionBlock
-          key={session}
-          disabled={disabled}
-          entries={entriesBySession[session]}
-          onEditCell={onEditCell}
-          onSaveSession={onSaveSession}
-          pendingContactIds={pendingContactIds}
-          session={session}
-          studentByCode={studentByCode}
-          students={students}
-        />
-      ))}
-    </div>
-  )
-}
-
-function SessionBlock({
-  disabled,
-  entries,
-  onEditCell,
-  onSaveSession,
-  pendingContactIds,
-  session,
-  studentByCode,
-  students,
-}: {
-  disabled: boolean
-  entries: DiemDanh[]
-  onEditCell: (student: HocSinh) => void
-  onSaveSession: (
-    student: HocSinh,
-    session: BuoiDiemDanh,
-    status: LuaChonDiemDanh,
-    contact: ContactDraft,
-  ) => void
-  pendingContactIds: Set<string>
-  session: BuoiDiemDanh
-  studentByCode: Map<string, HocSinh>
-  students: HocSinh[]
-}) {
-  const [selectedCode, setSelectedCode] = useState('')
-  const [status, setStatus] = useState<LuaChonDiemDanh>('vang_co_phep')
+  const savedStatus: LuaChonDiemDanh = (currentEntry?.trang_thai as LuaChonDiemDanh | undefined) || 'co_mat'
+  const [status, setStatus] = useState<LuaChonDiemDanh>(savedStatus)
   const [contact, setContact] = useState<ContactDraft>({ hinh_thuc: 'dien_thoai', noi_dung: '' })
+  const dirty = status !== savedStatus
 
-  function submitQuickAdd(event: FormEvent<HTMLFormElement>) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const student = studentByCode.get(selectedCode)
-    if (!student) return
-    onSaveSession(student, session, status, contact)
-    setSelectedCode('')
-    setContact({ hinh_thuc: 'dien_thoai', noi_dung: '' })
+    onSave(status, contact)
   }
 
   return (
-    <div className="rounded-md border border-emerald-100 bg-white p-3">
-      <h4 className="text-sm font-bold uppercase text-emerald-700">{SESSION_LABELS[session]}</h4>
-
-      <div className="mt-2 space-y-2">
-        {entries.length === 0 ? (
-          <p className="rounded border border-slate-100 bg-slate-50 p-2 text-sm text-slate-500">
-            Không có ngoại lệ buổi {SESSION_LABELS[session].toLowerCase()}.
+    <form onSubmit={submit} className="rounded-md border border-slate-200 bg-white p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <Link
+            to={`/quan-ly/hoc-sinh/${student.ma_hs}`}
+            className="block truncate font-semibold text-blue-700 hover:underline"
+          >
+            {student.ho} {student.ten}
+          </Link>
+          <p className="text-xs text-slate-500">
+            {student.ma_hs} · {student.dien}
           </p>
-        ) : (
-          entries.map((entry) => {
-            const student = entry.ma_hs ? studentByCode.get(entry.ma_hs) : undefined
-            const status = entry.trang_thai as TrangThaiDiemDanh
-            return (
-              <div
-                key={entry.id}
-                className="flex items-center justify-between gap-2 rounded border border-slate-200 p-2"
-              >
-                <div className="min-w-0 flex-1">
-                  {student ? (
-                    <Link
-                      to={`/quan-ly/hoc-sinh/${student.ma_hs}`}
-                      className="block truncate text-sm font-semibold text-blue-700 hover:underline"
-                    >
-                      {student.ho} {student.ten}
-                    </Link>
-                  ) : (
-                    <p className="truncate text-sm font-semibold text-slate-900">{entry.ma_hs}</p>
-                  )}
-                  <span className={`inline-block rounded border px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[status]}`}>
-                    {STATUS_LABELS[status]}
-                  </span>
-                  {pendingContactIds.has(entry.id) ? (
-                    <span className="ml-1 inline-block rounded border border-orange-300 bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-800">
-                      Chưa gọi PH
-                    </span>
-                  ) : null}
-                </div>
-                {student ? (
-                  <div className="flex shrink-0 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onEditCell(student)}
-                      className="h-8 shrink-0 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      type="button"
-                      disabled={disabled}
-                      onClick={() => {
-                        const ok = window.confirm(
-                          `Xoá điểm danh ${SESSION_LABELS[session].toLowerCase()} của ${student.ho} ${student.ten}? Học sinh sẽ chuyển về Có mặt.`,
-                        )
-                        if (ok) onSaveSession(student, session, 'co_mat', { hinh_thuc: 'dien_thoai', noi_dung: '' })
-                      }}
-                      className="h-8 shrink-0 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
-                    >
-                      Xoá
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            )
-          })
-        )}
+        </div>
+        {!dirty && savedStatus !== 'co_mat' ? (
+          <span className={`shrink-0 rounded border px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[savedStatus]}`}>
+            {STATUS_LABELS[savedStatus]}
+          </span>
+        ) : null}
       </div>
 
-      <form onSubmit={submitQuickAdd} className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-        <p className="text-xs font-semibold uppercase text-slate-500">Thêm nhanh</p>
-        <select
-          value={selectedCode}
-          onChange={(event) => setSelectedCode(event.target.value)}
-          className={inputClass + ' w-full'}
-        >
-          <option value="">Chọn học sinh...</option>
-          {students.map((student) => (
-            <option key={student.ma_hs} value={student.ma_hs}>
-              {student.ho} {student.ten} ({student.ma_hs})
-            </option>
-          ))}
-        </select>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-600">
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1">Tuần vắng: {weekAbsentCount}</span>
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1">Tháng vắng: {monthAbsentCount}</span>
+        {needsContact ? (
+          <span className="rounded-full border border-orange-300 bg-orange-100 px-2 py-1 text-orange-800">
+            ⚠ Chưa gọi PH
+          </span>
+        ) : null}
+      </div>
 
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         <select
           value={status}
           onChange={(event) => setStatus(event.target.value as LuaChonDiemDanh)}
-          className={inputClass + ' w-full'}
+          className="h-9 flex-1 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         >
           {STATUS_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -774,40 +623,41 @@ function SessionBlock({
             </option>
           ))}
         </select>
-
-        {status !== 'co_mat' ? (
-          <>
-            <select
-              value={contact.hinh_thuc}
-              onChange={(event) =>
-                setContact((current) => ({ ...current, hinh_thuc: event.target.value as HinhThucLienLacPhuHuynh }))
-              }
-              className={inputClass + ' w-full'}
-            >
-              {CONTACT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <textarea
-              value={contact.noi_dung}
-              onChange={(event) => setContact((current) => ({ ...current, noi_dung: event.target.value }))}
-              placeholder="Nội dung liên lạc phụ huynh (có thể để trống)"
-              className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </>
+        {dirty ? (
+          <button
+            type="submit"
+            disabled={disabled}
+            className="h-9 shrink-0 rounded-md bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {disabled ? 'Đang lưu...' : 'Lưu'}
+          </button>
         ) : null}
+      </div>
 
-        <button
-          type="submit"
-          disabled={disabled || !selectedCode}
-          className="h-10 w-full rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-        >
-          {disabled ? 'Đang lưu...' : 'Ghi điểm danh'}
-        </button>
-      </form>
-    </div>
+      {dirty && status !== 'co_mat' ? (
+        <div className="mt-2 space-y-2 rounded-md border border-orange-100 bg-orange-50 p-2">
+          <select
+            value={contact.hinh_thuc}
+            onChange={(event) =>
+              setContact((current) => ({ ...current, hinh_thuc: event.target.value as HinhThucLienLacPhuHuynh }))
+            }
+            className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            {CONTACT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <textarea
+            value={contact.noi_dung}
+            onChange={(event) => setContact((current) => ({ ...current, noi_dung: event.target.value }))}
+            placeholder="Nội dung liên lạc phụ huynh (có thể để trống)"
+            className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </div>
+      ) : null}
+    </form>
   )
 }
 
@@ -833,137 +683,6 @@ function SummaryCard({
       <p className="text-sm font-semibold">{label}</p>
       <p className="mt-2 text-3xl font-bold">{value}</p>
     </div>
-  )
-}
-
-function SessionBadge({
-  entry,
-  pendingContactIds,
-  session,
-}: {
-  entry?: DiemDanh
-  pendingContactIds: Set<string>
-  session: BuoiDiemDanh
-}) {
-  if (!entry) {
-    return (
-      <span className="mb-1 flex items-center justify-between rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-400">
-        {SESSION_LABELS[session]} <span>✓</span>
-      </span>
-    )
-  }
-
-  const status = entry.trang_thai as TrangThaiDiemDanh
-  const needsContact = pendingContactIds.has(entry.id)
-  return (
-    <span className={`mb-1 block rounded border px-2 py-1 text-xs font-semibold ${STATUS_STYLES[status]}`}>
-      {SESSION_LABELS[session]}: {STATUS_LABELS[status]}
-      {needsContact ? (
-        <span className="ml-1 whitespace-nowrap text-orange-800" title="Chưa gọi phụ huynh">
-          ⚠ Chưa gọi PH
-        </span>
-      ) : null}
-    </span>
-  )
-}
-
-function EditAttendanceModal({
-  date,
-  disabled,
-  entries,
-  onClose,
-  onSave,
-  student,
-}: {
-  date: string
-  disabled: boolean
-  entries: Record<BuoiDiemDanh, DiemDanh | undefined>
-  onClose: () => void
-  onSave: (values: Record<BuoiDiemDanh, LuaChonDiemDanh>, contact: ContactDraft) => void
-  student: HocSinh
-}) {
-  const [values, setValues] = useState<Record<BuoiDiemDanh, LuaChonDiemDanh>>({
-    chieu: (entries.chieu?.trang_thai as LuaChonDiemDanh | undefined) || 'co_mat',
-    sang: (entries.sang?.trang_thai as LuaChonDiemDanh | undefined) || 'co_mat',
-  })
-  const [contact, setContact] = useState<ContactDraft>({ hinh_thuc: 'dien_thoai', noi_dung: '' })
-  const hasException = values.sang !== 'co_mat' || values.chieu !== 'co_mat'
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    onSave(values, contact)
-  }
-
-  return (
-    <ModalShell onClose={onClose}>
-      <form onSubmit={submit} className="space-y-4">
-        <div>
-          <p className="text-xs font-semibold uppercase text-blue-600">Sửa điểm danh</p>
-          <h3 className="text-lg font-bold text-slate-950">
-            {student.ho} {student.ten}
-          </h3>
-          <p className="text-sm text-slate-600">{formatShortDate(date)}</p>
-        </div>
-
-        {(['sang', 'chieu'] as BuoiDiemDanh[]).map((session) => (
-          <label key={session} className="flex flex-col gap-1 text-sm font-semibold text-slate-700">
-            {SESSION_LABELS[session]}
-            <select
-              value={values[session]}
-              onChange={(event) =>
-                setValues((current) => ({
-                  ...current,
-                  [session]: event.target.value as LuaChonDiemDanh,
-                }))
-              }
-              className={inputClass}
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
-
-        {hasException ? (
-          <div className="rounded-md border border-orange-200 bg-orange-50 p-3">
-            <p className="text-sm font-bold text-orange-900">Liên lạc phụ huynh</p>
-            <label className="mt-3 flex flex-col gap-1 text-sm font-semibold text-slate-700">
-              Hình thức
-              <select
-                value={contact.hinh_thuc}
-                onChange={(event) =>
-                  setContact((current) => ({
-                    ...current,
-                    hinh_thuc: event.target.value as HinhThucLienLacPhuHuynh,
-                  }))
-                }
-                className={inputClass}
-              >
-                {CONTACT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="mt-3 flex flex-col gap-1 text-sm font-semibold text-slate-700">
-              Nội dung
-              <textarea
-                value={contact.noi_dung}
-                onChange={(event) => setContact((current) => ({ ...current, noi_dung: event.target.value }))}
-                className="min-h-24 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                placeholder="Có thể để trống nếu chỉ cần ghi nhận đã liên lạc."
-              />
-            </label>
-          </div>
-        ) : null}
-
-        <ModalActions disabled={disabled} onClose={onClose} />
-      </form>
-    </ModalShell>
   )
 }
 
@@ -1079,28 +798,19 @@ function ModalActions({ disabled, onClose }: { disabled: boolean; onClose: () =>
   )
 }
 
-function buildEntryMap(entries: DiemDanh[]): Map<string, DiemDanh> {
-  return new Map(
-    entries
-      .filter((entry) => entry.ma_hs && (entry.buoi === 'sang' || entry.buoi === 'chieu'))
-      .map((entry) => [entryKey(entry.ma_hs || '', entry.ngay, entry.buoi as BuoiDiemDanh), entry]),
-  )
+function countAbsencesByStudent(entries: DiemDanh[]): Map<string, number> {
+  const map = new Map<string, number>()
+  for (const entry of entries) {
+    if (entry.trang_thai !== 'vang_co_phep' && entry.trang_thai !== 'vang_khong_phep') continue
+    if (!entry.ma_hs) continue
+    map.set(entry.ma_hs, (map.get(entry.ma_hs) || 0) + 1)
+  }
+  return map
 }
 
-function buildSummary(
-  entries: DiemDanh[],
-  studentCount: number,
-  scope: TimeScope,
-  selectedMonth: string,
-  weeks: CauHinhTuan[],
-  range: { from: string; to: string } | null,
-) {
+function summarizeAttendance(entries: DiemDanh[], studentCount: number) {
   const vangCoPhep = entries.filter((entry) => entry.trang_thai === 'vang_co_phep').length
   const vangKhongPhep = entries.filter((entry) => entry.trang_thai === 'vang_khong_phep').length
-  const tre = entries.filter((entry) => entry.trang_thai === 'tre').length
-  const totalExceptions = vangCoPhep + vangKhongPhep + tre
-  const totalSlots = Math.max(0, studentCount * resolveDayCount(scope, selectedMonth, weeks, range) * 2)
-  const rate = totalSlots > 0 ? 1 - totalExceptions / totalSlots : 1
 
   const absentStudentIds = new Set(
     entries
@@ -1112,79 +822,11 @@ function buildSummary(
   const vang = absentStudentIds.size
   const hienDien = Math.max(0, siSo - vang)
 
-  return {
-    rateText: `${Math.max(0, rate * 100).toFixed(1)}%`,
-    totalSlots,
-    tre,
-    vangCoPhep,
-    vangKhongPhep,
-    siSo,
-    vang,
-    hienDien,
-  }
-}
-
-function resolveDayCount(
-  scope: TimeScope,
-  selectedMonth: string,
-  weeks: CauHinhTuan[],
-  range: { from: string; to: string } | null,
-): number {
-  if (scope === 'day') return 1
-  if (scope === 'week') {
-    const week = weeks.find((item) => item.tu_ngay === range?.from && item.den_ngay === range?.to)
-    return week?.so_ngay || 0
-  }
-  return weeks
-    .filter((week) => week.tu_ngay.slice(0, 7) === selectedMonth)
-    .reduce((sum, week) => sum + week.so_ngay, 0)
-}
-
-function resolveSummaryRange(
-  scope: TimeScope,
-  selectedDate: string,
-  selectedWeek: number | null,
-  selectedMonth: string,
-  weeks: CauHinhTuan[],
-): { from: string; to: string } | null {
-  if (scope === 'day') return { from: selectedDate, to: selectedDate }
-  if (scope === 'week') {
-    const week = weeks.find((item) => item.tuan_so === selectedWeek)
-    return week ? { from: week.tu_ngay, to: week.den_ngay } : null
-  }
-
-  return { from: `${selectedMonth}-01`, to: lastDayOfMonth(selectedMonth) }
-}
-
-function resolveGridWeek(
-  scope: TimeScope,
-  weeks: CauHinhTuan[],
-  selectedDate: string,
-  selectedWeek: number | null,
-  selectedMonth: string,
-): CauHinhTuan | null {
-  if (scope === 'day') return findWeekForDate(weeks, selectedDate)
-  if (scope === 'week') return weeks.find((week) => week.tuan_so === selectedWeek) || null
-  return weeks.find((week) => week.tu_ngay.slice(0, 7) === selectedMonth) || findWeekForDate(weeks, `${selectedMonth}-01`)
-}
-
-function daysInWeek(week: CauHinhTuan): string[] {
-  const result: string[] = []
-  const start = parseIsoDate(week.tu_ngay)
-  for (let index = 0; index < week.so_ngay; index += 1) {
-    const date = new Date(start)
-    date.setDate(start.getDate() + index)
-    result.push(toDateInputValue(date))
-  }
-  return result
+  return { siSo, vang, hienDien, vangCoPhep, vangKhongPhep }
 }
 
 function findWeekForDate(weeks: CauHinhTuan[], date: string): CauHinhTuan | null {
   return weeks.find((week) => week.tu_ngay <= date && date <= week.den_ngay) || null
-}
-
-function entryKey(maHs: string, date: string, session: BuoiDiemDanh): string {
-  return `${maHs}|${date}|${session}`
 }
 
 function formatShortDate(date: string): string {
