@@ -1,4 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type {
   BuoiDiemDanh,
@@ -437,9 +438,12 @@ export function AttendanceManagementPage() {
                 {students.map((student) => (
                   <tr key={student.ma_hs} className="align-top">
                     <td className="sticky left-0 z-10 border-b border-emerald-100 bg-white p-2">
-                      <p className="font-semibold text-slate-900">
+                      <Link
+                        to={`/quan-ly/hoc-sinh/${student.ma_hs}`}
+                        className="font-semibold text-blue-700 hover:underline"
+                      >
                         {student.ho} {student.ten}
-                      </p>
+                      </Link>
                       <p className="text-xs text-slate-500">
                         {student.ma_hs} · {student.dien}
                       </p>
@@ -485,9 +489,18 @@ export function AttendanceManagementPage() {
                 className="flex flex-col gap-3 rounded-md border border-orange-100 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <p className="font-semibold text-slate-900">
-                    {item.ho} {item.ten}
-                  </p>
+                  {item.ma_hs ? (
+                    <Link
+                      to={`/quan-ly/hoc-sinh/${item.ma_hs}`}
+                      className="font-semibold text-blue-700 hover:underline"
+                    >
+                      {item.ho} {item.ten}
+                    </Link>
+                  ) : (
+                    <p className="font-semibold text-slate-900">
+                      {item.ho} {item.ten}
+                    </p>
+                  )}
                   <p className="text-sm text-slate-600">
                     {formatShortDate(item.ngay)} · {SESSION_LABELS[item.buoi as BuoiDiemDanh]} ·{' '}
                     {STATUS_LABELS[item.trang_thai as TrangThaiDiemDanh]}
@@ -636,9 +649,16 @@ function SessionBlock({
                 className="flex items-center justify-between gap-2 rounded border border-slate-200 p-2"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-900">
-                    {student ? `${student.ho} ${student.ten}` : entry.ma_hs}
-                  </p>
+                  {student ? (
+                    <Link
+                      to={`/quan-ly/hoc-sinh/${student.ma_hs}`}
+                      className="block truncate text-sm font-semibold text-blue-700 hover:underline"
+                    >
+                      {student.ho} {student.ten}
+                    </Link>
+                  ) : (
+                    <p className="truncate text-sm font-semibold text-slate-900">{entry.ma_hs}</p>
+                  )}
                   <span className={`inline-block rounded border px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[status]}`}>
                     {STATUS_LABELS[status]}
                   </span>

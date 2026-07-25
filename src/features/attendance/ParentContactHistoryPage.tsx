@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BuoiDiemDanh, HinhThucLienLacPhuHuynh, LienLacPhuHuynh } from '../../data/types'
 
@@ -121,7 +121,16 @@ export function ParentContactHistoryPage() {
               <div key={item.id} className="rounded-md border border-slate-200 p-3">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="font-semibold text-slate-900">{item.ho_ten || item.ma_hs || 'Không rõ học sinh'}</p>
+                    {item.ma_hs ? (
+                      <Link
+                        to={`/quan-ly/hoc-sinh/${item.ma_hs}`}
+                        className="font-semibold text-blue-700 hover:underline"
+                      >
+                        {item.ho_ten || item.ma_hs}
+                      </Link>
+                    ) : (
+                      <p className="font-semibold text-slate-900">{item.ho_ten || 'Không rõ học sinh'}</p>
+                    )}
                     <p className="text-xs text-slate-500">
                       {item.ngay ? formatShortDate(item.ngay) : '—'} ·{' '}
                       {item.buoi ? SESSION_LABELS[item.buoi] : '—'} ·{' '}

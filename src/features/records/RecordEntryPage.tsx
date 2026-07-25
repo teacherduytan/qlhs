@@ -627,13 +627,24 @@ function PreviewTable({
                     )}
                   </td>
                   <td className="px-3 py-3">
-                    <span
-                      className={`rounded-full border px-2 py-1 text-xs font-semibold ${getBadgeClassForCatalog(
-                        catalogItem,
-                      )}`}
-                    >
-                      {record.ma_danh_muc}
-                    </span>
+                    {record.ma_danh_muc ? (
+                      <Link
+                        to={`/danh-muc?ma=${encodeURIComponent(record.ma_danh_muc)}`}
+                        className={`rounded-full border px-2 py-1 text-xs font-semibold hover:underline ${getBadgeClassForCatalog(
+                          catalogItem,
+                        )}`}
+                      >
+                        {record.ma_danh_muc}
+                      </Link>
+                    ) : (
+                      <span
+                        className={`rounded-full border px-2 py-1 text-xs font-semibold ${getBadgeClassForCatalog(
+                          catalogItem,
+                        )}`}
+                      >
+                        -
+                      </span>
+                    )}
                   </td>
                   <td className="max-w-md px-3 py-3 text-slate-800">{record.noi_dung}</td>
                   <td className="px-3 py-3">

@@ -665,8 +665,13 @@ export function StudentsPage() {
                       <Fragment key={student.ma_hs}>
                         <tr className={getStudentRowClass(expanded, impactSummary)}>
                           <td className="whitespace-nowrap px-3 py-3 text-slate-500">{student.tt}</td>
-                          <td className="whitespace-nowrap px-3 py-3 font-medium text-slate-700">
-                            {student.ma_hs}
+                          <td className="whitespace-nowrap px-3 py-3 font-medium">
+                            <Link
+                              to={`/quan-ly/hoc-sinh/${student.ma_hs}`}
+                              className="text-blue-700 hover:underline"
+                            >
+                              {student.ma_hs}
+                            </Link>
                           </td>
                           <td className="whitespace-nowrap px-3 py-3">
                             <button

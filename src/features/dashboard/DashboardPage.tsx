@@ -627,8 +627,17 @@ export function DashboardPage() {
                           className={needsAttention(score) ? 'bg-red-50' : 'hover:bg-slate-50'}
                         >
                           <td className="whitespace-nowrap px-3 py-3 text-slate-600">{index + 1}</td>
-                          <td className="whitespace-nowrap px-3 py-3 font-semibold text-slate-900">
-                            {student ? `${student.ho} ${student.ten}` : score.ma_hs}
+                          <td className="whitespace-nowrap px-3 py-3 font-semibold">
+                            {student ? (
+                              <Link
+                                to={`/quan-ly/hoc-sinh/${score.ma_hs}`}
+                                className="text-blue-700 hover:underline"
+                              >
+                                {student.ho} {student.ten}
+                              </Link>
+                            ) : (
+                              <span className="text-slate-900">{score.ma_hs}</span>
+                            )}
                           </td>
                           <td className="px-3 py-3">{score.diem_chuyen_can}</td>
                           <td className="px-3 py-3">{score.diem_ve_sinh}</td>
@@ -678,23 +687,33 @@ export function DashboardPage() {
                   <article key={eventKey(record)} className="space-y-3 p-4">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        {catalogItem?.pham_vi === 'to_truc' ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExpandedTeamEventId((current) =>
-                                current === eventKey(record) ? null : eventKey(record),
-                              )
-                            }
-                            className="text-left text-sm font-bold text-blue-700 hover:text-blue-800"
-                          >
-                            {record.ma_danh_muc} · {catalogItem?.ten_muc || 'Sự kiện tổ trực'}
-                          </button>
-                        ) : (
-                          <p className="text-sm font-bold text-slate-900">
-                            {record.ma_danh_muc} · {catalogItem?.ten_muc || 'Sự kiện tập thể'}
-                          </p>
-                        )}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {record.ma_danh_muc ? (
+                            <Link
+                              to={`/danh-muc?ma=${encodeURIComponent(record.ma_danh_muc)}`}
+                              className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-blue-700 hover:underline"
+                            >
+                              {record.ma_danh_muc}
+                            </Link>
+                          ) : null}
+                          {catalogItem?.pham_vi === 'to_truc' ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedTeamEventId((current) =>
+                                  current === eventKey(record) ? null : eventKey(record),
+                                )
+                              }
+                              className="text-left text-sm font-bold text-blue-700 hover:text-blue-800"
+                            >
+                              {catalogItem?.ten_muc || 'Sự kiện tổ trực'}
+                            </button>
+                          ) : (
+                            <p className="text-sm font-bold text-slate-900">
+                              {catalogItem?.ten_muc || 'Sự kiện tập thể'}
+                            </p>
+                          )}
+                        </div>
                         <p className="text-sm text-slate-600">
                           {record.noi_dung || record.ly_do || 'Không có mô tả'}
                         </p>
@@ -833,6 +852,7 @@ export function DashboardPage() {
                       <div className="mt-3 space-y-2">
                         {day.records.map((record, index) => {
                           const insight = getRecordInsight(record, state.records, body.catalogByCode)
+                          const recordStudent = record.ma_hs ? body.studentById.get(record.ma_hs) : undefined
 
                           return (
                             <article
@@ -841,7 +861,17 @@ export function DashboardPage() {
                             >
                               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                 <p className="font-semibold text-slate-900">
-                                  {record.ma_hs || `Tổ ${record.to_lien_quan || 'tập thể'}`} ·{' '}
+                                  {record.ma_hs ? (
+                                    <Link
+                                      to={`/quan-ly/hoc-sinh/${record.ma_hs}`}
+                                      className="text-blue-700 hover:underline"
+                                    >
+                                      {recordStudent ? `${recordStudent.ho} ${recordStudent.ten}` : record.ma_hs}
+                                    </Link>
+                                  ) : (
+                                    `Tổ ${record.to_lien_quan || 'tập thể'}`
+                                  )}{' '}
+                                  ·{' '}
                                   <CatalogCodeBadge
                                     catalogItem={record.ma_danh_muc ? body.catalogByCode.get(record.ma_danh_muc) : undefined}
                                     code={record.ma_danh_muc || record.loai}
@@ -1775,7 +1805,14 @@ function TeamInfoPanel({
         <div>
           <h4 className="text-sm font-bold text-slate-900">Thông tin Tổ {teamNumber}</h4>
           <p className="mt-1 text-sm text-slate-700">
-            Tổ trưởng: <span className="font-semibold">{leader || 'Chưa có dữ liệu'}</span>
+            Tổ trưởng:{' '}
+            {leader ? (
+              <Link to={`/quan-ly/hoc-sinh/${leader.ma_hs}`} className="font-semibold text-blue-700 hover:underline">
+                {leader.ho} {leader.ten}
+              </Link>
+            ) : (
+              <span className="font-semibold">Chưa có dữ liệu</span>
+            )}
           </p>
           <p className="text-sm text-slate-700">Sĩ số tổ: {members.length} học sinh</p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -2471,13 +2508,11 @@ function findTeamLeader(
   teamNumber: number,
   banCanSu: BanCanSu[],
   students: HocSinh[],
-): string | null {
+): HocSinh | null {
   const leaderRole = banCanSu.find(
     (role) => role.to === teamNumber && normalizeText(role.chuc_vu).includes('to truong'),
   )
-  const leader = leaderRole ? students.find((student) => student.ma_hs === leaderRole.ma_hs) : null
-
-  return leader ? `${leader.ho} ${leader.ten}` : null
+  return leaderRole ? students.find((student) => student.ma_hs === leaderRole.ma_hs) || null : null
 }
 
 function getTeamEventHistory(
