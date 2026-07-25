@@ -22,6 +22,7 @@ import type {
   NhatKyImport,
   PhuHuynh,
   PublicStudentProfile,
+  SuaLienLacPhuHuynhInput,
   ThemLienLacPhuHuynhInput,
   TrangThaiImport,
   TrangThaiXuLyTapThe,
@@ -542,6 +543,22 @@ export class SupabaseDataSource implements DataSource {
     const { data, error } = await query
     assertNoError(error, 'Khong doc duoc lich su lien lac phu huynh tu Supabase')
     return (data || []) as LienLacPhuHuynh[]
+  }
+
+  async updateParentContact(id: string, patch: SuaLienLacPhuHuynhInput): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('lien_lac_phu_huynh')
+      .update({
+        hinh_thuc: patch.hinh_thuc,
+        noi_dung: patch.noi_dung?.trim() || null,
+      })
+      .eq('id', id)
+    assertNoError(error, 'Khong sua duoc lien lac phu huynh tren Supabase')
+  }
+
+  async deleteParentContact(id: string): Promise<void> {
+    const { error } = await getSupabaseClient().from('lien_lac_phu_huynh').delete().eq('id', id)
+    assertNoError(error, 'Khong xoa duoc lien lac phu huynh tren Supabase')
   }
 
   private async prepareImportRow(

@@ -209,6 +209,11 @@ export interface ThemLienLacPhuHuynhInput {
   buoi: BuoiDiemDanh | 'ca_ngay'
 }
 
+export interface SuaLienLacPhuHuynhInput {
+  hinh_thuc: HinhThucLienLacPhuHuynh
+  noi_dung: string | null
+}
+
 export type AttendanceMealKey =
   | 'mon_chinh_1'
   | 'mon_chinh_2'

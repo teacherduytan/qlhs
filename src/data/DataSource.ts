@@ -19,6 +19,7 @@ import type {
   DiemDanh,
   DiemDanhCanLienLac,
   LienLacPhuHuynh,
+  SuaLienLacPhuHuynhInput,
   ThemLienLacPhuHuynhInput,
 } from './types'
 
@@ -79,4 +80,6 @@ export interface DataSource {
   upsertAttendanceEntry(input: CapNhatDiemDanhInput): Promise<string | null>
   addParentContact(input: ThemLienLacPhuHuynhInput): Promise<void>
   getParentContactHistory(options?: { maHs?: string }): Promise<LienLacPhuHuynh[]>
+  updateParentContact(id: string, patch: SuaLienLacPhuHuynhInput): Promise<void>
+  deleteParentContact(id: string): Promise<void>
 }
