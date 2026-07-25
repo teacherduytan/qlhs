@@ -262,6 +262,35 @@ export function AttendanceManagementPage() {
     }
   }
 
+  async function deletePendingEntry(target: DiemDanhCanLienLac) {
+    if (!target.ma_hs) return
+
+    const ok = window.confirm(
+      `Xoá điểm danh vắng của ${target.ho} ${target.ten} (${formatShortDate(target.ngay)} · ${SESSION_LABELS[target.buoi as BuoiDiemDanh]})? Học sinh sẽ chuyển về Có mặt.`,
+    )
+    if (!ok) return
+
+    setSaving(true)
+    setError(null)
+    setMessage(null)
+
+    try {
+      await dataSource.upsertAttendanceEntry({
+        ma_hs: target.ma_hs,
+        ngay: target.ngay,
+        tuan_so: target.tuan_so,
+        buoi: target.buoi as BuoiDiemDanh,
+        trang_thai: 'co_mat',
+      })
+      await refreshCurrentData()
+      setMessage(`Đã xoá điểm danh vắng của ${target.ho} ${target.ten}.`)
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Không xoá được điểm danh.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function jumpToDate(date: string, buoi: BuoiDiemDanh) {
     setScope('diem_danh')
     setSelectedDate(date)
@@ -568,13 +597,23 @@ export function AttendanceManagementPage() {
                     {STATUS_LABELS[item.trang_thai as TrangThaiDiemDanh]}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setContactTarget(item)}
-                  className="h-10 rounded-md bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-700"
-                >
-                  Ghi nhận
-                </button>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setContactTarget(item)}
+                    className="h-10 rounded-md bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-700"
+                  >
+                    Ghi nhận
+                  </button>
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => void deletePendingEntry(item)}
+                    className="h-10 rounded-md border border-red-200 bg-white px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                  >
+                    Xoá
+                  </button>
+                </div>
               </div>
             ))
           )}
