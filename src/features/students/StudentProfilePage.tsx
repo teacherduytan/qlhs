@@ -741,6 +741,8 @@ function LopTruongPanel({ token }: { token: string }) {
   const [deXuatNhom, setDeXuatNhom] = useState<NhomDiem>('NN')
   const [noiDung, setNoiDung] = useState('')
   const [ngay, setNgay] = useState(todayIso())
+  const [tiet, setTiet] = useState('')
+  const [monHoc, setMonHoc] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
@@ -804,12 +806,16 @@ function LopTruongPanel({ token }: { token: string }) {
         noi_dung: noiDung,
         de_xuat_nhom: isNewCategory ? deXuatNhom : null,
         ngay,
+        tiet: tiet.trim() || null,
+        mon_hoc: monHoc.trim() || null,
       })
       setSubmitMessage('Đã gửi đề xuất, chờ giáo viên duyệt.')
       setSelectedMaHs('')
       setSelectedCatalog('')
       setNoiDung('')
       setNgay(todayIso())
+      setTiet('')
+      setMonHoc('')
       void loadHistory(verifiedPin)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Không gửi được đề xuất.')
@@ -897,6 +903,31 @@ function LopTruongPanel({ token }: { token: string }) {
               className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </label>
+
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+              Tiết (không bắt buộc)
+              <input
+                value={tiet}
+                onChange={(event) => setTiet(event.target.value)}
+                placeholder="VD: 2"
+                className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+              Môn (không bắt buộc)
+              <input
+                value={monHoc}
+                onChange={(event) => setMonHoc(event.target.value)}
+                placeholder="VD: Toán"
+                className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+          </div>
+
+          <p className="text-xs text-slate-500">
+            Người ghi sẽ tự động ghi theo chức vụ của bạn (Lớp trưởng), không cần chọn.
+          </p>
 
           {isNewCategory ? (
             <select
@@ -986,6 +1017,8 @@ function ProposalHistoryItem({
   const [deXuatNhom, setDeXuatNhom] = useState<NhomDiem>(item.de_xuat_nhom || 'NN')
   const [noiDung, setNoiDung] = useState(item.noi_dung || '')
   const [ngay, setNgay] = useState(item.ngay)
+  const [tiet, setTiet] = useState(item.tiet || '')
+  const [monHoc, setMonHoc] = useState(item.mon_hoc || '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -1021,6 +1054,8 @@ function ProposalHistoryItem({
         noi_dung: noiDung,
         de_xuat_nhom: isNewCategory ? deXuatNhom : null,
         ngay,
+        tiet: tiet.trim() || null,
+        mon_hoc: monHoc.trim() || null,
       })
       setEditing(false)
       onChanged()
@@ -1055,6 +1090,8 @@ function ProposalHistoryItem({
           </p>
           <p className="text-xs text-slate-500">
             {formatDate(item.ngay)} · {item.ma_danh_muc || `Đề xuất mới (${item.de_xuat_nhom || '?'})`}
+            {item.tiet ? ` · Tiết ${item.tiet}` : ''}
+            {item.mon_hoc ? ` · ${item.mon_hoc}` : ''}
           </p>
           {item.noi_dung ? <p className="mt-1 text-sm text-slate-700">{item.noi_dung}</p> : null}
         </div>
@@ -1109,6 +1146,20 @@ function ProposalHistoryItem({
               onChange={(event) => setNgay(event.target.value)}
               className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                value={tiet}
+                onChange={(event) => setTiet(event.target.value)}
+                placeholder="Tiết (VD: 2)"
+                className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+              <input
+                value={monHoc}
+                onChange={(event) => setMonHoc(event.target.value)}
+                placeholder="Môn (VD: Toán)"
+                className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
             <textarea
               value={noiDung}
               onChange={(event) => setNoiDung(event.target.value)}

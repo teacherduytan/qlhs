@@ -94,10 +94,17 @@ export interface DataSource {
   verifyLopTruongPin(token: string, pin: string): Promise<boolean>
   getLopTruongData(token: string, pin: string): Promise<LopTruongData | null>
   submitDeXuatGhiNhan(input: GuiDeXuatGhiNhanInput): Promise<string>
-  getDeXuatGhiNhan(): Promise<DeXuatGhiNhan[]>
+  getDeXuatGhiNhan(options?: { maHs?: string }): Promise<DeXuatGhiNhan[]>
   approveDeXuatGhiNhan(id: string, overrides?: ApproveDeXuatGhiNhanOverrides): Promise<void>
   rejectDeXuatGhiNhan(id: string, ghiChu?: string): Promise<void>
   getLichSuDeXuatLopTruong(token: string, pin: string): Promise<DeXuatGhiNhan[]>
   updateDeXuatGhiNhanByLopTruong(input: SuaDeXuatGhiNhanInput): Promise<void>
   deleteDeXuatGhiNhanByLopTruong(token: string, pin: string, id: string): Promise<void>
+  updateDeXuatGhiNhanByTeacher(
+    id: string,
+    patch: Partial<
+      Pick<DeXuatGhiNhan, 'ma_danh_muc' | 'noi_dung' | 'de_xuat_nhom' | 'ngay' | 'tiet' | 'mon_hoc'>
+    >
+  ): Promise<void>
+  deleteDeXuatGhiNhanByTeacher(id: string): Promise<void>
 }

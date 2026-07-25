@@ -629,6 +629,8 @@ export class SupabaseDataSource implements DataSource {
       p_noi_dung: input.noi_dung,
       p_de_xuat_nhom: input.de_xuat_nhom || null,
       p_ngay: input.ngay,
+      p_tiet: input.tiet || null,
+      p_mon_hoc: input.mon_hoc || null,
     })
     assertNoError(error, 'Khong gui duoc de xuat ghi nhan')
     return data as string
@@ -653,6 +655,8 @@ export class SupabaseDataSource implements DataSource {
       p_noi_dung: input.noi_dung,
       p_de_xuat_nhom: input.de_xuat_nhom || null,
       p_ngay: input.ngay,
+      p_tiet: input.tiet || null,
+      p_mon_hoc: input.mon_hoc || null,
     })
     assertNoError(error, 'Khong sua duoc de xuat')
   }
@@ -666,11 +670,25 @@ export class SupabaseDataSource implements DataSource {
     assertNoError(error, 'Khong xoa duoc de xuat')
   }
 
-  async getDeXuatGhiNhan(): Promise<DeXuatGhiNhan[]> {
-    const { data, error } = await getSupabaseClient()
-      .from('de_xuat_ghi_nhan')
-      .select('*')
-      .order('thoi_gian', { ascending: false })
+  async updateDeXuatGhiNhanByTeacher(
+    id: string,
+    patch: Partial<
+      Pick<DeXuatGhiNhan, 'ma_danh_muc' | 'noi_dung' | 'de_xuat_nhom' | 'ngay' | 'tiet' | 'mon_hoc'>
+    >
+  ): Promise<void> {
+    const { error } = await getSupabaseClient().from('de_xuat_ghi_nhan').update(patch).eq('id', id)
+    assertNoError(error, 'Khong cap nhat duoc de xuat')
+  }
+
+  async deleteDeXuatGhiNhanByTeacher(id: string): Promise<void> {
+    const { error } = await getSupabaseClient().from('de_xuat_ghi_nhan').delete().eq('id', id)
+    assertNoError(error, 'Khong xoa duoc de xuat')
+  }
+
+  async getDeXuatGhiNhan(options: { maHs?: string } = {}): Promise<DeXuatGhiNhan[]> {
+    let query = getSupabaseClient().from('de_xuat_ghi_nhan').select('*').order('thoi_gian', { ascending: false })
+    if (options.maHs) query = query.eq('ma_hs', options.maHs)
+    const { data, error } = await query
     assertNoError(error, 'Khong doc duoc de xuat ghi nhan tu Supabase')
     return (data || []) as DeXuatGhiNhan[]
   }
@@ -692,11 +710,17 @@ export class SupabaseDataSource implements DataSource {
       throw new Error('De xuat nay chua co danh muc — hay chon danh muc co san hoac tao moi truoc khi duyet.')
     }
 
-    const [catalog, students] = await Promise.all([this.getPointCatalog(), this.getStudents()])
+    const [catalog, students, banCanSu] = await Promise.all([
+      this.getPointCatalog(),
+      this.getStudents(),
+      this.getBanCanSu(),
+    ])
     const catalogItem = catalog.find((item) => item.ma_danh_muc === maDanhMuc)
     if (!catalogItem) throw new Error('Danh muc duoc chon khong con ton tai.')
     const student = students.find((item) => item.ma_hs === proposal.ma_hs)
     if (!student) throw new Error('Hoc sinh trong de xuat khong con ton tai.')
+    const chucVuNguoiDeXuat =
+      banCanSu.find((item) => item.ma_hs === proposal.ma_hs_de_xuat)?.chuc_vu || 'Lớp trưởng'
 
     const ngay = proposal.ngay || formatIsoDate(new Date())
     const weekConfig = await this.ensureWeekConfigCoversDate(ngay)
@@ -712,8 +736,8 @@ export class SupabaseDataSource implements DataSource {
         ngay,
         tuan_so: tuanSo,
         dien_tai_thoi_diem: student.dien,
-        tiet: null,
-        mon_hoc: null,
+        tiet: proposal.tiet || null,
+        mon_hoc: proposal.mon_hoc || null,
         loai: RECORD_TYPE_BY_GROUP[catalogItem.nhom],
         ma_danh_muc: catalogItem.ma_danh_muc,
         noi_dung: noiDung,
@@ -725,7 +749,7 @@ export class SupabaseDataSource implements DataSource {
         ghi_so_dau_bai: null,
         diem_so_mon: null,
         diem_cong_tru: Number(catalogItem.diem),
-        nguoi_ghi: `Lớp trưởng ${proposal.nguoi_de_xuat} (đã duyệt)`,
+        nguoi_ghi: `${chucVuNguoiDeXuat} ${proposal.nguoi_de_xuat} (đã duyệt)`,
         nguon: 'de_xuat_lop_truong',
         ma_log_import: null,
         trang_thai_xu_ly_tap_the: '',

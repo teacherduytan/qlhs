@@ -5,11 +5,13 @@ import type {
   BanCanSu,
   BuoiDiemDanh,
   DanhMucDiem,
+  DeXuatGhiNhan,
   DienHocSinh,
   GhiNhan,
   HinhThucLienLacPhuHuynh,
   HocSinh,
   LienLacPhuHuynh,
+  NhomDiem,
   PhuHuynh,
 } from '../../data/types'
 import { getRecordPolarity } from '../records/recordInsights'
@@ -38,6 +40,14 @@ const ROLE_OPTIONS = [
 ]
 
 const LOP_TRUONG_ROLE = 'Lớp trưởng'
+const NEW_CATEGORY_VALUE = '__new__'
+const NHOM_OPTIONS: Array<{ label: string; value: NhomDiem }> = [
+  { label: 'Chuyên cần', value: 'CC' },
+  { label: 'Vệ sinh', value: 'VS' },
+  { label: 'Nề nếp', value: 'NN' },
+  { label: 'Kỷ luật', value: 'KL' },
+  { label: 'Tích cực', value: 'KT' },
+]
 
 type DetailState =
   | { status: 'loading' }
@@ -49,6 +59,7 @@ type DetailState =
       catalog: DanhMucDiem[]
       contacts: LienLacPhuHuynh[]
       parents: PhuHuynh[]
+      proposals: DeXuatGhiNhan[]
       records: GhiNhan[]
       student: HocSinh
     }
@@ -102,15 +113,16 @@ export function TeacherStudentDetailPage() {
       dataSource.getRecords(maHs),
       dataSource.getPointCatalog(),
       dataSource.getParentContactHistory({ maHs }),
+      dataSource.getDeXuatGhiNhan({ maHs }),
     ])
-      .then(([students, parents, banCanSu, records, catalog, contacts]) => {
+      .then(([students, parents, banCanSu, records, catalog, contacts, proposals]) => {
         if (!active) return
         const student = students.find((item) => item.ma_hs === maHs)
         if (!student) {
           setState({ status: 'not_found' })
           return
         }
-        setState({ status: 'success', banCanSu, catalog, contacts, parents, records, student })
+        setState({ status: 'success', banCanSu, catalog, contacts, parents, proposals, records, student })
         setForm(formFromStudent(student))
         setRoleForm(roleFormFromBanCanSu(maHs, banCanSu))
       })
@@ -505,6 +517,43 @@ export function TeacherStudentDetailPage() {
             </div>
           </section>
 
+          <section className="rounded-lg border border-teal-200 bg-teal-50 shadow-sm">
+            <div className="border-b border-teal-200 p-4">
+              <p className="text-xs font-semibold uppercase text-teal-700">Đề xuất từ lớp trưởng</p>
+              <h3 className="text-xl font-bold text-slate-950">Lịch sử đề xuất ghi nhận cho học sinh này</h3>
+              <p className="text-sm text-slate-600">
+                Các đề xuất mà lớp trưởng gửi cho bạn học này. Giáo viên có thể sửa hoặc xoá trực tiếp tại đây.
+              </p>
+            </div>
+            <div className="space-y-2 bg-white p-4">
+              {state.proposals.length === 0 ? (
+                <p className="rounded-md border border-teal-100 bg-teal-50 p-3 text-sm text-slate-600">
+                  Chưa có đề xuất nào cho học sinh này.
+                </p>
+              ) : (
+                state.proposals.map((item) => (
+                  <TeacherProposalItem
+                    key={item.id}
+                    catalog={state.catalog}
+                    item={item}
+                    onChanged={(next) =>
+                      setState((current) =>
+                        current.status === 'success'
+                          ? {
+                              ...current,
+                              proposals: next
+                                ? current.proposals.map((entry) => (entry.id === next.id ? next : entry))
+                                : current.proposals.filter((entry) => entry.id !== item.id),
+                            }
+                          : current,
+                      )
+                    }
+                  />
+                ))
+              )}
+            </div>
+          </section>
+
           <section className="rounded-lg border border-orange-200 bg-orange-50 shadow-sm">
             <div className="flex flex-col gap-2 border-b border-orange-200 p-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -617,6 +666,194 @@ export function TeacherStudentDetailPage() {
         </>
       ) : null}
     </section>
+  )
+}
+
+function TeacherProposalItem({
+  catalog,
+  item,
+  onChanged,
+}: {
+  catalog: DanhMucDiem[]
+  item: DeXuatGhiNhan
+  onChanged: (next: DeXuatGhiNhan | null) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [selectedCatalog, setSelectedCatalog] = useState(item.ma_danh_muc || NEW_CATEGORY_VALUE)
+  const [deXuatNhom, setDeXuatNhom] = useState<NhomDiem>(item.de_xuat_nhom || 'NN')
+  const [noiDung, setNoiDung] = useState(item.noi_dung || '')
+  const [ngay, setNgay] = useState(item.ngay)
+  const [tiet, setTiet] = useState(item.tiet || '')
+  const [monHoc, setMonHoc] = useState(item.mon_hoc || '')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const isNewCategory = selectedCatalog === NEW_CATEGORY_VALUE
+
+  const statusLabel =
+    item.trang_thai === 'da_duyet' ? 'Đã duyệt' : item.trang_thai === 'tu_choi' ? 'Bị từ chối' : 'Chờ duyệt'
+  const statusClass =
+    item.trang_thai === 'da_duyet'
+      ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+      : item.trang_thai === 'tu_choi'
+        ? 'border-rose-300 bg-rose-50 text-rose-800'
+        : 'border-amber-300 bg-amber-50 text-amber-800'
+
+  async function saveEdit() {
+    setBusy(true)
+    setError(null)
+    try {
+      const patch = {
+        ma_danh_muc: isNewCategory ? null : selectedCatalog,
+        noi_dung: noiDung.trim() || null,
+        de_xuat_nhom: isNewCategory ? deXuatNhom : null,
+        ngay,
+        tiet: tiet.trim() || null,
+        mon_hoc: monHoc.trim() || null,
+      }
+      await dataSource.updateDeXuatGhiNhanByTeacher(item.id, patch)
+      setEditing(false)
+      onChanged({ ...item, ...patch })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không sửa được đề xuất.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function remove() {
+    const ok = window.confirm('Xoá đề xuất này? Không thể hoàn tác.')
+    if (!ok) return
+
+    setBusy(true)
+    setError(null)
+    try {
+      await dataSource.deleteDeXuatGhiNhanByTeacher(item.id)
+      onChanged(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không xoá được đề xuất.')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="rounded-md border border-teal-100 bg-white p-2">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">
+            {item.nguoi_de_xuat} đề xuất
+          </p>
+          <p className="text-xs text-slate-500">
+            {formatDate(item.ngay)} · {item.ma_danh_muc || `Đề xuất mới (${item.de_xuat_nhom || '?'})`}
+            {item.tiet ? ` · Tiết ${item.tiet}` : ''}
+            {item.mon_hoc ? ` · ${item.mon_hoc}` : ''}
+          </p>
+          {item.noi_dung ? <p className="mt-1 text-sm text-slate-700">{item.noi_dung}</p> : null}
+        </div>
+        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClass}`}>
+          {statusLabel}
+        </span>
+      </div>
+
+      {item.trang_thai !== 'cho_duyet' ? (
+        <p className="mt-1 text-xs text-slate-500">
+          Đề xuất đã được xử lý — sửa/xoá tại đây chỉ đổi bản ghi đề xuất, không tự đổi ghi nhận đã tạo.
+        </p>
+      ) : null}
+
+      {editing ? (
+        <div className="mt-2 space-y-2 rounded-md border border-teal-100 bg-teal-50/50 p-2">
+          <select
+            value={selectedCatalog}
+            onChange={(event) => setSelectedCatalog(event.target.value)}
+            className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            {catalog.map((entry) => (
+              <option key={entry.ma_danh_muc} value={entry.ma_danh_muc}>
+                {entry.ma_danh_muc} · {entry.ten_muc}
+              </option>
+            ))}
+            <option value={NEW_CATEGORY_VALUE}>➕ Không có, đề xuất danh mục mới</option>
+          </select>
+          {isNewCategory ? (
+            <select
+              value={deXuatNhom}
+              onChange={(event) => setDeXuatNhom(event.target.value as NhomDiem)}
+              className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {NHOM_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          <input
+            type="date"
+            value={ngay}
+            onChange={(event) => setNgay(event.target.value)}
+            className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              value={tiet}
+              onChange={(event) => setTiet(event.target.value)}
+              placeholder="Tiết (VD: 2)"
+              className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+            <input
+              value={monHoc}
+              onChange={(event) => setMonHoc(event.target.value)}
+              placeholder="Môn (VD: Toán)"
+              className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          <textarea
+            value={noiDung}
+            onChange={(event) => setNoiDung(event.target.value)}
+            className="min-h-14 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+          {error ? <p className="text-xs font-semibold text-red-700">{error}</p> : null}
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="h-8 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void saveEdit()}
+              className="h-8 rounded-md bg-teal-700 px-3 text-xs font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {busy ? 'Đang lưu...' : 'Lưu'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-2 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="h-8 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Sửa
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void remove()}
+            className="h-8 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+          >
+            {busy ? 'Đang xoá...' : 'Xoá'}
+          </button>
+        </div>
+      )}
+
+      {error && !editing ? <p className="mt-1 text-xs font-semibold text-red-700">{error}</p> : null}
+    </div>
   )
 }
 
