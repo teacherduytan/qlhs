@@ -1,4 +1,5 @@
 import type {
+  ApproveDeXuatGhiNhanOverrides,
   BanCanSu,
   CauHinhTuan,
   DeleteImportResult,
@@ -93,6 +94,6 @@ export interface DataSource {
   getLopTruongData(token: string, pin: string): Promise<LopTruongData | null>
   submitDeXuatGhiNhan(input: GuiDeXuatGhiNhanInput): Promise<string>
   getDeXuatGhiNhan(): Promise<DeXuatGhiNhan[]>
-  approveDeXuatGhiNhan(id: string): Promise<void>
+  approveDeXuatGhiNhan(id: string, overrides?: ApproveDeXuatGhiNhanOverrides): Promise<void>
   rejectDeXuatGhiNhan(id: string, ghiChu?: string): Promise<void>
 }

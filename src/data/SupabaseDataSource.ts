@@ -1,6 +1,7 @@
 import type { DataSource } from './DataSource'
 import { getSupabaseClient } from '../lib/supabaseClient'
 import type {
+  ApproveDeXuatGhiNhanOverrides,
   AttendanceFormPayload,
   AttendanceFormUrlResult,
   AttendanceReport,
@@ -625,6 +626,7 @@ export class SupabaseDataSource implements DataSource {
       p_ma_hs: input.ma_hs,
       p_ma_danh_muc: input.ma_danh_muc,
       p_noi_dung: input.noi_dung,
+      p_de_xuat_nhom: input.de_xuat_nhom || null,
     })
     assertNoError(error, 'Khong gui duoc de xuat ghi nhan')
     return data as string
@@ -639,7 +641,7 @@ export class SupabaseDataSource implements DataSource {
     return (data || []) as DeXuatGhiNhan[]
   }
 
-  async approveDeXuatGhiNhan(id: string): Promise<void> {
+  async approveDeXuatGhiNhan(id: string, overrides: ApproveDeXuatGhiNhanOverrides = {}): Promise<void> {
     const { data: proposalRow, error: proposalError } = await getSupabaseClient()
       .from('de_xuat_ghi_nhan')
       .select('*')
@@ -651,9 +653,14 @@ export class SupabaseDataSource implements DataSource {
       throw new Error('De xuat nay da duoc xu ly.')
     }
 
+    const maDanhMuc = overrides.maDanhMuc || proposal.ma_danh_muc
+    if (!maDanhMuc) {
+      throw new Error('De xuat nay chua co danh muc — hay chon danh muc co san hoac tao moi truoc khi duyet.')
+    }
+
     const [catalog, students] = await Promise.all([this.getPointCatalog(), this.getStudents()])
-    const catalogItem = catalog.find((item) => item.ma_danh_muc === proposal.ma_danh_muc)
-    if (!catalogItem) throw new Error('Danh muc trong de xuat khong con ton tai.')
+    const catalogItem = catalog.find((item) => item.ma_danh_muc === maDanhMuc)
+    if (!catalogItem) throw new Error('Danh muc duoc chon khong con ton tai.')
     const student = students.find((item) => item.ma_hs === proposal.ma_hs)
     if (!student) throw new Error('Hoc sinh trong de xuat khong con ton tai.')
 
@@ -661,6 +668,8 @@ export class SupabaseDataSource implements DataSource {
     const weekConfig = await this.ensureWeekConfigCoversDate(ngay)
     const tuanSo = resolveWeekNumber(weekConfig, ngay)
     if (!tuanSo) throw new Error('Khong xac dinh duoc tuan_so cho ngay hien tai.')
+
+    const noiDung = (overrides.noiDung ?? proposal.noi_dung ?? '').trim() || catalogItem.ten_muc
 
     const created = await this.addRecords([
       {
@@ -673,7 +682,7 @@ export class SupabaseDataSource implements DataSource {
         mon_hoc: null,
         loai: RECORD_TYPE_BY_GROUP[catalogItem.nhom],
         ma_danh_muc: catalogItem.ma_danh_muc,
-        noi_dung: proposal.noi_dung || catalogItem.ten_muc,
+        noi_dung: noiDung,
         so_lan: 1,
         ly_do: null,
         da_xu_ly: false,
@@ -692,7 +701,12 @@ export class SupabaseDataSource implements DataSource {
 
     const { error: updateError } = await getSupabaseClient()
       .from('de_xuat_ghi_nhan')
-      .update({ trang_thai: 'da_duyet', ma_ghi_nhan: created[0]?.ma_ghi_nhan || null })
+      .update({
+        trang_thai: 'da_duyet',
+        ma_ghi_nhan: created[0]?.ma_ghi_nhan || null,
+        ma_danh_muc: catalogItem.ma_danh_muc,
+        noi_dung: noiDung,
+      })
       .eq('id', id)
     assertNoError(updateError, 'Khong cap nhat duoc trang thai de xuat')
   }

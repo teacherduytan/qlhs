@@ -235,17 +235,23 @@ export function RecordEntryPage() {
     }
   }
 
-  async function approveProposal(proposal: DeXuatGhiNhan) {
+  async function approveProposal(proposal: DeXuatGhiNhan, maDanhMuc: string, noiDung: string) {
     setProposalActionId(proposal.id)
     setProposalError(null)
     try {
-      await dataSource.approveDeXuatGhiNhan(proposal.id)
+      await dataSource.approveDeXuatGhiNhan(proposal.id, { maDanhMuc, noiDung })
       setProposals((current) => current.filter((item) => item.id !== proposal.id))
     } catch (error) {
       setProposalError(error instanceof Error ? error.message : 'Không duyệt được đề xuất.')
     } finally {
       setProposalActionId(null)
     }
+  }
+
+  function handleCatalogCreated(item: DanhMucDiem) {
+    setState((current) =>
+      current.status === 'success' ? { ...current, catalog: [...current.catalog, item] } : current,
+    )
   }
 
   async function rejectProposal(proposal: DeXuatGhiNhan) {
@@ -296,57 +302,20 @@ export function RecordEntryPage() {
             </p>
           ) : null}
 
-          <div className="mt-3 space-y-2">
-            {proposals.map((proposal) => {
-              const target = studentByCode.get(proposal.ma_hs)
-              const proposer = studentByCode.get(proposal.ma_hs_de_xuat)
-              const catalogItem = catalogByCode.get(proposal.ma_danh_muc)
-              const busy = proposalActionId === proposal.id
-              return (
-                <div key={proposal.id} className="rounded-md border border-teal-100 bg-white p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="font-semibold text-slate-900">
-                        {target ? `${target.tt}. ${target.ho} ${target.ten}` : proposal.ma_hs}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        <span
-                          className={`rounded-full border px-2 py-0.5 font-semibold ${getBadgeClassForCatalog(catalogItem)}`}
-                        >
-                          {proposal.ma_danh_muc}
-                        </span>{' '}
-                        {catalogItem?.ten_muc || 'Danh mục không còn tồn tại'}
-                      </p>
-                      {proposal.noi_dung ? (
-                        <p className="mt-1 text-sm text-slate-700">{proposal.noi_dung}</p>
-                      ) : null}
-                      <p className="mt-1 text-xs text-slate-500">
-                        Đề xuất bởi {proposer ? `${proposer.ho} ${proposer.ten}` : proposal.nguoi_de_xuat}
-                        {proposal.thoi_gian ? ` · ${formatProposalTime(proposal.thoi_gian)}` : ''}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 gap-2">
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void approveProposal(proposal)}
-                        className="h-9 rounded-md bg-teal-700 px-3 text-xs font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                      >
-                        {busy ? 'Đang xử lý...' : 'Duyệt'}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void rejectProposal(proposal)}
-                        className="h-9 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
-                      >
-                        Từ chối
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+          <div className="mt-3 space-y-3">
+            {proposals.map((proposal) => (
+              <ProposalReviewCard
+                key={proposal.id}
+                busy={proposalActionId === proposal.id}
+                catalog={state.catalog}
+                onApprove={approveProposal}
+                onCatalogCreated={handleCatalogCreated}
+                onReject={rejectProposal}
+                proposal={proposal}
+                proposer={studentByCode.get(proposal.ma_hs_de_xuat)}
+                target={studentByCode.get(proposal.ma_hs)}
+              />
+            ))}
           </div>
         </section>
       ) : null}
@@ -675,6 +644,226 @@ export function RecordEntryPage() {
         </section>
       ) : null}
     </form>
+  )
+}
+
+function ProposalReviewCard({
+  busy,
+  catalog,
+  onApprove,
+  onCatalogCreated,
+  onReject,
+  proposal,
+  proposer,
+  target,
+}: {
+  busy: boolean
+  catalog: DanhMucDiem[]
+  onApprove: (proposal: DeXuatGhiNhan, maDanhMuc: string, noiDung: string) => void
+  onCatalogCreated: (item: DanhMucDiem) => void
+  onReject: (proposal: DeXuatGhiNhan) => void
+  proposal: DeXuatGhiNhan
+  proposer?: HocSinh
+  target?: HocSinh
+}) {
+  const personalCatalog = useMemo(() => getPersonalCatalog(catalog), [catalog])
+  const [selectedCatalog, setSelectedCatalog] = useState(proposal.ma_danh_muc || '')
+  const [noiDung, setNoiDung] = useState(proposal.noi_dung || '')
+  const [showCreateForm, setShowCreateForm] = useState(!proposal.ma_danh_muc)
+  const [createForm, setCreateForm] = useState({
+    ma_danh_muc: '',
+    nhom: (proposal.de_xuat_nhom || 'NN') as DanhMucDiem['nhom'],
+    ten_muc: proposal.noi_dung || '',
+    diem: '',
+    nghiem_trong: false,
+  })
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+
+  async function createCatalogItem() {
+    const code = createForm.ma_danh_muc.trim().toUpperCase()
+    const ten = createForm.ten_muc.trim()
+    const point = Number(createForm.diem)
+
+    if (!code || !ten) {
+      setCreateError('Cần mã danh mục và tên mục.')
+      return
+    }
+    if (!Number.isFinite(point)) {
+      setCreateError('Điểm phải là số hợp lệ.')
+      return
+    }
+    if (catalog.some((item) => item.ma_danh_muc === code)) {
+      setCreateError(`Mã ${code} đã tồn tại, hãy đổi mã khác.`)
+      return
+    }
+
+    setCreating(true)
+    setCreateError(null)
+    try {
+      const created = await dataSource.addPointCatalogItem({
+        ma_danh_muc: code,
+        nhom: createForm.nhom,
+        ten_muc: ten,
+        diem: point,
+        nghiem_trong: createForm.nghiem_trong,
+        pham_vi: 'ca_nhan',
+        mo_ta: null,
+        de_xuat_xu_ly: null,
+        ma_xu_ly_de_xuat: null,
+      })
+      onCatalogCreated(created)
+      setSelectedCatalog(created.ma_danh_muc)
+      setShowCreateForm(false)
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : 'Không tạo được danh mục.')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  return (
+    <div className="rounded-md border border-teal-100 bg-white p-3">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="font-semibold text-slate-900">
+            {target ? `${target.tt}. ${target.ho} ${target.ten}` : proposal.ma_hs}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Đề xuất bởi {proposer ? `${proposer.ho} ${proposer.ten}` : proposal.nguoi_de_xuat}
+            {proposal.thoi_gian ? ` · ${formatProposalTime(proposal.thoi_gian)}` : ''}
+          </p>
+        </div>
+        {!proposal.ma_danh_muc ? (
+          <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800">
+            Đề xuất danh mục mới · nhóm {proposal.de_xuat_nhom ? labelGroup(proposal.de_xuat_nhom) : '?'}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+          Danh mục áp dụng
+          <select
+            value={selectedCatalog}
+            onChange={(event) => setSelectedCatalog(event.target.value)}
+            className={selectClass}
+          >
+            <option value="">-- Chọn danh mục có sẵn --</option>
+            {personalCatalog.map((item) => (
+              <option key={item.ma_danh_muc} value={item.ma_danh_muc}>
+                {item.ma_danh_muc} · {item.ten_muc} ({item.diem > 0 ? `+${item.diem}` : item.diem})
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="flex items-end">
+          <button
+            type="button"
+            onClick={() => setShowCreateForm((value) => !value)}
+            className="h-10 rounded-md border border-teal-300 bg-teal-50 px-3 text-xs font-semibold text-teal-700 hover:bg-teal-100"
+          >
+            {showCreateForm ? 'Ẩn form tạo danh mục mới' : 'Tạo danh mục mới từ đề xuất này'}
+          </button>
+        </div>
+      </div>
+
+      {showCreateForm ? (
+        <div className="mt-2 grid gap-2 rounded-md border border-teal-100 bg-teal-50/50 p-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Mã mới
+            <input
+              value={createForm.ma_danh_muc}
+              onChange={(event) => setCreateForm((current) => ({ ...current, ma_danh_muc: event.target.value }))}
+              placeholder="VD: NN12"
+              className={inputClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Nhóm
+            <select
+              value={createForm.nhom}
+              onChange={(event) =>
+                setCreateForm((current) => ({ ...current, nhom: event.target.value as DanhMucDiem['nhom'] }))
+              }
+              className={selectClass}
+            >
+              <option value="CC">Chuyên cần</option>
+              <option value="VS">Vệ sinh</option>
+              <option value="NN">Nề nếp</option>
+              <option value="KL">Kỷ luật</option>
+              <option value="KT">Tích cực</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600 sm:col-span-2 lg:col-span-1">
+            Tên mục
+            <input
+              value={createForm.ten_muc}
+              onChange={(event) => setCreateForm((current) => ({ ...current, ten_muc: event.target.value }))}
+              className={inputClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Điểm
+            <input
+              type="number"
+              value={createForm.diem}
+              onChange={(event) => setCreateForm((current) => ({ ...current, diem: event.target.value }))}
+              placeholder="VD: -1"
+              className={inputClass}
+            />
+          </label>
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+            <input
+              type="checkbox"
+              checked={createForm.nghiem_trong}
+              onChange={(event) => setCreateForm((current) => ({ ...current, nghiem_trong: event.target.checked }))}
+              className="h-4 w-4 rounded border-slate-300 text-teal-600"
+            />
+            Nghiêm trọng
+          </label>
+          <div className="sm:col-span-2 lg:col-span-4">
+            {createError ? <p className="mb-2 text-xs font-semibold text-red-700">{createError}</p> : null}
+            <button
+              type="button"
+              disabled={creating}
+              onClick={() => void createCatalogItem()}
+              className="h-9 rounded-md bg-teal-700 px-3 text-xs font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {creating ? 'Đang tạo...' : 'Tạo danh mục và dùng ngay'}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <label className="mt-3 flex flex-col gap-1 text-xs font-semibold text-slate-600">
+        Nội dung (giáo viên có thể sửa lại cho chuẩn trước khi duyệt)
+        <textarea
+          value={noiDung}
+          onChange={(event) => setNoiDung(event.target.value)}
+          className="min-h-16 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+      </label>
+
+      <div className="mt-3 flex justify-end gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void onReject(proposal)}
+          className="h-9 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+        >
+          Từ chối
+        </button>
+        <button
+          type="button"
+          disabled={busy || !selectedCatalog}
+          onClick={() => onApprove(proposal, selectedCatalog, noiDung)}
+          className="h-9 rounded-md bg-teal-700 px-3 text-xs font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          {busy ? 'Đang xử lý...' : 'Duyệt'}
+        </button>
+      </div>
+    </div>
   )
 }
 

@@ -68,7 +68,7 @@ export type TrangThaiDeXuatGhiNhan = 'cho_duyet' | 'da_duyet' | 'tu_choi'
 export interface DeXuatGhiNhan {
   id: string
   ma_hs: string
-  ma_danh_muc: string
+  ma_danh_muc: string | null
   noi_dung: string | null
   nguoi_de_xuat: string
   ma_hs_de_xuat: string
@@ -76,14 +76,21 @@ export interface DeXuatGhiNhan {
   ghi_chu_giao_vien: string | null
   ma_ghi_nhan: string | null
   thoi_gian: string | null
+  de_xuat_nhom: NhomDiem | null
 }
 
 export interface GuiDeXuatGhiNhanInput {
   token: string
   pin: string
   ma_hs: string
-  ma_danh_muc: string
+  ma_danh_muc: string | null
   noi_dung: string
+  de_xuat_nhom?: NhomDiem | null
+}
+
+export interface ApproveDeXuatGhiNhanOverrides {
+  maDanhMuc?: string
+  noiDung?: string
 }
 
 export interface LopTruongRosterStudent {

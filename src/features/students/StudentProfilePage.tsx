@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh, LopTruongData } from '../../data/types'
+import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh, LopTruongData, NhomDiem } from '../../data/types'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
 import { getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
@@ -36,6 +36,14 @@ const PROFILE_SECTIONS: Array<{ id: ProfileSectionKey; label: string; tab?: Prof
 ]
 
 const LOP_TRUONG_ROLE = 'Lớp trưởng'
+const NEW_CATEGORY_VALUE = '__new__'
+const NHOM_OPTIONS: Array<{ label: string; value: NhomDiem }> = [
+  { label: 'Chuyên cần', value: 'CC' },
+  { label: 'Vệ sinh', value: 'VS' },
+  { label: 'Nề nếp', value: 'NN' },
+  { label: 'Kỷ luật', value: 'KL' },
+  { label: 'Tích cực', value: 'KT' },
+]
 
 const INITIAL_PROFILE_COLLAPSED: Record<ProfileSectionKey, boolean> = {
   featured: false,
@@ -721,10 +729,13 @@ function LopTruongPanel({ token }: { token: string }) {
 
   const [selectedMaHs, setSelectedMaHs] = useState('')
   const [selectedCatalog, setSelectedCatalog] = useState('')
+  const [deXuatNhom, setDeXuatNhom] = useState<NhomDiem>('NN')
   const [noiDung, setNoiDung] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
+
+  const isNewCategory = selectedCatalog === NEW_CATEGORY_VALUE
 
   async function submitPin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -749,6 +760,10 @@ function LopTruongPanel({ token }: { token: string }) {
   async function submitProposal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!verifiedPin || !selectedMaHs || !selectedCatalog) return
+    if (isNewCategory && !noiDung.trim()) {
+      setSubmitError('Cần mô tả nội dung để giáo viên biết đề xuất danh mục mới là gì.')
+      return
+    }
 
     setSubmitting(true)
     setSubmitError(null)
@@ -759,8 +774,9 @@ function LopTruongPanel({ token }: { token: string }) {
         token,
         pin: verifiedPin,
         ma_hs: selectedMaHs,
-        ma_danh_muc: selectedCatalog,
+        ma_danh_muc: isNewCategory ? null : selectedCatalog,
         noi_dung: noiDung,
+        de_xuat_nhom: isNewCategory ? deXuatNhom : null,
       })
       setSubmitMessage('Đã gửi đề xuất, chờ giáo viên duyệt.')
       setSelectedMaHs('')
@@ -839,12 +855,31 @@ function LopTruongPanel({ token }: { token: string }) {
                 {item.ma_danh_muc} · {item.ten_muc} ({item.diem > 0 ? `+${item.diem}` : item.diem})
               </option>
             ))}
+            <option value={NEW_CATEGORY_VALUE}>➕ Không có, đề xuất danh mục mới</option>
           </select>
+
+          {isNewCategory ? (
+            <select
+              value={deXuatNhom}
+              onChange={(event) => setDeXuatNhom(event.target.value as NhomDiem)}
+              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {NHOM_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          ) : null}
 
           <textarea
             value={noiDung}
             onChange={(event) => setNoiDung(event.target.value)}
-            placeholder="Nội dung cụ thể (ví dụ: không mang tập Toán tiết 3)"
+            placeholder={
+              isNewCategory
+                ? 'Mô tả nội dung đề xuất (bắt buộc, vd: nói chuyện riêng nhiều lần trong giờ Sinh)'
+                : 'Nội dung cụ thể (ví dụ: không mang tập Toán tiết 3)'
+            }
             className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
 
