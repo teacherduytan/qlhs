@@ -10,6 +10,7 @@ import type {
   GuiDeXuatGhiNhanInput,
   HocSinh,
   LopTruongData,
+  SuaDeXuatGhiNhanInput,
   AttendanceFormPayload,
   AttendanceFormUrlResult,
   AttendanceReport,
@@ -96,4 +97,7 @@ export interface DataSource {
   getDeXuatGhiNhan(): Promise<DeXuatGhiNhan[]>
   approveDeXuatGhiNhan(id: string, overrides?: ApproveDeXuatGhiNhanOverrides): Promise<void>
   rejectDeXuatGhiNhan(id: string, ghiChu?: string): Promise<void>
+  getLichSuDeXuatLopTruong(token: string, pin: string): Promise<DeXuatGhiNhan[]>
+  updateDeXuatGhiNhanByLopTruong(input: SuaDeXuatGhiNhanInput): Promise<void>
+  deleteDeXuatGhiNhanByLopTruong(token: string, pin: string, id: string): Promise<void>
 }

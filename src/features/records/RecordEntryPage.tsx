@@ -730,8 +730,9 @@ function ProposalReviewCard({
             {target ? `${target.tt}. ${target.ho} ${target.ten}` : proposal.ma_hs}
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            Đề xuất bởi {proposer ? `${proposer.ho} ${proposer.ten}` : proposal.nguoi_de_xuat}
-            {proposal.thoi_gian ? ` · ${formatProposalTime(proposal.thoi_gian)}` : ''}
+            Ngày xảy ra: {formatShortDate(proposal.ngay)} · Đề xuất bởi{' '}
+            {proposer ? `${proposer.ho} ${proposer.ten}` : proposal.nguoi_de_xuat}
+            {proposal.thoi_gian ? ` · gửi lúc ${formatProposalTime(proposal.thoi_gian)}` : ''}
           </p>
         </div>
         {!proposal.ma_danh_muc ? (

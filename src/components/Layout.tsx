@@ -1,5 +1,6 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { dataSource } from '../data/client'
 import {
   getTeacherAuthSession,
   loginTeacherWithSupabase,
@@ -26,6 +27,26 @@ export function Layout() {
     message?: string
     status: 'checking' | 'authenticated' | 'unauthenticated'
   }>({ email: null, status: 'checking' })
+  const [pendingProposalCount, setPendingProposalCount] = useState(0)
+
+  useEffect(() => {
+    if (authState.status !== 'authenticated') return
+    let active = true
+
+    dataSource
+      .getDeXuatGhiNhan()
+      .then((rows) => {
+        if (!active) return
+        setPendingProposalCount(rows.filter((item) => item.trang_thai === 'cho_duyet').length)
+      })
+      .catch(() => {
+        // im lang neu loi, khong chan giao dien chinh vi day chi la badge thong bao
+      })
+
+    return () => {
+      active = false
+    }
+  }, [authState.status, pathname])
 
   useEffect(() => {
     let active = true
@@ -113,6 +134,22 @@ export function Layout() {
                 )
               })}
             </nav>
+            <Link
+              to="/ghi-nhan"
+              className="relative inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100 md:w-auto"
+              aria-label={
+                pendingProposalCount > 0
+                  ? `${pendingProposalCount} đề xuất ghi nhận chờ duyệt`
+                  : 'Không có đề xuất chờ duyệt'
+              }
+            >
+              🔔 Thông báo
+              {pendingProposalCount > 0 ? (
+                <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white">
+                  {pendingProposalCount}
+                </span>
+              ) : null}
+            </Link>
             <button
               type="button"
               onClick={downloadPrintableForm}

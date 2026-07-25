@@ -26,6 +26,7 @@ import type {
   NhatKyImport,
   PhuHuynh,
   PublicStudentProfile,
+  SuaDeXuatGhiNhanInput,
   SuaLienLacPhuHuynhInput,
   ThemLienLacPhuHuynhInput,
   TrangThaiImport,
@@ -627,9 +628,42 @@ export class SupabaseDataSource implements DataSource {
       p_ma_danh_muc: input.ma_danh_muc,
       p_noi_dung: input.noi_dung,
       p_de_xuat_nhom: input.de_xuat_nhom || null,
+      p_ngay: input.ngay,
     })
     assertNoError(error, 'Khong gui duoc de xuat ghi nhan')
     return data as string
+  }
+
+  async getLichSuDeXuatLopTruong(token: string, pin: string): Promise<DeXuatGhiNhan[]> {
+    const { data, error } = await getSupabaseClient().rpc('lay_lich_su_de_xuat_lop_truong', {
+      p_token: token,
+      p_pin: pin,
+    })
+    assertNoError(error, 'Khong lay duoc lich su de xuat')
+    return (data || []) as DeXuatGhiNhan[]
+  }
+
+  async updateDeXuatGhiNhanByLopTruong(input: SuaDeXuatGhiNhanInput): Promise<void> {
+    const { error } = await getSupabaseClient().rpc('sua_de_xuat_ghi_nhan', {
+      p_token: input.token,
+      p_pin: input.pin,
+      p_id: input.id,
+      p_ma_hs: input.ma_hs,
+      p_ma_danh_muc: input.ma_danh_muc,
+      p_noi_dung: input.noi_dung,
+      p_de_xuat_nhom: input.de_xuat_nhom || null,
+      p_ngay: input.ngay,
+    })
+    assertNoError(error, 'Khong sua duoc de xuat')
+  }
+
+  async deleteDeXuatGhiNhanByLopTruong(token: string, pin: string, id: string): Promise<void> {
+    const { error } = await getSupabaseClient().rpc('xoa_de_xuat_ghi_nhan', {
+      p_token: token,
+      p_pin: pin,
+      p_id: id,
+    })
+    assertNoError(error, 'Khong xoa duoc de xuat')
   }
 
   async getDeXuatGhiNhan(): Promise<DeXuatGhiNhan[]> {
@@ -664,10 +698,10 @@ export class SupabaseDataSource implements DataSource {
     const student = students.find((item) => item.ma_hs === proposal.ma_hs)
     if (!student) throw new Error('Hoc sinh trong de xuat khong con ton tai.')
 
-    const ngay = formatIsoDate(new Date())
+    const ngay = proposal.ngay || formatIsoDate(new Date())
     const weekConfig = await this.ensureWeekConfigCoversDate(ngay)
     const tuanSo = resolveWeekNumber(weekConfig, ngay)
-    if (!tuanSo) throw new Error('Khong xac dinh duoc tuan_so cho ngay hien tai.')
+    if (!tuanSo) throw new Error(`Khong xac dinh duoc tuan_so cho ngay ${ngay}.`)
 
     const noiDung = (overrides.noiDung ?? proposal.noi_dung ?? '').trim() || catalogItem.ten_muc
 

@@ -1,7 +1,16 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { BanCanSu, CauHinhTuan, DanhMucDiem, GhiNhan, HocSinh, LopTruongData, NhomDiem } from '../../data/types'
+import type {
+  BanCanSu,
+  CauHinhTuan,
+  DanhMucDiem,
+  DeXuatGhiNhan,
+  GhiNhan,
+  HocSinh,
+  LopTruongData,
+  NhomDiem,
+} from '../../data/types'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
 import { getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
@@ -731,11 +740,27 @@ function LopTruongPanel({ token }: { token: string }) {
   const [selectedCatalog, setSelectedCatalog] = useState('')
   const [deXuatNhom, setDeXuatNhom] = useState<NhomDiem>('NN')
   const [noiDung, setNoiDung] = useState('')
+  const [ngay, setNgay] = useState(todayIso())
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
 
+  const [history, setHistory] = useState<DeXuatGhiNhan[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
   const isNewCategory = selectedCatalog === NEW_CATEGORY_VALUE
+
+  async function loadHistory(pinValue: string) {
+    setHistoryLoading(true)
+    try {
+      const rows = await dataSource.getLichSuDeXuatLopTruong(token, pinValue)
+      setHistory(rows)
+    } catch {
+      // bo qua loi tai lich su, khong chan luong nhap moi
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
 
   async function submitPin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -750,6 +775,7 @@ function LopTruongPanel({ token }: { token: string }) {
       }
       setRoster(data)
       setVerifiedPin(pin.trim())
+      void loadHistory(pin.trim())
     } catch (error) {
       setPinError(error instanceof Error ? error.message : 'Không xác thực được PIN.')
     } finally {
@@ -777,11 +803,14 @@ function LopTruongPanel({ token }: { token: string }) {
         ma_danh_muc: isNewCategory ? null : selectedCatalog,
         noi_dung: noiDung,
         de_xuat_nhom: isNewCategory ? deXuatNhom : null,
+        ngay,
       })
       setSubmitMessage('Đã gửi đề xuất, chờ giáo viên duyệt.')
       setSelectedMaHs('')
       setSelectedCatalog('')
       setNoiDung('')
+      setNgay(todayIso())
+      void loadHistory(verifiedPin)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Không gửi được đề xuất.')
     } finally {
@@ -858,6 +887,17 @@ function LopTruongPanel({ token }: { token: string }) {
             <option value={NEW_CATEGORY_VALUE}>➕ Không có, đề xuất danh mục mới</option>
           </select>
 
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Ngày xảy ra (có thể chọn Thứ Bảy/Chủ Nhật nếu gửi bù)
+            <input
+              type="date"
+              value={ngay}
+              max={todayIso()}
+              onChange={(event) => setNgay(event.target.value)}
+              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+
           {isNewCategory ? (
             <select
               value={deXuatNhom}
@@ -897,6 +937,224 @@ function LopTruongPanel({ token }: { token: string }) {
       )}
 
       {pinError ? <p className="mt-2 text-sm font-semibold text-red-700">{pinError}</p> : null}
+
+      {roster && verifiedPin ? (
+        <div className="mt-4 border-t border-teal-200 pt-3">
+          <p className="text-xs font-semibold uppercase text-teal-700">
+            Lịch sử đề xuất của tôi {historyLoading ? '· đang tải...' : `· ${history.length}`}
+          </p>
+          <div className="mt-2 space-y-2">
+            {history.length === 0 && !historyLoading ? (
+              <p className="rounded-md border border-teal-100 bg-white p-2 text-sm text-slate-600">
+                Chưa gửi đề xuất nào.
+              </p>
+            ) : (
+              history.map((item) => (
+                <ProposalHistoryItem
+                  key={item.id}
+                  item={item}
+                  roster={roster}
+                  token={token}
+                  verifiedPin={verifiedPin}
+                  onChanged={() => void loadHistory(verifiedPin)}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function ProposalHistoryItem({
+  item,
+  onChanged,
+  roster,
+  token,
+  verifiedPin,
+}: {
+  item: DeXuatGhiNhan
+  onChanged: () => void
+  roster: LopTruongData
+  token: string
+  verifiedPin: string
+}) {
+  const [editing, setEditing] = useState(false)
+  const [selectedMaHs, setSelectedMaHs] = useState(item.ma_hs)
+  const [selectedCatalog, setSelectedCatalog] = useState(item.ma_danh_muc || NEW_CATEGORY_VALUE)
+  const [deXuatNhom, setDeXuatNhom] = useState<NhomDiem>(item.de_xuat_nhom || 'NN')
+  const [noiDung, setNoiDung] = useState(item.noi_dung || '')
+  const [ngay, setNgay] = useState(item.ngay)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const student = roster.students.find((entry) => entry.ma_hs === item.ma_hs)
+  const isNewCategory = selectedCatalog === NEW_CATEGORY_VALUE
+  const canEdit = item.trang_thai === 'cho_duyet'
+
+  const statusLabel =
+    item.trang_thai === 'da_duyet' ? 'Đã duyệt' : item.trang_thai === 'tu_choi' ? 'Bị từ chối' : 'Chờ duyệt'
+  const statusClass =
+    item.trang_thai === 'da_duyet'
+      ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+      : item.trang_thai === 'tu_choi'
+        ? 'border-rose-300 bg-rose-50 text-rose-800'
+        : 'border-amber-300 bg-amber-50 text-amber-800'
+
+  async function saveEdit() {
+    if (!selectedMaHs || !selectedCatalog) return
+    if (isNewCategory && !noiDung.trim()) {
+      setError('Cần mô tả nội dung cho đề xuất danh mục mới.')
+      return
+    }
+
+    setBusy(true)
+    setError(null)
+    try {
+      await dataSource.updateDeXuatGhiNhanByLopTruong({
+        token,
+        pin: verifiedPin,
+        id: item.id,
+        ma_hs: selectedMaHs,
+        ma_danh_muc: isNewCategory ? null : selectedCatalog,
+        noi_dung: noiDung,
+        de_xuat_nhom: isNewCategory ? deXuatNhom : null,
+        ngay,
+      })
+      setEditing(false)
+      onChanged()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không sửa được đề xuất.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function remove() {
+    const ok = window.confirm('Xoá đề xuất này? Không thể hoàn tác.')
+    if (!ok) return
+
+    setBusy(true)
+    setError(null)
+    try {
+      await dataSource.deleteDeXuatGhiNhanByLopTruong(token, verifiedPin, item.id)
+      onChanged()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không xoá được đề xuất.')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="rounded-md border border-teal-100 bg-white p-2">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">
+            {student ? `${student.tt}. ${student.ho} ${student.ten}` : item.ma_hs}
+          </p>
+          <p className="text-xs text-slate-500">
+            {formatDate(item.ngay)} · {item.ma_danh_muc || `Đề xuất mới (${item.de_xuat_nhom || '?'})`}
+          </p>
+          {item.noi_dung ? <p className="mt-1 text-sm text-slate-700">{item.noi_dung}</p> : null}
+        </div>
+        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClass}`}>
+          {statusLabel}
+        </span>
+      </div>
+
+      {canEdit ? (
+        editing ? (
+          <div className="mt-2 space-y-2 rounded-md border border-teal-100 bg-teal-50/50 p-2">
+            <select
+              value={selectedMaHs}
+              onChange={(event) => setSelectedMaHs(event.target.value)}
+              className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {roster.students.map((entry) => (
+                <option key={entry.ma_hs} value={entry.ma_hs}>
+                  {entry.tt}. {entry.ho} {entry.ten}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedCatalog}
+              onChange={(event) => setSelectedCatalog(event.target.value)}
+              className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {roster.catalog.map((entry) => (
+                <option key={entry.ma_danh_muc} value={entry.ma_danh_muc}>
+                  {entry.ma_danh_muc} · {entry.ten_muc}
+                </option>
+              ))}
+              <option value={NEW_CATEGORY_VALUE}>➕ Không có, đề xuất danh mục mới</option>
+            </select>
+            {isNewCategory ? (
+              <select
+                value={deXuatNhom}
+                onChange={(event) => setDeXuatNhom(event.target.value as NhomDiem)}
+                className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                {NHOM_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <input
+              type="date"
+              value={ngay}
+              max={todayIso()}
+              onChange={(event) => setNgay(event.target.value)}
+              className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+            <textarea
+              value={noiDung}
+              onChange={(event) => setNoiDung(event.target.value)}
+              className="min-h-14 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+            {error ? <p className="text-xs font-semibold text-red-700">{error}</p> : null}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="h-8 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void saveEdit()}
+                className="h-8 rounded-md bg-teal-700 px-3 text-xs font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {busy ? 'Đang lưu...' : 'Lưu'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-2 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="h-8 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              Sửa
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void remove()}
+              className="h-8 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+            >
+              {busy ? 'Đang xoá...' : 'Xoá'}
+            </button>
+          </div>
+        )
+      ) : null}
+
+      {error && !editing ? <p className="mt-1 text-xs font-semibold text-red-700">{error}</p> : null}
     </div>
   )
 }
@@ -921,6 +1179,14 @@ function formatDate(value: string | null): string {
   }
 
   return new Intl.DateTimeFormat('vi-VN').format(date)
+}
+
+function todayIso(): string {
+  const date = new Date()
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function groupRecordsByWeek(records: GhiNhan[]): Array<{ tuanSo: number; records: GhiNhan[] }> {

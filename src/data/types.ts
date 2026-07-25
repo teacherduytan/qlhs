@@ -77,6 +77,7 @@ export interface DeXuatGhiNhan {
   ma_ghi_nhan: string | null
   thoi_gian: string | null
   de_xuat_nhom: NhomDiem | null
+  ngay: string
 }
 
 export interface GuiDeXuatGhiNhanInput {
@@ -86,6 +87,18 @@ export interface GuiDeXuatGhiNhanInput {
   ma_danh_muc: string | null
   noi_dung: string
   de_xuat_nhom?: NhomDiem | null
+  ngay: string
+}
+
+export interface SuaDeXuatGhiNhanInput {
+  token: string
+  pin: string
+  id: string
+  ma_hs: string
+  ma_danh_muc: string | null
+  noi_dung: string
+  de_xuat_nhom?: NhomDiem | null
+  ngay: string
 }
 
 export interface ApproveDeXuatGhiNhanOverrides {
