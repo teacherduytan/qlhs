@@ -151,6 +151,7 @@ export function AttendanceManagementPage() {
 
   const weekDays = useMemo(() => (activeWeek ? daysInWeek(activeWeek) : []), [activeWeek])
   const entryMap = useMemo(() => buildEntryMap(weekEntries), [weekEntries])
+  const pendingContactIds = useMemo(() => new Set(pendingContacts.map((item) => item.id)), [pendingContacts])
   const summary = useMemo(
     () => buildSummary(summaryEntries, students.length, scope, selectedMonth, weeks, summaryRange),
     [scope, selectedMonth, students.length, summaryEntries, summaryRange, weeks],
@@ -416,6 +417,7 @@ export function AttendanceManagementPage() {
             onSaveSession={(student, session, status, contact) =>
               saveSingleSession(student, selectedDate, session, status, contact)
             }
+            pendingContactIds={pendingContactIds}
             students={students}
           />
         ) : (
@@ -455,8 +457,16 @@ export function AttendanceManagementPage() {
                           onClick={() => setEditingCell({ date: day, student })}
                           className="min-h-16 w-full rounded-md border border-slate-200 bg-slate-50 p-2 text-left hover:border-emerald-300 hover:bg-emerald-50"
                         >
-                          <SessionBadge entry={entryMap.get(entryKey(student.ma_hs, day, 'sang'))} session="sang" />
-                          <SessionBadge entry={entryMap.get(entryKey(student.ma_hs, day, 'chieu'))} session="chieu" />
+                          <SessionBadge
+                            entry={entryMap.get(entryKey(student.ma_hs, day, 'sang'))}
+                            pendingContactIds={pendingContactIds}
+                            session="sang"
+                          />
+                          <SessionBadge
+                            entry={entryMap.get(entryKey(student.ma_hs, day, 'chieu'))}
+                            pendingContactIds={pendingContactIds}
+                            session="chieu"
+                          />
                         </button>
                       </td>
                     ))}
@@ -551,6 +561,7 @@ function CompactDayAttendance({
   entries,
   onEditCell,
   onSaveSession,
+  pendingContactIds,
   students,
 }: {
   date: string
@@ -563,6 +574,7 @@ function CompactDayAttendance({
     status: LuaChonDiemDanh,
     contact: ContactDraft,
   ) => void
+  pendingContactIds: Set<string>
   students: HocSinh[]
 }) {
   const studentByCode = useMemo(() => new Map(students.map((student) => [student.ma_hs, student])), [students])
@@ -586,6 +598,7 @@ function CompactDayAttendance({
           entries={entriesBySession[session]}
           onEditCell={onEditCell}
           onSaveSession={onSaveSession}
+          pendingContactIds={pendingContactIds}
           session={session}
           studentByCode={studentByCode}
           students={students}
@@ -600,6 +613,7 @@ function SessionBlock({
   entries,
   onEditCell,
   onSaveSession,
+  pendingContactIds,
   session,
   studentByCode,
   students,
@@ -613,6 +627,7 @@ function SessionBlock({
     status: LuaChonDiemDanh,
     contact: ContactDraft,
   ) => void
+  pendingContactIds: Set<string>
   session: BuoiDiemDanh
   studentByCode: Map<string, HocSinh>
   students: HocSinh[]
@@ -662,6 +677,11 @@ function SessionBlock({
                   <span className={`inline-block rounded border px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[status]}`}>
                     {STATUS_LABELS[status]}
                   </span>
+                  {pendingContactIds.has(entry.id) ? (
+                    <span className="ml-1 inline-block rounded border border-orange-300 bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-800">
+                      Chưa gọi PH
+                    </span>
+                  ) : null}
                 </div>
                 {student ? (
                   <button
@@ -756,7 +776,15 @@ function SummaryCard({ color, label, value }: { color: 'amber' | 'rose' | 'sky';
   )
 }
 
-function SessionBadge({ entry, session }: { entry?: DiemDanh; session: BuoiDiemDanh }) {
+function SessionBadge({
+  entry,
+  pendingContactIds,
+  session,
+}: {
+  entry?: DiemDanh
+  pendingContactIds: Set<string>
+  session: BuoiDiemDanh
+}) {
   if (!entry) {
     return (
       <span className="mb-1 flex items-center justify-between rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-400">
@@ -766,9 +794,15 @@ function SessionBadge({ entry, session }: { entry?: DiemDanh; session: BuoiDiemD
   }
 
   const status = entry.trang_thai as TrangThaiDiemDanh
+  const needsContact = pendingContactIds.has(entry.id)
   return (
     <span className={`mb-1 block rounded border px-2 py-1 text-xs font-semibold ${STATUS_STYLES[status]}`}>
       {SESSION_LABELS[session]}: {STATUS_LABELS[status]}
+      {needsContact ? (
+        <span className="ml-1 whitespace-nowrap text-orange-800" title="Chưa gọi phụ huynh">
+          ⚠ Chưa gọi PH
+        </span>
+      ) : null}
     </span>
   )
 }
