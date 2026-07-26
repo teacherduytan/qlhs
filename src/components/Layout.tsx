@@ -205,7 +205,7 @@ export function Layout() {
               </button>
 
               {notifOpen ? (
-                <div className="absolute right-0 top-12 z-50 max-h-96 w-80 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+                <div className="fixed inset-x-3 top-16 z-50 max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg md:absolute md:inset-x-auto md:right-0 md:top-12 md:max-h-96 md:w-80">
                   <div className="flex items-center justify-between px-2 py-1">
                     <p className="text-xs font-semibold uppercase text-slate-500">Đề xuất chờ duyệt</p>
                     <button
