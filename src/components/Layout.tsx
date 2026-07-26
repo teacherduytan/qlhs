@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { dataSource } from '../data/client'
 import {
@@ -66,6 +66,25 @@ export function Layout() {
   const [notifError, setNotifError] = useState<string | null>(null)
   const [navOpen, setNavOpen] = useState(false)
   const currentNavLabel = navItems.find((item) => item.to === pathname)?.label || 'Menu'
+  const notifRef = useRef<HTMLDivElement | null>(null)
+  const navRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!notifOpen && !navOpen) return
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node
+      if (notifOpen && notifRef.current && !notifRef.current.contains(target)) {
+        setNotifOpen(false)
+      }
+      if (navOpen && navRef.current && !navRef.current.contains(target)) {
+        setNavOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [notifOpen, navOpen])
 
   useEffect(() => {
     setNavOpen(false)
@@ -184,7 +203,7 @@ export function Layout() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="relative">
+            <div className="relative" ref={notifRef}>
               <button
                 type="button"
                 onClick={() => setNotifOpen((value) => !value)}
@@ -314,7 +333,7 @@ export function Layout() {
               ) : null}
             </div>
 
-            <div className="relative md:hidden">
+            <div className="relative md:hidden" ref={navRef}>
               <button
                 type="button"
                 onClick={() => setNavOpen((value) => !value)}
