@@ -17,6 +17,7 @@ import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring
 import { getBadgeClassForRecord } from '../scoring/scoreStyles'
 import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
 import { getStudentGroup } from './studentGroups'
+import { Pagination, usePagination } from '../../components/Pagination'
 
 type ProfileState =
   | { status: 'loading' }
@@ -511,6 +512,7 @@ function RecordHistory({
   const [selectedDate, setSelectedDate] = useState('')
   const filteredRecords = filterHistoryRecords(records, filterMode, tuanSo, selectedDate)
   const groupedRecords = groupRecordsByWeek(filteredRecords)
+  const groupedRecordsPage = usePagination(groupedRecords)
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
   const summary = summarizeRecordImpacts(filteredRecords, catalogByCode)
 
@@ -558,7 +560,7 @@ function RecordHistory({
 
       {groupedRecords.length ? (
         <div className="divide-y divide-emerald-200 bg-white/70">
-          {groupedRecords.map(({ records: weekRecords, tuanSo }) => (
+          {groupedRecordsPage.pageItems.map(({ records: weekRecords, tuanSo }) => (
             <section key={tuanSo} className="p-4">
               <h3 className="text-sm font-bold text-blue-700">Tuần {tuanSo}</h3>
               <div className="mt-3 space-y-3">
@@ -584,6 +586,15 @@ function RecordHistory({
       ) : (
         <div className="p-4 text-sm text-slate-600">Không có lịch sử ghi nhận phù hợp.</div>
       )}
+      {groupedRecords.length ? (
+        <div className="border-t border-emerald-200 p-4">
+          <Pagination
+            onChange={groupedRecordsPage.setPage}
+            page={groupedRecordsPage.page}
+            totalPages={groupedRecordsPage.totalPages}
+          />
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -749,6 +760,7 @@ function LopTruongPanel({ token }: { token: string }) {
 
   const [history, setHistory] = useState<DeXuatGhiNhan[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const historyPage = usePagination(history)
 
   const isNewCategory = selectedCatalog === NEW_CATEGORY_VALUE
 
@@ -980,7 +992,7 @@ function LopTruongPanel({ token }: { token: string }) {
                 Chưa gửi đề xuất nào.
               </p>
             ) : (
-              history.map((item) => (
+              historyPage.pageItems.map((item) => (
                 <ProposalHistoryItem
                   key={item.id}
                   item={item}
@@ -991,6 +1003,7 @@ function LopTruongPanel({ token }: { token: string }) {
                 />
               ))
             )}
+            <Pagination onChange={historyPage.setPage} page={historyPage.page} totalPages={historyPage.totalPages} />
           </div>
         </div>
       ) : null}

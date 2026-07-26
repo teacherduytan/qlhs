@@ -9,6 +9,7 @@ import {
 import { downloadPrintableForm } from '../features/forms/downloadPrintableForm'
 import { getSupabaseClient } from '../lib/supabaseClient'
 import type { DanhMucDiem, DeXuatGhiNhan, HocSinh } from '../data/types'
+import { Pagination, usePagination } from './Pagination'
 
 const navItems = [
   { to: '/', label: 'Tổng quan' },
@@ -66,6 +67,7 @@ export function Layout() {
   const currentNavLabel = navItems.find((item) => item.to === pathname)?.label || 'Menu'
   const notifRef = useRef<HTMLDivElement | null>(null)
   const navRef = useRef<HTMLDivElement | null>(null)
+  const notifPage = usePagination(pendingProposals)
 
   useEffect(() => {
     if (!notifOpen && !navOpen) return
@@ -243,7 +245,7 @@ export function Layout() {
                     <p className="px-2 py-3 text-sm text-slate-500">Không có đề xuất nào.</p>
                   ) : (
                     <div className="space-y-1">
-                      {pendingProposals.map((item) => {
+                      {notifPage.pageItems.map((item) => {
                         const target = notifStudents.find((student) => student.ma_hs === item.ma_hs)
                         const catalogItem = item.ma_danh_muc
                           ? notifCatalog.find((entry) => entry.ma_danh_muc === item.ma_danh_muc)
@@ -301,6 +303,7 @@ export function Layout() {
                       })}
                     </div>
                   )}
+                  <Pagination onChange={notifPage.setPage} page={notifPage.page} totalPages={notifPage.totalPages} />
                 </div>
               ) : null}
             </div>
@@ -360,7 +363,7 @@ export function Layout() {
       </main>
 
       <footer className="border-t border-slate-300 bg-slate-100 py-4 text-center text-xs text-slate-500">
-        Trường THCS &amp; THPT Lạc Hồng · Năm học 2025–2026
+        Thầy Nguyễn Duy Tân chuyên dạy lập trình ứng dụng cho học sinh học tư duy logic và người cần bổ sung kinh nghiệm cấp tốc đi làm
       </footer>
     </div>
   )

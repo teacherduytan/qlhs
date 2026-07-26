@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { BuoiDiemDanh, HinhThucLienLacPhuHuynh, LienLacPhuHuynh } from '../../data/types'
+import { Pagination, usePagination } from '../../components/Pagination'
 
 const CONTACT_LABELS: Record<HinhThucLienLacPhuHuynh, string> = {
   dien_thoai: 'Điện thoại trực tiếp',
@@ -75,6 +76,8 @@ export function ParentContactHistoryPage() {
       return true
     })
   }, [history, search, fromDate, toDate])
+
+  const filteredPage = usePagination(filtered)
 
   function startEdit(item: LienLacPhuHuynh) {
     setActionError(null)
@@ -188,7 +191,7 @@ export function ParentContactHistoryPage() {
               Không có lượt liên lạc nào khớp bộ lọc.
             </p>
           ) : (
-            filtered.map((item) => (
+            filteredPage.pageItems.map((item) => (
               <div key={item.id} className="rounded-md border border-slate-200 p-3">
                 <div className="space-y-1">
                   {item.ma_hs ? (
@@ -277,6 +280,7 @@ export function ParentContactHistoryPage() {
             ))
           )}
         </div>
+        <Pagination onChange={filteredPage.setPage} page={filteredPage.page} totalPages={filteredPage.totalPages} />
       </div>
     </section>
   )

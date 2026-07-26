@@ -1,6 +1,7 @@
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
+import { Pagination, usePagination } from '../../components/Pagination'
 import type {
   BuoiDiemDanh,
   CauHinhTuan,
@@ -174,6 +175,11 @@ export function AttendanceManagementPage() {
     [overviewMonthEntries],
   )
   const studentByCode = useMemo(() => new Map(students.map((student) => [student.ma_hs, student])), [students])
+
+  const currentEntryList = useMemo(() => Array.from(currentEntryByStudent.values()), [currentEntryByStudent])
+  const currentEntryPage = usePagination(currentEntryList)
+  const monthExceptionsPage = usePagination(monthExceptions)
+  const pendingContactsPage = usePagination(pendingContacts)
 
   async function refreshCurrentData() {
     const contacts = await dataSource.getPendingParentContacts()
@@ -426,7 +432,7 @@ export function AttendanceManagementPage() {
                   Chưa có học sinh nào bị đánh dấu vắng cho buổi này.
                 </p>
               ) : (
-                Array.from(currentEntryByStudent.values()).map((entry) => {
+                currentEntryPage.pageItems.map((entry) => {
                   const student = entry.ma_hs ? studentByCode.get(entry.ma_hs) : undefined
                   const status = entry.trang_thai as TrangThaiDiemDanh
                   return (
@@ -492,6 +498,11 @@ export function AttendanceManagementPage() {
                 })
               )}
             </div>
+            <Pagination
+              onChange={currentEntryPage.setPage}
+              page={currentEntryPage.page}
+              totalPages={currentEntryPage.totalPages}
+            />
           </div>
         </div>
       ) : (
@@ -510,7 +521,7 @@ export function AttendanceManagementPage() {
                 Không có ngoại lệ vắng nào trong tháng này.
               </p>
             ) : (
-              monthExceptions.map((entry) => {
+              monthExceptionsPage.pageItems.map((entry) => {
                 const student = entry.ma_hs ? studentByCode.get(entry.ma_hs) : undefined
                 const status = entry.trang_thai as TrangThaiDiemDanh
                 const buoi = entry.buoi as BuoiDiemDanh
@@ -556,6 +567,11 @@ export function AttendanceManagementPage() {
               })
             )}
           </div>
+          <Pagination
+            onChange={monthExceptionsPage.setPage}
+            page={monthExceptionsPage.page}
+            totalPages={monthExceptionsPage.totalPages}
+          />
         </div>
       )}
 
@@ -574,7 +590,7 @@ export function AttendanceManagementPage() {
               Không còn lượt vắng nào cần liên lạc phụ huynh.
             </p>
           ) : (
-            pendingContacts.map((item) => (
+            pendingContactsPage.pageItems.map((item) => (
               <div
                 key={item.id}
                 className="flex flex-col gap-3 rounded-md border border-orange-100 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
@@ -618,6 +634,11 @@ export function AttendanceManagementPage() {
             ))
           )}
         </div>
+        <Pagination
+          onChange={pendingContactsPage.setPage}
+          page={pendingContactsPage.page}
+          totalPages={pendingContactsPage.totalPages}
+        />
       </div>
 
       {contactTarget ? (

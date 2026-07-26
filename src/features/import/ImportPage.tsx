@@ -21,6 +21,7 @@ import {
   type MissingCatalogForm,
   type SimilarCatalogMatch,
 } from './importCatalog'
+import { Pagination, usePagination } from '../../components/Pagination'
 
 type ParseState =
   | { status: 'empty' }
@@ -168,6 +169,7 @@ export function ImportPage() {
     () => [...importLogs].sort((a, b) => sortDateDesc(a.thoi_gian, b.thoi_gian)),
     [importLogs],
   )
+  const importLogsPage = usePagination(sortedImportLogs)
   const catalogCheck = useMemo(() => {
     if (loai !== 'ghi_nhan' || parseState.status !== 'valid') {
       return EMPTY_CATALOG_CHECK
@@ -2129,7 +2131,7 @@ export function ImportPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {sortedImportLogs.map((log) => {
+                  {importLogsPage.pageItems.map((log) => {
                     const isDeleting = deletingLog === log.ma_log
                     const canDelete = canDeleteImportLog(log)
 
@@ -2175,6 +2177,11 @@ export function ImportPage() {
                   })}
                 </tbody>
               </table>
+              <Pagination
+                onChange={importLogsPage.setPage}
+                page={importLogsPage.page}
+                totalPages={importLogsPage.totalPages}
+              />
             </div>
           </div>
         )}

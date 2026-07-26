@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { DanhMucDiem, DanhMucXuLy, GhiNhan, HocSinh, NhomDiem, PhamViDanhMuc } from '../../data/types'
 import { getBadgeClassForCatalog } from '../scoring/scoreStyles'
+import { Pagination, usePagination } from '../../components/Pagination'
 
 type CatalogForm = {
   ma_danh_muc: string
@@ -199,6 +200,9 @@ export function CatalogPage() {
   }, [selectableRecordIds, selectedRecordIds])
 
   const allSelected = selectableRecordIds.length > 0 && selectedCount === selectableRecordIds.length
+
+  const visibleCatalogPage = usePagination(visibleCatalog)
+  const selectedCatalogRecordsPage = usePagination(selectedCatalogRecords)
 
   useEffect(() => {
     if (!selectedCatalogItem) return
@@ -998,7 +1002,7 @@ export function CatalogPage() {
                   </td>
                 </tr>
               ) : (
-                visibleCatalog.map((item) => (
+                visibleCatalogPage.pageItems.map((item) => (
                   <tr
                     key={item.ma_danh_muc}
                     id={`catalog-${item.ma_danh_muc}`}
@@ -1101,6 +1105,13 @@ export function CatalogPage() {
               )}
             </tbody>
           </table>
+          <div className="p-3">
+            <Pagination
+              onChange={visibleCatalogPage.setPage}
+              page={visibleCatalogPage.page}
+              totalPages={visibleCatalogPage.totalPages}
+            />
+          </div>
         </div>
 
         {selectedCatalogItem ? (
@@ -1172,7 +1183,7 @@ export function CatalogPage() {
                       </td>
                     </tr>
                   ) : (
-                    selectedCatalogRecords.map((record, index) => {
+                    selectedCatalogRecordsPage.pageItems.map((record, index) => {
                       const student = record.ma_hs ? studentByCode.get(record.ma_hs) : undefined
                       const recordId = record.ma_ghi_nhan || ''
 
@@ -1240,6 +1251,11 @@ export function CatalogPage() {
                   )}
                 </tbody>
               </table>
+              <Pagination
+                onChange={selectedCatalogRecordsPage.setPage}
+                page={selectedCatalogRecordsPage.page}
+                totalPages={selectedCatalogRecordsPage.totalPages}
+              />
             </div>
             </section>
           </div>

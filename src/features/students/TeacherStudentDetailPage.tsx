@@ -15,6 +15,7 @@ import type {
   PhuHuynh,
 } from '../../data/types'
 import { getRecordPolarity } from '../records/recordInsights'
+import { Pagination, usePagination } from '../../components/Pagination'
 
 const CONTACT_LABELS: Record<HinhThucLienLacPhuHuynh, string> = {
   dien_thoai: 'Điện thoại trực tiếp',
@@ -243,6 +244,10 @@ export function TeacherStudentDetailPage() {
     return new Map(state.catalog.map((item) => [item.ma_danh_muc, item]))
   }, [state])
 
+  const recordsPage = usePagination(sortedRecords)
+  const contactsPage = usePagination(state.status === 'success' ? state.contacts : [])
+  const proposalsPage = usePagination(state.status === 'success' ? state.proposals : [])
+
   return (
     <section className="mx-auto max-w-5xl space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -451,7 +456,7 @@ export function TeacherStudentDetailPage() {
                       </td>
                     </tr>
                   ) : (
-                    sortedRecords.map((record, index) => {
+                    recordsPage.pageItems.map((record, index) => {
                       const catalogItem = record.ma_danh_muc
                         ? catalogByCode.get(record.ma_danh_muc)
                         : undefined
@@ -515,6 +520,9 @@ export function TeacherStudentDetailPage() {
                 </tbody>
               </table>
             </div>
+            <div className="p-4">
+              <Pagination onChange={recordsPage.setPage} page={recordsPage.page} totalPages={recordsPage.totalPages} />
+            </div>
           </section>
 
           <section className="rounded-lg border border-teal-200 bg-teal-100 shadow-sm">
@@ -531,7 +539,7 @@ export function TeacherStudentDetailPage() {
                   Chưa có đề xuất nào cho học sinh này.
                 </p>
               ) : (
-                state.proposals.map((item) => (
+                proposalsPage.pageItems.map((item) => (
                   <TeacherProposalItem
                     key={item.id}
                     catalog={state.catalog}
@@ -551,6 +559,11 @@ export function TeacherStudentDetailPage() {
                   />
                 ))
               )}
+              <Pagination
+                onChange={proposalsPage.setPage}
+                page={proposalsPage.page}
+                totalPages={proposalsPage.totalPages}
+              />
             </div>
           </section>
 
@@ -577,7 +590,7 @@ export function TeacherStudentDetailPage() {
                   Chưa có lượt liên lạc phụ huynh nào cho học sinh này.
                 </p>
               ) : (
-                state.contacts.map((item) => (
+                contactsPage.pageItems.map((item) => (
                   <div key={item.id} className="rounded-md border border-slate-200 p-3">
                     <div className="space-y-1">
                       <p className="wrap-break-word text-sm font-semibold text-slate-900">
@@ -594,6 +607,11 @@ export function TeacherStudentDetailPage() {
                   </div>
                 ))
               )}
+              <Pagination
+                onChange={contactsPage.setPage}
+                page={contactsPage.page}
+                totalPages={contactsPage.totalPages}
+              />
             </div>
           </section>
 

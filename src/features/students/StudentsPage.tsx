@@ -5,6 +5,7 @@ import type { BanCanSu, CauHinhTuan, DanhMucDiem, DienHocSinh, GhiNhan, HocSinh 
 import { summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore } from '../scoring/scoring'
 import { getBadgeClassForGroup } from '../scoring/scoreStyles'
+import { Pagination, usePagination } from '../../components/Pagination'
 
 type StudentForm = {
   ho: string
@@ -147,6 +148,7 @@ export function StudentsPage() {
     () => new Map(catalog.map((item) => [item.ma_danh_muc, item])),
     [catalog],
   )
+  const visibleStudentsPage = usePagination(visibleStudents)
 
   function openAddForm() {
     setFormMode('add')
@@ -647,7 +649,7 @@ export function StudentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {visibleStudents.map((student) => {
+                  {visibleStudentsPage.pageItems.map((student) => {
                     const expanded = expandedMaHs === student.ma_hs
                     const role = banCanSu.find((item) => item.ma_hs === student.ma_hs)?.chuc_vu || 'Học sinh'
                     const score = calculateWeeklyStudentScore({
@@ -781,6 +783,13 @@ export function StudentsPage() {
                   })}
                 </tbody>
               </table>
+              <div className="p-3">
+                <Pagination
+                  onChange={visibleStudentsPage.setPage}
+                  page={visibleStudentsPage.page}
+                  totalPages={visibleStudentsPage.totalPages}
+                />
+              </div>
             </div>
           )}
           {!studentListCollapsed && visibleStudents.length === 0 ? (

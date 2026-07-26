@@ -5,6 +5,7 @@ import type { CauHinhTuan, DanhMucDiem, DeXuatGhiNhan, GhiNhan, HocSinh, LoaiGhi
 import { getRecordInsight } from './recordInsights'
 import { getBadgeClassForCatalog } from '../scoring/scoreStyles'
 import { selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
+import { Pagination, usePagination } from '../../components/Pagination'
 
 type AttachMode = 'students' | 'team' | 'class'
 type CatalogTone = 'all' | 'positive' | 'violation' | 'neutral'
@@ -172,6 +173,10 @@ export function RecordEntryPage() {
     return targetStudents.map((student) => createDraftRecord(student, selectedCatalog, form))
   }, [form, selectedCatalog, targetStudents])
 
+  const proposalsPage = usePagination(proposals)
+  const previewPage = usePagination(previewRecords)
+  const createdPage = usePagination(createdRecords)
+
   const selectedWeek = sortedWeeks.find((week) => week.tuan_so === form.weekNumber)
 
   function changeWeek(weekNumber: number) {
@@ -302,7 +307,7 @@ export function RecordEntryPage() {
           ) : null}
 
           <div className="mt-3 space-y-3">
-            {proposals.map((proposal) => (
+            {proposalsPage.pageItems.map((proposal) => (
               <ProposalReviewCard
                 key={proposal.id}
                 busy={proposalActionId === proposal.id}
@@ -316,6 +321,11 @@ export function RecordEntryPage() {
               />
             ))}
           </div>
+          <Pagination
+            onChange={proposalsPage.setPage}
+            page={proposalsPage.page}
+            totalPages={proposalsPage.totalPages}
+          />
         </section>
       ) : null}
 
@@ -620,11 +630,12 @@ export function RecordEntryPage() {
 
         <PreviewTable
           catalogByCode={catalogByCode}
-          records={previewRecords}
+          records={previewPage.pageItems}
           saved={false}
           sourceRecords={state.records}
           students={state.students}
         />
+        <Pagination onChange={previewPage.setPage} page={previewPage.page} totalPages={previewPage.totalPages} />
       </section>
 
       {createdRecords.length ? (
@@ -635,11 +646,12 @@ export function RecordEntryPage() {
           </p>
           <PreviewTable
             catalogByCode={catalogByCode}
-            records={createdRecords}
+            records={createdPage.pageItems}
             saved
             sourceRecords={state.records}
             students={state.students}
           />
+          <Pagination onChange={createdPage.setPage} page={createdPage.page} totalPages={createdPage.totalPages} />
         </section>
       ) : null}
     </form>
