@@ -382,7 +382,7 @@ export function Layout() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-20 sm:px-6 md:pb-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 md:pb-6">
         <Outlet />
       </main>
 
@@ -396,7 +396,7 @@ export function Layout() {
           bottomBarVisible ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
-        <div className="flex gap-1 overflow-x-auto px-1 py-1">
+        <div className="flex gap-1 overflow-x-auto px-1 pt-1 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
           {navItems.map(({ to, label, icon }) => {
             const active = pathname === to
             return (
