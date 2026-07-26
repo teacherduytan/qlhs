@@ -208,8 +208,8 @@ export function ParentContactHistoryPage() {
                       {item.hinh_thuc ? CONTACT_LABELS[item.hinh_thuc] : 'Không rõ hình thức'}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-start gap-3">
-                    <p className="text-xs text-slate-500">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <p className="min-w-0 wrap-break-word text-xs text-slate-500">
                       {item.thoi_gian ? formatDateTime(item.thoi_gian) : ''}
                       {item.nguoi_lien_lac ? ` · ${item.nguoi_lien_lac}` : ''}
                     </p>
