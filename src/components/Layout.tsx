@@ -21,6 +21,36 @@ const navItems = [
   { to: '/import', label: 'Import' },
 ]
 
+function NavLinkList({
+  onNavigate,
+  orientation,
+  pathname,
+}: {
+  onNavigate?: () => void
+  orientation: 'row' | 'col'
+  pathname: string
+}) {
+  return (
+    <>
+      {navItems.map(({ to, label }) => {
+        const active = pathname === to
+        return (
+          <Link
+            key={to}
+            to={to}
+            onClick={onNavigate}
+            className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              orientation === 'col' ? 'block w-full' : ''
+            } ${active ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+          >
+            {label}
+          </Link>
+        )
+      })}
+    </>
+  )
+}
+
 export function Layout() {
   const { pathname } = useLocation()
   const [authState, setAuthState] = useState<{
@@ -34,6 +64,12 @@ export function Layout() {
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifActionId, setNotifActionId] = useState<string | null>(null)
   const [notifError, setNotifError] = useState<string | null>(null)
+  const [navOpen, setNavOpen] = useState(false)
+  const currentNavLabel = navItems.find((item) => item.to === pathname)?.label || 'Menu'
+
+  useEffect(() => {
+    setNavOpen(false)
+  }, [pathname])
 
   useEffect(() => {
     if (authState.status !== 'authenticated') return
@@ -140,46 +176,27 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
-      <header className="border-b border-slate-200 bg-white shadow-sm">
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-blue-600">QLHS</p>
             <h1 className="text-lg font-bold text-slate-900 sm:text-xl">Lớp 11C5</h1>
           </div>
-          <div className="flex w-full flex-col gap-2 md:w-auto md:items-end">
-            <nav
-              className="flex max-w-full gap-1 overflow-x-auto pb-1 sm:gap-2"
-              aria-label="Điều hướng chính"
-            >
-              {navItems.map(({ to, label }) => {
-                const active = pathname === to
-                return (
-                  <Link
-                    key={to}
-                    to={to}
-                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      active
-                        ? 'bg-blue-600 text-white'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
-                  >
-                    {label}
-                  </Link>
-                )
-              })}
-            </nav>
+
+          <div className="flex items-center gap-2">
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setNotifOpen((value) => !value)}
-                className="relative inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100 md:w-auto"
+                className="relative inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
                 aria-label={
                   pendingProposals.length > 0
                     ? `${pendingProposals.length} đề xuất ghi nhận chờ duyệt`
                     : 'Không có đề xuất chờ duyệt'
                 }
               >
-                🔔 Thông báo
+                <span aria-hidden="true">🔔</span>
+                <span className="ml-1.5 hidden sm:inline">Thông báo</span>
                 {pendingProposals.length > 0 ? (
                   <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white">
                     {pendingProposals.length}
@@ -270,27 +287,79 @@ export function Layout() {
                 </div>
               ) : null}
             </div>
-            <button
-              type="button"
-              onClick={downloadPrintableForm}
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100 md:w-auto"
-            >
-              Tải mẫu phiếu
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void logoutTeacher().finally(() =>
-                  setAuthState({ email: null, status: 'unauthenticated' }),
-                )
-              }}
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100 md:w-auto"
-            >
-              Đăng xuất
-            </button>
-            {authState.email ? (
-              <p className="text-xs font-medium text-slate-500">{authState.email}</p>
-            ) : null}
+            <nav className="hidden items-center gap-1 md:flex" aria-label="Điều hướng chính">
+              <NavLinkList orientation="row" pathname={pathname} />
+            </nav>
+            <div className="hidden items-center gap-2 md:flex">
+              <button
+                type="button"
+                onClick={downloadPrintableForm}
+                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                Tải mẫu phiếu
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void logoutTeacher().finally(() =>
+                    setAuthState({ email: null, status: 'unauthenticated' }),
+                  )
+                }}
+                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                Đăng xuất
+              </button>
+              {authState.email ? (
+                <p className="text-xs font-medium text-slate-500">{authState.email}</p>
+              ) : null}
+            </div>
+
+            <div className="relative md:hidden">
+              <button
+                type="button"
+                onClick={() => setNavOpen((value) => !value)}
+                className="inline-flex h-10 items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                aria-expanded={navOpen}
+                aria-label="Menu điều hướng"
+              >
+                <span aria-hidden="true">⋯</span>
+                <span className="max-w-24 truncate">{currentNavLabel}</span>
+              </button>
+
+              {navOpen ? (
+                <div className="absolute right-0 top-12 z-50 w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+                  <nav className="flex flex-col gap-1" aria-label="Điều hướng chính (di động)">
+                    <NavLinkList onNavigate={() => setNavOpen(false)} orientation="col" pathname={pathname} />
+                  </nav>
+                  <div className="my-2 border-t border-slate-100" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNavOpen(false)
+                      downloadPrintableForm()
+                    }}
+                    className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  >
+                    Tải mẫu phiếu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNavOpen(false)
+                      void logoutTeacher().finally(() =>
+                        setAuthState({ email: null, status: 'unauthenticated' }),
+                      )
+                    }}
+                    className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  >
+                    Đăng xuất
+                  </button>
+                  {authState.email ? (
+                    <p className="px-3 pt-1 text-xs font-medium text-slate-400">{authState.email}</p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </header>
