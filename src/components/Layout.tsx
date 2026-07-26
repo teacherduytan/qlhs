@@ -23,11 +23,9 @@ const navItems = [
 
 function NavLinkList({
   onNavigate,
-  orientation,
   pathname,
 }: {
   onNavigate?: () => void
-  orientation: 'row' | 'col'
   pathname: string
 }) {
   return (
@@ -39,9 +37,9 @@ function NavLinkList({
             key={to}
             to={to}
             onClick={onNavigate}
-            className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              orientation === 'col' ? 'block w-full' : ''
-            } ${active ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+            className={`block w-full rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              active ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
           >
             {label}
           </Link>
@@ -207,7 +205,8 @@ export function Layout() {
               <button
                 type="button"
                 onClick={() => setNotifOpen((value) => !value)}
-                className="relative inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                title="Thông báo"
+                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg hover:bg-slate-100"
                 aria-label={
                   pendingProposals.length > 0
                     ? `${pendingProposals.length} đề xuất ghi nhận chờ duyệt`
@@ -215,7 +214,6 @@ export function Layout() {
                 }
               >
                 <span aria-hidden="true">🔔</span>
-                <span className="ml-1.5 hidden sm:inline">Thông báo</span>
                 {pendingProposals.length > 0 ? (
                   <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white">
                     {pendingProposals.length}
@@ -306,49 +304,23 @@ export function Layout() {
                 </div>
               ) : null}
             </div>
-            <nav className="hidden items-center gap-1 md:flex" aria-label="Điều hướng chính">
-              <NavLinkList orientation="row" pathname={pathname} />
-            </nav>
-            <div className="hidden items-center gap-2 md:flex">
-              <button
-                type="button"
-                onClick={downloadPrintableForm}
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              >
-                Tải mẫu phiếu
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  void logoutTeacher().finally(() =>
-                    setAuthState({ email: null, status: 'unauthenticated' }),
-                  )
-                }}
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              >
-                Đăng xuất
-              </button>
-              {authState.email ? (
-                <p className="text-xs font-medium text-slate-500">{authState.email}</p>
-              ) : null}
-            </div>
-
-            <div className="relative md:hidden" ref={navRef}>
+            <div className="relative" ref={navRef}>
               <button
                 type="button"
                 onClick={() => setNavOpen((value) => !value)}
-                className="inline-flex h-10 items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                title={currentNavLabel}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg hover:bg-slate-100"
                 aria-expanded={navOpen}
                 aria-label="Menu điều hướng"
               >
-                <span aria-hidden="true">⋯</span>
-                <span className="max-w-24 truncate">{currentNavLabel}</span>
+                <span aria-hidden="true">☰</span>
               </button>
 
               {navOpen ? (
-                <div className="absolute right-0 top-12 z-50 w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                  <nav className="flex flex-col gap-1" aria-label="Điều hướng chính (di động)">
-                    <NavLinkList onNavigate={() => setNavOpen(false)} orientation="col" pathname={pathname} />
+                <div className="absolute right-0 top-12 z-50 w-64 max-w-[calc(100vw-1.5rem)] rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+                  <p className="px-3 pb-1 pt-1 text-xs font-semibold uppercase text-slate-400">Điều hướng</p>
+                  <nav className="flex flex-col gap-1" aria-label="Điều hướng chính">
+                    <NavLinkList onNavigate={() => setNavOpen(false)} pathname={pathname} />
                   </nav>
                   <div className="my-2 border-t border-slate-100" />
                   <button
