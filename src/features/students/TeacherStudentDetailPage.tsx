@@ -579,13 +579,13 @@ export function TeacherStudentDetailPage() {
               ) : (
                 state.contacts.map((item) => (
                   <div key={item.id} className="rounded-md border border-slate-200 p-3">
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                      <p className="min-w-0 wrap-break-word text-sm font-semibold text-slate-900">
+                    <div className="space-y-1">
+                      <p className="wrap-break-word text-sm font-semibold text-slate-900">
                         {item.ngay ? formatDate(item.ngay) : '—'} ·{' '}
                         {item.buoi ? SESSION_LABELS[item.buoi] : '—'} ·{' '}
                         {item.hinh_thuc ? CONTACT_LABELS[item.hinh_thuc] : 'Không rõ hình thức'}
                       </p>
-                      <p className="min-w-0 wrap-break-word text-xs text-slate-500">
+                      <p className="wrap-break-word text-xs text-slate-500">
                         {item.thoi_gian ? formatDateTime(item.thoi_gian) : ''}
                         {item.nguoi_lien_lac ? ` · ${item.nguoi_lien_lac}` : ''}
                       </p>

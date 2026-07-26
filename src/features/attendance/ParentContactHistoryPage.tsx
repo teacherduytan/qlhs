@@ -190,50 +190,47 @@ export function ParentContactHistoryPage() {
           ) : (
             filtered.map((item) => (
               <div key={item.id} className="rounded-md border border-slate-200 p-3">
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    {item.ma_hs ? (
-                      <Link
-                        to={`/quan-ly/hoc-sinh/${item.ma_hs}`}
-                        className="font-semibold text-blue-700 hover:underline"
-                      >
-                        {item.ho_ten || item.ma_hs}
-                      </Link>
-                    ) : (
-                      <p className="font-semibold text-slate-900">{item.ho_ten || 'Không rõ học sinh'}</p>
-                    )}
-                    <p className="text-xs text-slate-500">
-                      {item.ngay ? formatShortDate(item.ngay) : '—'} ·{' '}
-                      {item.buoi ? SESSION_LABELS[item.buoi] : '—'} ·{' '}
-                      {item.hinh_thuc ? CONTACT_LABELS[item.hinh_thuc] : 'Không rõ hình thức'}
-                    </p>
-                  </div>
-                  <div className="flex min-w-0 items-start gap-3">
-                    <p className="min-w-0 wrap-break-word text-xs text-slate-500">
-                      {item.thoi_gian ? formatDateTime(item.thoi_gian) : ''}
-                      {item.nguoi_lien_lac ? ` · ${item.nguoi_lien_lac}` : ''}
-                    </p>
-                    {editingId !== item.id ? (
-                      <div className="flex shrink-0 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(item)}
-                          className="h-8 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                        >
-                          Sửa
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void removeItem(item)}
-                          disabled={savingId === item.id}
-                          className="h-8 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
-                        >
-                          {savingId === item.id ? 'Đang xoá...' : 'Xoá'}
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
+                <div className="space-y-1">
+                  {item.ma_hs ? (
+                    <Link
+                      to={`/quan-ly/hoc-sinh/${item.ma_hs}`}
+                      className="block font-semibold text-blue-700 hover:underline"
+                    >
+                      {item.ho_ten || item.ma_hs}
+                    </Link>
+                  ) : (
+                    <p className="font-semibold text-slate-900">{item.ho_ten || 'Không rõ học sinh'}</p>
+                  )}
+                  <p className="text-xs text-slate-500">
+                    {item.ngay ? formatShortDate(item.ngay) : '—'} ·{' '}
+                    {item.buoi ? SESSION_LABELS[item.buoi] : '—'} ·{' '}
+                    {item.hinh_thuc ? CONTACT_LABELS[item.hinh_thuc] : 'Không rõ hình thức'}
+                  </p>
+                  <p className="wrap-break-word text-xs text-slate-500">
+                    {item.thoi_gian ? formatDateTime(item.thoi_gian) : ''}
+                    {item.nguoi_lien_lac ? ` · ${item.nguoi_lien_lac}` : ''}
+                  </p>
                 </div>
+
+                {editingId !== item.id ? (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(item)}
+                      className="h-8 flex-1 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100 sm:flex-none"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void removeItem(item)}
+                      disabled={savingId === item.id}
+                      className="h-8 flex-1 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400 sm:flex-none"
+                    >
+                      {savingId === item.id ? 'Đang xoá...' : 'Xoá'}
+                    </button>
+                  </div>
+                ) : null}
 
                 {editingId === item.id ? (
                   <div className="mt-2 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
