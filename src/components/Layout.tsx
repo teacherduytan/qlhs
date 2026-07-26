@@ -192,8 +192,8 @@ export function Layout() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm">
+    <div className="flex min-h-screen flex-col bg-slate-200">
+      <header className="sticky top-0 z-40 border-b border-slate-300 bg-slate-100 shadow-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-blue-600">QLHS</p>
@@ -251,7 +251,7 @@ export function Layout() {
                         const busy = notifActionId === item.id
 
                         return (
-                          <div key={item.id} className="rounded-md border border-slate-100 p-2 hover:bg-slate-50">
+                          <div key={item.id} className="rounded-md border border-slate-100 p-2 hover:bg-slate-100">
                             <Link
                               to={target ? `/quan-ly/hoc-sinh/${target.ma_hs}` : '/ghi-nhan'}
                               onClick={() => setNotifOpen(false)}
@@ -280,7 +280,7 @@ export function Layout() {
                                   type="button"
                                   disabled={busy}
                                   onClick={() => void quickRejectProposal(item)}
-                                  className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                                  className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
                                 >
                                   Từ chối
                                 </button>
@@ -359,7 +359,7 @@ export function Layout() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-300 bg-slate-100 py-4 text-center text-xs text-slate-500">
         Trường THCS &amp; THPT Lạc Hồng · Năm học 2025–2026
       </footer>
     </div>
@@ -450,7 +450,7 @@ function TeacherAuthShell({
   message?: string
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8">
+    <main className="flex min-h-screen items-center justify-center bg-slate-200 px-4 py-8">
       {children || (
         <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-medium text-slate-600 shadow-sm">
           {message}

@@ -1015,7 +1015,7 @@ export function ImportPage() {
       </div>
 
       {fileName ? (
-        <div className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+        <div className="rounded-md border border-blue-100 bg-blue-100 px-3 py-2 text-sm text-blue-900">
           Đã tải: {fileName}
         </div>
       ) : null}
@@ -1041,7 +1041,7 @@ export function ImportPage() {
       </label>
 
       {parseState.status === 'invalid' ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-lg border border-amber-200 bg-amber-100 p-4 text-sm text-amber-900">
           {parseState.message}
         </div>
       ) : null}
@@ -1056,7 +1056,7 @@ export function ImportPage() {
           <div className="overflow-hidden rounded-md border border-slate-200">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-500">
                   <tr>
                     {previewColumns.map((column) => (
                       <th key={column} className="px-3 py-3">
@@ -1096,10 +1096,10 @@ export function ImportPage() {
         <div
           className={`rounded-lg border p-4 text-sm ${
             catalogCheck.errors.length
-              ? 'border-red-200 bg-red-50 text-red-900'
+              ? 'border-red-200 bg-red-100 text-red-900'
               : catalogCheck.warnings.length || catalogError
-                ? 'border-amber-200 bg-amber-50 text-amber-900'
-                : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                ? 'border-amber-200 bg-amber-100 text-amber-900'
+                : 'border-emerald-200 bg-emerald-100 text-emerald-900'
           }`}
         >
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -1118,7 +1118,7 @@ export function ImportPage() {
               type="button"
               onClick={() => void loadPointCatalog()}
               disabled={catalogLoading}
-              className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
             >
               {catalogLoading ? 'Đang tải...' : 'Tải lại danh mục'}
             </button>
@@ -1132,7 +1132,7 @@ export function ImportPage() {
           {catalogError ? <p className="mt-2 font-semibold">{catalogError}</p> : null}
 
           {catalogFixMessage ? (
-            <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
+            <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-100 px-3 py-2 text-emerald-900">
               {catalogFixMessage}
             </div>
           ) : null}
@@ -1146,7 +1146,7 @@ export function ImportPage() {
               <p className="font-bold text-blue-800">App co the tu gan danh muc</p>
               <div className="mt-2 space-y-2">
                 {catalogCheck.autoMatchItems.slice(0, 5).map((item) => (
-                  <div key={item.rowIndex} className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs">
+                  <div key={item.rowIndex} className="rounded-md border border-blue-100 bg-blue-100 px-3 py-2 text-xs">
                     <p className="font-semibold text-slate-900">
                       Dong {item.rowIndex + 1}: {item.catalogItem.ma_danh_muc} - {item.catalogItem.ten_muc}
                     </p>
@@ -1199,10 +1199,10 @@ export function ImportPage() {
         <div
           className={`rounded-lg border p-4 text-sm ${
             studentCheck.errors.length || studentCheck.autoMatchItems.length || studentCheck.unresolvedItems.length
-              ? 'border-amber-200 bg-amber-50 text-amber-950'
+              ? 'border-amber-200 bg-amber-100 text-amber-950'
               : studentsError
-                ? 'border-red-200 bg-red-50 text-red-900'
-                : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                ? 'border-red-200 bg-red-100 text-red-900'
+                : 'border-emerald-200 bg-emerald-100 text-emerald-900'
           }`}
         >
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1228,7 +1228,7 @@ export function ImportPage() {
                 type="button"
                 onClick={() => void loadStudents()}
                 disabled={studentsLoading}
-                className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
               >
                 {studentsLoading ? 'Dang tai...' : 'Tai lai hoc sinh'}
               </button>
@@ -1236,7 +1236,7 @@ export function ImportPage() {
           </div>
 
           {studentMessage ? (
-            <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
+            <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-100 px-3 py-2 text-emerald-900">
               {studentMessage}
             </div>
           ) : null}
@@ -1251,7 +1251,7 @@ export function ImportPage() {
             <div className="mt-3 overflow-hidden rounded-md border border-amber-200 bg-white">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-amber-100 text-sm">
-                  <thead className="bg-amber-50 text-left text-xs font-semibold uppercase text-amber-800">
+                  <thead className="bg-amber-100 text-left text-xs font-semibold uppercase text-amber-800">
                     <tr>
                       <th className="px-3 py-3">Dong</th>
                       <th className="px-3 py-3">Ten tren JSON</th>
@@ -1273,7 +1273,7 @@ export function ImportPage() {
                             <button
                               type="button"
                               onClick={() => applyStudentToRow(item.rowIndex, item.exactMatch as HocSinh)}
-                              className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+                              className="rounded-md border border-emerald-200 bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
                             >
                               {item.exactMatch.ma_hs} - {studentFullName(item.exactMatch)}
                             </button>
@@ -1323,7 +1323,7 @@ export function ImportPage() {
       ) : null}
 
       {loai === 'ghi_nhan' && parseState.status === 'valid' && suggestionForms.length > 0 ? (
-        <div className="space-y-3 rounded-lg border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">
+        <div className="space-y-3 rounded-lg border border-cyan-200 bg-cyan-100 p-4 text-sm text-cyan-950">
           <div>
             <h3 className="text-base font-bold">Đề xuất danh mục mới từ AI</h3>
             <p className="mt-1">
@@ -1332,7 +1332,7 @@ export function ImportPage() {
           </div>
 
           {suggestionMessage ? (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
+            <div className="rounded-md border border-emerald-200 bg-emerald-100 px-3 py-2 text-emerald-900">
               {suggestionMessage}
             </div>
           ) : null}
@@ -1404,7 +1404,7 @@ export function ImportPage() {
 
             <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
               {suggestionError ? (
-                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                <div className="mb-4 rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm text-red-800">
                   {suggestionError}
                 </div>
               ) : null}
@@ -1507,7 +1507,7 @@ export function ImportPage() {
                     />
                   </label>
 
-                  <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 md:col-span-2">
+                  <div className="rounded-lg border border-indigo-200 bg-indigo-100 p-3 md:col-span-2">
                     <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
                       <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
                         Mã xử lý/phạt liên kết
@@ -1545,7 +1545,7 @@ export function ImportPage() {
                   </div>
 
                   {activeSuggestionSimilarMatches.length > 0 ? (
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 md:col-span-2">
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-100 p-3 md:col-span-2">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="font-semibold text-emerald-950">Danh mục có sẵn gần giống</p>
@@ -1602,7 +1602,7 @@ export function ImportPage() {
                 </div>
               ) : (
                 <div className="space-y-3 text-sm text-slate-700">
-                  <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-3">
+                  <div className="rounded-lg border border-cyan-200 bg-cyan-100 p-3">
                     <p className="font-semibold text-slate-900">
                       {activeSuggestionForm.ma_danh_muc} - {activeSuggestionForm.ten_muc}
                     </p>
@@ -1627,7 +1627,7 @@ export function ImportPage() {
               <button
                 type="button"
                 onClick={() => (suggestionStep === 1 ? closeSuggestionModal() : setSuggestionStep(1))}
-                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
                 {suggestionStep === 1 ? 'Huỷ' : 'Quay lại'}
               </button>
@@ -1680,13 +1680,13 @@ export function ImportPage() {
 
             <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
               {catalogError ? (
-                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                <div className="mb-4 rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm text-red-800">
                   {catalogError}
                 </div>
               ) : null}
 
               {activeMissingSimilarMatches.length ? (
-                <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950">
+                <div className="mb-4 rounded-lg border border-blue-200 bg-blue-100 p-3 text-sm text-blue-950">
                   <p className="font-bold">Danh muc co san gan giong</p>
                   <div className="mt-2 space-y-2">
                     {activeMissingSimilarMatches.map((match) => (
@@ -1721,7 +1721,7 @@ export function ImportPage() {
                   <input
                     value={activeMissingCatalogForm.code}
                     readOnly
-                    className="h-10 rounded-md border border-slate-200 bg-slate-50 px-3 font-mono text-sm font-normal text-slate-700"
+                    className="h-10 rounded-md border border-slate-200 bg-slate-100 px-3 font-mono text-sm font-normal text-slate-700"
                   />
                 </label>
 
@@ -1824,7 +1824,7 @@ export function ImportPage() {
                   />
                 </label>
 
-                <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 md:col-span-2">
+                <div className="rounded-lg border border-indigo-200 bg-indigo-100 p-3 md:col-span-2">
                   <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
                     <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
                       Ma xu ly/phat lien ket
@@ -1859,7 +1859,7 @@ export function ImportPage() {
                   </div>
                 </div>
 
-                <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 md:col-span-2">
+                <div className="rounded-md border border-slate-200 bg-slate-100 p-3 text-sm text-slate-600 md:col-span-2">
                   <p className="font-semibold text-slate-800">
                     Dang dung o dong {activeMissingCatalogForm.rowIndexes.map((index) => index + 1).join(', ')}
                   </p>
@@ -1872,7 +1872,7 @@ export function ImportPage() {
               <button
                 type="button"
                 onClick={closeMissingCatalogModal}
-                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
                 Huy
               </button>
@@ -1915,7 +1915,7 @@ export function ImportPage() {
 
             <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
               {studentsError ? (
-                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                <div className="mb-4 rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm text-red-800">
                   {studentsError}
                 </div>
               ) : null}
@@ -1926,7 +1926,7 @@ export function ImportPage() {
                   <input
                     value={studentCreateForm.ma_hs}
                     readOnly
-                    className="h-10 rounded-md border border-slate-200 bg-slate-50 px-3 font-mono text-sm font-normal text-slate-700"
+                    className="h-10 rounded-md border border-slate-200 bg-slate-100 px-3 font-mono text-sm font-normal text-slate-700"
                   />
                 </label>
 
@@ -1999,7 +1999,7 @@ export function ImportPage() {
               <button
                 type="button"
                 onClick={closeStudentCreateModal}
-                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
                 Huy
               </button>
@@ -2017,13 +2017,13 @@ export function ImportPage() {
       ) : null}
 
       {submitError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+        <div className="rounded-lg border border-red-200 bg-red-100 p-4 text-sm text-red-800">
           {submitError}
         </div>
       ) : null}
 
       {result ? (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <div className="rounded-lg border border-emerald-200 bg-emerald-100 p-4 text-sm text-emerald-900">
           <p className="font-semibold">Import {result.trang_thai}</p>
           <p>
             Log {result.ma_log}: {result.so_dong_thanh_cong} dòng thành công,{' '}
@@ -2073,7 +2073,7 @@ export function ImportPage() {
             setCatalogFixMessage(null)
             setStudentMessage(null)
           }}
-          className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
         >
           Xoá nội dung
         </button>
@@ -2091,33 +2091,33 @@ export function ImportPage() {
             type="button"
             onClick={() => void loadImportLogs()}
             disabled={logsLoading}
-            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
           >
             {logsLoading ? 'Đang tải...' : 'Tải lại'}
           </button>
         </div>
 
         {logsError ? (
-          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          <div className="rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm text-red-800">
             {logsError}
           </div>
         ) : null}
 
         {deleteMessage ? (
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          <div className="rounded-md border border-emerald-200 bg-emerald-100 px-3 py-2 text-sm text-emerald-900">
             {deleteMessage}
           </div>
         ) : null}
 
         {sortedImportLogs.length === 0 ? (
-          <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-6 text-center text-sm text-slate-500">
+          <div className="rounded-md border border-slate-200 bg-slate-100 px-3 py-6 text-center text-sm text-slate-500">
             {logsLoading ? 'Đang tải lịch sử import...' : 'Chưa có lịch sử import.'}
           </div>
         ) : (
           <div className="overflow-hidden rounded-md border border-slate-200">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-500">
                   <tr>
                     <th className="px-3 py-3">Log</th>
                     <th className="px-3 py-3">Thời gian</th>
@@ -2160,7 +2160,7 @@ export function ImportPage() {
                             type="button"
                             onClick={() => void deleteImport(log)}
                             disabled={!canDelete || isDeleting}
-                            className="inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-white"
+                            className="inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-white"
                             title={
                               canDelete
                                 ? 'Xoá dữ liệu GhiNhan của lần import này'
@@ -2219,12 +2219,12 @@ function IssueList({ items, title }: { items: string[]; title: string }) {
 }
 
 function getImportActionSummaryClass(tone: string): string {
-  if (tone === 'ready') return 'border-emerald-200 bg-emerald-50 text-emerald-900'
-  if (tone === 'partial') return 'border-blue-200 bg-blue-50 text-blue-900'
-  if (tone === 'blocked') return 'border-amber-200 bg-amber-50 text-amber-950'
-  if (tone === 'error') return 'border-red-200 bg-red-50 text-red-900'
-  if (tone === 'loading') return 'border-sky-200 bg-sky-50 text-sky-900'
-  return 'border-slate-200 bg-slate-50 text-slate-700'
+  if (tone === 'ready') return 'border-emerald-200 bg-emerald-100 text-emerald-900'
+  if (tone === 'partial') return 'border-blue-200 bg-blue-100 text-blue-900'
+  if (tone === 'blocked') return 'border-amber-200 bg-amber-100 text-amber-950'
+  if (tone === 'error') return 'border-red-200 bg-red-100 text-red-900'
+  if (tone === 'loading') return 'border-sky-200 bg-sky-100 text-sky-900'
+  return 'border-slate-200 bg-slate-100 text-slate-700'
 }
 
 function checkRecordStudentLinks(

@@ -472,7 +472,7 @@ export function DashboardPage() {
       ) : null}
 
       {state.status === 'error' ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-lg border border-amber-200 bg-amber-100 p-4 text-sm text-amber-900">
           {state.message}
         </div>
       ) : null}
@@ -505,7 +505,7 @@ export function DashboardPage() {
             ) : null}
           </section>
 
-          <section id="dashboard-filters" className="scroll-mt-4 rounded-lg border border-sky-200 bg-sky-50 p-4 shadow-sm">
+          <section id="dashboard-filters" className="scroll-mt-4 rounded-lg border border-sky-200 bg-sky-100 p-4 shadow-sm">
             <SectionHeader
               collapsed={collapsedSections.filters}
               description="Chọn tuần và ngày để đổi phạm vi dữ liệu toàn trang."
@@ -527,7 +527,7 @@ export function DashboardPage() {
             ) : null}
           </section>
 
-          <section id="dashboard-overview" className="scroll-mt-4 space-y-3 rounded-lg border border-cyan-200 bg-cyan-50 p-4 shadow-sm">
+          <section id="dashboard-overview" className="scroll-mt-4 space-y-3 rounded-lg border border-cyan-200 bg-cyan-100 p-4 shadow-sm">
             <SectionHeader
               collapsed={collapsedSections.overview}
               description="Các thẻ TK có thể bấm để xem nhanh chi tiết."
@@ -559,18 +559,18 @@ export function DashboardPage() {
           />
 
           {body.missingGroupStudents.length ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <div className="rounded-lg border border-amber-200 bg-amber-100 p-4 text-sm text-amber-900">
               {body.missingGroupStudents.length} học sinh chưa có tổ trong danh sách hiện tại.
             </div>
           ) : null}
 
           {actionError ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <div className="rounded-lg border border-red-200 bg-red-100 p-4 text-sm text-red-800">
               {actionError}
             </div>
           ) : null}
 
-          <section id="dashboard-scores" className="scroll-mt-4 overflow-hidden rounded-lg border border-indigo-200 bg-indigo-50 shadow-sm">
+          <section id="dashboard-scores" className="scroll-mt-4 overflow-hidden rounded-lg border border-indigo-200 bg-indigo-100 shadow-sm">
             <div className="flex flex-col gap-3 border-b border-indigo-200 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Điểm thi đua học sinh</h3>
@@ -585,7 +585,7 @@ export function DashboardPage() {
               <button
                 type="button"
                 onClick={() => toggleSection('scores')}
-                className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
                 {collapsedSections.scores ? 'Mở rộng' : 'Thu gọn'}
               </button>
@@ -655,7 +655,7 @@ export function DashboardPage() {
                       return (
                         <tr
                           key={score.ma_hs}
-                          className={needsAttention(score) ? 'bg-red-50' : 'hover:bg-slate-50'}
+                          className={needsAttention(score) ? 'bg-red-100' : 'hover:bg-slate-100'}
                         >
                           <td className="whitespace-nowrap px-3 py-3 text-slate-600">{index + 1}</td>
                           <td className="whitespace-nowrap px-3 py-3 font-semibold">
@@ -703,7 +703,7 @@ export function DashboardPage() {
             )}
           </section>
 
-          <section id="dashboard-events" className="scroll-mt-4 rounded-lg border border-amber-200 bg-amber-50 shadow-sm">
+          <section id="dashboard-events" className="scroll-mt-4 rounded-lg border border-amber-200 bg-amber-100 shadow-sm">
             <div className="border-b border-amber-200 p-4">
               <SectionHeader
                 collapsed={collapsedSections.events}
@@ -722,7 +722,7 @@ export function DashboardPage() {
                           {record.ma_danh_muc ? (
                             <Link
                               to={`/danh-muc?ma=${encodeURIComponent(record.ma_danh_muc)}`}
-                              className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-blue-700 hover:underline"
+                              className="shrink-0 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-blue-700 hover:underline"
                             >
                               {record.ma_danh_muc}
                             </Link>
@@ -800,7 +800,7 @@ export function DashboardPage() {
                         type="button"
                         onClick={() => void applyToTargets(record, catalogItem)}
                         disabled={processingEventId === record.ma_ghi_nhan}
-                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
                       >
                         Áp dụng cho tất cả
                       </button>
@@ -808,7 +808,7 @@ export function DashboardPage() {
                         type="button"
                         onClick={() => void skipEvent(record)}
                         disabled={processingEventId === record.ma_ghi_nhan}
-                        className="h-10 rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                        className="h-10 rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
                       >
                         Bỏ qua
                       </button>
@@ -828,7 +828,7 @@ export function DashboardPage() {
           <section
             id="dashboard-daily"
             ref={dailyLogRef}
-            className="scroll-mt-4 rounded-lg border border-emerald-200 bg-emerald-50 shadow-sm"
+            className="scroll-mt-4 rounded-lg border border-emerald-200 bg-emerald-100 shadow-sm"
           >
             <div className="border-b border-emerald-200 p-4">
               <SectionHeader
@@ -871,10 +871,10 @@ export function DashboardPage() {
                             {item.label}: {item.count}
                           </span>
                         ))}
-                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-700">
+                        <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-1 text-emerald-700">
                           +{dayImpact.positive}
                         </span>
-                        <span className="rounded-full border border-red-200 bg-red-50 px-2 py-1 text-red-700">
+                        <span className="rounded-full border border-red-200 bg-red-100 px-2 py-1 text-red-700">
                           -{dayImpact.negative}
                         </span>
                       </div>
@@ -914,7 +914,7 @@ export function DashboardPage() {
                                 {record.noi_dung || record.ly_do || 'Không có mô tả'}
                               </p>
                               {insight.polarity === 'negative' && insight.intervention ? (
-                                <p className="mt-2 rounded-md bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
+                                <p className="mt-2 rounded-md bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
                                   {insight.intervention.label}: {insight.intervention.action}
                                 </p>
                               ) : null}
@@ -924,7 +924,7 @@ export function DashboardPage() {
                                     type="button"
                                     onClick={() => void deleteRecord(record)}
                                     disabled={deletingRecordId === record.ma_ghi_nhan}
-                                    className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                                    className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
                                   >
                                     {deletingRecordId === record.ma_ghi_nhan ? 'Đang xoá...' : 'Xoá'}
                                   </button>
@@ -962,10 +962,10 @@ function SummaryMetric({
 }) {
   const toneClass =
     tone === 'week'
-      ? 'border-sky-200 bg-sky-50 text-sky-950'
+      ? 'border-sky-200 bg-sky-100 text-sky-950'
       : tone === 'class'
-        ? 'border-emerald-200 bg-emerald-50 text-emerald-950'
-        : 'border-rose-200 bg-rose-50 text-rose-950'
+        ? 'border-emerald-200 bg-emerald-100 text-emerald-950'
+        : 'border-rose-200 bg-rose-100 text-rose-950'
   const labelClass =
     tone === 'week'
       ? 'text-sky-700'
@@ -1045,14 +1045,14 @@ function DashboardTimeFilter({
       </div>
 
       {!actualWeek ? (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+        <div className="rounded-md border border-amber-200 bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900">
           Hôm nay {formatDate(todayIso)} chưa nằm trong cấu hình tuần. Sau khi deploy Apps Script bản mới,
           hệ thống sẽ tự thêm tuần học tiếp theo khi mở Tổng quan hoặc import dữ liệu mới.
         </div>
       ) : null}
 
       {selectedDateOutsideWeek ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+        <div className="rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm font-medium text-red-800">
           Ngày đang lọc nằm ngoài tuần đang xem. Hãy chọn lại ngày hoặc bấm “Cả tuần”.
         </div>
       ) : null}
@@ -1066,7 +1066,7 @@ function DashboardTimeFilter({
               type="button"
               onClick={onSelectActualWeek}
               disabled={isActualWeek && !selectedDate}
-              className="h-10 rounded-md border border-blue-200 bg-white px-3 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+              className="h-10 rounded-md border border-blue-200 bg-white px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
             >
               Về tuần thực tế
             </button>
@@ -1079,7 +1079,7 @@ function DashboardTimeFilter({
                 onDateChange(todayIso)
               }}
               disabled={!actualWeek || (isActualWeek && isTodaySelected)}
-              className="h-10 rounded-md border border-emerald-200 bg-white px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+              className="h-10 rounded-md border border-emerald-200 bg-white px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
             >
               Xem hôm nay
             </button>
@@ -1103,10 +1103,10 @@ function TimeInfoTile({
 }) {
   const toneClass: Record<typeof tone, string> = {
     all: 'border-slate-200 bg-white text-slate-900',
-    current: 'border-emerald-200 bg-emerald-50 text-emerald-950',
-    date: 'border-violet-200 bg-violet-50 text-violet-950',
-    manual: 'border-amber-200 bg-amber-50 text-amber-950',
-    today: 'border-sky-200 bg-sky-50 text-sky-950',
+    current: 'border-emerald-200 bg-emerald-100 text-emerald-950',
+    date: 'border-violet-200 bg-violet-100 text-violet-950',
+    manual: 'border-amber-200 bg-amber-100 text-amber-950',
+    today: 'border-sky-200 bg-sky-100 text-sky-950',
   }
 
   return (
@@ -1135,7 +1135,7 @@ function SectionQuickNav<T extends string>({
             key={item.id}
             type="button"
             onClick={() => onSelect(item.id)}
-            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            className="rounded-full border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-700"
           >
             {item.label}
             {collapsedSections[item.id] ? ' (đang gọn)' : ''}
@@ -1166,7 +1166,7 @@ function SectionHeader({
       <button
         type="button"
         onClick={onToggle}
-        className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
       >
         {collapsed ? 'Mở rộng' : 'Thu gọn'}
       </button>
@@ -1177,7 +1177,7 @@ function SectionHeader({
 function RecordImpactBadge({ insight }: { insight: ReturnType<typeof getRecordInsight> }) {
   if (insight.impactValue === 1) {
     return (
-      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">
+      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700">
         +1 tích cực
       </span>
     )
@@ -1185,14 +1185,14 @@ function RecordImpactBadge({ insight }: { insight: ReturnType<typeof getRecordIn
 
   if (insight.impactValue === -1) {
     return (
-      <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-bold text-red-700">
+      <span className="inline-flex rounded-full border border-red-200 bg-red-100 px-2 py-1 text-xs font-bold text-red-700">
         {insight.duplicateCount ? `-1 vi phạm · lần ${insight.duplicateCount}` : '-1 vi phạm'}
       </span>
     )
   }
 
   return (
-    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-600">
+    <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">
       0 theo dõi
     </span>
   )
@@ -1209,7 +1209,7 @@ function RecordPolarityBadge({
 
   if (polarity === 'positive') {
     return (
-      <span className="inline-flex w-fit shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">
+      <span className="inline-flex w-fit shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700">
         Tích cực
       </span>
     )
@@ -1217,7 +1217,7 @@ function RecordPolarityBadge({
 
   if (polarity === 'negative') {
     return (
-      <span className="inline-flex w-fit shrink-0 rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-bold text-red-700">
+      <span className="inline-flex w-fit shrink-0 rounded-full border border-red-200 bg-red-100 px-2 py-1 text-xs font-bold text-red-700">
         Vi phạm
       </span>
     )
@@ -1311,8 +1311,8 @@ function OverviewGroup({
 
   const sectionClass =
     tone === 'action'
-      ? 'border-rose-200 bg-rose-50'
-      : 'border-cyan-200 bg-cyan-50'
+      ? 'border-rose-200 bg-rose-100'
+      : 'border-cyan-200 bg-cyan-100'
 
   return (
     <section className={`rounded-lg border p-4 shadow-sm ${sectionClass}`}>
@@ -1345,11 +1345,11 @@ function OverviewCard({
 }) {
   const toneClass =
     stat.tone === 'action'
-      ? 'border-red-200 bg-red-50 text-red-900'
+      ? 'border-red-200 bg-red-100 text-red-900'
       : stat.tone === 'good'
-        ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+        ? 'border-emerald-200 bg-emerald-100 text-emerald-900'
         : stat.tone === 'positive'
-          ? 'border-teal-200 bg-teal-50 text-teal-950'
+          ? 'border-teal-200 bg-teal-100 text-teal-950'
           : 'border-slate-200 bg-white text-slate-900'
   const valueClass =
     stat.tone === 'action'
@@ -1451,7 +1451,7 @@ function OverviewDrillDownPanel({
           type="button"
           onClick={onClose}
           aria-label="Đóng chi tiết"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-xl font-semibold leading-none text-slate-700 hover:bg-slate-50"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-xl font-semibold leading-none text-slate-700 hover:bg-slate-100"
         >
           ×
         </button>
@@ -1538,7 +1538,7 @@ function OverviewDrillDownPanel({
               <Link
                 key={item.maHs}
                 to={`/hs/${item.token}`}
-                className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 hover:text-blue-800"
               >
                 <span className="mr-2 text-slate-500">{index + 1}.</span>
                 {item.name}
@@ -1553,7 +1553,7 @@ function OverviewDrillDownPanel({
       {drillDown.kind === 'trend' ? (
         <div className="mt-3 overflow-hidden rounded-md border border-slate-200">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+            <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-500">
               <tr>
                 <th className="px-3 py-3">Nhóm</th>
                 <th className="px-3 py-3">Tuần này</th>
@@ -1626,7 +1626,7 @@ function GroupViolationView({
     <section
       id={sectionId}
       ref={sectionRef}
-      className="scroll-mt-4 rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm"
+      className="scroll-mt-4 rounded-lg border border-violet-200 bg-violet-100 p-4 shadow-sm"
     >
       <div className="flex flex-col gap-3 border-b border-violet-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
@@ -1643,7 +1643,7 @@ function GroupViolationView({
           <button
             type="button"
             onClick={onToggle}
-            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
           >
             {collapsed ? 'Mở rộng' : 'Thu gọn'}
           </button>
@@ -1725,7 +1725,7 @@ function GroupViolationView({
             </thead>
             <tbody className="divide-y divide-slate-100">
               {visibleRows.map((row, index) => (
-                <tr key={row.maHs} className="hover:bg-slate-50">
+                <tr key={row.maHs} className="hover:bg-slate-100">
                   <td className="whitespace-nowrap px-3 py-3 text-slate-600">{index + 1}</td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <Link to={`/hs/${row.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
@@ -1747,7 +1747,7 @@ function GroupViolationView({
                           return (
                           <div
                             key={record.ma_ghi_nhan || `${row.maHs}-${record.ngay}-${index}`}
-                            className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
+                            className="rounded-md border border-slate-200 bg-slate-100 px-3 py-2"
                           >
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                               <div>
@@ -1800,7 +1800,7 @@ function GroupViolationView({
                                   type="button"
                                   onClick={() => onDeleteRecord(record)}
                                   disabled={deletingRecordId === record.ma_ghi_nhan}
-                                  className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                                  className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
                                 >
                                   {deletingRecordId === record.ma_ghi_nhan ? 'Đang xoá...' : 'Xoá'}
                                 </button>
@@ -1846,7 +1846,7 @@ function TeamInfoPanel({
 }) {
   if (!teamNumber) {
     return (
-      <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+      <div className="rounded-md border border-amber-200 bg-amber-100 p-3 text-sm text-amber-900">
         Sự kiện tổ trực này chưa có số tổ liên quan.
       </div>
     )
@@ -1859,7 +1859,7 @@ function TeamInfoPanel({
   const history = getTeamEventHistory(teamNumber, records, catalog)
 
   return (
-    <section className="rounded-md border border-blue-100 bg-blue-50 p-3">
+    <section className="rounded-md border border-blue-100 bg-blue-100 p-3">
       <div className="grid gap-3 lg:grid-cols-[1fr_1.5fr]">
         <div>
           <h4 className="text-sm font-bold text-slate-900">Thông tin Tổ {teamNumber}</h4>

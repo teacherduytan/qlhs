@@ -257,14 +257,14 @@ export function TeacherStudentDetailPage() {
           {state.status === 'success' ? (
             <Link
               to={`/hs/${state.student.token_ho_so}`}
-              className="inline-flex h-10 items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+              className="inline-flex h-10 items-center justify-center rounded-md border border-blue-200 bg-blue-100 px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100"
             >
               Xem link học sinh
             </Link>
           ) : null}
           <Link
             to="/hoc-sinh"
-            className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
           >
             Về danh sách
           </Link>
@@ -278,7 +278,7 @@ export function TeacherStudentDetailPage() {
       ) : null}
 
       {state.status === 'error' ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-lg border border-amber-200 bg-amber-100 p-4 text-sm text-amber-900">
           {state.message}
         </div>
       ) : null}
@@ -292,7 +292,7 @@ export function TeacherStudentDetailPage() {
 
       {state.status === 'success' && form ? (
         <>
-          <section className="overflow-hidden rounded-lg border border-sky-200 bg-sky-50 shadow-sm">
+          <section className="overflow-hidden rounded-lg border border-sky-200 bg-sky-100 shadow-sm">
             <div className="border-b border-sky-200 p-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
@@ -352,7 +352,7 @@ export function TeacherStudentDetailPage() {
           </section>
 
           {roleForm ? (
-            <section className="rounded-lg border border-teal-200 bg-teal-50 shadow-sm">
+            <section className="rounded-lg border border-teal-200 bg-teal-100 shadow-sm">
               <div className="border-b border-teal-200 p-4">
                 <p className="text-xs font-semibold uppercase text-teal-700">Ban cán sự</p>
                 <h3 className="text-lg font-bold text-slate-950">Chức vụ trong lớp</h3>
@@ -414,7 +414,7 @@ export function TeacherStudentDetailPage() {
             </section>
           ) : null}
 
-          <section className="rounded-lg border border-blue-300 bg-blue-50 shadow-sm">
+          <section className="rounded-lg border border-blue-300 bg-blue-100 shadow-sm">
             <div className="flex flex-col gap-2 border-b border-blue-200 p-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase text-blue-700">Ghi nhận của học sinh</p>
@@ -472,12 +472,12 @@ export function TeacherStudentDetailPage() {
                             {record.ma_danh_muc ? (
                               <Link
                                 to={`/danh-muc?ma=${encodeURIComponent(record.ma_danh_muc)}`}
-                                className="mt-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:underline"
+                                className="mt-1 inline-flex rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-xs font-semibold text-blue-700 hover:underline"
                               >
                                 {record.ma_danh_muc}
                               </Link>
                             ) : (
-                              <span className="mt-1 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+                              <span className="mt-1 inline-flex rounded-full border border-amber-200 bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">
                                 Chưa liên kết danh mục
                               </span>
                             )}
@@ -503,7 +503,7 @@ export function TeacherStudentDetailPage() {
                               type="button"
                               onClick={() => deleteRecord(record)}
                               disabled={!record.ma_ghi_nhan || deletingRecordId === record.ma_ghi_nhan}
-                              className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                              className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
                             >
                               {deletingRecordId === record.ma_ghi_nhan ? 'Đang xoá' : 'Xoá'}
                             </button>
@@ -517,7 +517,7 @@ export function TeacherStudentDetailPage() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-teal-200 bg-teal-50 shadow-sm">
+          <section className="rounded-lg border border-teal-200 bg-teal-100 shadow-sm">
             <div className="border-b border-teal-200 p-4">
               <p className="text-xs font-semibold uppercase text-teal-700">Đề xuất từ lớp trưởng</p>
               <h3 className="text-xl font-bold text-slate-950">Lịch sử đề xuất ghi nhận cho học sinh này</h3>
@@ -527,7 +527,7 @@ export function TeacherStudentDetailPage() {
             </div>
             <div className="space-y-2 bg-white p-4">
               {state.proposals.length === 0 ? (
-                <p className="rounded-md border border-teal-100 bg-teal-50 p-3 text-sm text-slate-600">
+                <p className="rounded-md border border-teal-100 bg-teal-100 p-3 text-sm text-slate-600">
                   Chưa có đề xuất nào cho học sinh này.
                 </p>
               ) : (
@@ -554,7 +554,7 @@ export function TeacherStudentDetailPage() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-orange-200 bg-orange-50 shadow-sm">
+          <section className="rounded-lg border border-orange-200 bg-orange-100 shadow-sm">
             <div className="flex flex-col gap-2 border-b border-orange-200 p-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase text-orange-700">Liên lạc phụ huynh</p>
@@ -573,7 +573,7 @@ export function TeacherStudentDetailPage() {
 
             <div className="space-y-2 bg-white p-4">
               {state.contacts.length === 0 ? (
-                <p className="rounded-md border border-orange-100 bg-orange-50 p-3 text-sm text-slate-600">
+                <p className="rounded-md border border-orange-100 bg-orange-100 p-3 text-sm text-slate-600">
                   Chưa có lượt liên lạc phụ huynh nào cho học sinh này.
                 </p>
               ) : (
@@ -597,7 +597,7 @@ export function TeacherStudentDetailPage() {
             </div>
           </section>
 
-          <form onSubmit={saveStudent} className="rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm">
+          <form onSubmit={saveStudent} className="rounded-lg border border-violet-200 bg-violet-100 p-4 shadow-sm">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase text-violet-700">Thông tin cá nhân</p>
@@ -694,10 +694,10 @@ function TeacherProposalItem({
     item.trang_thai === 'da_duyet' ? 'Đã duyệt' : item.trang_thai === 'tu_choi' ? 'Bị từ chối' : 'Chờ duyệt'
   const statusClass =
     item.trang_thai === 'da_duyet'
-      ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+      ? 'border-emerald-300 bg-emerald-100 text-emerald-800'
       : item.trang_thai === 'tu_choi'
-        ? 'border-rose-300 bg-rose-50 text-rose-800'
-        : 'border-amber-300 bg-amber-50 text-amber-800'
+        ? 'border-rose-300 bg-rose-100 text-rose-800'
+        : 'border-amber-300 bg-amber-100 text-amber-800'
 
   async function saveEdit() {
     setBusy(true)
@@ -762,7 +762,7 @@ function TeacherProposalItem({
       ) : null}
 
       {editing ? (
-        <div className="mt-2 space-y-2 rounded-md border border-teal-100 bg-teal-50/50 p-2">
+        <div className="mt-2 space-y-2 rounded-md border border-teal-100 bg-teal-100/50 p-2">
           <select
             value={selectedCatalog}
             onChange={(event) => setSelectedCatalog(event.target.value)}
@@ -845,7 +845,7 @@ function TeacherProposalItem({
             type="button"
             disabled={busy}
             onClick={() => void remove()}
-            className="h-8 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+            className="h-8 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
           >
             {busy ? 'Đang xoá...' : 'Xoá'}
           </button>
@@ -861,7 +861,7 @@ function PhoneRow({ label, name, value }: { label: string; name?: string; value:
   const phoneText = toText(value)
 
   return (
-    <div className="flex flex-col rounded-md border border-slate-200 bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col rounded-md border border-slate-200 bg-slate-100 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p className="font-semibold text-slate-900">{label}</p>
         {name ? <p className="text-slate-600">{name}</p> : null}
@@ -954,14 +954,14 @@ function getRecordRowClass(record: GhiNhan, catalogItem?: DanhMucDiem): string {
   const polarity = getRecordPolarity(record, catalogByCode)
 
   if (polarity === 'positive') {
-    return 'bg-emerald-50 hover:bg-emerald-100'
+    return 'bg-emerald-100 hover:bg-emerald-100'
   }
 
   if (polarity === 'negative') {
-    return 'bg-red-50 hover:bg-red-100'
+    return 'bg-red-100 hover:bg-red-100'
   }
 
-  return 'bg-white hover:bg-slate-50'
+  return 'bg-white hover:bg-slate-100'
 }
 
 function formatDate(value: string | null): string {

@@ -146,7 +146,7 @@ export function StudentProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6">
+    <main className="min-h-screen bg-slate-200 px-4 py-6 sm:px-6">
       <section className="mx-auto max-w-3xl space-y-4">
         <div>
           <div>
@@ -162,7 +162,7 @@ export function StudentProfilePage() {
         ) : null}
 
         {state.status === 'error' ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <div className="rounded-lg border border-amber-200 bg-amber-100 p-4 text-sm text-amber-900">
             {state.message}
           </div>
         ) : null}
@@ -245,7 +245,7 @@ export function StudentProfilePage() {
                 />
                 {!collapsedSections.score ? (
                   <>
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm">
+                <div className="rounded-lg border border-amber-200 bg-amber-100 p-4 shadow-sm">
                   <div className="max-w-xs">
                     <WeekSelector
                       label="Tuần tính điểm"
@@ -294,7 +294,7 @@ function StudentProfileHeader({
   student: HocSinh
 }) {
   return (
-    <div className="rounded-lg border border-sky-200 bg-sky-50 p-4 shadow-sm">
+    <div className="rounded-lg border border-sky-200 bg-sky-100 p-4 shadow-sm">
       <div className="flex items-center gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
           {student.ten.slice(0, 1).toUpperCase()}
@@ -331,7 +331,7 @@ function ProfileSectionNav({
             key={item.id}
             type="button"
             onClick={() => onSelect(item.id)}
-            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            className="rounded-full border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-700"
           >
             {item.label}
             {collapsedSections[item.id] ? ' (đang gọn)' : ''}
@@ -357,7 +357,7 @@ function ProfileSectionHeader({
       <button
         type="button"
         onClick={onToggle}
-        className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+        className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
       >
         {collapsed ? 'Mở rộng' : 'Thu gọn'}
       </button>
@@ -371,7 +371,7 @@ function FeaturedRecords({ catalog, records }: { catalog: DanhMucDiem[]; records
   const summary = summarizeRecordImpacts(records, catalogByCode)
 
   return (
-    <div className="rounded-lg border border-blue-300 bg-blue-50 shadow-sm">
+    <div className="rounded-lg border border-blue-300 bg-blue-100 shadow-sm">
       <div className="border-b border-blue-200 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -458,7 +458,7 @@ function ScoreSummary({ score }: { score: WeeklyStudentScore }) {
   ]
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 shadow-sm">
+    <div className="rounded-lg border border-amber-200 bg-amber-100 shadow-sm">
       <div className="flex flex-col gap-3 border-b border-amber-200 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-900">Điểm thi đua tuần {score.tuan_so}</h2>
@@ -488,7 +488,7 @@ function ScoreSummary({ score }: { score: WeeklyStudentScore }) {
       </div>
 
       {score.can_canh_bao_ngay ? (
-        <div className="border-t border-red-100 bg-red-50 p-4 text-sm font-medium text-red-800">
+        <div className="border-t border-red-100 bg-red-100 p-4 text-sm font-medium text-red-800">
           Có ghi nhận nghiêm trọng, cần xử lý ngay.
         </div>
       ) : null}
@@ -515,7 +515,7 @@ function RecordHistory({
   const summary = summarizeRecordImpacts(filteredRecords, catalogByCode)
 
   return (
-    <div className="rounded-lg border border-emerald-200 bg-emerald-50 shadow-sm">
+    <div className="rounded-lg border border-emerald-200 bg-emerald-100 shadow-sm">
       <div className="space-y-3 border-b border-emerald-200 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -629,13 +629,13 @@ function RecordSummary({
         {record.mon_hoc ? <Badge>{record.mon_hoc}</Badge> : null}
         {pointText ? <Badge>{pointText}</Badge> : null}
         {insight.polarity === 'negative' && insight.duplicateCount ? (
-          <Badge className="border-red-200 bg-red-50 text-red-700">
+          <Badge className="border-red-200 bg-red-100 text-red-700">
             {`Lần ${insight.duplicateCount}`}
           </Badge>
         ) : null}
       </div>
       {insight.polarity === 'negative' && insight.intervention ? (
-        <div className="mt-3 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-800">
+        <div className="mt-3 rounded-md border border-red-100 bg-red-100 px-3 py-2 text-xs text-red-800">
           <p className="font-bold">{insight.intervention.label}</p>
           <p className="mt-1">{insight.intervention.action}</p>
         </div>
@@ -661,14 +661,14 @@ function ImpactSummary({ negative, positive }: { negative: number; positive: num
 
 function ImpactBadge({ insight }: { insight: ReturnType<typeof getRecordInsight> }) {
   if (insight.impactValue === 1) {
-    return <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">+1 tích cực</Badge>
+    return <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">+1 tích cực</Badge>
   }
 
   if (insight.impactValue === -1) {
-    return <Badge className="border-red-200 bg-red-50 text-red-700">-1 vi phạm</Badge>
+    return <Badge className="border-red-200 bg-red-100 text-red-700">-1 vi phạm</Badge>
   }
 
-  return <Badge className="border-slate-200 bg-slate-50 text-slate-600">0 theo dõi</Badge>
+  return <Badge className="border-slate-200 bg-slate-100 text-slate-600">0 theo dõi</Badge>
 }
 
 function Badge({ children, className = 'bg-slate-100 text-slate-700 border-slate-200' }: { children: string; className?: string }) {
@@ -681,7 +681,7 @@ function Badge({ children, className = 'bg-slate-100 text-slate-700 border-slate
 
 function ProfileCard({ role, student }: { role: string; student: HocSinh }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-violet-200 bg-violet-50 shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-violet-200 bg-violet-100 shadow-sm">
       <div className="border-b border-violet-200 bg-violet-100 p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white">
@@ -829,7 +829,7 @@ function LopTruongPanel({ token }: { token: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-lg border border-teal-300 bg-teal-50 p-4 text-left shadow-sm hover:bg-teal-100"
+        className="w-full rounded-lg border border-teal-300 bg-teal-100 p-4 text-left shadow-sm hover:bg-teal-100"
       >
         <p className="text-xs font-semibold uppercase text-teal-700">Dành cho lớp trưởng</p>
         <p className="mt-1 font-bold text-slate-900">Nhập đề xuất ghi nhận cho lớp</p>
@@ -839,7 +839,7 @@ function LopTruongPanel({ token }: { token: string }) {
   }
 
   return (
-    <div className="rounded-lg border border-teal-300 bg-teal-50 p-4 shadow-sm">
+    <div className="rounded-lg border border-teal-300 bg-teal-100 p-4 shadow-sm">
       <p className="text-xs font-semibold uppercase text-teal-700">Dành cho lớp trưởng</p>
       <h3 className="text-lg font-bold text-slate-950">Nhập đề xuất ghi nhận cho lớp</h3>
       <p className="mt-1 text-sm text-slate-600">
@@ -1030,10 +1030,10 @@ function ProposalHistoryItem({
     item.trang_thai === 'da_duyet' ? 'Đã duyệt' : item.trang_thai === 'tu_choi' ? 'Bị từ chối' : 'Chờ duyệt'
   const statusClass =
     item.trang_thai === 'da_duyet'
-      ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+      ? 'border-emerald-300 bg-emerald-100 text-emerald-800'
       : item.trang_thai === 'tu_choi'
-        ? 'border-rose-300 bg-rose-50 text-rose-800'
-        : 'border-amber-300 bg-amber-50 text-amber-800'
+        ? 'border-rose-300 bg-rose-100 text-rose-800'
+        : 'border-amber-300 bg-amber-100 text-amber-800'
 
   async function saveEdit() {
     if (!selectedMaHs || !selectedCatalog) return
@@ -1102,7 +1102,7 @@ function ProposalHistoryItem({
 
       {canEdit ? (
         editing ? (
-          <div className="mt-2 space-y-2 rounded-md border border-teal-100 bg-teal-50/50 p-2">
+          <div className="mt-2 space-y-2 rounded-md border border-teal-100 bg-teal-100/50 p-2">
             <select
               value={selectedMaHs}
               onChange={(event) => setSelectedMaHs(event.target.value)}
@@ -1197,7 +1197,7 @@ function ProposalHistoryItem({
               type="button"
               disabled={busy}
               onClick={() => void remove()}
-              className="h-8 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              className="h-8 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
             >
               {busy ? 'Đang xoá...' : 'Xoá'}
             </button>
@@ -1316,11 +1316,11 @@ function getRecordCardClass(record: GhiNhan, catalogItem?: DanhMucDiem): string 
   const polarity = getRecordPolarity(record, catalogByCode)
 
   if (polarity === 'positive') {
-    return 'border-emerald-200 bg-emerald-50'
+    return 'border-emerald-200 bg-emerald-100'
   }
 
   if (polarity === 'negative') {
-    return 'border-red-200 bg-red-50'
+    return 'border-red-200 bg-red-100'
   }
 
   return 'border-slate-200 bg-white'

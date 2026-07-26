@@ -303,7 +303,7 @@ export function StudentsPage() {
       {false ? (
         <form
           onSubmit={saveStudent}
-          className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-4"
+          className="space-y-4 rounded-lg border border-blue-200 bg-blue-100 p-4"
         >
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-base font-bold text-slate-900">
@@ -410,7 +410,7 @@ export function StudentsPage() {
           </div>
 
           {saveError ? (
-            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <div className="rounded-md border border-amber-200 bg-amber-100 px-3 py-2 text-sm text-amber-900">
               {saveError}
             </div>
           ) : null}
@@ -426,7 +426,7 @@ export function StudentsPage() {
             <button
               type="button"
               onClick={closeForm}
-              className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
             >
               Huỷ
             </button>
@@ -554,7 +554,7 @@ export function StudentsPage() {
               </div>
 
               {saveError ? (
-                <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                <div className="mt-4 rounded-md border border-amber-200 bg-amber-100 px-3 py-2 text-sm text-amber-900">
                   {saveError}
                 </div>
               ) : null}
@@ -564,7 +564,7 @@ export function StudentsPage() {
               <button
                 type="button"
                 onClick={closeForm}
-                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
                 Huỷ
               </button>
@@ -587,13 +587,13 @@ export function StudentsPage() {
       ) : null}
 
       {loadError ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-lg border border-amber-200 bg-amber-100 p-4 text-sm text-amber-900">
           {loadError}
         </div>
       ) : null}
 
       {copyMessage ? (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <div className="rounded-lg border border-emerald-200 bg-emerald-100 p-4 text-sm text-emerald-900">
           {copyMessage}
         </div>
       ) : null}
@@ -612,16 +612,16 @@ export function StudentsPage() {
             <button
               type="button"
               onClick={() => setStudentListCollapsed((current) => !current)}
-              className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
             >
               {studentListCollapsed ? 'Mở rộng danh sách' : 'Thu gọn danh sách'}
             </button>
           </div>
-          <div className="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold">
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
+          <div className="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-100 px-4 py-3 text-xs font-semibold">
+            <span className="rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-emerald-700">
               Tích cực / thành tích
             </span>
-            <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-red-700">
+            <span className="rounded-full border border-red-200 bg-red-100 px-3 py-1 text-red-700">
               Vi phạm cần lưu ý
             </span>
             <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600">
@@ -635,7 +635,7 @@ export function StudentsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-500">
                   <tr>
                     <th className="px-3 py-3">STT</th>
                     <th className="px-3 py-3">Mã HS</th>
@@ -692,19 +692,19 @@ export function StudentsPage() {
                           <td className="whitespace-nowrap px-3 py-3">
                             <div className="flex justify-end gap-2">
                               {impactSummary.positive > 0 ? (
-                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-xs font-bold text-emerald-700">
+                                <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-1.5 text-xs font-bold text-emerald-700">
                                   +{impactSummary.positive}
                                 </span>
                               ) : null}
                               {impactSummary.negative > 0 ? (
-                                <span className="rounded-full border border-red-200 bg-red-50 px-2 py-1.5 text-xs font-bold text-red-700">
+                                <span className="rounded-full border border-red-200 bg-red-100 px-2 py-1.5 text-xs font-bold text-red-700">
                                   -{impactSummary.negative}
                                 </span>
                               ) : null}
                               <button
                                 type="button"
                                 onClick={() => setExpandedMaHs(expanded ? null : student.ma_hs)}
-                                className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                                className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
                               >
                                 {expanded ? 'Thu gọn' : 'Chi tiết'}
                               </button>
@@ -719,7 +719,7 @@ export function StudentsPage() {
                                 type="button"
                                 onClick={() => void deleteStudent(student)}
                                 disabled={deletingMaHs === student.ma_hs}
-                                className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                                className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
                               >
                                 {deletingMaHs === student.ma_hs ? 'Đang xoá' : 'Xoá'}
                               </button>
@@ -768,7 +768,7 @@ export function StudentsPage() {
                                 <button
                                   type="button"
                                   onClick={() => void copyProfileLink(student)}
-                                  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                                 >
                                   Copy link hồ sơ
                                 </button>
@@ -841,8 +841,8 @@ function ImpactStat({
 }) {
   const className =
     tone === 'positive'
-      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-      : 'border-red-200 bg-red-50 text-red-700'
+      ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
+      : 'border-red-200 bg-red-100 text-red-700'
 
   return (
     <span className={`rounded-full border px-3 py-1 font-bold ${className}`}>
@@ -857,18 +857,18 @@ function getStudentRowClass(
   summary: { negative: number; positive: number },
 ): string {
   if (summary.negative > 0) {
-    return expanded ? 'bg-red-100' : 'bg-red-50 hover:bg-red-100'
+    return expanded ? 'bg-red-100' : 'bg-red-100 hover:bg-red-100'
   }
 
   if (summary.positive > 0) {
-    return expanded ? 'bg-emerald-100' : 'bg-emerald-50 hover:bg-emerald-100'
+    return expanded ? 'bg-emerald-100' : 'bg-emerald-100 hover:bg-emerald-100'
   }
 
   if (expanded) {
-    return 'bg-blue-50'
+    return 'bg-blue-100'
   }
 
-  return 'hover:bg-slate-50'
+  return 'hover:bg-slate-100'
 }
 
 function getExpandedRowClass(summary: { negative: number; positive: number }): string {
@@ -880,7 +880,7 @@ function getExpandedRowClass(summary: { negative: number; positive: number }): s
     return 'bg-emerald-100'
   }
 
-  return 'bg-blue-50'
+  return 'bg-blue-100'
 }
 
 function formFromStudent(student: HocSinh): StudentForm {

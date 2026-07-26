@@ -484,7 +484,7 @@ export function CatalogPage() {
 
   if (loadError) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+      <div className="rounded-lg border border-red-200 bg-red-100 p-4 text-sm font-medium text-red-700">
         {loadError}
       </div>
     )
@@ -492,7 +492,7 @@ export function CatalogPage() {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-4">
+      <div className="rounded-lg border border-cyan-200 bg-cyan-100 p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase text-cyan-700">DanhMucDiem</p>
@@ -517,7 +517,7 @@ export function CatalogPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+      <div className="rounded-lg border border-indigo-200 bg-indigo-100 p-4">
         <div className="flex flex-col gap-1">
           <p className="text-xs font-semibold uppercase text-indigo-700">DanhMucXuLy</p>
           <h3 className="text-base font-bold text-slate-900">Danh mục đề xuất xử lý/phạt</h3>
@@ -561,7 +561,7 @@ export function CatalogPage() {
       </div>
 
       {false ? (
-      <form onSubmit={saveCatalogItem} className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+      <form onSubmit={saveCatalogItem} className="rounded-lg border border-emerald-200 bg-emerald-100 p-4">
         <div className="flex flex-col gap-1">
           <h3 className="text-base font-bold text-slate-900">
             {formMode === 'add' ? 'Thêm danh mục mới' : `Sửa danh mục ${editingCode}`}
@@ -660,12 +660,12 @@ export function CatalogPage() {
 
           <div className="flex flex-col gap-2 sm:flex-row">
             {saveError ? (
-              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+              <p className="rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm font-semibold text-red-700">
                 {saveError}
               </p>
             ) : null}
             {saveMessage ? (
-              <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+              <p className="rounded-md border border-emerald-200 bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-800">
                 {saveMessage}
               </p>
             ) : null}
@@ -673,7 +673,7 @@ export function CatalogPage() {
               <button
                 type="button"
                 onClick={openAddForm}
-                className="h-10 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="h-10 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
                 Hủy sửa
               </button>
@@ -816,7 +816,7 @@ export function CatalogPage() {
                 </label>
               </div>
 
-              <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+              <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-100 p-3">
                 <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
                   <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
                     Mã xử lý/phạt liên kết
@@ -856,7 +856,7 @@ export function CatalogPage() {
                 )}
               </div>
 
-              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-100 p-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-amber-900">
                     Với danh mục điểm âm, có thể dùng gợi ý xử lý theo mức lặp lại rồi chỉnh lại cho đúng thực tế lớp.
@@ -884,12 +884,12 @@ export function CatalogPage() {
               </label>
 
               {saveError ? (
-                <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+                <p className="mt-4 rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm font-semibold text-red-700">
                   {saveError}
                 </p>
               ) : null}
               {saveMessage ? (
-                <p className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+                <p className="mt-4 rounded-md border border-emerald-200 bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-800">
                   {saveMessage}
                 </p>
               ) : null}
@@ -899,7 +899,7 @@ export function CatalogPage() {
               <button
                 type="button"
                 onClick={closeForm}
-                className="h-10 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="h-10 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
                 Huỷ
               </button>
@@ -915,9 +915,9 @@ export function CatalogPage() {
         </div>
       ) : null}
 
-      <div className="rounded-lg border border-violet-200 bg-violet-50 p-4">
+      <div className="rounded-lg border border-violet-200 bg-violet-100 p-4">
         {linkedCode ? (
-          <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800">
+          <div className="mb-3 rounded-md border border-blue-200 bg-blue-100 px-3 py-2 text-sm font-semibold text-blue-800">
             Đang xem danh mục liên kết: {linkedCode}
           </div>
         ) : null}
@@ -1002,9 +1002,9 @@ export function CatalogPage() {
                   <tr
                     key={item.ma_danh_muc}
                     id={`catalog-${item.ma_danh_muc}`}
-                    className={`align-top hover:bg-slate-50 ${
+                    className={`align-top hover:bg-slate-100 ${
                       item.ma_danh_muc === linkedCode || item.ma_danh_muc === selectedCatalogCode
-                        ? 'bg-blue-50 ring-2 ring-inset ring-blue-300'
+                        ? 'bg-blue-100 ring-2 ring-inset ring-blue-300'
                         : ''
                     }`}
                   >
@@ -1024,12 +1024,12 @@ export function CatalogPage() {
                       <p className="font-semibold">{item.ten_muc}</p>
                       {item.mo_ta ? <p className="mt-1 text-xs text-slate-600">{item.mo_ta}</p> : null}
                       {item.de_xuat_xu_ly ? (
-                        <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                        <p className="mt-2 rounded-md border border-amber-200 bg-amber-100 px-2 py-1 text-xs text-amber-900">
                           <span className="font-semibold">Đề xuất xử lý:</span> {item.de_xuat_xu_ly}
                         </p>
                       ) : null}
                       {item.ma_xu_ly_de_xuat ? (
-                        <p className="mt-2 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs text-indigo-900">
+                        <p className="mt-2 rounded-md border border-indigo-200 bg-indigo-100 px-2 py-1 text-xs text-indigo-900">
                           <span className="font-semibold">Mã xử lý:</span> {item.ma_xu_ly_de_xuat}
                           {getHandlingTitle(item.ma_xu_ly_de_xuat, handlingCatalog)
                             ? ` - ${getHandlingTitle(item.ma_xu_ly_de_xuat, handlingCatalog)}`
@@ -1044,7 +1044,7 @@ export function CatalogPage() {
                       <button
                         type="button"
                         onClick={() => openLinkedRecords(item)}
-                        className="rounded-md border border-violet-200 bg-white px-2 py-1 text-xs font-bold text-violet-700 hover:bg-violet-50"
+                        className="rounded-md border border-violet-200 bg-white px-2 py-1 text-xs font-bold text-violet-700 hover:bg-violet-100"
                       >
                         {recordCountByCatalogCode.get(item.ma_danh_muc) || 0} dòng
                       </button>
@@ -1063,7 +1063,7 @@ export function CatalogPage() {
                     <td className="px-3 py-3 text-slate-700">{labelScope(item.pham_vi)}</td>
                     <td className="px-3 py-3">
                       {item.nghiem_trong ? (
-                        <span className="rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
+                        <span className="rounded-full border border-red-200 bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
                           Nghiêm trọng
                         </span>
                       ) : (
@@ -1075,14 +1075,14 @@ export function CatalogPage() {
                         <button
                           type="button"
                           onClick={() => openLinkedRecords(item)}
-                          className="rounded-md border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50"
+                          className="rounded-md border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
                         >
                           Xem HS
                         </button>
                         <button
                           type="button"
                           onClick={() => openEditForm(item)}
-                          className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                          className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
                         >
                           Sửa
                         </button>
@@ -1090,7 +1090,7 @@ export function CatalogPage() {
                           type="button"
                           onClick={() => deleteCatalogItem(item)}
                           disabled={deletingCode === item.ma_danh_muc}
-                          className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                          className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
                         >
                           {deletingCode === item.ma_danh_muc ? 'Đang xóa' : 'Xóa'}
                         </button>
@@ -1111,7 +1111,7 @@ export function CatalogPage() {
             onClick={closeLinkedRecords}
           >
             <section
-              className="flex max-h-[calc(100vh-3rem)] w-full max-w-6xl flex-col rounded-lg border border-rose-200 bg-rose-50 p-4 shadow-2xl"
+              className="flex max-h-[calc(100vh-3rem)] w-full max-w-6xl flex-col rounded-lg border border-rose-200 bg-rose-100 p-4 shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -1128,7 +1128,7 @@ export function CatalogPage() {
                 <button
                   type="button"
                   onClick={closeLinkedRecords}
-                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                 >
                   Đóng
                 </button>
@@ -1136,7 +1136,7 @@ export function CatalogPage() {
                   type="button"
                   onClick={toggleAllRecords}
                   disabled={selectableRecordIds.length === 0}
-                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
                 >
                   {allSelected ? 'Bỏ chọn tất cả' : `Chọn ${selectableRecordIds.length} dòng`}
                 </button>
@@ -1229,7 +1229,7 @@ export function CatalogPage() {
                               type="button"
                               onClick={() => deleteLinkedRecord(record)}
                               disabled={!record.ma_ghi_nhan || deletingRecordId === record.ma_ghi_nhan || bulkDeleting}
-                              className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                              className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
                             >
                               {deletingRecordId === record.ma_ghi_nhan ? 'Đang xoá' : 'Xoá'}
                             </button>
@@ -1259,9 +1259,9 @@ function StatBox({
   value: number
 }) {
   const toneClass = {
-    amber: 'border-amber-200 bg-amber-50 text-amber-800',
-    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    red: 'border-red-200 bg-red-50 text-red-800',
+    amber: 'border-amber-200 bg-amber-100 text-amber-800',
+    emerald: 'border-emerald-200 bg-emerald-100 text-emerald-800',
+    red: 'border-red-200 bg-red-100 text-red-800',
     slate: 'border-slate-200 bg-white text-slate-800',
   }[tone]
 
@@ -1276,7 +1276,7 @@ function StatBox({
 function ToneBadge({ item }: { item: DanhMucDiem }) {
   if (item.diem > 0) {
     return (
-      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
+      <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
         Tích cực
       </span>
     )
@@ -1284,14 +1284,14 @@ function ToneBadge({ item }: { item: DanhMucDiem }) {
 
   if (item.diem < 0) {
     return (
-      <span className="rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
+      <span className="rounded-full border border-red-200 bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
         Vi phạm
       </span>
     )
   }
 
   return (
-    <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+    <span className="rounded-full border border-amber-200 bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">
       Theo dõi
     </span>
   )

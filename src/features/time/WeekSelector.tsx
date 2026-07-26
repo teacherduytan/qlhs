@@ -33,7 +33,7 @@ export function WeekSelector({ label = 'Tuần', onChange, value, weeks }: WeekS
             if (previousWeek) onChange(previousWeek.tuan_so)
           }}
           disabled={selectedIndex <= 0}
-          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
         >
           ← Tuần trước
         </button>
@@ -49,7 +49,7 @@ export function WeekSelector({ label = 'Tuần', onChange, value, weeks }: WeekS
             if (nextWeek) onChange(nextWeek.tuan_so)
           }}
           disabled={selectedIndex < 0 || selectedIndex >= selectableWeeks.length - 1}
-          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
         >
           Tuần sau →
         </button>
@@ -58,13 +58,13 @@ export function WeekSelector({ label = 'Tuần', onChange, value, weeks }: WeekS
           type="button"
           onClick={() => onChange(currentWeekValue)}
           disabled={value === currentWeekValue || selectableWeeks.length === 0}
-          className="h-10 rounded-md border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+          className="h-10 rounded-md border border-blue-200 bg-blue-100 px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
         >
           Về tuần hiện tại
         </button>
 
         <details className="relative">
-          <summary className="flex h-10 cursor-pointer list-none items-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+          <summary className="flex h-10 cursor-pointer list-none items-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
             Chọn nhanh
           </summary>
           <div className="absolute left-0 z-20 mt-2 w-72 rounded-md border border-slate-200 bg-white p-3 shadow-lg">
@@ -118,7 +118,7 @@ export function WeekDatePicker({
           type="button"
           onClick={() => onChange('')}
           disabled={!value}
-          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
         >
           Cả tuần
         </button>

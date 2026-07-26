@@ -130,7 +130,7 @@ export function ParentContactHistoryPage() {
 
   return (
     <section className="space-y-5">
-      <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+      <div className="rounded-lg border border-orange-200 bg-orange-100 p-4">
         <p className="text-xs font-semibold uppercase text-orange-700">Điểm danh chính khóa</p>
         <h2 className="mt-1 text-2xl font-bold text-slate-950">Lịch sử liên lạc phụ huynh</h2>
         <p className="mt-2 text-sm text-slate-700">
@@ -169,9 +169,9 @@ export function ParentContactHistoryPage() {
         </label>
       </div>
 
-      {error ? <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
+      {error ? <p className="rounded-md border border-red-200 bg-red-100 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
       {actionError ? (
-        <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{actionError}</p>
+        <p className="rounded-md border border-red-200 bg-red-100 p-3 text-sm font-semibold text-red-700">{actionError}</p>
       ) : null}
 
       <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -184,7 +184,7 @@ export function ParentContactHistoryPage() {
 
         <div className="mt-4 space-y-2">
           {!loading && filtered.length === 0 ? (
-            <p className="rounded-md border border-slate-100 bg-slate-50 p-3 text-sm text-slate-600">
+            <p className="rounded-md border border-slate-100 bg-slate-100 p-3 text-sm text-slate-600">
               Không có lượt liên lạc nào khớp bộ lọc.
             </p>
           ) : (
@@ -213,7 +213,7 @@ export function ParentContactHistoryPage() {
                 </div>
 
                 {editingId === item.id ? (
-                  <div className="mt-2 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <div className="mt-2 space-y-2 rounded-md border border-slate-200 bg-slate-100 p-3">
                     <select
                       value={editForm.hinh_thuc}
                       onChange={(event) =>
@@ -266,7 +266,7 @@ export function ParentContactHistoryPage() {
                         type="button"
                         onClick={() => void removeItem(item)}
                         disabled={savingId === item.id}
-                        className="h-8 flex-1 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400 sm:flex-none"
+                        className="h-8 flex-1 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400 sm:flex-none"
                       >
                         {savingId === item.id ? 'Đang xoá...' : 'Xoá'}
                       </button>

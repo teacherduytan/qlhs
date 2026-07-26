@@ -142,7 +142,7 @@ export function AttendanceReportPage() {
 
   return (
     <section className="space-y-5">
-      <div className="rounded-lg border border-sky-200 bg-sky-50 p-4">
+      <div className="rounded-lg border border-sky-200 bg-sky-100 p-4">
         <p className="text-xs font-semibold uppercase text-sky-700">Báo cáo hằng ngày</p>
         <h2 className="mt-1 text-2xl font-bold text-slate-950">Báo cáo sĩ số 11C5</h2>
         <p className="mt-2 text-sm text-slate-700">
@@ -196,13 +196,13 @@ export function AttendanceReportPage() {
       </form>
 
       {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-800">
+        <div className="rounded-lg border border-red-200 bg-red-100 p-3 text-sm font-semibold text-red-800">
           {error}
         </div>
       ) : null}
 
       {message ? (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
+        <div className="rounded-lg border border-emerald-200 bg-emerald-100 p-3 text-sm font-semibold text-emerald-800">
           {message}
         </div>
       ) : null}
@@ -222,7 +222,7 @@ export function AttendanceReportPage() {
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {DIEN_ORDER.map((dien) => (
-                <label key={dien} className="block rounded-md border border-slate-200 bg-slate-50 p-3">
+                <label key={dien} className="block rounded-md border border-slate-200 bg-slate-100 p-3">
                   <span className="block text-xs font-semibold uppercase text-slate-500">{DIEN_LABELS[dien]}</span>
                   <input
                     type="number"

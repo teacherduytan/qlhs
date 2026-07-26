@@ -273,7 +273,7 @@ export function RecordEntryPage() {
 
   if (state.status === 'error') {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+      <div className="rounded-lg border border-red-200 bg-red-100 p-4 text-sm font-medium text-red-700">
         {state.message}
       </div>
     )
@@ -282,7 +282,7 @@ export function RecordEntryPage() {
   return (
     <form onSubmit={saveRecords} className="space-y-4">
       {proposals.length > 0 ? (
-        <section className="rounded-lg border border-teal-200 bg-teal-50 p-4">
+        <section className="rounded-lg border border-teal-200 bg-teal-100 p-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase text-teal-700">Chờ duyệt</p>
@@ -319,7 +319,7 @@ export function RecordEntryPage() {
         </section>
       ) : null}
 
-      <section className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+      <section className="rounded-lg border border-indigo-200 bg-indigo-100 p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase text-indigo-700">GhiNhan</p>
@@ -358,7 +358,7 @@ export function RecordEntryPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-cyan-200 bg-cyan-50 p-4">
+      <section className="rounded-lg border border-cyan-200 bg-cyan-100 p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-900">1. Chọn nội dung vi phạm/ghi nhận</h3>
@@ -425,10 +425,10 @@ export function RecordEntryPage() {
                 <span
                   className={`rounded-full border px-2 py-1 text-xs font-semibold ${
                     selectedCatalog.diem > 0
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
                       : selectedCatalog.diem < 0
-                        ? 'border-red-200 bg-red-50 text-red-700'
-                        : 'border-amber-200 bg-amber-50 text-amber-700'
+                        ? 'border-red-200 bg-red-100 text-red-700'
+                        : 'border-amber-200 bg-amber-100 text-amber-700'
                   }`}
                 >
                   {selectedCatalog.diem > 0 ? `+${selectedCatalog.diem}` : selectedCatalog.diem}
@@ -444,7 +444,7 @@ export function RecordEntryPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+      <section className="rounded-lg border border-emerald-200 bg-emerald-100 p-4">
         <h3 className="text-base font-bold text-slate-900">2. Chọn cách gắn lên học sinh</h3>
         <select
           value={attachMode}
@@ -469,14 +469,14 @@ export function RecordEntryPage() {
                 <button
                   type="button"
                   onClick={selectVisibleStudents}
-                  className="h-10 rounded-md border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
+                  className="h-10 rounded-md border border-emerald-200 bg-emerald-100 px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
                 >
                   Chọn danh sách đang lọc
                 </button>
                 <button
                   type="button"
                   onClick={clearStudentSelection}
-                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                 >
                   Bỏ chọn
                 </button>
@@ -528,7 +528,7 @@ export function RecordEntryPage() {
         ) : null}
       </section>
 
-      <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+      <section className="rounded-lg border border-amber-200 bg-amber-100 p-4">
         <h3 className="text-base font-bold text-slate-900">3. Thông tin ghi nhận</h3>
         <div className="mt-3 grid gap-3 md:grid-cols-6">
           <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-2">
@@ -595,7 +595,7 @@ export function RecordEntryPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-rose-200 bg-rose-50 p-4">
+      <section className="rounded-lg border border-rose-200 bg-rose-100 p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-900">4. Xem trước mã liên kết</h3>
@@ -628,7 +628,7 @@ export function RecordEntryPage() {
       </section>
 
       {createdRecords.length ? (
-        <section className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <section className="rounded-lg border border-blue-200 bg-blue-100 p-4">
           <h3 className="text-base font-bold text-slate-900">Ghi nhận vừa tạo</h3>
           <p className="text-sm text-slate-600">
             Các mã này đã được ghi vào tab GhiNhan và có thể đối chiếu trong Dashboard/hồ sơ học sinh.
@@ -735,7 +735,7 @@ function ProposalReviewCard({
           </p>
         </div>
         {!proposal.ma_danh_muc ? (
-          <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800">
+          <span className="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
             Đề xuất danh mục mới · nhóm {proposal.de_xuat_nhom ? labelGroup(proposal.de_xuat_nhom) : '?'}
           </span>
         ) : null}
@@ -761,7 +761,7 @@ function ProposalReviewCard({
           <button
             type="button"
             onClick={() => setShowCreateForm((value) => !value)}
-            className="h-10 rounded-md border border-teal-300 bg-teal-50 px-3 text-xs font-semibold text-teal-700 hover:bg-teal-100"
+            className="h-10 rounded-md border border-teal-300 bg-teal-100 px-3 text-xs font-semibold text-teal-700 hover:bg-teal-100"
           >
             {showCreateForm ? 'Ẩn form tạo danh mục mới' : 'Tạo danh mục mới từ đề xuất này'}
           </button>
@@ -769,7 +769,7 @@ function ProposalReviewCard({
       </div>
 
       {showCreateForm ? (
-        <div className="mt-2 grid gap-2 rounded-md border border-teal-100 bg-teal-50/50 p-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-2 grid gap-2 rounded-md border border-teal-100 bg-teal-100/50 p-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
             Mã mới
             <input
@@ -850,7 +850,7 @@ function ProposalReviewCard({
           type="button"
           disabled={busy}
           onClick={() => void onReject(proposal)}
-          className="h-9 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+          className="h-9 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
         >
           Từ chối
         </button>
@@ -949,7 +949,7 @@ function PreviewTable({
                   <td className="max-w-md px-3 py-3 text-slate-800">{record.noi_dung}</td>
                   <td className="px-3 py-3">
                     {insight.polarity === 'negative' ? (
-                      <span className="rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
+                      <span className="rounded-full border border-red-200 bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
                         Lần {Math.max(1, nextCount)}
                       </span>
                     ) : (
