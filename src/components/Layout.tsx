@@ -12,14 +12,14 @@ import type { DanhMucDiem, DeXuatGhiNhan, HocSinh } from '../data/types'
 import { Pagination, usePagination } from './Pagination'
 
 const navItems = [
-  { to: '/', label: 'Tổng quan' },
-  { to: '/hoc-sinh', label: 'Học sinh' },
-  { to: '/ghi-nhan', label: 'Ghi nhận' },
-  { to: '/diem-danh', label: 'Điểm danh' },
-  { to: '/lien-lac-phu-huynh', label: 'Liên lạc PH' },
-  { to: '/bao-cao-si-so', label: 'Sĩ số' },
-  { to: '/danh-muc', label: 'Danh mục' },
-  { to: '/import', label: 'Import' },
+  { to: '/', label: 'Tổng quan', icon: '🏠' },
+  { to: '/hoc-sinh', label: 'Học sinh', icon: '🧑‍🎓' },
+  { to: '/ghi-nhan', label: 'Ghi nhận', icon: '📝' },
+  { to: '/diem-danh', label: 'Điểm danh', icon: '✅' },
+  { to: '/lien-lac-phu-huynh', label: 'Liên lạc PH', icon: '📞' },
+  { to: '/bao-cao-si-so', label: 'Sĩ số', icon: '📊' },
+  { to: '/danh-muc', label: 'Danh mục', icon: '📚' },
+  { to: '/import', label: 'Import', icon: '📥' },
 ]
 
 function NavLinkList({
@@ -68,6 +68,30 @@ export function Layout() {
   const notifRef = useRef<HTMLDivElement | null>(null)
   const navRef = useRef<HTMLDivElement | null>(null)
   const notifPage = usePagination(pendingProposals)
+  const [bottomBarVisible, setBottomBarVisible] = useState(true)
+  const lastScrollY = useRef(0)
+
+  useEffect(() => {
+    lastScrollY.current = window.scrollY
+
+    function handleScroll() {
+      const currentY = window.scrollY
+      const delta = currentY - lastScrollY.current
+
+      if (currentY < 24) {
+        setBottomBarVisible(true)
+      } else if (delta > 8) {
+        setBottomBarVisible(false)
+      } else if (delta < -8) {
+        setBottomBarVisible(true)
+      }
+
+      lastScrollY.current = currentY
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     if (!notifOpen && !navOpen) return
@@ -358,13 +382,42 @@ export function Layout() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-20 sm:px-6 md:pb-6">
         <Outlet />
       </main>
 
       <footer className="border-t border-slate-300 bg-slate-100 py-4 text-center text-xs text-slate-500">
         Thầy Nguyễn Duy Tân chuyên dạy lập trình ứng dụng cho học sinh học tư duy logic và người cần bổ sung kinh nghiệm cấp tốc đi làm
       </footer>
+
+      <nav
+        aria-label="Điều hướng nhanh"
+        className={`fixed inset-x-0 bottom-0 z-30 border-t border-slate-300 bg-slate-100 shadow-[0_-2px_6px_rgba(0,0,0,0.08)] transition-transform duration-200 md:hidden ${
+          bottomBarVisible ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
+        <div className="flex gap-1 overflow-x-auto px-1 py-1">
+          {navItems.map(({ to, label, icon }) => {
+            const active = pathname === to
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`flex min-w-16 shrink-0 flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-center ${
+                  active ? 'text-blue-700' : 'text-slate-500'
+                }`}
+              >
+                <span className="text-lg leading-none" aria-hidden="true">
+                  {icon}
+                </span>
+                <span className={`text-[11px] leading-tight ${active ? 'font-semibold' : 'font-medium'}`}>
+                  {label}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
     </div>
   )
 }
