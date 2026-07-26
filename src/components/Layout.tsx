@@ -202,8 +202,8 @@ export function Layout() {
             <h1 className="text-lg font-bold text-slate-900 sm:text-xl">Lớp 11C5</h1>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="relative" ref={notifRef}>
+          <div className="relative flex items-center gap-2">
+            <div ref={notifRef}>
               <button
                 type="button"
                 onClick={() => setNotifOpen((value) => !value)}
@@ -224,7 +224,7 @@ export function Layout() {
               </button>
 
               {notifOpen ? (
-                <div className="fixed inset-x-3 top-16 z-50 max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg md:absolute md:inset-x-auto md:right-0 md:top-12 md:max-h-96 md:w-80">
+                <div className="absolute right-0 top-12 z-50 max-h-96 w-80 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
                   <div className="flex items-center justify-between px-2 py-1">
                     <p className="text-xs font-semibold uppercase text-slate-500">Đề xuất chờ duyệt</p>
                     <button
