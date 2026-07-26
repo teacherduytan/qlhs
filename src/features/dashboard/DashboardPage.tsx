@@ -29,6 +29,7 @@ import {
   WeekSelector,
 } from '../time/WeekSelector'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
+import { Pagination, usePagination } from '../../components/Pagination'
 
 type DashboardState =
   | { status: 'loading' }
@@ -456,6 +457,10 @@ export function DashboardPage() {
     })
   }
 
+  const scoresPage = usePagination(body?.sortedScores ?? [])
+  const eventsPage = usePagination(body?.collectiveEvents ?? [])
+  const dailyLogsPage = usePagination(body?.dailyLogs ?? [])
+
   return (
     <section className="space-y-4">
       <div>
@@ -639,7 +644,7 @@ export function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-indigo-100 bg-white">
-                    {body.sortedScores.map((score, index) => {
+                    {scoresPage.pageItems.map((score, index) => {
                       const student = body.studentById.get(score.ma_hs)
                       const suggestions = buildPedagogySuggestions({
                         currentWeekRecords: getStudentRecords(state.records, score.ma_hs, [
@@ -657,7 +662,9 @@ export function DashboardPage() {
                           key={score.ma_hs}
                           className={needsAttention(score) ? 'bg-red-100' : 'hover:bg-slate-100'}
                         >
-                          <td className="whitespace-nowrap px-3 py-3 text-slate-600">{index + 1}</td>
+                          <td className="whitespace-nowrap px-3 py-3 text-slate-600">
+                            {scoresPage.startIndex + index + 1}
+                          </td>
                           <td className="whitespace-nowrap px-3 py-3 font-semibold">
                             {student ? (
                               <Link
@@ -699,6 +706,9 @@ export function DashboardPage() {
                     })}
                   </tbody>
                 </table>
+                <div className="p-3">
+                  <Pagination onChange={scoresPage.setPage} page={scoresPage.page} totalPages={scoresPage.totalPages} />
+                </div>
               </div>
             )}
           </section>
@@ -714,7 +724,7 @@ export function DashboardPage() {
             </div>
             {!collapsedSections.events && body.collectiveEvents.length ? (
               <div className="divide-y divide-amber-100 bg-white/70">
-                {body.collectiveEvents.map(({ catalogItem, record }) => (
+                {eventsPage.pageItems.map(({ catalogItem, record }) => (
                   <article key={eventKey(record)} className="space-y-3 p-4">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                       <div>
@@ -815,6 +825,9 @@ export function DashboardPage() {
                     </div>
                   </article>
                 ))}
+                <div className="p-4">
+                  <Pagination onChange={eventsPage.setPage} page={eventsPage.page} totalPages={eventsPage.totalPages} />
+                </div>
               </div>
             ) : null}
             {!collapsedSections.events && !body.collectiveEvents.length ? (
@@ -844,7 +857,7 @@ export function DashboardPage() {
             </div>
             {!collapsedSections.daily ? (
             <div className="divide-y divide-emerald-100 bg-white/70">
-              {body.dailyLogs.map((day) => {
+              {dailyLogsPage.pageItems.map((day) => {
                 const dayImpact = summarizeRecordImpacts(day.records, body.catalogByCode)
 
                 return (
@@ -938,6 +951,13 @@ export function DashboardPage() {
                   </section>
                 )
               })}
+              <div className="p-4">
+                <Pagination
+                  onChange={dailyLogsPage.setPage}
+                  page={dailyLogsPage.page}
+                  totalPages={dailyLogsPage.totalPages}
+                />
+              </div>
             </div>
             ) : (
               <div className="p-4 text-sm text-slate-600">Section đang thu gọn.</div>
@@ -1440,6 +1460,16 @@ function OverviewDrillDownPanel({
   onClose: () => void
   statLabel: string
 }) {
+  const attentionItems: AttentionDrillDownItem[] = drillDown.kind === 'attention' ? drillDown.items : []
+  const recordItems: RecordDrillDownItem[] = drillDown.kind === 'records' ? drillDown.items : []
+  const eventItems: EventDrillDownItem[] = drillDown.kind === 'events' ? drillDown.items : []
+  const studentItems: StudentDrillDownItem[] = drillDown.kind === 'students' ? drillDown.items : []
+
+  const attentionPage = usePagination(attentionItems)
+  const recordPage = usePagination(recordItems)
+  const eventPage = usePagination(eventItems)
+  const studentPage = usePagination(studentItems)
+
   return (
     <section className="max-h-[85vh] overflow-y-auto rounded-lg border border-blue-200 bg-white p-4 shadow-xl">
       <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1459,23 +1489,26 @@ function OverviewDrillDownPanel({
 
       {drillDown.kind === 'attention' ? (
         drillDown.items.length ? (
-          <div className="mt-3 divide-y divide-slate-100">
-            {drillDown.items.map((item, index) => (
-              <div
-                key={item.maHs}
-                className="grid gap-2 py-3 text-sm sm:grid-cols-[3rem_1fr_auto_auto] sm:items-center"
-              >
-                <span className="text-slate-500">{index + 1}</span>
-                <Link to={`/hs/${item.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
-                  {item.name}
-                </Link>
-                <span className="text-slate-600">
-                  Thấp nhất: {item.lowestComponent} {item.lowestScore}
-                </span>
-                <span className="font-semibold text-slate-900">Tổng {item.totalScore}</span>
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="mt-3 divide-y divide-slate-100">
+              {attentionPage.pageItems.map((item, index) => (
+                <div
+                  key={item.maHs}
+                  className="grid gap-2 py-3 text-sm sm:grid-cols-[3rem_1fr_auto_auto] sm:items-center"
+                >
+                  <span className="text-slate-500">{attentionPage.startIndex + index + 1}</span>
+                  <Link to={`/hs/${item.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
+                    {item.name}
+                  </Link>
+                  <span className="text-slate-600">
+                    Thấp nhất: {item.lowestComponent} {item.lowestScore}
+                  </span>
+                  <span className="font-semibold text-slate-900">Tổng {item.totalScore}</span>
+                </div>
+              ))}
+            </div>
+            <Pagination onChange={attentionPage.setPage} page={attentionPage.page} totalPages={attentionPage.totalPages} />
+          </>
         ) : (
           <p className="mt-3 text-sm text-slate-600">Không có học sinh nào cần chú ý tuần này.</p>
         )
@@ -1483,29 +1516,32 @@ function OverviewDrillDownPanel({
 
       {drillDown.kind === 'records' ? (
         drillDown.items.length ? (
-          <div className="mt-3 divide-y divide-slate-100">
-            {drillDown.items.map((item, index) => (
-              <div
-                key={item.id}
-                className="grid gap-2 py-3 text-sm lg:grid-cols-[3rem_8rem_1fr_9rem_8rem] lg:items-center"
-              >
-                <span className="text-slate-500">{index + 1}</span>
-                <CatalogCodeBadge catalogItem={item.catalogItem} code={item.code} />
-                <div>
-                  {item.token ? (
-                    <Link to={`/hs/${item.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
-                      {item.name}
-                    </Link>
-                  ) : (
-                    <span className="font-semibold text-slate-900">{item.name}</span>
-                  )}
-                  <p className="text-slate-600">{item.description}</p>
+          <>
+            <div className="mt-3 divide-y divide-slate-100">
+              {recordPage.pageItems.map((item, index) => (
+                <div
+                  key={item.id}
+                  className="grid gap-2 py-3 text-sm lg:grid-cols-[3rem_8rem_1fr_9rem_8rem] lg:items-center"
+                >
+                  <span className="text-slate-500">{recordPage.startIndex + index + 1}</span>
+                  <CatalogCodeBadge catalogItem={item.catalogItem} code={item.code} />
+                  <div>
+                    {item.token ? (
+                      <Link to={`/hs/${item.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
+                        {item.name}
+                      </Link>
+                    ) : (
+                      <span className="font-semibold text-slate-900">{item.name}</span>
+                    )}
+                    <p className="text-slate-600">{item.description}</p>
+                  </div>
+                  <span className="text-slate-600">{formatDate(item.date)}</span>
+                  <span className="font-medium text-slate-700">{item.status}</span>
                 </div>
-                <span className="text-slate-600">{formatDate(item.date)}</span>
-                <span className="font-medium text-slate-700">{item.status}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <Pagination onChange={recordPage.setPage} page={recordPage.page} totalPages={recordPage.totalPages} />
+          </>
         ) : (
           <p className="mt-3 text-sm text-slate-600">{drillDown.emptyText}</p>
         )
@@ -1513,19 +1549,22 @@ function OverviewDrillDownPanel({
 
       {drillDown.kind === 'events' ? (
         drillDown.items.length ? (
-          <div className="mt-3 divide-y divide-slate-100">
-            {drillDown.items.map((item) => (
-              <div
-                key={item.id}
-                className="grid gap-2 py-3 text-sm lg:grid-cols-[8rem_8rem_1fr_9rem] lg:items-center"
-              >
-                <CatalogCodeBadge catalogItem={item.catalogItem} code={item.code} />
-                <span className="font-medium text-blue-700">{item.scope}</span>
-                <span className="text-slate-600">{item.description}</span>
-                <span className="text-slate-600">{formatDate(item.date)}</span>
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="mt-3 divide-y divide-slate-100">
+              {eventPage.pageItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="grid gap-2 py-3 text-sm lg:grid-cols-[8rem_8rem_1fr_9rem] lg:items-center"
+                >
+                  <CatalogCodeBadge catalogItem={item.catalogItem} code={item.code} />
+                  <span className="font-medium text-blue-700">{item.scope}</span>
+                  <span className="text-slate-600">{item.description}</span>
+                  <span className="text-slate-600">{formatDate(item.date)}</span>
+                </div>
+              ))}
+            </div>
+            <Pagination onChange={eventPage.setPage} page={eventPage.page} totalPages={eventPage.totalPages} />
+          </>
         ) : (
           <p className="mt-3 text-sm text-slate-600">{drillDown.emptyText}</p>
         )
@@ -1533,18 +1572,21 @@ function OverviewDrillDownPanel({
 
       {drillDown.kind === 'students' ? (
         drillDown.items.length ? (
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {drillDown.items.map((item, index) => (
-              <Link
-                key={item.maHs}
-                to={`/hs/${item.token}`}
-                className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 hover:text-blue-800"
-              >
-                <span className="mr-2 text-slate-500">{index + 1}.</span>
-                {item.name}
-              </Link>
-            ))}
-          </div>
+          <>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {studentPage.pageItems.map((item, index) => (
+                <Link
+                  key={item.maHs}
+                  to={`/hs/${item.token}`}
+                  className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+                >
+                  <span className="mr-2 text-slate-500">{studentPage.startIndex + index + 1}.</span>
+                  {item.name}
+                </Link>
+              ))}
+            </div>
+            <Pagination onChange={studentPage.setPage} page={studentPage.page} totalPages={studentPage.totalPages} />
+          </>
         ) : (
           <p className="mt-3 text-sm text-slate-600">{drillDown.emptyText}</p>
         )
@@ -1621,6 +1663,7 @@ function GroupViolationView({
     () => filterAndSortGroupRows(rows, query, sortKey),
     [query, rows, sortKey],
   )
+  const visibleRowsPage = usePagination(visibleRows)
 
   return (
     <section
@@ -1724,9 +1767,11 @@ function GroupViolationView({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {visibleRows.map((row, index) => (
+              {visibleRowsPage.pageItems.map((row, index) => (
                 <tr key={row.maHs} className="hover:bg-slate-100">
-                  <td className="whitespace-nowrap px-3 py-3 text-slate-600">{index + 1}</td>
+                  <td className="whitespace-nowrap px-3 py-3 text-slate-600">
+                    {visibleRowsPage.startIndex + index + 1}
+                  </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <Link to={`/hs/${row.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
                       {row.name}
@@ -1823,7 +1868,15 @@ function GroupViolationView({
           <div className="border-t border-slate-100 p-4 text-sm text-slate-600">
             Không có học sinh nào trong {selectedLabel.toLowerCase()} theo bộ lọc hiện tại.
           </div>
-        ) : null}
+        ) : (
+          <div className="border-t border-slate-100 p-3">
+            <Pagination
+              onChange={visibleRowsPage.setPage}
+              page={visibleRowsPage.page}
+              totalPages={visibleRowsPage.totalPages}
+            />
+          </div>
+        )}
       </div>
         </>
       )}
