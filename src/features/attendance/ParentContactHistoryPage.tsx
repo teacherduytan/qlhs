@@ -212,26 +212,6 @@ export function ParentContactHistoryPage() {
                   </p>
                 </div>
 
-                {editingId !== item.id ? (
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(item)}
-                      className="h-8 flex-1 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100 sm:flex-none"
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void removeItem(item)}
-                      disabled={savingId === item.id}
-                      className="h-8 flex-1 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400 sm:flex-none"
-                    >
-                      {savingId === item.id ? 'Đang xoá...' : 'Xoá'}
-                    </button>
-                  </div>
-                ) : null}
-
                 {editingId === item.id ? (
                   <div className="mt-2 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
                     <select
@@ -272,7 +252,26 @@ export function ParentContactHistoryPage() {
                     </div>
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm text-slate-700">{item.noi_dung || 'Không có ghi chú.'}</p>
+                  <>
+                    <p className="mt-2 text-sm text-slate-700">{item.noi_dung || 'Không có ghi chú.'}</p>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(item)}
+                        className="h-8 flex-1 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100 sm:flex-none"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void removeItem(item)}
+                        disabled={savingId === item.id}
+                        className="h-8 flex-1 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400 sm:flex-none"
+                      >
+                        {savingId === item.id ? 'Đang xoá...' : 'Xoá'}
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
             ))
