@@ -64,6 +64,12 @@ const NHOM_OPTIONS: Array<{ label: string; value: NhomDiem }> = [
   { label: 'Kỷ luật', value: 'KL' },
   { label: 'Tích cực', value: 'KT' },
 ]
+const TIET_OPTIONS = ['1', '2', '3', '4', '5', '6', '7', '8', 'Giờ ra chơi']
+const MON_OPTIONS = ['Toán', 'Lý', 'Địa', 'Văn', 'TVAV', 'ANH', 'KTPL', 'GDTC', 'SHDC', 'SHCN']
+const MON_LABELS: Record<string, string> = {
+  SHDC: 'Sinh hoạt dưới cờ (SHDC)',
+  SHCN: 'Sinh hoạt chủ nhiệm (SHCN)',
+}
 
 const INITIAL_PROFILE_COLLAPSED: Record<ProfileSectionKey, boolean> = {
   featured: false,
@@ -1101,21 +1107,33 @@ function LopTruongPanel({ token }: { token: string }) {
               <div className="grid grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
                   Tiết (không bắt buộc)
-                  <input
+                  <select
                     value={tiet}
                     onChange={(event) => setTiet(event.target.value)}
-                    placeholder="VD: 2"
                     className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
+                  >
+                    <option value="">Chọn tiết...</option>
+                    {TIET_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option === 'Giờ ra chơi' ? option : `Tiết ${option}`}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
                   Môn (không bắt buộc)
-                  <input
+                  <select
                     value={monHoc}
                     onChange={(event) => setMonHoc(event.target.value)}
-                    placeholder="VD: Toán"
                     className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
+                  >
+                    <option value="">Chọn môn...</option>
+                    {MON_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {MON_LABELS[option] || option}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
 
@@ -1423,18 +1441,30 @@ function ProposalHistoryItem({
               className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
             <div className="grid grid-cols-2 gap-2">
-              <input
+              <select
                 value={tiet}
                 onChange={(event) => setTiet(event.target.value)}
-                placeholder="Tiết (VD: 2)"
                 className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-              <input
+              >
+                <option value="">Chọn tiết...</option>
+                {TIET_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option === 'Giờ ra chơi' ? option : `Tiết ${option}`}
+                  </option>
+                ))}
+              </select>
+              <select
                 value={monHoc}
                 onChange={(event) => setMonHoc(event.target.value)}
-                placeholder="Môn (VD: Toán)"
                 className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
+              >
+                <option value="">Chọn môn...</option>
+                {MON_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {MON_LABELS[option] || option}
+                  </option>
+                ))}
+              </select>
             </div>
             <textarea
               value={noiDung}
