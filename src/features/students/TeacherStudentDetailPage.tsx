@@ -308,7 +308,7 @@ export function TeacherStudentDetailPage() {
                     <p className="text-xs font-semibold uppercase text-blue-600">
                       {getRole(state.student.ma_hs, state.banCanSu)}
                     </p>
-                    <h3 className="truncate text-2xl font-bold text-slate-950">
+                    <h3 className="wrap-break-word text-xl font-bold text-slate-950 sm:text-2xl">
                       {state.student.ho} {state.student.ten}
                     </h3>
                     <p className="text-sm text-slate-600">Mã học sinh: {state.student.ma_hs}</p>
