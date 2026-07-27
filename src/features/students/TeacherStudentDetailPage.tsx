@@ -250,15 +250,15 @@ export function TeacherStudentDetailPage() {
 
   return (
     <section className="mx-auto max-w-5xl space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase text-blue-600">QLHS 11C5 · chế độ giáo viên</p>
           <h2 className="text-xl font-bold text-slate-900">Hồ sơ học sinh</h2>
           <p className="mt-1 text-sm text-slate-600">
             Cùng bố cục với link học sinh, có thêm quyền chỉnh sửa và xoá ghi nhận.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           {state.status === 'success' ? (
             <Link
               to={`/hs/${state.student.token_ho_so}`}
@@ -299,7 +299,7 @@ export function TeacherStudentDetailPage() {
         <>
           <section className="overflow-hidden rounded-lg border border-sky-200 bg-sky-100 shadow-sm">
             <div className="border-b border-sky-200 p-4">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
                     {state.student.ten.slice(0, 1).toUpperCase()}
@@ -314,7 +314,7 @@ export function TeacherStudentDetailPage() {
                     <p className="text-sm text-slate-600">Mã học sinh: {state.student.ma_hs}</p>
                   </div>
                 </div>
-                <div className="grid min-w-40 grid-cols-2 overflow-hidden rounded-md border border-white/80 bg-white text-center shadow-sm">
+                <div className="grid w-full shrink-0 grid-cols-2 overflow-hidden rounded-md border border-white/80 bg-white text-center shadow-sm md:w-40">
                   <div className="border-r border-slate-100 px-3 py-2">
                     <p className="text-xs font-semibold uppercase text-slate-500">STT</p>
                     <p className="text-lg font-bold text-slate-900">{state.student.tt}</p>
@@ -420,8 +420,8 @@ export function TeacherStudentDetailPage() {
           ) : null}
 
           <section className="rounded-lg border border-blue-300 bg-blue-100 shadow-sm">
-            <div className="flex flex-col gap-2 border-b border-blue-200 p-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
+            <div className="flex flex-col gap-2 border-b border-blue-200 p-4 md:flex-row md:items-end md:justify-between">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase text-blue-700">Ghi nhận của học sinh</p>
                 <h3 className="text-xl font-bold text-slate-950">Ghi nhận tích cực và cần lưu ý trên lớp</h3>
                 <p className="text-sm text-slate-600">
@@ -430,7 +430,7 @@ export function TeacherStudentDetailPage() {
               </div>
               <Link
                 to="/ghi-nhan"
-                className="inline-flex h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100"
               >
                 Thêm ghi nhận
               </Link>
@@ -568,8 +568,8 @@ export function TeacherStudentDetailPage() {
           </section>
 
           <section className="rounded-lg border border-orange-200 bg-orange-100 shadow-sm">
-            <div className="flex flex-col gap-2 border-b border-orange-200 p-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
+            <div className="flex flex-col gap-2 border-b border-orange-200 p-4 md:flex-row md:items-end md:justify-between">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase text-orange-700">Liên lạc phụ huynh</p>
                 <h3 className="text-xl font-bold text-slate-950">Lịch sử đã liên lạc</h3>
                 <p className="text-sm text-slate-600">
@@ -578,7 +578,7 @@ export function TeacherStudentDetailPage() {
               </div>
               <Link
                 to={`/lien-lac-phu-huynh?q=${encodeURIComponent(state.student.ma_hs)}`}
-                className="inline-flex h-10 items-center justify-center rounded-md border border-orange-200 bg-white px-3 text-sm font-semibold text-orange-700 hover:bg-orange-100"
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-md border border-orange-200 bg-white px-3 text-sm font-semibold text-orange-700 hover:bg-orange-100"
               >
                 Xem trong Lịch sử liên lạc
               </Link>
@@ -616,15 +616,15 @@ export function TeacherStudentDetailPage() {
           </section>
 
           <form onSubmit={saveStudent} className="rounded-lg border border-violet-200 bg-violet-100 p-4 shadow-sm">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+            <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase text-violet-700">Thông tin cá nhân</p>
                 <h3 className="text-base font-bold text-slate-900">Chỉnh sửa thông tin</h3>
               </div>
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex h-10 items-center justify-center rounded-md bg-violet-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-violet-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400"
               >
                 {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
               </button>
@@ -757,16 +757,16 @@ function TeacherProposalItem({
   return (
     <div className="rounded-md border border-teal-100 bg-white p-2">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">
+        <div className="min-w-0">
+          <p className="wrap-break-word text-sm font-semibold text-slate-900">
             {item.nguoi_de_xuat} đề xuất
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="wrap-break-word text-xs text-slate-500">
             {formatDate(item.ngay)} · {item.ma_danh_muc || `Đề xuất mới (${item.de_xuat_nhom || '?'})`}
             {item.tiet ? ` · Tiết ${item.tiet}` : ''}
             {item.mon_hoc ? ` · ${item.mon_hoc}` : ''}
           </p>
-          {item.noi_dung ? <p className="mt-1 text-sm text-slate-700">{item.noi_dung}</p> : null}
+          {item.noi_dung ? <p className="mt-1 wrap-break-word text-sm text-slate-700">{item.noi_dung}</p> : null}
         </div>
         <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClass}`}>
           {statusLabel}
@@ -879,17 +879,20 @@ function PhoneRow({ label, name, value }: { label: string; name?: string; value:
   const phoneText = toText(value)
 
   return (
-    <div className="flex flex-col rounded-md border border-slate-200 bg-slate-100 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="font-semibold text-slate-900">{label}</p>
-        {name ? <p className="text-slate-600">{name}</p> : null}
+    <div className="flex flex-col gap-1 rounded-md border border-slate-200 bg-slate-100 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="wrap-break-word font-semibold text-slate-900">{label}</p>
+        {name ? <p className="wrap-break-word text-slate-600">{name}</p> : null}
       </div>
       {phoneText ? (
-        <a href={`tel:${normalizePhone(phoneText)}`} className="font-bold text-blue-700 hover:text-blue-800">
+        <a
+          href={`tel:${normalizePhone(phoneText)}`}
+          className="shrink-0 font-bold text-blue-700 hover:text-blue-800"
+        >
           {phoneText}
         </a>
       ) : (
-        <span className="text-slate-400">Chưa có</span>
+        <span className="shrink-0 text-slate-400">Chưa có</span>
       )}
     </div>
   )
