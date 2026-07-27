@@ -36,6 +36,15 @@ type ProfileState =
 
 type ProfileTab = 'records' | 'score' | 'info'
 
+type WizardStep = 'students' | 'catalog' | 'details' | 'review'
+
+const WIZARD_STEPS: Array<{ key: WizardStep; label: string }> = [
+  { key: 'students', label: '1. Học sinh' },
+  { key: 'catalog', label: '2. Danh mục' },
+  { key: 'details', label: '3. Thông tin' },
+  { key: 'review', label: '4. Xác nhận' },
+]
+
 type ProfileSectionKey = 'summary' | 'featured' | 'records' | 'score' | 'info'
 
 const PROFILE_SECTIONS: Array<{ id: ProfileSectionKey; label: string; icon: string; tab?: ProfileTab }> = [
@@ -794,8 +803,10 @@ function LopTruongPanel({ token }: { token: string }) {
   const [verifying, setVerifying] = useState(false)
   const [pinError, setPinError] = useState<string | null>(null)
 
-  const [selectedMaHs, setSelectedMaHs] = useState('')
-  const [selectedCatalog, setSelectedCatalog] = useState('')
+  const [step, setStep] = useState<WizardStep>('students')
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([])
+  const [selectedCatalogCodes, setSelectedCatalogCodes] = useState<string[]>([])
+  const [includeNewCategory, setIncludeNewCategory] = useState(false)
   const [deXuatNhom, setDeXuatNhom] = useState<NhomDiem>('NN')
   const [noiDung, setNoiDung] = useState('')
   const [ngay, setNgay] = useState(todayIso())
@@ -804,12 +815,13 @@ function LopTruongPanel({ token }: { token: string }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
+  const [submitProgress, setSubmitProgress] = useState<{ done: number; total: number } | null>(null)
 
   const [history, setHistory] = useState<DeXuatGhiNhan[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const historyPage = usePagination(history)
 
-  const isNewCategory = selectedCatalog === NEW_CATEGORY_VALUE
+  const totalCombos = selectedStudents.length * (selectedCatalogCodes.length + (includeNewCategory ? 1 : 0))
 
   async function loadHistory(pinValue: string) {
     setHistoryLoading(true)
@@ -844,43 +856,103 @@ function LopTruongPanel({ token }: { token: string }) {
     }
   }
 
-  async function submitProposal(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!verifiedPin || !selectedMaHs || !selectedCatalog) return
-    if (isNewCategory && !noiDung.trim()) {
-      setSubmitError('Cần mô tả nội dung để giáo viên biết đề xuất danh mục mới là gì.')
-      return
+  function toggleStudent(maHs: string) {
+    setSelectedStudents((current) =>
+      current.includes(maHs) ? current.filter((id) => id !== maHs) : [...current, maHs],
+    )
+  }
+
+  function toggleCatalog(code: string) {
+    setSelectedCatalogCodes((current) =>
+      current.includes(code) ? current.filter((c) => c !== code) : [...current, code],
+    )
+  }
+
+  function goNext() {
+    setSubmitError(null)
+    if (step === 'students') {
+      if (selectedStudents.length === 0) {
+        setSubmitError('Chọn ít nhất 1 học sinh.')
+        return
+      }
+      setStep('catalog')
+    } else if (step === 'catalog') {
+      if (selectedCatalogCodes.length === 0 && !includeNewCategory) {
+        setSubmitError('Chọn ít nhất 1 danh mục, hoặc bật đề xuất danh mục mới.')
+        return
+      }
+      setStep('details')
+    } else if (step === 'details') {
+      if (includeNewCategory && !noiDung.trim()) {
+        setSubmitError('Cần mô tả nội dung cho danh mục đề xuất mới.')
+        return
+      }
+      setStep('review')
     }
+  }
+
+  function goBack() {
+    setSubmitError(null)
+    if (step === 'catalog') setStep('students')
+    else if (step === 'details') setStep('catalog')
+    else if (step === 'review') setStep('details')
+  }
+
+  async function submitAll() {
+    if (!verifiedPin || totalCombos === 0) return
 
     setSubmitting(true)
     setSubmitError(null)
     setSubmitMessage(null)
 
-    try {
-      await dataSource.submitDeXuatGhiNhan({
-        token,
-        pin: verifiedPin,
-        ma_hs: selectedMaHs,
-        ma_danh_muc: isNewCategory ? null : selectedCatalog,
-        noi_dung: noiDung,
-        de_xuat_nhom: isNewCategory ? deXuatNhom : null,
-        ngay,
-        tiet: tiet.trim() || null,
-        mon_hoc: monHoc.trim() || null,
-      })
-      setSubmitMessage('Đã gửi đề xuất, chờ giáo viên duyệt.')
-      setSelectedMaHs('')
-      setSelectedCatalog('')
-      setNoiDung('')
-      setNgay(todayIso())
-      setTiet('')
-      setMonHoc('')
-      void loadHistory(verifiedPin)
-    } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Không gửi được đề xuất.')
-    } finally {
-      setSubmitting(false)
+    const categoryEntries: Array<{ ma_danh_muc: string | null; de_xuat_nhom: NhomDiem | null }> = [
+      ...selectedCatalogCodes.map((code) => ({ ma_danh_muc: code, de_xuat_nhom: null })),
+      ...(includeNewCategory ? [{ ma_danh_muc: null, de_xuat_nhom: deXuatNhom }] : []),
+    ]
+    const combos = selectedStudents.flatMap((maHs) =>
+      categoryEntries.map((entry) => ({ maHs, ...entry })),
+    )
+
+    setSubmitProgress({ done: 0, total: combos.length })
+    let failCount = 0
+
+    for (const combo of combos) {
+      try {
+        await dataSource.submitDeXuatGhiNhan({
+          token,
+          pin: verifiedPin,
+          ma_hs: combo.maHs,
+          ma_danh_muc: combo.ma_danh_muc,
+          noi_dung: noiDung,
+          de_xuat_nhom: combo.de_xuat_nhom,
+          ngay,
+          tiet: tiet.trim() || null,
+          mon_hoc: monHoc.trim() || null,
+        })
+      } catch {
+        failCount += 1
+      }
+      setSubmitProgress((current) => (current ? { ...current, done: current.done + 1 } : current))
     }
+
+    setSubmitting(false)
+    setSubmitProgress(null)
+
+    if (failCount === 0) {
+      setSubmitMessage(`Đã gửi ${combos.length} đề xuất, chờ giáo viên duyệt.`)
+    } else {
+      setSubmitError(`Gửi được ${combos.length - failCount}/${combos.length} đề xuất, ${failCount} đề xuất bị lỗi.`)
+    }
+
+    setSelectedStudents([])
+    setSelectedCatalogCodes([])
+    setIncludeNewCategory(false)
+    setNoiDung('')
+    setNgay(todayIso())
+    setTiet('')
+    setMonHoc('')
+    setStep('students')
+    void loadHistory(verifiedPin)
   }
 
   if (!open) {
@@ -924,106 +996,214 @@ function LopTruongPanel({ token }: { token: string }) {
           </button>
         </form>
       ) : (
-        <form onSubmit={submitProposal} className="mt-3 space-y-2">
-          <select
-            value={selectedMaHs}
-            onChange={(event) => setSelectedMaHs(event.target.value)}
-            className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">Chọn học sinh...</option>
-            {roster.students.map((item) => (
-              <option key={item.ma_hs} value={item.ma_hs}>
-                {item.tt}. {item.ho} {item.ten}
-              </option>
+        <div className="mt-3 space-y-3">
+          <div className="flex items-center gap-1">
+            {WIZARD_STEPS.map((item, index) => (
+              <div key={item.key} className="flex flex-1 items-center gap-1">
+                <span
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                    item.key === step
+                      ? 'bg-teal-700 text-white'
+                      : WIZARD_STEPS.findIndex((s) => s.key === step) > index
+                        ? 'bg-teal-200 text-teal-800'
+                        : 'bg-slate-200 text-slate-500'
+                  }`}
+                >
+                  {index + 1}
+                </span>
+                {index < WIZARD_STEPS.length - 1 ? <span className="h-0.5 flex-1 bg-slate-200" /> : null}
+              </div>
             ))}
-          </select>
-
-          <select
-            value={selectedCatalog}
-            onChange={(event) => setSelectedCatalog(event.target.value)}
-            className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">Chọn danh mục...</option>
-            {roster.catalog.map((item) => (
-              <option key={item.ma_danh_muc} value={item.ma_danh_muc}>
-                {item.ma_danh_muc} · {item.ten_muc} ({item.diem > 0 ? `+${item.diem}` : item.diem})
-              </option>
-            ))}
-            <option value={NEW_CATEGORY_VALUE}>➕ Không có, đề xuất danh mục mới</option>
-          </select>
-
-          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-            Ngày xảy ra (có thể chọn Thứ Bảy/Chủ Nhật nếu gửi bù)
-            <input
-              type="date"
-              value={ngay}
-              max={todayIso()}
-              onChange={(event) => setNgay(event.target.value)}
-              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
-
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-              Tiết (không bắt buộc)
-              <input
-                value={tiet}
-                onChange={(event) => setTiet(event.target.value)}
-                placeholder="VD: 2"
-                className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-              Môn (không bắt buộc)
-              <input
-                value={monHoc}
-                onChange={(event) => setMonHoc(event.target.value)}
-                placeholder="VD: Toán"
-                className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-            </label>
           </div>
-
-          <p className="text-xs text-slate-500">
-            Người ghi sẽ tự động ghi theo chức vụ của bạn (Lớp trưởng), không cần chọn.
+          <p className="text-xs font-semibold uppercase text-teal-700">
+            {WIZARD_STEPS.find((item) => item.key === step)?.label}
           </p>
 
-          {isNewCategory ? (
-            <select
-              value={deXuatNhom}
-              onChange={(event) => setDeXuatNhom(event.target.value as NhomDiem)}
-              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              {NHOM_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
+          {step === 'students' ? (
+            <div className="max-h-64 space-y-1 overflow-y-auto rounded-md border border-slate-200 bg-white p-2">
+              {roster.students.map((item) => (
+                <label
+                  key={item.ma_hs}
+                  className="flex items-center gap-2 rounded-md p-2 text-sm hover:bg-slate-100"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedStudents.includes(item.ma_hs)}
+                    onChange={() => toggleStudent(item.ma_hs)}
+                    className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  {item.tt}. {item.ho} {item.ten}
+                </label>
               ))}
-            </select>
+            </div>
           ) : null}
 
-          <textarea
-            value={noiDung}
-            onChange={(event) => setNoiDung(event.target.value)}
-            placeholder={
-              isNewCategory
-                ? 'Mô tả nội dung đề xuất (bắt buộc, vd: nói chuyện riêng nhiều lần trong giờ Sinh)'
-                : 'Nội dung cụ thể (ví dụ: không mang tập Toán tiết 3)'
-            }
-            className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
+          {step === 'catalog' ? (
+            <div className="space-y-2">
+              <div className="max-h-64 space-y-1 overflow-y-auto rounded-md border border-slate-200 bg-white p-2">
+                {roster.catalog.map((item) => (
+                  <label
+                    key={item.ma_danh_muc}
+                    className="flex items-center gap-2 rounded-md p-2 text-sm hover:bg-slate-100"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCatalogCodes.includes(item.ma_danh_muc)}
+                      onChange={() => toggleCatalog(item.ma_danh_muc)}
+                      className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    {item.ma_danh_muc} · {item.ten_muc} ({item.diem > 0 ? `+${item.diem}` : item.diem})
+                  </label>
+                ))}
+                <label className="flex items-center gap-2 rounded-md p-2 text-sm hover:bg-slate-100">
+                  <input
+                    type="checkbox"
+                    checked={includeNewCategory}
+                    onChange={(event) => setIncludeNewCategory(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  ➕ Không có, đề xuất danh mục mới
+                </label>
+              </div>
+              {includeNewCategory ? (
+                <select
+                  value={deXuatNhom}
+                  onChange={(event) => setDeXuatNhom(event.target.value as NhomDiem)}
+                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  {NHOM_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              <p className="text-xs text-slate-500">
+                Đã chọn {selectedStudents.length} học sinh × {selectedCatalogCodes.length + (includeNewCategory ? 1 : 0)}{' '}
+                danh mục = {totalCombos} đề xuất sẽ tạo.
+              </p>
+            </div>
+          ) : null}
+
+          {step === 'details' ? (
+            <div className="space-y-2">
+              <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+                Ngày xảy ra (có thể chọn Thứ Bảy/Chủ Nhật nếu gửi bù)
+                <input
+                  type="date"
+                  value={ngay}
+                  max={todayIso()}
+                  onChange={(event) => setNgay(event.target.value)}
+                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+                  Tiết (không bắt buộc)
+                  <input
+                    value={tiet}
+                    onChange={(event) => setTiet(event.target.value)}
+                    placeholder="VD: 2"
+                    className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+                  Môn (không bắt buộc)
+                  <input
+                    value={monHoc}
+                    onChange={(event) => setMonHoc(event.target.value)}
+                    placeholder="VD: Toán"
+                    className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-500">
+                Người ghi sẽ tự động ghi theo chức vụ của bạn (Lớp trưởng), không cần chọn.
+              </p>
+
+              <textarea
+                value={noiDung}
+                onChange={(event) => setNoiDung(event.target.value)}
+                placeholder={
+                  includeNewCategory
+                    ? 'Mô tả nội dung đề xuất (bắt buộc, vd: nói chuyện riêng nhiều lần trong giờ Sinh)'
+                    : 'Nội dung cụ thể (không bắt buộc, ví dụ: không mang tập Toán tiết 3) — áp dụng chung cho tất cả đề xuất'
+                }
+                className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+          ) : null}
+
+          {step === 'review' ? (
+            <div className="space-y-2 rounded-md border border-teal-200 bg-white p-3 text-sm">
+              <p>
+                <strong>{selectedStudents.length}</strong> học sinh ×{' '}
+                <strong>{selectedCatalogCodes.length + (includeNewCategory ? 1 : 0)}</strong> danh mục ={' '}
+                <strong>{totalCombos}</strong> đề xuất sẽ được gửi.
+              </p>
+              <p className="text-slate-600">
+                {roster.students
+                  .filter((item) => selectedStudents.includes(item.ma_hs))
+                  .map((item) => `${item.ho} ${item.ten}`)
+                  .join(', ')}
+              </p>
+              <p className="text-slate-600">
+                {[
+                  ...roster.catalog
+                    .filter((item) => selectedCatalogCodes.includes(item.ma_danh_muc))
+                    .map((item) => item.ma_danh_muc),
+                  ...(includeNewCategory ? ['➕ Danh mục mới'] : []),
+                ].join(', ')}
+              </p>
+              <p className="text-xs text-slate-500">
+                Ngày {formatDate(ngay)}
+                {tiet.trim() ? ` · Tiết ${tiet.trim()}` : ''}
+                {monHoc.trim() ? ` · ${monHoc.trim()}` : ''}
+              </p>
+              {submitProgress ? (
+                <p className="text-xs font-semibold text-teal-700">
+                  Đang gửi {submitProgress.done}/{submitProgress.total}...
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {submitError ? <p className="text-sm font-semibold text-red-700">{submitError}</p> : null}
           {submitMessage ? <p className="text-sm font-semibold text-emerald-700">{submitMessage}</p> : null}
 
-          <button
-            type="submit"
-            disabled={submitting || !selectedMaHs || !selectedCatalog}
-            className="h-10 w-full rounded-md bg-teal-700 px-4 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            {submitting ? 'Đang gửi...' : 'Gửi đề xuất'}
-          </button>
-        </form>
+          <div className="flex gap-2">
+            {step !== 'students' ? (
+              <button
+                type="button"
+                onClick={goBack}
+                disabled={submitting}
+                className="h-10 flex-1 rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                ← Quay lại
+              </button>
+            ) : null}
+            {step === 'review' ? (
+              <button
+                type="button"
+                onClick={() => void submitAll()}
+                disabled={submitting || totalCombos === 0}
+                className="h-10 flex-1 rounded-md bg-teal-700 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {submitting ? 'Đang gửi...' : `Gửi ${totalCombos} đề xuất`}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={goNext}
+                className="h-10 flex-1 rounded-md bg-teal-700 text-sm font-semibold text-white hover:bg-teal-800"
+              >
+                Tiếp theo →
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
       {pinError ? <p className="mt-2 text-sm font-semibold text-red-700">{pinError}</p> : null}
