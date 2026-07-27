@@ -1137,31 +1137,67 @@ function LopTruongPanel({ token }: { token: string }) {
           ) : null}
 
           {step === 'review' ? (
-            <div className="space-y-2 rounded-md border border-teal-200 bg-white p-3 text-sm">
-              <p>
-                <strong>{selectedStudents.length}</strong> học sinh ×{' '}
-                <strong>{selectedCatalogCodes.length + (includeNewCategory ? 1 : 0)}</strong> danh mục ={' '}
-                <strong>{totalCombos}</strong> đề xuất sẽ được gửi.
+            <div className="space-y-3 rounded-md border border-teal-200 bg-white p-3 text-sm">
+              <p className="font-semibold text-slate-900">
+                Kiểm tra kỹ trước khi gửi — sẽ tạo <strong>{totalCombos}</strong> đề xuất riêng cho{' '}
+                {selectedStudents.length} học sinh dưới đây, mỗi học sinh đều bị/được ghi đúng các mục đã tick.
               </p>
-              <p className="text-slate-600">
+
+              <div className="space-y-2">
                 {roster.students
                   .filter((item) => selectedStudents.includes(item.ma_hs))
-                  .map((item) => `${item.ho} ${item.ten}`)
-                  .join(', ')}
-              </p>
-              <p className="text-slate-600">
-                {[
-                  ...roster.catalog
-                    .filter((item) => selectedCatalogCodes.includes(item.ma_danh_muc))
-                    .map((item) => item.ma_danh_muc),
-                  ...(includeNewCategory ? ['➕ Danh mục mới'] : []),
-                ].join(', ')}
-              </p>
-              <p className="text-xs text-slate-500">
-                Ngày {formatDate(ngay)}
-                {tiet.trim() ? ` · Tiết ${tiet.trim()}` : ''}
-                {monHoc.trim() ? ` · ${monHoc.trim()}` : ''}
-              </p>
+                  .map((student) => (
+                    <div key={student.ma_hs} className="rounded-md border border-slate-200 p-2">
+                      <p className="font-semibold text-slate-900">
+                        {student.tt}. {student.ho} {student.ten}
+                      </p>
+                      <ul className="mt-1 list-disc space-y-0.5 pl-5 text-slate-700">
+                        {roster.catalog
+                          .filter((item) => selectedCatalogCodes.includes(item.ma_danh_muc))
+                          .map((item) => (
+                            <li key={item.ma_danh_muc}>
+                              {item.ma_danh_muc} · {item.ten_muc} ({item.diem > 0 ? `+${item.diem}` : item.diem})
+                            </li>
+                          ))}
+                        {includeNewCategory ? (
+                          <li>
+                            ➕ Đề xuất danh mục mới · nhóm{' '}
+                            {NHOM_OPTIONS.find((option) => option.value === deXuatNhom)?.label || deXuatNhom}
+                          </li>
+                        ) : null}
+                      </ul>
+                    </div>
+                  ))}
+              </div>
+
+              <div className="rounded-md border border-slate-200 bg-slate-100 p-2 text-slate-700">
+                <p>
+                  Áp dụng cho tất cả: ngày <strong>{formatDate(ngay)}</strong>
+                  {tiet.trim() ? (
+                    <>
+                      {' '}
+                      · tiết <strong>{tiet.trim()}</strong>
+                    </>
+                  ) : null}
+                  {monHoc.trim() ? (
+                    <>
+                      {' '}
+                      · môn <strong>{monHoc.trim()}</strong>
+                    </>
+                  ) : null}
+                </p>
+                <p className="mt-1">
+                  Nội dung:{' '}
+                  {noiDung.trim() ? (
+                    <span className="italic">"{noiDung.trim()}"</span>
+                  ) : (
+                    <span className="text-slate-400">
+                      chưa nhập, mỗi đề xuất sẽ tự lấy theo tên danh mục tương ứng
+                    </span>
+                  )}
+                </p>
+              </div>
+
               {submitProgress ? (
                 <p className="text-xs font-semibold text-teal-700">
                   Đang gửi {submitProgress.done}/{submitProgress.total}...
