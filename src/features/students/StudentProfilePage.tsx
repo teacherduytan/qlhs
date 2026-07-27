@@ -18,6 +18,7 @@ import { getBadgeClassForRecord } from '../scoring/scoreStyles'
 import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
 import { getStudentGroup } from './studentGroups'
 import { Pagination, usePagination } from '../../components/Pagination'
+import { PullToRefresh } from '../../components/PullToRefresh'
 
 type ProfileState =
   | { status: 'loading' }
@@ -203,6 +204,7 @@ export function StudentProfilePage() {
         </div>
       </div>
 
+      <PullToRefresh>
       <section className="mx-auto max-w-3xl space-y-4 px-4 py-6 sm:px-6">
         {state.status === 'loading' ? (
           <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
@@ -323,6 +325,7 @@ export function StudentProfilePage() {
           </>
         ) : null}
       </section>
+      </PullToRefresh>
 
       {state.status === 'success' && score ? (
         <nav
