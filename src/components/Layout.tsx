@@ -219,7 +219,7 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-200">
-      <header className="sticky top-0 z-40 border-b border-slate-300 bg-slate-100 shadow-sm">
+      <header className="sticky top-0 z-40 border-b border-slate-300 bg-slate-100 pt-[env(safe-area-inset-top)] shadow-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-blue-600">QLHS</p>
