@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type {
@@ -37,12 +37,12 @@ type ProfileTab = 'records' | 'score' | 'info'
 
 type ProfileSectionKey = 'summary' | 'featured' | 'records' | 'score' | 'info'
 
-const PROFILE_SECTIONS: Array<{ id: ProfileSectionKey; label: string; tab?: ProfileTab }> = [
-  { id: 'summary', label: 'Tóm tắt' },
-  { id: 'featured', label: 'Ghi nhận' },
-  { id: 'records', label: 'Lịch sử', tab: 'records' },
-  { id: 'score', label: 'Điểm tuần', tab: 'score' },
-  { id: 'info', label: 'Cá nhân', tab: 'info' },
+const PROFILE_SECTIONS: Array<{ id: ProfileSectionKey; label: string; icon: string; tab?: ProfileTab }> = [
+  { id: 'summary', label: 'Tóm tắt', icon: '🧾' },
+  { id: 'featured', label: 'Ghi nhận', icon: '⭐' },
+  { id: 'records', label: 'Lịch sử', icon: '🕘', tab: 'records' },
+  { id: 'score', label: 'Điểm tuần', icon: '📊', tab: 'score' },
+  { id: 'info', label: 'Cá nhân', icon: '👤', tab: 'info' },
 ]
 
 const LOP_TRUONG_ROLE = 'Lớp trưởng'
@@ -69,6 +69,21 @@ export function StudentProfilePage() {
   const [activeTab, setActiveTab] = useState<ProfileTab>('records')
   const [collapsedSections, setCollapsedSections] =
     useState<Record<ProfileSectionKey, boolean>>(INITIAL_PROFILE_COLLAPSED)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!menuOpen) return
+
+    function handlePointerDown(event: PointerEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [menuOpen])
 
   const score = useMemo(() => {
     if (state.status !== 'success') {
@@ -138,6 +153,7 @@ export function StudentProfilePage() {
       setActiveTab(target.tab)
     }
     setCollapsedSections((current) => ({ ...current, [section]: false }))
+    setMenuOpen(false)
     window.setTimeout(() => {
       document.getElementById(`profile-${section}`)?.scrollIntoView({
         behavior: 'smooth',
@@ -147,15 +163,47 @@ export function StudentProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-200 px-4 py-6 sm:px-6">
-      <section className="mx-auto max-w-3xl space-y-4">
-        <div>
+    <main className="min-h-screen bg-slate-200 pb-[calc(5rem+env(safe-area-inset-bottom))]">
+      <div className="sticky top-0 z-40 border-b border-slate-300 bg-slate-100 pt-[env(safe-area-inset-top)] shadow-sm">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div>
             <p className="text-xs font-semibold uppercase text-blue-600">QLHS 11C5</p>
             <h1 className="text-xl font-bold text-slate-900">Hồ sơ học sinh</h1>
           </div>
-        </div>
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((value) => !value)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg hover:bg-slate-100"
+              aria-expanded={menuOpen}
+              aria-label="Menu mục hồ sơ"
+            >
+              <span aria-hidden="true">☰</span>
+            </button>
 
+            {menuOpen ? (
+              <div className="absolute right-0 top-12 z-50 w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+                {PROFILE_SECTIONS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => openSection(item.id)}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    <span aria-hidden="true">{item.icon}</span>
+                    {item.label}
+                    {collapsedSections[item.id] ? (
+                      <span className="ml-auto text-xs text-slate-400">(gọn)</span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <section className="mx-auto max-w-3xl space-y-4 px-4 py-6 sm:px-6">
         {state.status === 'loading' ? (
           <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
             Đang tải hồ sơ...
@@ -179,12 +227,6 @@ export function StudentProfilePage() {
 
         {state.status === 'success' && score ? (
           <>
-            <ProfileSectionNav
-              collapsedSections={collapsedSections}
-              items={PROFILE_SECTIONS}
-              onSelect={openSection}
-            />
-
             <section id="profile-summary" className="scroll-mt-4 space-y-3">
               <ProfileSectionHeader
                 collapsed={collapsedSections.summary}
@@ -281,6 +323,36 @@ export function StudentProfilePage() {
           </>
         ) : null}
       </section>
+
+      {state.status === 'success' && score ? (
+        <nav
+          aria-label="Điều hướng nhanh hồ sơ"
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-300 bg-slate-100 shadow-[0_-2px_6px_rgba(0,0,0,0.08)] md:hidden"
+        >
+          <div className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-1 pt-1 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+            {PROFILE_SECTIONS.map((item) => {
+              const active = item.tab ? item.tab === activeTab : false
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => openSection(item.id)}
+                  className={`flex min-w-16 shrink-0 flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-center ${
+                    active ? 'text-blue-700' : 'text-slate-500'
+                  }`}
+                >
+                  <span className="text-lg leading-none" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  <span className={`text-[11px] leading-tight ${active ? 'font-semibold' : 'font-medium'}`}>
+                    {item.label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </nav>
+      ) : null}
     </main>
   )
 }
@@ -312,34 +384,6 @@ function StudentProfileHeader({
         </div>
       </div>
     </div>
-  )
-}
-
-function ProfileSectionNav({
-  collapsedSections,
-  items,
-  onSelect,
-}: {
-  collapsedSections: Record<ProfileSectionKey, boolean>
-  items: Array<{ id: ProfileSectionKey; label: string }>
-  onSelect: (id: ProfileSectionKey) => void
-}) {
-  return (
-    <nav className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="flex flex-wrap gap-2">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onSelect(item.id)}
-            className="rounded-full border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-700"
-          >
-            {item.label}
-            {collapsedSections[item.id] ? ' (đang gọn)' : ''}
-          </button>
-        ))}
-      </div>
-    </nav>
   )
 }
 
