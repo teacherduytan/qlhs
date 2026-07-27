@@ -10,6 +10,7 @@ import { downloadPrintableForm } from '../features/forms/downloadPrintableForm'
 import { getSupabaseClient } from '../lib/supabaseClient'
 import type { DanhMucDiem, DeXuatGhiNhan, HocSinh } from '../data/types'
 import { Pagination, usePagination } from './Pagination'
+import { PullToRefresh } from './PullToRefresh'
 
 const navItems = [
   { to: '/', label: 'Tổng quan', icon: '🏠' },
@@ -383,7 +384,9 @@ export function Layout() {
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 md:pb-6">
-        <Outlet />
+        <PullToRefresh>
+          <Outlet />
+        </PullToRefresh>
       </main>
 
       <footer className="border-t border-slate-300 bg-slate-100 py-4 text-center text-xs text-slate-500">
