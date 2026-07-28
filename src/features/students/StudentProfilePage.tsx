@@ -61,6 +61,8 @@ const PROFILE_SECTIONS: Array<{ id: ProfileSectionKey; label: string; icon: stri
 ]
 
 const LOP_TRUONG_ELIGIBLE_ROLES = ['Lớp trưởng', 'Lớp phó học tập']
+const SDT_PATTERN = /^0\d{9}$/
+const MAT_KHAU_PATTERN = /^\d{3}$/
 const NEW_CATEGORY_VALUE = '__new__'
 const NHOM_OPTIONS: Array<{ label: string; value: NhomDiem }> = [
   { label: 'Chuyên cần', value: 'CC' },
@@ -208,8 +210,19 @@ export function StudentProfilePage() {
 
   function handleLoginSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!sdt.trim() || !matKhau.trim()) return
-    loadProfile(sdt.trim(), matKhau.trim())
+    const sdtTrimmed = sdt.trim()
+    const matKhauTrimmed = matKhau.trim()
+
+    if (!SDT_PATTERN.test(sdtTrimmed)) {
+      setLoginError('Số điện thoại phải gồm đúng 10 chữ số, bắt đầu bằng số 0.')
+      return
+    }
+    if (!MAT_KHAU_PATTERN.test(matKhauTrimmed)) {
+      setLoginError('Mật khẩu phải gồm đúng 3 chữ số.')
+      return
+    }
+
+    loadProfile(sdtTrimmed, matKhauTrimmed)
   }
 
   function handleLogout() {
@@ -306,7 +319,11 @@ export function StudentProfilePage() {
                   type="tel"
                   inputMode="numeric"
                   value={sdt}
-                  onChange={(event) => setSdt(event.target.value)}
+                  maxLength={10}
+                  onChange={(event) => {
+                    setSdt(event.target.value.replace(/\D/g, ''))
+                    setLoginError(null)
+                  }}
                   className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
@@ -317,7 +334,10 @@ export function StudentProfilePage() {
                   inputMode="numeric"
                   maxLength={3}
                   value={matKhau}
-                  onChange={(event) => setMatKhau(event.target.value)}
+                  onChange={(event) => {
+                    setMatKhau(event.target.value.replace(/\D/g, ''))
+                    setLoginError(null)
+                  }}
                   className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
