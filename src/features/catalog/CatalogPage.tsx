@@ -564,148 +564,18 @@ export function CatalogPage() {
         </div>
       </div>
 
-      {false ? (
-      <form onSubmit={saveCatalogItem} className="rounded-lg border border-emerald-200 bg-emerald-100 p-4">
-        <div className="flex flex-col gap-1">
-          <h3 className="text-base font-bold text-slate-900">
-            {formMode === 'add' ? 'Thêm danh mục mới' : `Sửa danh mục ${editingCode}`}
-          </h3>
-          <p className="text-sm text-slate-600">
-            Điểm dương là ghi nhận tích cực, điểm âm là vi phạm, điểm 0 dùng để theo dõi.
-          </p>
-        </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-6">
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
-            Mã
-            <input
-              value={form.ma_danh_muc}
-              disabled={formMode === 'edit'}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  ma_danh_muc: event.target.value.toUpperCase(),
-                }))
-              }
-              className={`${inputClass} disabled:bg-slate-100 disabled:text-slate-500`}
-              placeholder="NN06"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
-            Nhóm
-            <select
-              value={form.nhom}
-              onChange={(event) => changeCatalogGroup(event.target.value as NhomDiem)}
-              className={selectClass}
-            >
-              {GROUP_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.value} - {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-2">
-            Nội dung danh mục
-            <input
-              value={form.ten_muc}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, ten_muc: event.target.value }))
-              }
-              className={inputClass}
-              placeholder="Không mang dụng cụ học tập"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
-            Điểm
-            <input
-              value={form.diem}
-              type="number"
-              step="0.5"
-              onChange={(event) =>
-                setForm((current) => ({ ...current, diem: event.target.value }))
-              }
-              className={inputClass}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
-            Phạm vi
-            <select
-              value={form.pham_vi}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  pham_vi: event.target.value as PhamViDanhMuc,
-                }))
-              }
-              className={selectClass}
-            >
-              {SCOPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input
-              type="checkbox"
-              checked={form.nghiem_trong}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, nghiem_trong: event.target.checked }))
-              }
-              className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
-            />
-            Vi phạm nghiêm trọng
-          </label>
-
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {saveError ? (
-              <p className="rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm font-semibold text-red-700">
-                {saveError}
-              </p>
-            ) : null}
-            {saveMessage ? (
-              <p className="rounded-md border border-emerald-200 bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-800">
-                {saveMessage}
-              </p>
-            ) : null}
-            {formMode === 'edit' ? (
-              <button
-                type="button"
-                onClick={openAddForm}
-                className="h-10 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Hủy sửa
-              </button>
-            ) : null}
-            <button
-              type="submit"
-              disabled={saving}
-              className="h-10 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-            >
-              {saving ? 'Đang lưu...' : formMode === 'add' ? 'Lưu danh mục' : 'Cập nhật'}
-            </button>
-          </div>
-        </div>
-      </form>
-      ) : null}
-
       {formMode ? (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 p-4 sm:items-center">
+        <div className="fixed inset-0 z-50 bg-slate-950/50 md:flex md:items-center md:justify-center md:p-4">
           <form
             onSubmit={saveCatalogItem}
             role="dialog"
             aria-modal="true"
             aria-labelledby="catalog-form-title"
-            className="my-8 w-full max-w-4xl rounded-lg bg-white shadow-xl sm:my-8"
+            className="flex h-full w-full flex-col bg-white md:h-auto md:max-h-[85vh] md:max-w-4xl md:rounded-lg md:shadow-xl"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
-              <div>
-                <h3 id="catalog-form-title" className="text-lg font-bold text-slate-900">
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] md:px-5 md:pt-4">
+              <div className="min-w-0">
+                <h3 id="catalog-form-title" className="wrap-break-word text-lg font-bold text-slate-900">
                   {formMode === 'add' ? 'Thêm danh mục mới' : `Sửa danh mục ${editingCode}`}
                 </h3>
                 <p className="mt-1 text-sm text-slate-600">
@@ -715,202 +585,210 @@ export function CatalogPage() {
               <button
                 type="button"
                 onClick={closeForm}
-                className="rounded-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg text-slate-500 hover:bg-slate-100"
+                aria-label="Đóng"
               >
-                Đóng
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
 
-            <div className="px-5 py-4">
-              <div className="grid gap-3 md:grid-cols-6">
-                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
-                  Mã
-                  <input
-                    value={form.ma_danh_muc}
-                    disabled={formMode === 'edit'}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        ma_danh_muc: event.target.value.toUpperCase(),
-                      }))
-                    }
-                    className={`${inputClass} disabled:bg-slate-100 disabled:text-slate-500`}
-                    placeholder="NN06"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
-                  Nhóm
-                  <select
-                    value={form.nhom}
-                    onChange={(event) => changeCatalogGroup(event.target.value as NhomDiem)}
-                    className={selectClass}
-                  >
-                    {GROUP_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.value} - {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-2">
-                  Nội dung danh mục
-                  <input
-                    value={form.ten_muc}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, ten_muc: event.target.value }))
-                    }
-                    className={inputClass}
-                    placeholder="Không mang dụng cụ học tập"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
-                  Điểm
-                  <input
-                    value={form.diem}
-                    type="number"
-                    step="0.5"
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, diem: event.target.value }))
-                    }
-                    className={inputClass}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
-                  Phạm vi
-                  <select
-                    value={form.pham_vi}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        pham_vi: event.target.value as PhamViDanhMuc,
-                      }))
-                    }
-                    className={selectClass}
-                  >
-                    {SCOPE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-5">
+              <div className="space-y-4">
+                <section className="rounded-lg border border-slate-200 bg-slate-100 p-3">
+                  <p className="text-xs font-semibold uppercase text-slate-600">Thông tin cơ bản</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                      Mã
+                      <input
+                        value={form.ma_danh_muc}
+                        disabled={formMode === 'edit'}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            ma_danh_muc: event.target.value.toUpperCase(),
+                          }))
+                        }
+                        className={`${inputClass} disabled:bg-slate-100 disabled:text-slate-500`}
+                        placeholder="NN06"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                      Nhóm
+                      <select
+                        value={form.nhom}
+                        onChange={(event) => changeCatalogGroup(event.target.value as NhomDiem)}
+                        className={selectClass}
+                      >
+                        {GROUP_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.value} - {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 sm:col-span-2">
+                      Nội dung danh mục
+                      <input
+                        value={form.ten_muc}
+                        onChange={(event) =>
+                          setForm((current) => ({ ...current, ten_muc: event.target.value }))
+                        }
+                        className={inputClass}
+                        placeholder="Không mang dụng cụ học tập"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                      Điểm
+                      <input
+                        value={form.diem}
+                        type="number"
+                        step="0.5"
+                        onChange={(event) =>
+                          setForm((current) => ({ ...current, diem: event.target.value }))
+                        }
+                        className={inputClass}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                      Phạm vi
+                      <select
+                        value={form.pham_vi}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            pham_vi: event.target.value as PhamViDanhMuc,
+                          }))
+                        }
+                        className={selectClass}
+                      >
+                        {SCOPE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </section>
 
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                  Mô tả / ví dụ áp dụng
-                  <textarea
-                    value={form.mo_ta}
-                    onChange={(event) => setForm((current) => ({ ...current, mo_ta: event.target.value }))}
-                    className="min-h-24 resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="Ví dụ: Không thuộc 1 từ, một ý nhỏ, một đoạn ngắn; giáo viên ghi rõ phần chưa thuộc."
-                  />
-                </label>
+                <section className="rounded-lg border border-slate-200 bg-slate-100 p-3">
+                  <p className="text-xs font-semibold uppercase text-slate-600">Mô tả &amp; xử lý</p>
+                  <div className="mt-3 space-y-3">
+                    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                      Mô tả / ví dụ áp dụng
+                      <textarea
+                        value={form.mo_ta}
+                        onChange={(event) => setForm((current) => ({ ...current, mo_ta: event.target.value }))}
+                        className="min-h-24 resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        placeholder="Ví dụ: Không thuộc 1 từ, một ý nhỏ, một đoạn ngắn; giáo viên ghi rõ phần chưa thuộc."
+                      />
+                    </label>
 
-                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                  Đề xuất xử lý / phạt
-                  <textarea
-                    value={form.de_xuat_xu_ly}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, de_xuat_xu_ly: event.target.value }))
-                    }
-                    className="min-h-24 resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="Ví dụ: Lần 1: chép 20 lần/từ; lần 2: chép 50 lần và báo GVCN; lần 3: mời phụ huynh."
-                  />
-                </label>
-              </div>
+                    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                      Đề xuất xử lý / phạt
+                      <textarea
+                        value={form.de_xuat_xu_ly}
+                        onChange={(event) =>
+                          setForm((current) => ({ ...current, de_xuat_xu_ly: event.target.value }))
+                        }
+                        className="min-h-24 resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        placeholder="Ví dụ: Lần 1: chép 20 lần/từ; lần 2: chép 50 lần và báo GVCN; lần 3: mời phụ huynh."
+                      />
+                    </label>
+                  </div>
+                </section>
 
-              <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-100 p-3">
-                <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
-                  <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                    Mã xử lý/phạt liên kết
-                    <select
-                      value={form.ma_xu_ly_de_xuat}
-                      onChange={(event) =>
-                        setForm((current) => ({ ...current, ma_xu_ly_de_xuat: event.target.value }))
-                      }
-                      className={selectClass}
+                <section className="rounded-lg border border-indigo-200 bg-indigo-100 p-3">
+                  <p className="text-xs font-semibold uppercase text-indigo-700">Mã xử lý/phạt liên kết</p>
+                  <div className="mt-3 space-y-3">
+                    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                      Chọn mã đã có
+                      <select
+                        value={form.ma_xu_ly_de_xuat}
+                        onChange={(event) =>
+                          setForm((current) => ({ ...current, ma_xu_ly_de_xuat: event.target.value }))
+                        }
+                        className={selectClass}
+                      >
+                        <option value="">Chưa chọn mã xử lý</option>
+                        {[...handlingCatalog].sort(compareHandlingItems).map((item) => (
+                          <option key={item.ma_xu_ly} value={item.ma_xu_ly}>
+                            {item.ma_xu_ly} - {item.ten_xu_ly}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => void createHandlingFromForm()}
+                      disabled={creatingHandling || !form.de_xuat_xu_ly.trim()}
+                      className="h-10 w-full rounded-md bg-indigo-700 px-3 text-sm font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-slate-400 sm:w-auto"
                     >
-                      <option value="">Chưa chọn mã xử lý</option>
-                      {[...handlingCatalog].sort(compareHandlingItems).map((item) => (
-                        <option key={item.ma_xu_ly} value={item.ma_xu_ly}>
-                          {item.ma_xu_ly} - {item.ten_xu_ly}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => void createHandlingFromForm()}
-                    disabled={creatingHandling || !form.de_xuat_xu_ly.trim()}
-                    className="h-10 rounded-md bg-indigo-700 px-3 text-sm font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                  >
-                    {creatingHandling ? 'Đang tạo...' : 'Tạo mã xử lý'}
-                  </button>
-                </div>
+                      {creatingHandling ? 'Đang tạo...' : 'Tạo mã xử lý mới từ nội dung trên'}
+                    </button>
+                  </div>
 
-                {form.ma_xu_ly_de_xuat ? (
-                  <p className="mt-2 text-xs text-indigo-900">
-                    Đang liên kết với mã {form.ma_xu_ly_de_xuat}. Nội dung text ở ô trên vẫn được giữ để đọc nhanh.
-                  </p>
-                ) : (
-                  <p className="mt-2 text-xs text-indigo-900">
-                    Có thể chọn mã đã có hoặc tạo mã mới từ nội dung AI/gợi ý xử lý hiện tại.
-                  </p>
-                )}
-              </div>
+                  {form.ma_xu_ly_de_xuat ? (
+                    <p className="mt-2 text-xs text-indigo-900">
+                      Đang liên kết với mã {form.ma_xu_ly_de_xuat}. Nội dung text ở ô trên vẫn được giữ để đọc nhanh.
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-xs text-indigo-900">
+                      Có thể chọn mã đã có hoặc tạo mã mới từ nội dung AI/gợi ý xử lý hiện tại.
+                    </p>
+                  )}
+                </section>
 
-              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-100 p-3">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <p className="min-w-0 text-sm text-amber-900">
+                <section className="rounded-lg border border-amber-200 bg-amber-100 p-3">
+                  <p className="text-sm text-amber-900">
                     Với danh mục điểm âm, có thể dùng gợi ý xử lý theo mức lặp lại rồi chỉnh lại cho đúng thực tế lớp.
                   </p>
                   <button
                     type="button"
                     onClick={applySuggestedHandling}
-                    className="h-9 shrink-0 whitespace-nowrap rounded-md border border-amber-300 bg-white px-3 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+                    className="mt-3 h-9 w-full rounded-md border border-amber-300 bg-white px-3 text-sm font-semibold text-amber-800 hover:bg-amber-100 sm:w-auto"
                   >
                     Gợi ý xử lý
                   </button>
-                </div>
+                </section>
+
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.nghiem_trong}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, nghiem_trong: event.target.checked }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                  />
+                  Vi phạm nghiêm trọng
+                </label>
+
+                {saveError ? (
+                  <p className="rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm font-semibold text-red-700">
+                    {saveError}
+                  </p>
+                ) : null}
+                {saveMessage ? (
+                  <p className="rounded-md border border-emerald-200 bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-800">
+                    {saveMessage}
+                  </p>
+                ) : null}
               </div>
-
-              <label className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={form.nghiem_trong}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, nghiem_trong: event.target.checked }))
-                  }
-                  className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
-                />
-                Vi phạm nghiêm trọng
-              </label>
-
-              {saveError ? (
-                <p className="mt-4 rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm font-semibold text-red-700">
-                  {saveError}
-                </p>
-              ) : null}
-              {saveMessage ? (
-                <p className="mt-4 rounded-md border border-emerald-200 bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-800">
-                  {saveMessage}
-                </p>
-              ) : null}
             </div>
 
-            <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-5 py-4">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 md:px-5 md:pb-4">
               <button
                 type="button"
                 onClick={closeForm}
-                className="h-10 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                className="h-11 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
                 Huỷ
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="h-10 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                className="h-11 flex-1 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-400 sm:flex-none"
               >
                 {saving ? 'Đang lưu...' : formMode === 'add' ? 'Lưu danh mục' : 'Cập nhật'}
               </button>
