@@ -110,14 +110,15 @@ export class SupabaseDataSource implements DataSource {
     return (data || []) as HocSinh[]
   }
 
-  async getStudentByToken(token: string): Promise<HocSinh | null> {
-    const profile = await this.getPublicStudentProfile(token)
-    return profile?.student || null
-  }
-
-  async getPublicStudentProfile(token: string): Promise<PublicStudentProfile | null> {
+  async getPublicStudentProfile(
+    token: string,
+    sdt: string,
+    matKhau: string,
+  ): Promise<PublicStudentProfile | null> {
     const { data, error } = await getSupabaseClient().rpc('lay_ho_so_cong_khai', {
       p_token: token,
+      p_sdt: sdt,
+      p_mat_khau: matKhau,
     })
     assertNoError(error, 'Khong doc duoc ho so cong khai tu Supabase')
 

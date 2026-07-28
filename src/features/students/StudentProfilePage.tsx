@@ -21,6 +21,7 @@ import { Pagination, usePagination } from '../../components/Pagination'
 import { PullToRefresh } from '../../components/PullToRefresh'
 
 type ProfileState =
+  | { status: 'login' }
   | { status: 'loading' }
   | { status: 'not_found' }
   | { status: 'error'; message: string }
@@ -33,6 +34,10 @@ type ProfileState =
       tuanSo: number
       weekConfig: CauHinhTuan[]
     }
+
+function loginStorageKey(token: string): string {
+  return `qlhs_hs_login_${token}`
+}
 
 type ProfileTab = 'records' | 'score' | 'info'
 
@@ -81,12 +86,16 @@ const INITIAL_PROFILE_COLLAPSED: Record<ProfileSectionKey, boolean> = {
 
 export function StudentProfilePage() {
   const { token } = useParams()
-  const [state, setState] = useState<ProfileState>({ status: 'loading' })
+  const [state, setState] = useState<ProfileState>({ status: 'login' })
   const [activeTab, setActiveTab] = useState<ProfileTab>('records')
   const [collapsedSections, setCollapsedSections] =
     useState<Record<ProfileSectionKey, boolean>>(INITIAL_PROFILE_COLLAPSED)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const [sdt, setSdt] = useState('')
+  const [matKhau, setMatKhau] = useState('')
+  const [loginError, setLoginError] = useState<string | null>(null)
+  const [loggingIn, setLoggingIn] = useState(false)
 
   useEffect(() => {
     if (!menuOpen) return
@@ -114,26 +123,41 @@ export function StudentProfilePage() {
     })
   }, [state])
 
+  const mountedRef = useRef(true)
   useEffect(() => {
-    let active = true
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
+  function loadProfile(sdtValue: string, matKhauValue: string, silent = false) {
     if (!token) {
       setState({ status: 'not_found' })
       return
     }
 
+    if (!silent) {
+      setLoggingIn(true)
+      setLoginError(null)
+    }
+
     dataSource
-      .getPublicStudentProfile(token)
+      .getPublicStudentProfile(token, sdtValue, matKhauValue)
       .then((profile) => {
-        if (!active) {
-          return
-        }
+        if (!mountedRef.current) return
 
         if (!profile) {
-          setState({ status: 'not_found' })
+          window.sessionStorage.removeItem(loginStorageKey(token))
+          setState({ status: 'login' })
+          setLoginError('Số điện thoại hoặc mật khẩu không đúng.')
           return
         }
 
+        window.sessionStorage.setItem(
+          loginStorageKey(token),
+          JSON.stringify({ sdt: sdtValue, matKhau: matKhauValue }),
+        )
         const tuanSo = selectDefaultWeek(profile.weekConfig, profile.records)
         setState({
           status: 'success',
@@ -146,18 +170,56 @@ export function StudentProfilePage() {
         })
       })
       .catch((error: unknown) => {
-        if (active) {
+        if (mountedRef.current) {
           setState({
             status: 'error',
             message: error instanceof Error ? error.message : 'Không tải được hồ sơ học sinh.',
           })
         }
       })
+      .finally(() => {
+        if (mountedRef.current) setLoggingIn(false)
+      })
+  }
 
-    return () => {
-      active = false
+  useEffect(() => {
+    if (!token) {
+      setState({ status: 'not_found' })
+      return
     }
+
+    const saved = window.sessionStorage.getItem(loginStorageKey(token))
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as { sdt: string; matKhau: string }
+        setSdt(parsed.sdt)
+        setMatKhau(parsed.matKhau)
+        setState({ status: 'loading' })
+        loadProfile(parsed.sdt, parsed.matKhau, true)
+        return
+      } catch {
+        window.sessionStorage.removeItem(loginStorageKey(token))
+      }
+    }
+
+    setState({ status: 'login' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
+
+  function handleLoginSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!sdt.trim() || !matKhau.trim()) return
+    loadProfile(sdt.trim(), matKhau.trim())
+  }
+
+  function handleLogout() {
+    if (token) window.sessionStorage.removeItem(loginStorageKey(token))
+    setSdt('')
+    setMatKhau('')
+    setLoginError(null)
+    setState({ status: 'login' })
+    setMenuOpen(false)
+  }
 
   function toggleSection(section: ProfileSectionKey) {
     setCollapsedSections((current) => ({ ...current, [section]: !current[section] }))
@@ -186,41 +248,98 @@ export function StudentProfilePage() {
             <p className="text-xs font-semibold uppercase text-blue-600">QLHS 11C5</p>
             <h1 className="text-xl font-bold text-slate-900">Hồ sơ học sinh</h1>
           </div>
-          <div className="relative" ref={menuRef}>
-            <button
-              type="button"
-              onClick={() => setMenuOpen((value) => !value)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg hover:bg-slate-100"
-              aria-expanded={menuOpen}
-              aria-label="Menu mục hồ sơ"
-            >
-              <span aria-hidden="true">☰</span>
-            </button>
+          {state.status === 'success' ? (
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setMenuOpen((value) => !value)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg hover:bg-slate-100"
+                aria-expanded={menuOpen}
+                aria-label="Menu mục hồ sơ"
+              >
+                <span aria-hidden="true">☰</span>
+              </button>
 
-            {menuOpen ? (
-              <div className="absolute right-0 top-12 z-50 w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                {PROFILE_SECTIONS.map((item) => (
+              {menuOpen ? (
+                <div className="absolute right-0 top-12 z-50 w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+                  {PROFILE_SECTIONS.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => openSection(item.id)}
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
+                    >
+                      <span aria-hidden="true">{item.icon}</span>
+                      {item.label}
+                      {collapsedSections[item.id] ? (
+                        <span className="ml-auto text-xs text-slate-400">(gọn)</span>
+                      ) : null}
+                    </button>
+                  ))}
+                  <div className="my-2 border-t border-slate-100" />
                   <button
-                    key={item.id}
                     type="button"
-                    onClick={() => openSection(item.id)}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
+                    onClick={handleLogout}
+                    className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50"
                   >
-                    <span aria-hidden="true">{item.icon}</span>
-                    {item.label}
-                    {collapsedSections[item.id] ? (
-                      <span className="ml-auto text-xs text-slate-400">(gọn)</span>
-                    ) : null}
+                    Đăng xuất
                   </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
 
       <PullToRefresh>
       <section className="mx-auto max-w-3xl space-y-4 px-4 py-6 sm:px-6">
+        {state.status === 'login' ? (
+          <div className="mx-auto max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase text-blue-600">Đăng nhập hồ sơ</p>
+            <h2 className="mt-1 text-lg font-bold text-slate-900">Xem hồ sơ học sinh</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Đăng nhập bằng số điện thoại 1 đã đăng ký và 3 số cuối của số đó.
+            </p>
+
+            <form onSubmit={handleLoginSubmit} className="mt-4 space-y-3">
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                Số điện thoại (SĐT 1)
+                <input
+                  autoFocus
+                  type="tel"
+                  inputMode="numeric"
+                  value={sdt}
+                  onChange={(event) => setSdt(event.target.value)}
+                  placeholder="VD: 0912345678"
+                  className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                Mật khẩu (3 số cuối của SĐT trên)
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={3}
+                  value={matKhau}
+                  onChange={(event) => setMatKhau(event.target.value)}
+                  placeholder="VD: 678"
+                  className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
+              {loginError ? <p className="text-sm font-semibold text-red-700">{loginError}</p> : null}
+
+              <button
+                type="submit"
+                disabled={loggingIn || !sdt.trim() || !matKhau.trim()}
+                className="h-11 w-full rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {loggingIn ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              </button>
+            </form>
+          </div>
+        ) : null}
+
         {state.status === 'loading' ? (
           <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
             Đang tải hồ sơ...
