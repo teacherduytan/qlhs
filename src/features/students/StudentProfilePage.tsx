@@ -543,11 +543,11 @@ function ScoreSummary({ score }: { score: WeeklyStudentScore }) {
         </div>
       </div>
 
-      <div className="grid gap-px bg-amber-200 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-px bg-amber-200 md:grid-cols-5">
         {scoreItems.map((item) => (
-          <div key={item.label} className="bg-white p-4">
+          <div key={item.label} className="bg-white p-3 sm:p-4">
             <p className="text-xs font-semibold uppercase text-slate-500">{item.label}</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">
+            <p className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">
               {item.value === null ? 'Chưa có dữ liệu' : item.value}
             </p>
           </div>
