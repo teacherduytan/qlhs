@@ -695,13 +695,13 @@ export function CatalogPage() {
       ) : null}
 
       {formMode ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 p-4 sm:items-center">
           <form
             onSubmit={saveCatalogItem}
             role="dialog"
             aria-modal="true"
             aria-labelledby="catalog-form-title"
-            className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl"
+            className="my-8 w-full max-w-4xl rounded-lg bg-white shadow-xl sm:my-8"
           >
             <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
               <div>
@@ -721,7 +721,7 @@ export function CatalogPage() {
               </button>
             </div>
 
-            <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
+            <div className="px-5 py-4">
               <div className="grid gap-3 md:grid-cols-6">
                 <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 md:col-span-1">
                   Mã

@@ -1381,12 +1381,12 @@ export function ImportPage() {
       ) : null}
 
       {activeSuggestionForm ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 p-4 sm:items-center">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="suggestion-modal-title"
-            className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-xl"
+            className="my-8 w-full max-w-3xl rounded-lg bg-white shadow-xl sm:my-8"
           >
             <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
               <div>
@@ -1404,7 +1404,7 @@ export function ImportPage() {
               </button>
             </div>
 
-            <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
+            <div className="px-5 py-4">
               {suggestionError ? (
                 <div className="mb-4 rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm text-red-800">
                   {suggestionError}
@@ -1657,12 +1657,12 @@ export function ImportPage() {
       ) : null}
 
       {activeMissingCatalogForm ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 p-4 sm:items-center">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="missing-catalog-modal-title"
-            className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-xl"
+            className="my-8 w-full max-w-3xl rounded-lg bg-white shadow-xl sm:my-8"
           >
             <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
               <div>
@@ -1680,7 +1680,7 @@ export function ImportPage() {
               </button>
             </div>
 
-            <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
+            <div className="px-5 py-4">
               {catalogError ? (
                 <div className="mb-4 rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm text-red-800">
                   {catalogError}
@@ -1892,12 +1892,12 @@ export function ImportPage() {
       ) : null}
 
       {studentCreateForm ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 p-4 sm:items-center">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="student-create-modal-title"
-            className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-xl"
+            className="my-8 w-full max-w-2xl rounded-lg bg-white shadow-xl sm:my-8"
           >
             <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
               <div>
@@ -1915,7 +1915,7 @@ export function ImportPage() {
               </button>
             </div>
 
-            <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-5 py-4">
+            <div className="px-5 py-4">
               {studentsError ? (
                 <div className="mb-4 rounded-md border border-red-200 bg-red-100 px-3 py-2 text-sm text-red-800">
                   {studentsError}

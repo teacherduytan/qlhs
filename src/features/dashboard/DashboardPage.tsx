@@ -1477,11 +1477,11 @@ function OverviewDrillDownModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/45 p-4 sm:items-center"
       role="presentation"
       onMouseDown={onClose}
     >
-      <div className="w-full max-w-5xl" onMouseDown={(event) => event.stopPropagation()}>
+      <div className="my-8 w-full max-w-5xl sm:my-8" onMouseDown={(event) => event.stopPropagation()}>
         {children}
       </div>
     </div>
