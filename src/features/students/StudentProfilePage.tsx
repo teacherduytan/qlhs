@@ -380,7 +380,7 @@ export function StudentProfilePage() {
 
             {LOP_TRUONG_ELIGIBLE_ROLES.includes(state.role) && token ? (
               <section id="profile-lop-truong" className="scroll-mt-4">
-                <LopTruongPanel token={token} />
+                <LopTruongPanel token={token} role={state.role} />
               </section>
             ) : null}
 
@@ -933,7 +933,7 @@ function InfoItem({ label, value }: { label: string; value: string }) {
   )
 }
 
-function LopTruongPanel({ token }: { token: string }) {
+function LopTruongPanel({ token, role }: { token: string; role: string }) {
   const [open, setOpen] = useState(false)
   const [pin, setPin] = useState('')
   const [verifiedPin, setVerifiedPin] = useState<string | null>(null)
@@ -1100,7 +1100,7 @@ function LopTruongPanel({ token }: { token: string }) {
         onClick={() => setOpen(true)}
         className="w-full rounded-lg border border-teal-300 bg-teal-100 p-4 text-left shadow-sm hover:bg-teal-100"
       >
-        <p className="text-xs font-semibold uppercase text-teal-700">Dành cho lớp trưởng</p>
+        <p className="text-xs font-semibold uppercase text-teal-700">Dành cho {role}</p>
         <p className="mt-1 font-bold text-slate-900">Nhập đề xuất ghi nhận cho lớp</p>
         <p className="mt-1 text-sm text-slate-600">Gõ mã PIN riêng để mở form, giáo viên sẽ duyệt trước khi tính điểm.</p>
       </button>
@@ -1109,7 +1109,7 @@ function LopTruongPanel({ token }: { token: string }) {
 
   return (
     <div className="rounded-lg border border-teal-300 bg-teal-100 p-4 shadow-sm">
-      <p className="text-xs font-semibold uppercase text-teal-700">Dành cho lớp trưởng</p>
+      <p className="text-xs font-semibold uppercase text-teal-700">Dành cho {role}</p>
       <h3 className="text-lg font-bold text-slate-950">Nhập đề xuất ghi nhận cho lớp</h3>
       <p className="mt-1 text-sm text-slate-600">
         Chọn bạn, chọn danh mục, ghi rõ nội dung. Đề xuất chỉ tính điểm sau khi giáo viên duyệt.
@@ -1270,7 +1270,7 @@ function LopTruongPanel({ token }: { token: string }) {
               </div>
 
               <p className="text-xs text-slate-500">
-                Người ghi sẽ tự động ghi theo chức vụ của bạn (Lớp trưởng), không cần chọn.
+                Người ghi sẽ tự động ghi theo chức vụ của bạn ({role}), không cần chọn.
               </p>
 
               <textarea

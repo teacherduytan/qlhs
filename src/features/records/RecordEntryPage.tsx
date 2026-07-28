@@ -291,10 +291,10 @@ export function RecordEntryPage() {
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase text-teal-700">Chờ duyệt</p>
-              <h3 className="text-base font-bold text-slate-900">Đề xuất ghi nhận từ lớp trưởng</h3>
+              <h3 className="text-base font-bold text-slate-900">Đề xuất ghi nhận từ lớp trưởng / lớp phó học tập</h3>
               <p className="text-sm text-slate-600">
-                Học sinh giữ chức vụ "Lớp trưởng" gửi qua link hồ sơ. Duyệt để tạo ghi nhận thật, hoặc từ chối nếu
-                không đúng.
+                Học sinh giữ chức vụ "Lớp trưởng" hoặc "Lớp phó học tập" gửi qua link hồ sơ. Duyệt để tạo ghi nhận
+                thật, hoặc từ chối nếu không đúng.
               </p>
             </div>
             <p className="text-sm font-semibold text-teal-700">{proposals.length} đề xuất</p>

@@ -528,10 +528,11 @@ export function TeacherStudentDetailPage() {
 
           <section className="rounded-lg border border-teal-200 bg-teal-100 shadow-sm">
             <div className="border-b border-teal-200 p-4">
-              <p className="text-xs font-semibold uppercase text-teal-700">Đề xuất từ lớp trưởng</p>
+              <p className="text-xs font-semibold uppercase text-teal-700">Đề xuất từ lớp trưởng / lớp phó học tập</p>
               <h3 className="text-xl font-bold text-slate-950">Lịch sử đề xuất ghi nhận cho học sinh này</h3>
               <p className="text-sm text-slate-600">
-                Các đề xuất mà lớp trưởng gửi cho bạn học này. Giáo viên có thể sửa hoặc xoá trực tiếp tại đây.
+                Các đề xuất mà lớp trưởng hoặc lớp phó học tập gửi cho bạn học này. Giáo viên có thể sửa hoặc xoá
+                trực tiếp tại đây.
               </p>
             </div>
             <div className="space-y-2 bg-white p-4">
