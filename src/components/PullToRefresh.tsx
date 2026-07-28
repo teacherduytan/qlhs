@@ -85,7 +85,7 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
       </div>
       <div
         className="transition-transform duration-150"
-        style={{ transform: refreshing ? undefined : `translateY(${pullDistance > 0 ? pullDistance * 0.3 : 0}px)` }}
+        style={!refreshing && pullDistance > 0 ? { transform: `translateY(${pullDistance * 0.3}px)` } : undefined}
       >
         {children}
       </div>
