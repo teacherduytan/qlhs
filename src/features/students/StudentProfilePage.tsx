@@ -417,14 +417,21 @@ function ProfileSectionHeader({
   title: string
 }) {
   return (
-    <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between">
+    <div className="flex items-center justify-between gap-2">
       <h2 className="min-w-0 wrap-break-word text-base font-bold text-slate-900">{title}</h2>
       <button
         type="button"
         onClick={onToggle}
-        className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
+        aria-label={collapsed ? 'Mở rộng' : 'Thu gọn'}
+        aria-expanded={!collapsed}
+        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-sm hover:bg-slate-100"
       >
-        {collapsed ? 'Mở rộng' : 'Thu gọn'}
+        <span
+          aria-hidden="true"
+          className={`inline-block text-base leading-none transition-transform ${collapsed ? '' : 'rotate-180'}`}
+        >
+          ▾
+        </span>
       </button>
     </div>
   )
