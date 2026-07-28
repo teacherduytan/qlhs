@@ -11,8 +11,25 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
   const pulling = useRef(false)
 
   useEffect(() => {
+    function findScrollParent(node: EventTarget | null): Element | null {
+      let el = node instanceof Element ? node : null
+      while (el && el !== document.body) {
+        const style = window.getComputedStyle(el)
+        const canScrollY =
+          (style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight
+        if (canScrollY) return el
+        el = el.parentElement
+      }
+      return null
+    }
+
+    function getScrollTop(node: EventTarget | null): number {
+      const scrollParent = findScrollParent(node)
+      return scrollParent ? scrollParent.scrollTop : window.scrollY
+    }
+
     function handleTouchStart(event: TouchEvent) {
-      if (refreshing || window.scrollY > 0) return
+      if (refreshing || getScrollTop(event.target) > 0) return
       startY.current = event.touches[0].clientY
       pulling.current = true
     }
@@ -20,7 +37,7 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
     function handleTouchMove(event: TouchEvent) {
       if (!pulling.current || startY.current === null || refreshing) return
 
-      if (window.scrollY > 0) {
+      if (getScrollTop(event.target) > 0) {
         pulling.current = false
         setPullDistance(0)
         return

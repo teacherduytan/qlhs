@@ -861,14 +861,14 @@ export function CatalogPage() {
               </div>
 
               <div className="mt-3 rounded-lg border border-amber-200 bg-amber-100 p-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-amber-900">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <p className="min-w-0 text-sm text-amber-900">
                     Với danh mục điểm âm, có thể dùng gợi ý xử lý theo mức lặp lại rồi chỉnh lại cho đúng thực tế lớp.
                   </p>
                   <button
                     type="button"
                     onClick={applySuggestedHandling}
-                    className="h-9 rounded-md border border-amber-300 bg-white px-3 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+                    className="h-9 shrink-0 whitespace-nowrap rounded-md border border-amber-300 bg-white px-3 text-sm font-semibold text-amber-800 hover:bg-amber-100"
                   >
                     Gợi ý xử lý
                   </button>
