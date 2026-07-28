@@ -297,32 +297,27 @@ export function StudentProfilePage() {
           <div className="mx-auto max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase text-blue-600">Đăng nhập hồ sơ</p>
             <h2 className="mt-1 text-lg font-bold text-slate-900">Xem hồ sơ học sinh</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Đăng nhập bằng số điện thoại 1 đã đăng ký và 3 số cuối của số đó.
-            </p>
 
             <form onSubmit={handleLoginSubmit} className="mt-4 space-y-3">
               <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                Số điện thoại (SĐT 1)
+                Số điện thoại
                 <input
                   autoFocus
                   type="tel"
                   inputMode="numeric"
                   value={sdt}
                   onChange={(event) => setSdt(event.target.value)}
-                  placeholder="VD: 0912345678"
                   className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                Mật khẩu (3 số cuối của SĐT trên)
+                Mật khẩu
                 <input
                   type="password"
                   inputMode="numeric"
                   maxLength={3}
                   value={matKhau}
                   onChange={(event) => setMatKhau(event.target.value)}
-                  placeholder="VD: 678"
                   className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
