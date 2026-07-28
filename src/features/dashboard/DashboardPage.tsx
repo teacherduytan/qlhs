@@ -129,6 +129,18 @@ const DASHBOARD_SECTIONS: Array<{ id: DashboardSectionKey; label: string }> = [
   { id: 'daily', label: 'Nhật ký' },
 ]
 
+type SectionTone = 'slate' | 'sky' | 'cyan' | 'indigo' | 'violet' | 'amber' | 'emerald'
+
+const SECTION_TONE_BAR: Record<SectionTone, string> = {
+  slate: 'bg-slate-700',
+  sky: 'bg-sky-700',
+  cyan: 'bg-cyan-700',
+  indigo: 'bg-indigo-700',
+  violet: 'bg-violet-700',
+  amber: 'bg-amber-700',
+  emerald: 'bg-emerald-700',
+}
+
 const INITIAL_DASHBOARD_COLLAPSED: Record<DashboardSectionKey, boolean> = {
   daily: false,
   events: false,
@@ -495,6 +507,7 @@ export function DashboardPage() {
               collapsed={collapsedSections.summary}
               description="Các con số nhanh của tuần đang xem."
               title="Tóm tắt nhanh"
+              tone="slate"
               onToggle={() => toggleSection('summary')}
             />
             {!collapsedSections.summary ? (
@@ -515,6 +528,7 @@ export function DashboardPage() {
               collapsed={collapsedSections.filters}
               description="Chọn tuần và ngày để đổi phạm vi dữ liệu toàn trang."
               title="Bộ lọc thời gian"
+              tone="sky"
               onToggle={() => toggleSection('filters')}
             />
             {!collapsedSections.filters ? (
@@ -537,6 +551,7 @@ export function DashboardPage() {
               collapsed={collapsedSections.overview}
               description="Các thẻ TK có thể bấm để xem nhanh chi tiết."
               title="Thống kê tổng quan"
+              tone="cyan"
               onToggle={() => toggleSection('overview')}
             />
             {!collapsedSections.overview ? (
@@ -576,24 +591,33 @@ export function DashboardPage() {
           ) : null}
 
           <section id="dashboard-scores" className="scroll-mt-4 overflow-hidden rounded-lg border border-indigo-200 bg-indigo-100 shadow-sm">
-            <div className="flex flex-col gap-3 border-b border-indigo-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Điểm thi đua học sinh</h3>
-                <p className="text-sm text-slate-600">
-                  {body.sortedScores.length}/{state.students.length} học sinh
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Điểm xếp loại chỉ so sánh được giữa các học sinh có cùng trạng thái đã/chưa có
-                  điểm học tập trong tuần.
-                </p>
+            <div className="space-y-2 border-b border-indigo-200 p-4">
+              <div className="flex items-center justify-between gap-2 rounded-lg bg-indigo-700 px-4 py-2.5 shadow-sm">
+                <h3 className="min-w-0 wrap-break-word text-base font-bold text-white">Điểm thi đua học sinh</h3>
+                <button
+                  type="button"
+                  onClick={() => toggleSection('scores')}
+                  aria-label={collapsedSections.scores ? 'Mở rộng' : 'Thu gọn'}
+                  aria-expanded={!collapsedSections.scores}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`inline-block text-base leading-none transition-transform ${
+                      collapsedSections.scores ? '' : 'rotate-180'
+                    }`}
+                  >
+                    ▾
+                  </span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => toggleSection('scores')}
-                className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                {collapsedSections.scores ? 'Mở rộng' : 'Thu gọn'}
-              </button>
+              <p className="text-sm text-slate-600">
+                {body.sortedScores.length}/{state.students.length} học sinh
+              </p>
+              <p className="text-xs text-slate-500">
+                Điểm xếp loại chỉ so sánh được giữa các học sinh có cùng trạng thái đã/chưa có
+                điểm học tập trong tuần.
+              </p>
             </div>
             {!collapsedSections.scores ? (
               <div className="grid gap-3 border-b border-indigo-200 bg-white/70 p-4 md:grid-cols-[1fr_220px]">
@@ -719,6 +743,7 @@ export function DashboardPage() {
                 collapsed={collapsedSections.events}
                 description="Các dòng tập thể hoặc tổ trực chưa tính vào điểm cá nhân."
                 title="Sự kiện của lớp/tổ"
+                tone="amber"
                 onToggle={() => toggleSection('events')}
               />
             </div>
@@ -852,6 +877,7 @@ export function DashboardPage() {
                     : `Tất cả các ngày trong tuần ${state.tuanSo}.`
                 }
                 title="Nhật ký theo ngày"
+                tone="emerald"
                 onToggle={() => toggleSection('daily')}
               />
             </div>
@@ -1171,25 +1197,36 @@ function SectionHeader({
   description,
   onToggle,
   title,
+  tone,
 }: {
   collapsed: boolean
   description?: string
   onToggle: () => void
   title: string
+  tone: SectionTone
 }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        <h3 className="text-base font-bold text-slate-900">{title}</h3>
-        {description ? <p className="text-sm text-slate-600">{description}</p> : null}
-      </div>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+    <div className="space-y-2">
+      <div
+        className={`flex items-center justify-between gap-2 rounded-lg px-4 py-2.5 shadow-sm ${SECTION_TONE_BAR[tone]}`}
       >
-        {collapsed ? 'Mở rộng' : 'Thu gọn'}
-      </button>
+        <h3 className="min-w-0 wrap-break-word text-base font-bold text-white">{title}</h3>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={collapsed ? 'Mở rộng' : 'Thu gọn'}
+          aria-expanded={!collapsed}
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30"
+        >
+          <span
+            aria-hidden="true"
+            className={`inline-block text-base leading-none transition-transform ${collapsed ? '' : 'rotate-180'}`}
+          >
+            ▾
+          </span>
+        </button>
+      </div>
+      {description ? <p className="text-sm text-slate-600">{description}</p> : null}
     </div>
   )
 }
@@ -1671,37 +1708,42 @@ function GroupViolationView({
       ref={sectionRef}
       className="scroll-mt-4 rounded-lg border border-violet-200 bg-violet-100 p-4 shadow-sm"
     >
-      <div className="flex flex-col gap-3 border-b border-violet-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h3 className="text-base font-bold text-slate-900">Xem theo Nhóm vi phạm</h3>
-          <p className="text-sm text-slate-600">
-            {group === null
-              ? 'Danh sách mặc định không lọc nhóm, có cả các ghi nhận vi phạm tự do trong tuần.'
-              : isStudyGroup
-              ? 'Hiển thị cả điểm học tập và các vi phạm học tập như quên dụng cụ trong tuần đang xem.'
-              : 'Danh sách học sinh có ghi nhận thuộc nhóm đã chọn, điểm thấp nhất xếp trước.'}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:items-end">
+      <div className="space-y-2 border-b border-violet-200 pb-4">
+        <div className="flex items-center justify-between gap-2 rounded-lg bg-violet-700 px-4 py-2.5 shadow-sm">
+          <h3 className="min-w-0 wrap-break-word text-base font-bold text-white">Xem theo Nhóm vi phạm</h3>
           <button
             type="button"
             onClick={onToggle}
-            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+            aria-label={collapsed ? 'Mở rộng' : 'Thu gọn'}
+            aria-expanded={!collapsed}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30"
           >
-            {collapsed ? 'Mở rộng' : 'Thu gọn'}
+            <span
+              aria-hidden="true"
+              className={`inline-block text-base leading-none transition-transform ${collapsed ? '' : 'rotate-180'}`}
+            >
+              ▾
+            </span>
           </button>
-          {!collapsed ? (
-            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-              <input
-                type="checkbox"
-                checked={showAll}
-                onChange={(event) => onShowAllChange(event.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-blue-600"
-              />
-              Hiện cả học sinh không vi phạm
-            </label>
-          ) : null}
         </div>
+        <p className="text-sm text-slate-600">
+          {group === null
+            ? 'Danh sách mặc định không lọc nhóm, có cả các ghi nhận vi phạm tự do trong tuần.'
+            : isStudyGroup
+            ? 'Hiển thị cả điểm học tập và các vi phạm học tập như quên dụng cụ trong tuần đang xem.'
+            : 'Danh sách học sinh có ghi nhận thuộc nhóm đã chọn, điểm thấp nhất xếp trước.'}
+        </p>
+        {!collapsed ? (
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              checked={showAll}
+              onChange={(event) => onShowAllChange(event.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-blue-600"
+            />
+            Hiện cả học sinh không vi phạm
+          </label>
+        ) : null}
       </div>
 
       {collapsed ? (

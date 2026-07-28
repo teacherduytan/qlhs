@@ -602,22 +602,31 @@ export function StudentsPage() {
 
       {!loading && !loadError ? (
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">
+          <div className="space-y-2 border-b border-slate-200 p-4">
+            <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-700 px-4 py-2.5 shadow-sm">
+              <h3 className="min-w-0 wrap-break-word text-base font-bold text-white">
                 Danh sách học sinh ({visibleStudents.length})
               </h3>
-              <p className="text-sm text-slate-600">
-                {studentListCollapsed ? 'Đang thu gọn toàn bộ danh sách.' : 'Đang hiển thị đầy đủ danh sách.'}
-              </p>
+              <button
+                type="button"
+                onClick={() => setStudentListCollapsed((current) => !current)}
+                aria-label={studentListCollapsed ? 'Mở rộng danh sách' : 'Thu gọn danh sách'}
+                aria-expanded={!studentListCollapsed}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`inline-block text-base leading-none transition-transform ${
+                    studentListCollapsed ? '' : 'rotate-180'
+                  }`}
+                >
+                  ▾
+                </span>
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setStudentListCollapsed((current) => !current)}
-              className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-            >
-              {studentListCollapsed ? 'Mở rộng danh sách' : 'Thu gọn danh sách'}
-            </button>
+            <p className="text-sm text-slate-600">
+              {studentListCollapsed ? 'Đang thu gọn toàn bộ danh sách.' : 'Đang hiển thị đầy đủ danh sách.'}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-100 px-4 py-3 text-xs font-semibold">
             <span className="rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-emerald-700">
