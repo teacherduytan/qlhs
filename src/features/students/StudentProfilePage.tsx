@@ -60,7 +60,7 @@ const PROFILE_SECTIONS: Array<{ id: ProfileSectionKey; label: string; icon: stri
   { id: 'info', label: 'Cá nhân', icon: '👤', tab: 'info' },
 ]
 
-const LOP_TRUONG_ROLE = 'Lớp trưởng'
+const LOP_TRUONG_ELIGIBLE_ROLES = ['Lớp trưởng', 'Lớp phó học tập']
 const NEW_CATEGORY_VALUE = '__new__'
 const NHOM_OPTIONS: Array<{ label: string; value: NhomDiem }> = [
   { label: 'Chuyên cần', value: 'CC' },
@@ -378,7 +378,7 @@ export function StudentProfilePage() {
               ) : null}
             </section>
 
-            {state.role === LOP_TRUONG_ROLE && token ? (
+            {LOP_TRUONG_ELIGIBLE_ROLES.includes(state.role) && token ? (
               <section id="profile-lop-truong" className="scroll-mt-4">
                 <LopTruongPanel token={token} />
               </section>

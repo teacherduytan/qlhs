@@ -41,6 +41,7 @@ const ROLE_OPTIONS = [
 ]
 
 const LOP_TRUONG_ROLE = 'Lớp trưởng'
+const LOP_TRUONG_ELIGIBLE_ROLES = ['Lớp trưởng', 'Lớp phó học tập']
 const NEW_CATEGORY_VALUE = '__new__'
 const NHOM_OPTIONS: Array<{ label: string; value: NhomDiem }> = [
   { label: 'Chuyên cần', value: 'CC' },
@@ -176,7 +177,7 @@ export function TeacherStudentDetailPage() {
       const patch: Pick<BanCanSu, 'to' | 'ngay_bat_dau' | 'ma_pin'> = {
         to: roleForm.to ? Number(roleForm.to) : null,
         ngay_bat_dau: roleForm.ngayBatDau || null,
-        ma_pin: roleForm.chucVu === LOP_TRUONG_ROLE ? roleForm.pin.trim() || null : null,
+        ma_pin: LOP_TRUONG_ELIGIBLE_ROLES.includes(roleForm.chucVu) ? roleForm.pin.trim() || null : null,
       }
 
       let nextEntry: BanCanSu | null = null
@@ -362,8 +363,8 @@ export function TeacherStudentDetailPage() {
                 <p className="text-xs font-semibold uppercase text-teal-700">Ban cán sự</p>
                 <h3 className="text-lg font-bold text-slate-950">Chức vụ trong lớp</h3>
                 <p className="text-sm text-slate-600">
-                  Chọn "{LOP_TRUONG_ROLE}" và đặt mã PIN để học sinh này được quyền gửi đề xuất ghi nhận cho bạn
-                  cùng lớp qua link hồ sơ — giáo viên vẫn phải duyệt trước khi tính điểm.
+                  Chọn "{LOP_TRUONG_ROLE}" hoặc "Lớp phó học tập" và đặt mã PIN để học sinh này được quyền gửi đề
+                  xuất ghi nhận cho bạn cùng lớp qua link hồ sơ — giáo viên vẫn phải duyệt trước khi tính điểm.
                 </p>
               </div>
 
@@ -394,7 +395,7 @@ export function TeacherStudentDetailPage() {
                   value={roleForm.ngayBatDau}
                   onChange={(value) => setRoleForm({ ...roleForm, ngayBatDau: value })}
                 />
-                {roleForm.chucVu === LOP_TRUONG_ROLE ? (
+                {LOP_TRUONG_ELIGIBLE_ROLES.includes(roleForm.chucVu) ? (
                   <TextField
                     label="Mã PIN (để gửi đề xuất ghi nhận)"
                     value={roleForm.pin}
