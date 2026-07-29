@@ -532,6 +532,8 @@ export class SupabaseDataSource implements DataSource {
           da_lien_lac: false,
           dien: student?.dien || '2B',
           ho: student?.ho || '',
+          sdt_1: student?.sdt_1 || null,
+          sdt_2: student?.sdt_2 || null,
           ten: student?.ten || row.ma_hs || '',
           tt: student?.tt || 0,
         }

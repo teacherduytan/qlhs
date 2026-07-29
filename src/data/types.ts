@@ -238,6 +238,8 @@ export interface DiemDanhHocSinh extends DiemDanh {
 
 export interface DiemDanhCanLienLac extends DiemDanhHocSinh {
   da_lien_lac: boolean
+  sdt_1: string | null
+  sdt_2: string | null
 }
 
 export interface LienLacPhuHuynh {

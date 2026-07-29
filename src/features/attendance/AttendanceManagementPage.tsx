@@ -297,6 +297,12 @@ export function AttendanceManagementPage() {
     }
   }
 
+  async function copyPhone(label: string, phone: string) {
+    await window.navigator.clipboard.writeText(phone)
+    setMessage(`Đã copy ${label}: ${phone}`)
+    window.setTimeout(() => setMessage(null), 2500)
+  }
+
   function jumpToDate(date: string, buoi: BuoiDiemDanh) {
     setScope('diem_danh')
     setSelectedDate(date)
@@ -591,10 +597,7 @@ export function AttendanceManagementPage() {
             </p>
           ) : (
             pendingContactsPage.pageItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col gap-3 rounded-md border border-orange-100 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
-              >
+              <div key={item.id} className="flex flex-col gap-3 rounded-md border border-orange-100 bg-white p-3">
                 <div>
                   {item.ma_hs ? (
                     <Link
@@ -613,11 +616,31 @@ export function AttendanceManagementPage() {
                     {STATUS_LABELS[item.trang_thai as TrangThaiDiemDanh]}
                   </p>
                 </div>
-                <div className="flex shrink-0 gap-2">
+
+                {item.sdt_1 || item.sdt_2 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {item.sdt_1 ? (
+                      <PhoneQuickAction
+                        label="SĐT 1"
+                        phone={item.sdt_1}
+                        onCopy={() => void copyPhone('SĐT 1', item.sdt_1 as string)}
+                      />
+                    ) : null}
+                    {item.sdt_2 ? (
+                      <PhoneQuickAction
+                        label="SĐT 2"
+                        phone={item.sdt_2}
+                        onCopy={() => void copyPhone('SĐT 2', item.sdt_2 as string)}
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setContactTarget(item)}
-                    className="h-10 rounded-md bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-700"
+                    className="h-10 flex-1 rounded-md bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-700 sm:flex-none"
                   >
                     Ghi nhận
                   </button>
@@ -983,6 +1006,29 @@ function ModalActions({ disabled, onClose }: { disabled: boolean; onClose: () =>
       </button>
     </div>
   )
+}
+
+function PhoneQuickAction({ label, phone, onCopy }: { label: string; phone: string; onCopy: () => void }) {
+  return (
+    <div className="flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 py-1 pl-2 pr-1">
+      <span className="text-xs font-semibold text-orange-700">{label}</span>
+      <a href={`tel:${normalizePhone(phone)}`} className="text-sm font-bold text-blue-700 hover:text-blue-800">
+        {phone}
+      </a>
+      <button
+        type="button"
+        onClick={onCopy}
+        aria-label={`Copy ${label}`}
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-orange-100 hover:text-slate-700"
+      >
+        <span aria-hidden="true">📋</span>
+      </button>
+    </div>
+  )
+}
+
+function normalizePhone(value: string): string {
+  return value.replace(/[^\d+]/g, '')
 }
 
 function countAbsencesByStudent(entries: DiemDanh[]): Map<string, number> {
