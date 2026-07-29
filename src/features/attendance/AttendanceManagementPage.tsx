@@ -2,6 +2,7 @@ import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 're
 import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import { Pagination, usePagination } from '../../components/Pagination'
+import { CopyIcon } from '../../components/CopyIcon'
 import type {
   BuoiDiemDanh,
   CauHinhTuan,
@@ -1009,6 +1010,14 @@ function ModalActions({ disabled, onClose }: { disabled: boolean; onClose: () =>
 }
 
 function PhoneQuickAction({ label, phone, onCopy }: { label: string; phone: string; onCopy: () => void }) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    onCopy()
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <div className="flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 py-1 pl-2 pr-1">
       <span className="text-xs font-semibold text-orange-700">{label}</span>
@@ -1017,11 +1026,11 @@ function PhoneQuickAction({ label, phone, onCopy }: { label: string; phone: stri
       </a>
       <button
         type="button"
-        onClick={onCopy}
+        onClick={handleCopy}
         aria-label={`Copy ${label}`}
         className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-orange-100 hover:text-slate-700"
       >
-        <span aria-hidden="true">📋</span>
+        <CopyIcon copied={copied} />
       </button>
     </div>
   )

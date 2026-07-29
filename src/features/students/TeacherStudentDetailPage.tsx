@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
+import { CopyIcon } from '../../components/CopyIcon'
 import type {
   BanCanSu,
   BuoiDiemDanh,
@@ -879,6 +880,13 @@ function TeacherProposalItem({
 
 function PhoneRow({ label, name, value }: { label: string; name?: string; value: unknown }) {
   const phoneText = toText(value)
+  const [copied, setCopied] = useState(false)
+
+  async function copyPhone() {
+    await window.navigator.clipboard.writeText(phoneText)
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="flex flex-col gap-1 rounded-md border border-slate-200 bg-slate-100 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -887,12 +895,19 @@ function PhoneRow({ label, name, value }: { label: string; name?: string; value:
         {name ? <p className="wrap-break-word text-slate-600">{name}</p> : null}
       </div>
       {phoneText ? (
-        <a
-          href={`tel:${normalizePhone(phoneText)}`}
-          className="shrink-0 font-bold text-blue-700 hover:text-blue-800"
-        >
-          {phoneText}
-        </a>
+        <div className="flex shrink-0 items-center gap-1">
+          <a href={`tel:${normalizePhone(phoneText)}`} className="font-bold text-blue-700 hover:text-blue-800">
+            {phoneText}
+          </a>
+          <button
+            type="button"
+            onClick={() => void copyPhone()}
+            aria-label={`Copy ${label}`}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+          >
+            <CopyIcon copied={copied} />
+          </button>
+        </div>
       ) : (
         <span className="shrink-0 text-slate-400">Chưa có</span>
       )}
