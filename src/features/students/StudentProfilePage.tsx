@@ -100,15 +100,6 @@ export function StudentProfilePage() {
   const [loggingIn, setLoggingIn] = useState(false)
 
   useEffect(() => {
-    const meta = document.querySelector('meta[name="viewport"]')
-    const original = meta?.getAttribute('content') || null
-    meta?.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover')
-    return () => {
-      if (meta && original) meta.setAttribute('content', original)
-    }
-  }, [])
-
-  useEffect(() => {
     if (!menuOpen) return
 
     function handlePointerDown(event: PointerEvent) {
