@@ -20,19 +20,29 @@ const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
 // hien thi, dam bao khong mat dau, nhung doi lai chu trong PDF la anh, khong
 // the bam chon/copy hay tim kiem duoc nhu PDF van ban that.
 //
-// html2canvas (dung trong doc.html()) khong doc duoc mau CSS kieu oklch() -
-// neu dung the container an gan thang vao document.body cua app, html2canvas
-// se doc phai style ke thua/tinh toan tu <body>/<html> (Tailwind CSS v4 xuat
-// mau bang oklch()) va nem loi "unsupported color function oklch". Sua bang
-// cach dung 1 <iframe> voi document rong rieng (khong nap Tailwind cua app),
-// noi dung bao cao chi dung style inline hex nen hoan toan tach biet, tranh
-// duoc loi tren.
+// html2canvas (dung trong doc.html()) khong doc duoc mau CSS kieu oklch().
+// Thu dung iframe voi document rong de tach container khoi CSS cua app
+// nhung KHONG an toan: doc xem source cua jsPDF (Worker.toContainer) cho
+// thay no tu goi `node.cloneNode(false)` (deep-clone thu cong tung node)
+// roi APPEND BAN SAO DO THANG VAO document.body CUA TRANG CHINH (khong
+// phai vao iframe) de do dac/render - nen container du dung o dau, ban sao
+// cuoi cung van nam duoi <body> that cua app va ke thua bg/text-color cua
+// no (Tailwind v4 xuat oklch() cho `body { @apply ... bg-slate-200
+// text-slate-900 }` trong index.css). Sua tan goc: tam ghi de
+// background-color/color cua chinh <body> bang gia tri hex thuong trong
+// luc doc.html() chay, roi khoi phuc lai ngay sau do (dung try/finally).
 export async function exportReportToPdf(
   data: ReportData,
   meta: ReportPresentationMeta,
   fileBaseName: string,
 ): Promise<void> {
-  const { iframe, container } = createIsolatedContainer(data, meta)
+  const container = buildReportContainer(data, meta)
+  document.body.appendChild(container)
+
+  const previousBodyBackground = document.body.style.backgroundColor
+  const previousBodyColor = document.body.style.color
+  document.body.style.backgroundColor = '#ffffff'
+  document.body.style.color = '#0f172a'
 
   try {
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' })
@@ -44,7 +54,7 @@ export async function exportReportToPdf(
           width: 547, // A4 (595pt) - 2*24pt margin
           windowWidth: 794, // ~ A4 width tai 96dpi, giup html2canvas do layout dung ty le
           autoPaging: 'slice',
-          html2canvas: { scale: 0.75 },
+          html2canvas: { scale: 0.75, backgroundColor: '#ffffff' },
           callback: (finishedDoc) => resolve(finishedDoc),
         })
         .catch(reject)
@@ -53,35 +63,17 @@ export async function exportReportToPdf(
     const blob = pdfDoc.output('blob')
     await shareOrDownloadFile(blob, `${fileBaseName}.pdf`, PDF_MIME_TYPE, meta.title)
   } finally {
-    iframe.remove()
+    document.body.style.backgroundColor = previousBodyBackground
+    document.body.style.color = previousBodyColor
+    container.remove()
   }
 }
 
-function createIsolatedContainer(
-  data: ReportData,
-  meta: ReportPresentationMeta,
-): { iframe: HTMLIFrameElement; container: HTMLElement } {
-  const iframe = document.createElement('iframe')
-  iframe.style.position = 'fixed'
-  iframe.style.left = '-9999px'
-  iframe.style.top = '0'
-  iframe.style.width = '794px'
-  iframe.style.height = '1px'
-  iframe.style.border = '0'
-  document.body.appendChild(iframe)
-
-  const frameDoc = iframe.contentDocument
-  if (!frameDoc) {
-    iframe.remove()
-    throw new Error('Không tạo được khung ẩn để xuất PDF.')
-  }
-
-  frameDoc.open()
-  frameDoc.write('<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>')
-  frameDoc.close()
-
-  const container = frameDoc.body
-  container.style.margin = '0'
+function buildReportContainer(data: ReportData, meta: ReportPresentationMeta): HTMLElement {
+  const container = document.createElement('div')
+  container.style.position = 'fixed'
+  container.style.left = '-9999px'
+  container.style.top = '0'
   container.style.width = '794px'
   container.style.fontFamily = '"Times New Roman", Times, serif'
   container.style.color = '#0f172a'
@@ -96,7 +88,7 @@ function createIsolatedContainer(
     ${renderSignatureBlock()}
   `
 
-  return { iframe, container }
+  return container
 }
 
 function renderLetterhead(meta: ReportPresentationMeta): string {
