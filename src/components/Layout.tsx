@@ -19,6 +19,7 @@ const navItems = [
   { to: '/diem-danh', label: 'Điểm danh', icon: '✅' },
   { to: '/lien-lac-phu-huynh', label: 'Liên lạc PH', icon: '📞' },
   { to: '/bao-cao-si-so', label: 'Sĩ số', icon: '📊' },
+  { to: '/bao-cao', label: 'Báo cáo', icon: '🧾' },
   { to: '/danh-muc', label: 'Danh mục', icon: '📚' },
   { to: '/import', label: 'Import', icon: '📥' },
 ]

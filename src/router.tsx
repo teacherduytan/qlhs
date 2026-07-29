@@ -7,6 +7,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage'
 import { ImportPage } from './features/import/ImportPage'
 import { ParentContactHistoryPage } from './features/attendance/ParentContactHistoryPage'
 import { RecordEntryPage } from './features/records/RecordEntryPage'
+import { ReportsPage } from './features/reports/ReportsPage'
 import { StudentProfilePage } from './features/students/StudentProfilePage'
 import { StudentsPage } from './features/students/StudentsPage'
 import { TeacherStudentDetailPage } from './features/students/TeacherStudentDetailPage'
@@ -23,6 +24,7 @@ export const router = createHashRouter([
       { path: 'diem-danh', element: <AttendanceManagementPage /> },
       { path: 'lien-lac-phu-huynh', element: <ParentContactHistoryPage /> },
       { path: 'bao-cao-si-so', element: <AttendanceReportPage /> },
+      { path: 'bao-cao', element: <ReportsPage /> },
       { path: 'danh-muc', element: <CatalogPage /> },
       { path: 'import', element: <ImportPage /> },
     ],

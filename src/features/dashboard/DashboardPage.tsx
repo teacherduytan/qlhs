@@ -2410,16 +2410,16 @@ function getTopPositiveRecognitions(
     }))
 }
 
-function isViolationRecord(record: GhiNhan, catalogByCode: Map<string, DanhMucDiem>): boolean {
+export function isViolationRecord(record: GhiNhan, catalogByCode: Map<string, DanhMucDiem>): boolean {
   return getRecordPolarity(record, catalogByCode) === 'negative'
 }
 
-function isPositiveRecord(record: GhiNhan, catalogByCode: Map<string, DanhMucDiem>): boolean {
+export function isPositiveRecord(record: GhiNhan, catalogByCode: Map<string, DanhMucDiem>): boolean {
   const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
   return record.loai === 'khen_thuong' || catalogItem?.nhom === 'KT'
 }
 
-function getRecordTypeLabel(code: string): string {
+export function getRecordTypeLabel(code: string): string {
   const labels: Record<string, string> = {
     chuyen_can: 'Chuyên cần',
     ve_sinh: 'Vệ sinh',
@@ -2827,7 +2827,7 @@ function toIsoDate(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
-function formatDate(value: string): string {
+export function formatDate(value: string): string {
   const date = parseIsoDate(value)
   if (!date) {
     return value
@@ -2841,7 +2841,7 @@ function formatDate(value: string): string {
   }).format(date)
 }
 
-function formatDateCompact(value: string): string {
+export function formatDateCompact(value: string): string {
   const date = parseIsoDate(value)
   if (!date) {
     return value
