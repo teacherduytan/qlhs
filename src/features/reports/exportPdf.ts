@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf'
 import { formatDate } from '../dashboard/DashboardPage'
+import { REPORT_CONFIG, type ReportPresentationMeta } from './reportConfig'
 import type { ReportData } from './reportData'
 import { shareOrDownloadFile } from './shareFile'
 
@@ -26,8 +27,12 @@ const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
 // cach dung 1 <iframe> voi document rong rieng (khong nap Tailwind cua app),
 // noi dung bao cao chi dung style inline hex nen hoan toan tach biet, tranh
 // duoc loi tren.
-export async function exportReportToPdf(data: ReportData, title: string, fileBaseName: string): Promise<void> {
-  const { iframe, container } = createIsolatedContainer(data, title)
+export async function exportReportToPdf(
+  data: ReportData,
+  meta: ReportPresentationMeta,
+  fileBaseName: string,
+): Promise<void> {
+  const { iframe, container } = createIsolatedContainer(data, meta)
 
   try {
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' })
@@ -46,13 +51,16 @@ export async function exportReportToPdf(data: ReportData, title: string, fileBas
     })
 
     const blob = pdfDoc.output('blob')
-    await shareOrDownloadFile(blob, `${fileBaseName}.pdf`, PDF_MIME_TYPE, title)
+    await shareOrDownloadFile(blob, `${fileBaseName}.pdf`, PDF_MIME_TYPE, meta.title)
   } finally {
     iframe.remove()
   }
 }
 
-function createIsolatedContainer(data: ReportData, title: string): { iframe: HTMLIFrameElement; container: HTMLElement } {
+function createIsolatedContainer(
+  data: ReportData,
+  meta: ReportPresentationMeta,
+): { iframe: HTMLIFrameElement; container: HTMLElement } {
   const iframe = document.createElement('iframe')
   iframe.style.position = 'fixed'
   iframe.style.left = '-9999px'
@@ -75,20 +83,51 @@ function createIsolatedContainer(data: ReportData, title: string): { iframe: HTM
   const container = frameDoc.body
   container.style.margin = '0'
   container.style.width = '794px'
-  container.style.fontFamily = 'Arial, sans-serif'
+  container.style.fontFamily = '"Times New Roman", Times, serif'
   container.style.color = '#0f172a'
-  container.style.fontSize = '12px'
+  container.style.fontSize = '13px'
   container.style.background = '#ffffff'
 
   container.innerHTML = `
-    <h1 style="font-size:20px;margin:0 0 4px;">${escapeHtml(title)}</h1>
-    <p style="margin:0 0 16px;color:#334155;">Từ ${formatDate(data.tuNgay)} đến ${formatDate(data.denNgay)}</p>
+    ${renderLetterhead(meta)}
     ${renderAttendanceSection(data)}
     ${renderViolationSection(data)}
     ${renderPositiveSection(data)}
+    ${renderSignatureBlock()}
   `
 
   return { iframe, container }
+}
+
+function renderLetterhead(meta: ReportPresentationMeta): string {
+  return `
+    <p style="margin:0;text-align:center;font-weight:bold;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+    <p style="margin:0;text-align:center;font-weight:bold;">Độc lập - Tự do - Hạnh phúc</p>
+    <p style="margin:2px 0 12px;text-align:center;">──────────</p>
+    <p style="margin:0;font-weight:bold;">${escapeHtml(REPORT_CONFIG.tenTruong)}</p>
+    <p style="margin:0;">
+      Lớp: ${escapeHtml(REPORT_CONFIG.tenLop)} &nbsp;&nbsp;&nbsp; Sĩ số: ${meta.soHocSinh} học sinh &nbsp;&nbsp;&nbsp;
+      Năm học: ${escapeHtml(REPORT_CONFIG.namHoc)}
+    </p>
+    <p style="margin:0 0 12px;">GVCN: ${escapeHtml(REPORT_CONFIG.tenGvcn)}</p>
+    <h1 style="font-size:19px;margin:0 0 4px;text-align:center;text-transform:uppercase;">${escapeHtml(meta.title)}</h1>
+    <p style="margin:0 0 16px;text-align:center;font-style:italic;font-size:12px;">${escapeHtml(meta.subtitle)}</p>
+  `
+}
+
+function renderSignatureBlock(): string {
+  const now = new Date()
+  const ngayLap = `ngày ${now.getDate()} tháng ${now.getMonth() + 1} năm ${now.getFullYear()}`
+
+  return `
+    <div style="margin-top:24px;text-align:right;">
+      <p style="margin:0;">${escapeHtml(REPORT_CONFIG.diaDiemKy)}, ${ngayLap}</p>
+      <p style="margin:0;font-weight:bold;">GIÁO VIÊN CHỦ NHIỆM</p>
+      <p style="margin:0;font-style:italic;">(Ký và ghi rõ họ tên)</p>
+      <div style="height:60px;"></div>
+      <p style="margin:0;font-weight:bold;">${escapeHtml(REPORT_CONFIG.tenGvcn)}</p>
+    </div>
+  `
 }
 
 function renderAttendanceSection(data: ReportData): string {
@@ -97,12 +136,12 @@ function renderAttendanceSection(data: ReportData): string {
     .map(
       (row, index) => `
         <tr>
-          <td style="${td}">${index + 1}</td>
+          <td style="${td} text-align:center;">${index + 1}</td>
           <td style="${td}">${escapeHtml(row.hoTen)}</td>
-          <td style="${td}">${formatDate(row.ngay)}</td>
-          <td style="${td}">${ATTENDANCE_STATUS_LABELS[row.trangThai] || row.trangThai}</td>
+          <td style="${td} text-align:center;">${formatDate(row.ngay)}</td>
+          <td style="${td} text-align:center;">${ATTENDANCE_STATUS_LABELS[row.trangThai] || row.trangThai}</td>
           <td style="${td}">${escapeHtml(row.chiTietBuoi || '—')}</td>
-          <td style="${td}">${row.daLienLac ? 'Đã liên lạc' : 'Chưa liên lạc'}</td>
+          <td style="${td} text-align:center;">${row.daLienLac ? 'Đã liên lạc' : 'Chưa liên lạc'}</td>
         </tr>`,
     )
     .join('')
@@ -120,8 +159,8 @@ function renderAttendanceSection(data: ReportData): string {
         ? '<p>Không có học sinh vắng/trễ trong kỳ báo cáo này.</p>'
         : `<table style="${table}">
             <thead><tr>
-              <th style="${th}">STT</th><th style="${th}">Họ tên</th><th style="${th}">Ngày</th>
-              <th style="${th}">Trạng thái</th><th style="${th}">Chi tiết buổi</th><th style="${th}">Đã liên lạc PH?</th>
+              <th style="${th} text-align:center;">STT</th><th style="${th}">Họ tên</th><th style="${th} text-align:center;">Ngày</th>
+              <th style="${th} text-align:center;">Trạng thái</th><th style="${th}">Chi tiết buổi</th><th style="${th} text-align:center;">Đã liên lạc PH?</th>
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>`
@@ -136,8 +175,8 @@ function renderViolationSection(data: ReportData): string {
       (row) => `
         <tr>
           <td style="${td}">${escapeHtml(row.nhanLoai)}</td>
-          <td style="${td}">${row.soLuot}</td>
-          <td style="${td}">${row.soHocSinh}</td>
+          <td style="${td} text-align:center;">${row.soLuot}</td>
+          <td style="${td} text-align:center;">${row.soHocSinh}</td>
         </tr>`,
     )
     .join('')
@@ -147,9 +186,9 @@ function renderViolationSection(data: ReportData): string {
       (row) => `
         <tr>
           <td style="${td}">${escapeHtml(row.nhanLoai)}</td>
-          <td style="${td}">${escapeHtml(row.maDanhMuc || '—')}</td>
+          <td style="${td} text-align:center;">${escapeHtml(row.maDanhMuc || '—')}</td>
           <td style="${td}">${escapeHtml(row.tenViPham)}</td>
-          <td style="${td}">${row.soLuot}</td>
+          <td style="${td} text-align:center;">${row.soLuot}</td>
           <td style="${td}">${escapeHtml(row.hocSinh.map((student) => `${student.hoTen} (${student.soLan})`).join(', '))}</td>
         </tr>`,
     )
@@ -160,7 +199,7 @@ function renderViolationSection(data: ReportData): string {
     <p style="margin:4px 0 8px;">
       Học sinh vi phạm: <strong>${violation.soHocSinhViPham}</strong> ·
       Tổng lượt vi phạm: <strong>${violation.tongSoLuot}</strong> ·
-      Vi phạm nghiêm trọng: <strong>${violation.soViPhamNghiemTrong}</strong>
+      Vi phạm nghiêm trọng: <strong style="color:#c00000;">${violation.soViPhamNghiemTrong}</strong>
     </p>
     <p style="margin:0 0 8px;">
       Sự kiện lớp/tổ trong kỳ: <strong>${violation.suKienTapThe.tongSo}</strong> sự kiện,
@@ -170,13 +209,13 @@ function renderViolationSection(data: ReportData): string {
       violation.theoNhom.length === 0
         ? '<p>Không có vi phạm cá nhân nào trong kỳ báo cáo này.</p>'
         : `<table style="${table}">
-            <thead><tr><th style="${th}">Nhóm</th><th style="${th}">Số lượt</th><th style="${th}">Số học sinh liên quan</th></tr></thead>
+            <thead><tr><th style="${th}">Nhóm</th><th style="${th} text-align:center;">Số lượt</th><th style="${th} text-align:center;">Số học sinh liên quan</th></tr></thead>
             <tbody>${groupRowsHtml}</tbody>
           </table>
           <table style="${table}">
             <thead><tr>
-              <th style="${th}">Nhóm</th><th style="${th}">Mã</th><th style="${th}">Tên vi phạm</th>
-              <th style="${th}">Số lượt</th><th style="${th}">Học sinh (số lần)</th>
+              <th style="${th}">Nhóm</th><th style="${th} text-align:center;">Mã</th><th style="${th}">Tên vi phạm</th>
+              <th style="${th} text-align:center;">Số lượt</th><th style="${th}">Học sinh (số lần)</th>
             </tr></thead>
             <tbody>${detailRowsHtml}</tbody>
           </table>`
@@ -190,9 +229,9 @@ function renderPositiveSection(data: ReportData): string {
     .map(
       (row) => `
         <tr>
-          <td style="${td}">${escapeHtml(row.maDanhMuc || '—')}</td>
+          <td style="${td} text-align:center;">${escapeHtml(row.maDanhMuc || '—')}</td>
           <td style="${td}">${escapeHtml(row.noiDung)}</td>
-          <td style="${td}">${row.soLuot}</td>
+          <td style="${td} text-align:center;">${row.soLuot}</td>
           <td style="${td}">${escapeHtml(row.hocSinh.map((student) => `${student.hoTen} (${student.soLan})`).join(', '))}</td>
         </tr>`,
     )
@@ -208,17 +247,17 @@ function renderPositiveSection(data: ReportData): string {
       positive.rows.length === 0
         ? '<p>Không có ghi nhận tích cực nào trong kỳ báo cáo này.</p>'
         : `<table style="${table}">
-            <thead><tr><th style="${th}">Mã</th><th style="${th}">Nội dung</th><th style="${th}">Số lượt</th><th style="${th}">Học sinh (số lần)</th></tr></thead>
+            <thead><tr><th style="${th} text-align:center;">Mã</th><th style="${th}">Nội dung</th><th style="${th} text-align:center;">Số lượt</th><th style="${th}">Học sinh (số lần)</th></tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>`
     }
   `
 }
 
-const h2 = 'font-size:15px;margin:16px 0 4px;color:#0f172a;'
+const h2 = 'font-size:14px;font-weight:bold;margin:16px 0 4px;color:#0f172a;'
 const table = 'width:100%;border-collapse:collapse;margin-bottom:12px;'
-const th = 'border:1px solid #64748b;background:#e2e8f0;padding:4px 6px;text-align:left;font-size:11px;'
-const td = 'border:1px solid #94a3b8;padding:4px 6px;font-size:11px;vertical-align:top;'
+const th = 'border:1px solid #333333;background:#f2f2f2;padding:4px 6px;text-align:left;font-size:12px;font-weight:bold;vertical-align:middle;'
+const td = 'border:1px solid #333333;padding:4px 6px;font-size:12px;vertical-align:top;'
 
 function escapeHtml(value: string): string {
   return value

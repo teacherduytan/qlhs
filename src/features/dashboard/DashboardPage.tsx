@@ -2091,7 +2091,7 @@ function buildOverviewStats({
 }): OverviewStatGroups {
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
   const studentById = new Map(students.map((student) => [student.ma_hs, student]))
-  const activeStudents = students.filter(isActiveStudent)
+  const activeStudents = students.filter((student) => isActiveStudent(student))
   const weekRecords = records.filter((record) => record.tuan_so === tuanSo)
   const personalWeekRecords = weekRecords.filter((record) => record.ma_hs)
   const studentsWithRecords = new Set(personalWeekRecords.map((record) => record.ma_hs))
@@ -2246,12 +2246,11 @@ function buildOverviewStats({
   }
 }
 
-function isActiveStudent(student: HocSinh): boolean {
-  const today = new Date()
+export function isActiveStudent(student: HocSinh, referenceDate: Date = new Date()): boolean {
   const joined = student.ngay_nhap_hoc ? new Date(student.ngay_nhap_hoc) : null
   const left = student.ngay_roi_lop ? new Date(student.ngay_roi_lop) : null
 
-  return (!joined || joined <= today) && (!left || left > today)
+  return (!joined || joined <= referenceDate) && (!left || left > referenceDate)
 }
 
 function filterAndSortScores(

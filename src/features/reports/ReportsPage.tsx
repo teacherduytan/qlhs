@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { dataSource } from '../../data/client'
 import type { CauHinhTuan, DanhMucDiem, DiemDanh, GhiNhan, HocSinh, LienLacPhuHuynh } from '../../data/types'
-import { formatDate, formatDateCompact } from '../dashboard/DashboardPage'
+import { formatDate, formatDateCompact, isActiveStudent } from '../dashboard/DashboardPage'
 import { findWeek, getTodayIsoDate, selectDefaultWeek, WeekSelector } from '../time/WeekSelector'
 import { buildReportData, type ReportData } from './reportData'
+import type { ReportPresentationMeta } from './reportConfig'
 
 type ReportTab = 'tuan' | 'thang'
 
@@ -138,13 +139,27 @@ export function ReportsPage() {
     return `BaoCao-Thang${month}-${year}-11C5`
   }, [tab, customRange, range, tuanSo, thang])
 
+  const meta: ReportPresentationMeta | null = useMemo(() => {
+    if (!range || state.status !== 'success') return null
+    const [year, month, day] = range.denNgay.split('-').map(Number)
+    const soHocSinh = state.students.filter((student: HocSinh) =>
+      isActiveStudent(student, new Date(year, month - 1, day)),
+    ).length
+
+    return {
+      title,
+      subtitle: `Từ ${formatDate(range.tuNgay)} đến ${formatDate(range.denNgay)}`,
+      soHocSinh,
+    }
+  }, [range, state, title])
+
   async function handleExportWord() {
-    if (!reportData) return
+    if (!reportData || !meta) return
     setExporting('word')
     setExportError(null)
     try {
       const { exportReportToWord } = await import('./exportWord')
-      await exportReportToWord(reportData, title, fileBaseName)
+      await exportReportToWord(reportData, meta, fileBaseName)
     } catch (error) {
       setExportError(error instanceof Error ? error.message : 'Không xuất được file Word.')
     } finally {
@@ -153,12 +168,12 @@ export function ReportsPage() {
   }
 
   async function handleExportPdf() {
-    if (!reportData) return
+    if (!reportData || !meta) return
     setExporting('pdf')
     setExportError(null)
     try {
       const { exportReportToPdf } = await import('./exportPdf')
-      await exportReportToPdf(reportData, title, fileBaseName)
+      await exportReportToPdf(reportData, meta, fileBaseName)
     } catch (error) {
       setExportError(error instanceof Error ? error.message : 'Không xuất được file PDF.')
     } finally {
