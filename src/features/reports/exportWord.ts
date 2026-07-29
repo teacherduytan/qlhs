@@ -184,6 +184,16 @@ function sectionHeading(text: string): Paragraph {
   })
 }
 
+// Tach 2 bang doc lap trong cung 1 phan (vi du "Theo nhom" va "Chi tiet")
+// bang 1 dong chu in nghieng nho phia tren moi bang, tranh nhin giong 1
+// bang lien tuc duy nhat.
+function subHeading(text: string): Paragraph {
+  return new Paragraph({
+    spacing: { before: 160, after: 60 },
+    children: [new TextRun({ text, bold: true, italics: true, size: 22 })],
+  })
+}
+
 function summaryParagraph(items: Array<{ label: string; value: string | number; color?: string }>): Paragraph {
   const children: TextRun[] = []
   items.forEach((item, index) => {
@@ -231,21 +241,24 @@ function buildAttendanceSection(data: ReportData) {
 function buildViolationSection(data: ReportData) {
   const { violation } = data
   const groupRows = [
-    headerRow(['Nhóm', 'Số lượt', 'Số học sinh liên quan'], [1, 2]),
-    ...violation.theoNhom.map((row) => dataRow([row.nhanLoai, String(row.soLuot), String(row.soHocSinh)], [1, 2])),
+    headerRow(['STT', 'Nhóm', 'Số lượt', 'Số học sinh liên quan'], [0, 2, 3]),
+    ...violation.theoNhom.map((row, index) =>
+      dataRow([String(index + 1), row.nhanLoai, String(row.soLuot), String(row.soHocSinh)], [0, 2, 3]),
+    ),
   ]
   const detailRows = [
-    headerRow(['Nhóm', 'Mã', 'Tên vi phạm', 'Số lượt', 'Học sinh (số lần)'], [1, 3]),
-    ...violation.chiTiet.map((row) =>
+    headerRow(['STT', 'Nhóm', 'Mã', 'Tên vi phạm', 'Số lượt', 'Học sinh (số lần)'], [0, 2, 4]),
+    ...violation.chiTiet.map((row, index) =>
       dataRow(
         [
+          String(index + 1),
           row.nhanLoai,
           row.maDanhMuc || '—',
           row.tenViPham,
           String(row.soLuot),
           row.hocSinh.map((student) => `${student.hoTen} (${student.soLan})`).join(', '),
         ],
-        [1, 3],
+        [0, 2, 4],
       ),
     ),
   ]
@@ -264,23 +277,30 @@ function buildViolationSection(data: ReportData) {
         ),
       ],
     }),
-    violation.theoNhom.length === 0
-      ? new Paragraph({ children: [new TextRun('Không có vi phạm cá nhân nào trong kỳ báo cáo này.')] })
-      : new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: TABLE_BORDERS, rows: groupRows }),
+    ...(violation.theoNhom.length === 0
+      ? [new Paragraph({ children: [new TextRun('Không có vi phạm cá nhân nào trong kỳ báo cáo này.')] })]
+      : [
+          subHeading('Theo nhóm vi phạm'),
+          new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: TABLE_BORDERS, rows: groupRows }),
+        ]),
     ...(violation.chiTiet.length > 0
-      ? [new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: TABLE_BORDERS, rows: detailRows })]
+      ? [
+          subHeading('Chi tiết theo mã vi phạm'),
+          new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: TABLE_BORDERS, rows: detailRows }),
+        ]
       : []),
   ]
 }
 
 function buildPositiveSection(data: ReportData) {
   const { positive } = data
-  const centerCols = [0, 2]
+  const centerCols = [0, 1, 3]
   const rows = [
-    headerRow(['Mã', 'Nội dung', 'Số lượt', 'Học sinh (số lần)'], centerCols),
-    ...positive.rows.map((row) =>
+    headerRow(['STT', 'Mã', 'Nội dung', 'Số lượt', 'Học sinh (số lần)'], centerCols),
+    ...positive.rows.map((row, index) =>
       dataRow(
         [
+          String(index + 1),
           row.maDanhMuc || '—',
           row.noiDung,
           String(row.soLuot),

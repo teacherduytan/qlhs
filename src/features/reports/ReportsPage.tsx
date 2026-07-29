@@ -475,52 +475,62 @@ function ViolationSection({ data }: { data: ReportData }) {
           </p>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
-                  <tr>
-                    <th className="px-3 py-2">Nhóm</th>
-                    <th className="px-3 py-2">Số lượt</th>
-                    <th className="px-3 py-2">Số học sinh liên quan</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {violation.theoNhom.map((row) => (
-                    <tr key={row.loai}>
-                      <td className="px-3 py-2 font-semibold text-slate-900">{row.nhanLoai}</td>
-                      <td className="px-3 py-2 text-slate-700">{row.soLuot}</td>
-                      <td className="px-3 py-2 text-slate-700">{row.soHocSinh}</td>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase text-slate-500">Theo nhóm vi phạm</p>
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
+                    <tr>
+                      <th className="px-3 py-2">STT</th>
+                      <th className="px-3 py-2">Nhóm</th>
+                      <th className="px-3 py-2">Số lượt</th>
+                      <th className="px-3 py-2">Số học sinh liên quan</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {violation.theoNhom.map((row, index) => (
+                      <tr key={row.loai}>
+                        <td className="px-3 py-2 text-slate-500">{index + 1}</td>
+                        <td className="px-3 py-2 font-semibold text-slate-900">{row.nhanLoai}</td>
+                        <td className="px-3 py-2 text-slate-700">{row.soLuot}</td>
+                        <td className="px-3 py-2 text-slate-700">{row.soHocSinh}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
-                  <tr>
-                    <th className="px-3 py-2">Nhóm</th>
-                    <th className="px-3 py-2">Mã</th>
-                    <th className="px-3 py-2">Tên vi phạm</th>
-                    <th className="px-3 py-2">Số lượt</th>
-                    <th className="px-3 py-2">Học sinh (số lần)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {violation.chiTiet.map((row, index) => (
-                    <tr key={`${row.loai}-${row.maDanhMuc || 'none'}-${index}`}>
-                      <td className="px-3 py-2 text-slate-700">{row.nhanLoai}</td>
-                      <td className="px-3 py-2 font-mono text-slate-700">{row.maDanhMuc || '—'}</td>
-                      <td className="px-3 py-2 font-semibold text-slate-900">{row.tenViPham}</td>
-                      <td className="px-3 py-2 text-slate-700">{row.soLuot}</td>
-                      <td className="px-3 py-2 text-slate-600">
-                        {row.hocSinh.map((student) => `${student.hoTen} (${student.soLan})`).join(', ')}
-                      </td>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase text-slate-500">Chi tiết theo mã vi phạm</p>
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
+                    <tr>
+                      <th className="px-3 py-2">STT</th>
+                      <th className="px-3 py-2">Nhóm</th>
+                      <th className="px-3 py-2">Mã</th>
+                      <th className="px-3 py-2">Tên vi phạm</th>
+                      <th className="px-3 py-2">Số lượt</th>
+                      <th className="px-3 py-2">Học sinh (số lần)</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {violation.chiTiet.map((row, index) => (
+                      <tr key={`${row.loai}-${row.maDanhMuc || 'none'}-${index}`}>
+                        <td className="px-3 py-2 text-slate-500">{index + 1}</td>
+                        <td className="px-3 py-2 text-slate-700">{row.nhanLoai}</td>
+                        <td className="px-3 py-2 font-mono text-slate-700">{row.maDanhMuc || '—'}</td>
+                        <td className="px-3 py-2 font-semibold text-slate-900">{row.tenViPham}</td>
+                        <td className="px-3 py-2 text-slate-700">{row.soLuot}</td>
+                        <td className="px-3 py-2 text-slate-600">
+                          {row.hocSinh.map((student) => `${student.hoTen} (${student.soLan})`).join(', ')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </>
         )}
@@ -551,6 +561,7 @@ function PositiveSection({ data }: { data: ReportData }) {
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
                 <tr>
+                  <th className="px-3 py-2">STT</th>
                   <th className="px-3 py-2">Mã</th>
                   <th className="px-3 py-2">Nội dung</th>
                   <th className="px-3 py-2">Số lượt</th>
@@ -560,6 +571,7 @@ function PositiveSection({ data }: { data: ReportData }) {
               <tbody className="divide-y divide-slate-100">
                 {positive.rows.map((row, index) => (
                   <tr key={`${row.maDanhMuc || 'none'}-${index}`}>
+                    <td className="px-3 py-2 text-slate-500">{index + 1}</td>
                     <td className="px-3 py-2 font-mono text-slate-700">{row.maDanhMuc || '—'}</td>
                     <td className="px-3 py-2 font-semibold text-slate-900">{row.noiDung}</td>
                     <td className="px-3 py-2 text-slate-700">{row.soLuot}</td>

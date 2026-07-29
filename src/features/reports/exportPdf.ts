@@ -36,8 +36,8 @@ export async function exportReportToPdf(
   meta: ReportPresentationMeta,
   fileBaseName: string,
 ): Promise<void> {
-  const container = buildReportContainer(data, meta)
-  document.body.appendChild(container)
+  const { hiddenWrapper, container } = buildReportContainer(data, meta)
+  document.body.appendChild(hiddenWrapper)
 
   const previousBodyBackground = document.body.style.backgroundColor
   const previousBodyColor = document.body.style.color
@@ -65,15 +65,31 @@ export async function exportReportToPdf(
   } finally {
     document.body.style.backgroundColor = previousBodyBackground
     document.body.style.color = previousBodyColor
-    container.remove()
+    hiddenWrapper.remove()
   }
 }
 
-function buildReportContainer(data: ReportData, meta: ReportPresentationMeta): HTMLElement {
+function buildReportContainer(
+  data: ReportData,
+  meta: ReportPresentationMeta,
+): { hiddenWrapper: HTMLElement; container: HTMLElement } {
+  // doc.html() cua jsPDF tu cloneNode() DUNG PHAN TU DUOC TRUYEN VAO (khong
+  // phai to tien cua no) roi gan ban sao vao 1 wrapper rieng cua chinh no
+  // (da tu dua wrapper do ra ngoai man hinh bang overlay position:fixed;
+  // left:-100000px san co). Vi vay: phan tu truyen cho doc.html() (bien
+  // `container` ben duoi) KHONG duoc tu khai bao position:fixed/absolute -
+  // neu co, ban sao se "thoat" khoi wrapper cua jsPDF va tu dinh vi lai
+  // theo viewport that, nam ngoai vung nhin thay ma html2canvas chup, cho
+  // ra file PDF trang trong (da xay ra thuc te). Thay vao do, dat
+  // position:fixed;left:-9999px o 1 the bao NGOAI rieng (`hiddenWrapper`,
+  // khong duoc truyen cho doc.html() nen khong bi anh huong) de an noi
+  // dung khoi man hinh chinh cua nguoi dung trong luc render.
+  const hiddenWrapper = document.createElement('div')
+  hiddenWrapper.style.position = 'fixed'
+  hiddenWrapper.style.left = '-9999px'
+  hiddenWrapper.style.top = '0'
+
   const container = document.createElement('div')
-  container.style.position = 'fixed'
-  container.style.left = '-9999px'
-  container.style.top = '0'
   container.style.width = '794px'
   container.style.fontFamily = '"Times New Roman", Times, serif'
   container.style.color = '#0f172a'
@@ -89,7 +105,8 @@ function buildReportContainer(data: ReportData, meta: ReportPresentationMeta): H
     ${renderSignatureBlock()}
   `
 
-  return container
+  hiddenWrapper.appendChild(container)
+  return { hiddenWrapper, container }
 }
 
 function renderLetterhead(meta: ReportPresentationMeta): string {
@@ -187,8 +204,9 @@ function renderViolationSection(data: ReportData): string {
   const { violation } = data
   const groupRowsHtml = violation.theoNhom
     .map(
-      (row) => `
+      (row, index) => `
         <tr>
+          <td style="${td} text-align:center;">${index + 1}</td>
           <td style="${td}">${escapeHtml(row.nhanLoai)}</td>
           <td style="${td} text-align:center;">${row.soLuot}</td>
           <td style="${td} text-align:center;">${row.soHocSinh}</td>
@@ -198,8 +216,9 @@ function renderViolationSection(data: ReportData): string {
 
   const detailRowsHtml = violation.chiTiet
     .map(
-      (row) => `
+      (row, index) => `
         <tr>
+          <td style="${td} text-align:center;">${index + 1}</td>
           <td style="${td}">${escapeHtml(row.nhanLoai)}</td>
           <td style="${td} text-align:center;">${escapeHtml(row.maDanhMuc || '—')}</td>
           <td style="${td}">${escapeHtml(row.tenViPham)}</td>
@@ -223,14 +242,23 @@ function renderViolationSection(data: ReportData): string {
     ${
       violation.theoNhom.length === 0
         ? '<p>Không có vi phạm cá nhân nào trong kỳ báo cáo này.</p>'
-        : `<table style="${table}">
-            <thead><tr><th style="${th}">Nhóm</th><th style="${th} text-align:center;">Số lượt</th><th style="${th} text-align:center;">Số học sinh liên quan</th></tr></thead>
-            <tbody>${groupRowsHtml}</tbody>
-          </table>
+        : `<p style="${subHeading}">Theo nhóm vi phạm</p>
           <table style="${table}">
             <thead><tr>
-              <th style="${th}">Nhóm</th><th style="${th} text-align:center;">Mã</th><th style="${th}">Tên vi phạm</th>
-              <th style="${th} text-align:center;">Số lượt</th><th style="${th}">Học sinh (số lần)</th>
+              <th style="${th} text-align:center;">STT</th><th style="${th}">Nhóm</th>
+              <th style="${th} text-align:center;">Số lượt</th><th style="${th} text-align:center;">Số học sinh liên quan</th>
+            </tr></thead>
+            <tbody>${groupRowsHtml}</tbody>
+          </table>`
+    }
+    ${
+      violation.chiTiet.length === 0
+        ? ''
+        : `<p style="${subHeading}">Chi tiết theo mã vi phạm</p>
+          <table style="${table}">
+            <thead><tr>
+              <th style="${th} text-align:center;">STT</th><th style="${th}">Nhóm</th><th style="${th} text-align:center;">Mã</th>
+              <th style="${th}">Tên vi phạm</th><th style="${th} text-align:center;">Số lượt</th><th style="${th}">Học sinh (số lần)</th>
             </tr></thead>
             <tbody>${detailRowsHtml}</tbody>
           </table>`
@@ -242,8 +270,9 @@ function renderPositiveSection(data: ReportData): string {
   const { positive } = data
   const rowsHtml = positive.rows
     .map(
-      (row) => `
+      (row, index) => `
         <tr>
+          <td style="${td} text-align:center;">${index + 1}</td>
           <td style="${td} text-align:center;">${escapeHtml(row.maDanhMuc || '—')}</td>
           <td style="${td}">${escapeHtml(row.noiDung)}</td>
           <td style="${td} text-align:center;">${row.soLuot}</td>
@@ -262,7 +291,10 @@ function renderPositiveSection(data: ReportData): string {
       positive.rows.length === 0
         ? '<p>Không có ghi nhận tích cực nào trong kỳ báo cáo này.</p>'
         : `<table style="${table}">
-            <thead><tr><th style="${th} text-align:center;">Mã</th><th style="${th}">Nội dung</th><th style="${th} text-align:center;">Số lượt</th><th style="${th}">Học sinh (số lần)</th></tr></thead>
+            <thead><tr>
+              <th style="${th} text-align:center;">STT</th><th style="${th} text-align:center;">Mã</th>
+              <th style="${th}">Nội dung</th><th style="${th} text-align:center;">Số lượt</th><th style="${th}">Học sinh (số lần)</th>
+            </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>`
     }
@@ -270,6 +302,7 @@ function renderPositiveSection(data: ReportData): string {
 }
 
 const h2 = 'font-size:14px;font-weight:bold;margin:16px 0 4px;color:#0f172a;'
+const subHeading = 'font-size:12px;font-weight:bold;font-style:italic;margin:12px 0 4px;color:#0f172a;'
 const table = 'width:100%;border-collapse:collapse;margin-bottom:12px;'
 const th = 'border:1px solid #333333;background:#f2f2f2;padding:4px 6px;text-align:left;font-size:12px;font-weight:bold;vertical-align:middle;'
 const td = 'border:1px solid #333333;padding:4px 6px;font-size:12px;vertical-align:top;'
