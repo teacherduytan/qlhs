@@ -85,6 +85,7 @@ function buildReportContainer(data: ReportData, meta: ReportPresentationMeta): H
     ${renderAttendanceSection(data)}
     ${renderViolationSection(data)}
     ${renderPositiveSection(data)}
+    ${renderBanCanSuSignatures(meta)}
     ${renderSignatureBlock()}
   `
 
@@ -104,6 +105,28 @@ function renderLetterhead(meta: ReportPresentationMeta): string {
     <p style="margin:0 0 12px;">GVCN: ${escapeHtml(REPORT_CONFIG.tenGvcn)}</p>
     <h1 style="font-size:19px;margin:0 0 4px;text-align:center;text-transform:uppercase;">${escapeHtml(meta.title)}</h1>
     <p style="margin:0 0 16px;text-align:center;font-style:italic;font-size:12px;">${escapeHtml(meta.subtitle)}</p>
+  `
+}
+
+function renderBanCanSuSignatures(meta: ReportPresentationMeta): string {
+  if (meta.banCanSuSignatures.length === 0) return ''
+
+  const columnWidth = Math.floor(100 / meta.banCanSuSignatures.length)
+  const cellsHtml = meta.banCanSuSignatures
+    .map(
+      (item) => `
+        <td style="border:none;padding:0 6px;text-align:center;vertical-align:top;width:${columnWidth}%;">
+          <p style="margin:0;font-weight:bold;">${escapeHtml(item.chucVu)}</p>
+          <p style="margin:0;font-style:italic;font-size:11px;">(Ký, ghi rõ họ tên)</p>
+          <div style="height:48px;"></div>
+          <p style="margin:0;font-weight:bold;">${escapeHtml(item.hoTen)}</p>
+        </td>`,
+    )
+    .join('')
+
+  return `
+    <p style="margin:16px 0 8px;text-align:center;font-weight:bold;">XÁC NHẬN CỦA BAN CÁN SỰ LỚP</p>
+    <table style="width:100%;border-collapse:collapse;"><tbody><tr>${cellsHtml}</tr></tbody></table>
   `
 }
 

@@ -35,6 +35,17 @@ const TABLE_BORDERS: ITableBordersOptions = {
   insideVertical: TABLE_BORDER,
 }
 
+const NO_BORDER = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }
+const NO_TABLE_BORDERS: ITableBordersOptions = {
+  top: NO_BORDER,
+  bottom: NO_BORDER,
+  left: NO_BORDER,
+  right: NO_BORDER,
+  insideHorizontal: NO_BORDER,
+  insideVertical: NO_BORDER,
+}
+const NO_CELL_BORDERS = { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER }
+
 export async function exportReportToWord(
   data: ReportData,
   meta: ReportPresentationMeta,
@@ -56,6 +67,7 @@ export async function exportReportToWord(
           ...buildAttendanceSection(data),
           ...buildViolationSection(data),
           ...buildPositiveSection(data),
+          ...buildBanCanSuSignatures(meta),
           ...buildSignatureBlock(),
         ],
       },
@@ -97,6 +109,42 @@ function buildLetterhead(meta: ReportPresentationMeta): Paragraph[] {
       children: [new TextRun({ text: meta.subtitle, italics: true, size: 22 })],
     }),
     new Paragraph({ children: [] }),
+  ]
+}
+
+function buildBanCanSuSignatures(meta: ReportPresentationMeta): (Paragraph | Table)[] {
+  if (meta.banCanSuSignatures.length === 0) return []
+
+  const cells = meta.banCanSuSignatures.map(
+    (item) =>
+      new TableCell({
+        width: { size: 100 / meta.banCanSuSignatures.length, type: WidthType.PERCENTAGE },
+        borders: NO_CELL_BORDERS,
+        children: [
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: item.chucVu, bold: true })] }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: '(Ký, ghi rõ họ tên)', italics: true, size: 20 })],
+          }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: item.hoTen, bold: true })] }),
+        ],
+      }),
+  )
+
+  return [
+    new Paragraph({ children: [] }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: 'XÁC NHẬN CỦA BAN CÁN SỰ LỚP', bold: true })],
+    }),
+    new Paragraph({ children: [] }),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: NO_TABLE_BORDERS,
+      rows: [new TableRow({ children: cells })],
+    }),
   ]
 }
 

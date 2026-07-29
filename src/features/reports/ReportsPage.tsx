@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { dataSource } from '../../data/client'
-import type { CauHinhTuan, DanhMucDiem, DiemDanh, GhiNhan, HocSinh, LienLacPhuHuynh } from '../../data/types'
+import type { BanCanSu, CauHinhTuan, DanhMucDiem, DiemDanh, GhiNhan, HocSinh, LienLacPhuHuynh } from '../../data/types'
 import { formatDate, formatDateCompact, isActiveStudent } from '../dashboard/DashboardPage'
 import { findWeek, getTodayIsoDate, selectDefaultWeek, WeekSelector } from '../time/WeekSelector'
 import { buildReportData, type ReportData } from './reportData'
-import type { ReportPresentationMeta } from './reportConfig'
+import { BAN_CAN_SU_SIGNATURE_ROLES, type ReportPresentationMeta } from './reportConfig'
 
 type ReportTab = 'tuan' | 'thang'
 
@@ -18,6 +18,7 @@ type LoadState =
       weeks: CauHinhTuan[]
       records: GhiNhan[]
       contactHistory: LienLacPhuHuynh[]
+      banCanSu: BanCanSu[]
     }
 
 export function ReportsPage() {
@@ -47,10 +48,11 @@ export function ReportsPage() {
       dataSource.getWeekConfig(),
       dataSource.getRecords(),
       dataSource.getParentContactHistory(),
+      dataSource.getBanCanSu(),
     ])
-      .then(([students, catalog, weeks, records, contactHistory]) => {
+      .then(([students, catalog, weeks, records, contactHistory, banCanSu]) => {
         if (!active) return
-        setState({ status: 'success', students, catalog, weeks, records, contactHistory })
+        setState({ status: 'success', students, catalog, weeks, records, contactHistory, banCanSu })
         setTuanSo(selectDefaultWeek(weeks, records))
       })
       .catch((error: unknown) => {
@@ -146,10 +148,20 @@ export function ReportsPage() {
       isActiveStudent(student, new Date(year, month - 1, day)),
     ).length
 
+    const studentByMaHs = new Map(state.students.map((student) => [student.ma_hs, student]))
+    const banCanSuSignatures = BAN_CAN_SU_SIGNATURE_ROLES.map((chucVu) => {
+      const entry = state.banCanSu.find((item) => item.chuc_vu === chucVu)
+      if (!entry) return null
+      const student = studentByMaHs.get(entry.ma_hs)
+      if (!student) return null
+      return { chucVu, hoTen: `${student.ho} ${student.ten}` }
+    }).filter((item): item is { chucVu: string; hoTen: string } => item !== null)
+
     return {
       title,
       subtitle: `Từ ${formatDate(range.tuNgay)} đến ${formatDate(range.denNgay)}`,
       soHocSinh,
+      banCanSuSignatures,
     }
   }, [range, state, title])
 
