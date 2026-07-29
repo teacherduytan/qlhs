@@ -11,6 +11,9 @@ import {
 } from 'docx'
 import { formatDate } from '../dashboard/DashboardPage'
 import type { ReportData } from './reportData'
+import { shareOrDownloadFile } from './shareFile'
+
+const WORD_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
 const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
   vang_khong_phep: 'Vắng không phép',
@@ -36,7 +39,7 @@ export async function exportReportToWord(data: ReportData, title: string, fileBa
   })
 
   const blob = await Packer.toBlob(doc)
-  downloadBlob(blob, `${fileBaseName}.docx`)
+  await shareOrDownloadFile(blob, `${fileBaseName}.docx`, WORD_MIME_TYPE, title)
 }
 
 function buildAttendanceSection(data: ReportData) {
@@ -158,13 +161,4 @@ function dataRow(cells: string[]): TableRow {
   return new TableRow({
     children: cells.map((text) => new TableCell({ children: [new Paragraph({ children: [new TextRun(text)] })] })),
   })
-}
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.click()
-  URL.revokeObjectURL(url)
 }

@@ -1,6 +1,9 @@
 import { jsPDF } from 'jspdf'
 import { formatDate } from '../dashboard/DashboardPage'
 import type { ReportData } from './reportData'
+import { shareOrDownloadFile } from './shareFile'
+
+const PDF_MIME_TYPE = 'application/pdf'
 
 const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
   vang_khong_phep: 'Vắng không phép',
@@ -15,13 +18,20 @@ const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
 // jsPDF) - ket qua la anh raster cua dung noi dung tieng Viet trinh duyet da
 // hien thi, dam bao khong mat dau, nhung doi lai chu trong PDF la anh, khong
 // the bam chon/copy hay tim kiem duoc nhu PDF van ban that.
+//
+// html2canvas (dung trong doc.html()) khong doc duoc mau CSS kieu oklch() -
+// neu dung the container an gan thang vao document.body cua app, html2canvas
+// se doc phai style ke thua/tinh toan tu <body>/<html> (Tailwind CSS v4 xuat
+// mau bang oklch()) va nem loi "unsupported color function oklch". Sua bang
+// cach dung 1 <iframe> voi document rong rieng (khong nap Tailwind cua app),
+// noi dung bao cao chi dung style inline hex nen hoan toan tach biet, tranh
+// duoc loi tren.
 export async function exportReportToPdf(data: ReportData, title: string, fileBaseName: string): Promise<void> {
-  const container = buildReportHtml(data, title)
-  document.body.appendChild(container)
+  const { iframe, container } = createIsolatedContainer(data, title)
 
   try {
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' })
-    await new Promise<void>((resolve, reject) => {
+    const pdfDoc = await new Promise<jsPDF>((resolve, reject) => {
       doc
         .html(container, {
           x: 24,
@@ -30,27 +40,45 @@ export async function exportReportToPdf(data: ReportData, title: string, fileBas
           windowWidth: 794, // ~ A4 width tai 96dpi, giup html2canvas do layout dung ty le
           autoPaging: 'slice',
           html2canvas: { scale: 0.75 },
-          callback: (finishedDoc) => {
-            finishedDoc.save(`${fileBaseName}.pdf`)
-            resolve()
-          },
+          callback: (finishedDoc) => resolve(finishedDoc),
         })
         .catch(reject)
     })
+
+    const blob = pdfDoc.output('blob')
+    await shareOrDownloadFile(blob, `${fileBaseName}.pdf`, PDF_MIME_TYPE, title)
   } finally {
-    container.remove()
+    iframe.remove()
   }
 }
 
-function buildReportHtml(data: ReportData, title: string): HTMLElement {
-  const container = document.createElement('div')
-  container.style.position = 'fixed'
-  container.style.left = '-9999px'
-  container.style.top = '0'
+function createIsolatedContainer(data: ReportData, title: string): { iframe: HTMLIFrameElement; container: HTMLElement } {
+  const iframe = document.createElement('iframe')
+  iframe.style.position = 'fixed'
+  iframe.style.left = '-9999px'
+  iframe.style.top = '0'
+  iframe.style.width = '794px'
+  iframe.style.height = '1px'
+  iframe.style.border = '0'
+  document.body.appendChild(iframe)
+
+  const frameDoc = iframe.contentDocument
+  if (!frameDoc) {
+    iframe.remove()
+    throw new Error('Không tạo được khung ẩn để xuất PDF.')
+  }
+
+  frameDoc.open()
+  frameDoc.write('<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>')
+  frameDoc.close()
+
+  const container = frameDoc.body
+  container.style.margin = '0'
   container.style.width = '794px'
   container.style.fontFamily = 'Arial, sans-serif'
   container.style.color = '#0f172a'
   container.style.fontSize = '12px'
+  container.style.background = '#ffffff'
 
   container.innerHTML = `
     <h1 style="font-size:20px;margin:0 0 4px;">${escapeHtml(title)}</h1>
@@ -60,7 +88,7 @@ function buildReportHtml(data: ReportData, title: string): HTMLElement {
     ${renderPositiveSection(data)}
   `
 
-  return container
+  return { iframe, container }
 }
 
 function renderAttendanceSection(data: ReportData): string {

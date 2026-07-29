@@ -299,30 +299,37 @@ function ReportPreview({
 }) {
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h3 className="wrap-break-word text-lg font-bold text-slate-900">{title}</h3>
-          <p className="text-sm text-slate-600">
-            {formatDate(data.tuNgay)} – {formatDate(data.denNgay)}
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <button
-            type="button"
-            onClick={onExportWord}
-            disabled={exporting !== null}
-            className="h-10 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            {exporting === 'word' ? 'Đang xuất...' : '📄 Xuất Word'}
-          </button>
-          <button
-            type="button"
-            onClick={onExportPdf}
-            disabled={exporting !== null}
-            className="h-10 rounded-md bg-rose-700 px-4 text-sm font-semibold text-white hover:bg-rose-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            {exporting === 'pdf' ? 'Đang xuất...' : '📕 Xuất PDF'}
-          </button>
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <h3 className="wrap-break-word text-lg font-bold text-slate-900">{title}</h3>
+            <p className="text-sm text-slate-600">
+              {formatDate(data.tuNgay)} – {formatDate(data.denNgay)}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col gap-2 md:items-end">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={onExportWord}
+                disabled={exporting !== null}
+                className="h-10 w-full rounded-md bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400 sm:w-auto"
+              >
+                {exporting === 'word' ? 'Đang xuất...' : '📄 Xuất Word'}
+              </button>
+              <button
+                type="button"
+                onClick={onExportPdf}
+                disabled={exporting !== null}
+                className="h-10 w-full rounded-md bg-rose-700 px-4 text-sm font-semibold text-white hover:bg-rose-800 disabled:cursor-not-allowed disabled:bg-slate-400 sm:w-auto"
+              >
+                {exporting === 'pdf' ? 'Đang xuất...' : '📕 Xuất PDF'}
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 md:text-right">
+              Trên điện thoại, có thể chọn gửi thẳng qua Zalo/Messenger/Telegram.
+            </p>
+          </div>
         </div>
       </div>
 
