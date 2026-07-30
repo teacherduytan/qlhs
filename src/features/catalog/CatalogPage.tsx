@@ -4,6 +4,7 @@ import { dataSource } from '../../data/client'
 import type { DanhMucDiem, DanhMucXuLy, GhiNhan, HocSinh, NhomDiem, PhamViDanhMuc } from '../../data/types'
 import { getBadgeClassForCatalog } from '../scoring/scoreStyles'
 import { Pagination, usePagination } from '../../components/Pagination'
+import { formatTietLabel } from '../records/recordInsights'
 
 type CatalogForm = {
   ma_danh_muc: string
@@ -1104,7 +1105,7 @@ export function CatalogPage() {
                             <div className="mt-1 text-xs text-slate-500">
                               {labelRecordType(record.loai)}
                               {record.mon_hoc ? ` · ${record.mon_hoc}` : ''}
-                              {record.tiet ? ` · Tiết ${record.tiet}` : ''}
+                              {formatTietLabel(record.tiet) ? ` · ${formatTietLabel(record.tiet)}` : ''}
                             </div>
                           </td>
                           <td className={`whitespace-nowrap px-3 py-3 text-right font-bold ${getPointClass(record)}`}>

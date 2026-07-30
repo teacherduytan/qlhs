@@ -15,7 +15,7 @@ import type {
   NhomDiem,
   PhuHuynh,
 } from '../../data/types'
-import { getRecordPolarity } from '../records/recordInsights'
+import { formatTietLabel, getRecordPolarity } from '../records/recordInsights'
 import { Pagination, usePagination } from '../../components/Pagination'
 
 const CONTACT_LABELS: Record<HinhThucLienLacPhuHuynh, string> = {
@@ -496,7 +496,7 @@ export function TeacherStudentDetailPage() {
                             <div className="mt-1 text-xs text-slate-500">
                               {labelRecordDisplay(record, catalogItem)}
                               {record.mon_hoc ? ` · ${record.mon_hoc}` : ''}
-                              {record.tiet ? ` · Tiết ${record.tiet}` : ''}
+                              {formatTietLabel(record.tiet) ? ` · ${formatTietLabel(record.tiet)}` : ''}
                             </div>
                           </td>
                           <td className={`whitespace-nowrap px-3 py-3 text-right font-bold ${getPointClass(record)}`}>
@@ -766,7 +766,7 @@ function TeacherProposalItem({
           </p>
           <p className="wrap-break-word text-xs text-slate-500">
             {formatDate(item.ngay)} · {item.ma_danh_muc || `Đề xuất mới (${item.de_xuat_nhom || '?'})`}
-            {item.tiet ? ` · Tiết ${item.tiet}` : ''}
+            {formatTietLabel(item.tiet) ? ` · ${formatTietLabel(item.tiet)}` : ''}
             {item.mon_hoc ? ` · ${item.mon_hoc}` : ''}
           </p>
           {item.noi_dung ? <p className="mt-1 wrap-break-word text-sm text-slate-700">{item.noi_dung}</p> : null}

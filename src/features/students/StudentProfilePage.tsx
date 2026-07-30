@@ -12,7 +12,7 @@ import type {
   NhomDiem,
 } from '../../data/types'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
-import { getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
+import { formatTietLabel, getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
 import { getBadgeClassForRecord } from '../scoring/scoreStyles'
 import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
@@ -845,7 +845,7 @@ function RecordSummary({
         <Badge className={getBadgeClassForRecord(record, catalogByCode)}>
           {labelRecordDisplay(record, catalogItem)}
         </Badge>
-        {record.tiet ? <Badge>{`Tiết ${record.tiet}`}</Badge> : null}
+        {formatTietLabel(record.tiet) ? <Badge>{formatTietLabel(record.tiet) as string}</Badge> : null}
         {record.mon_hoc ? <Badge>{record.mon_hoc}</Badge> : null}
         {pointText ? <Badge>{pointText}</Badge> : null}
         {insight.polarity === 'negative' && insight.duplicateCount ? (
@@ -1531,7 +1531,7 @@ function ProposalHistoryItem({
           </p>
           <p className="wrap-break-word text-xs text-slate-500">
             {formatDate(item.ngay)} · {item.ma_danh_muc || `Đề xuất mới (${item.de_xuat_nhom || '?'})`}
-            {item.tiet ? ` · Tiết ${item.tiet}` : ''}
+            {formatTietLabel(item.tiet) ? ` · ${formatTietLabel(item.tiet)}` : ''}
             {item.mon_hoc ? ` · ${item.mon_hoc}` : ''}
           </p>
           {item.noi_dung ? <p className="mt-1 wrap-break-word text-sm text-slate-700">{item.noi_dung}</p> : null}

@@ -1,5 +1,16 @@
 import type { DanhMucDiem, GhiNhan } from '../../data/types'
 
+const DATE_LIKE_TIET_PATTERN = /^\d{4}-\d{1,2}-\d{1,2}$/
+
+// Mot so du lieu ghi_nhan/de_xuat_ghi_nhan cu bi loi nhap lieu khien cot
+// "tiet" chua nham gia tri ngay (vd "2026-01-02") thay vi tiet hoc that
+// (1-8 hoac "Gio ra choi"). Bo qua khi hien thi de tranh hien nham 1 chuoi
+// ngay thang lam nguoi doc tuong la so tiet.
+export function formatTietLabel(tiet: string | null | undefined): string | null {
+  if (!tiet || DATE_LIKE_TIET_PATTERN.test(tiet)) return null
+  return `Tiết ${tiet}`
+}
+
 export type RecordPolarity = 'positive' | 'negative' | 'neutral'
 
 export type InterventionRule = {
