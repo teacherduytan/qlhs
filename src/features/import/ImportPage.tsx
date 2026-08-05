@@ -766,8 +766,9 @@ export function ImportPage() {
       return
     }
 
+    const typeLabel = importTypeLabel(log.loai_du_lieu)
     const confirmed = window.confirm(
-      `Xoá toàn bộ dữ liệu GhiNhan của lần import ${log.ma_log}? Log import vẫn được giữ lại.`,
+      `Xoá toàn bộ dữ liệu ${typeLabel} của lần import ${log.ma_log}? Log import vẫn được giữ lại.`,
     )
     if (!confirmed) {
       return
@@ -780,7 +781,7 @@ export function ImportPage() {
     try {
       const deleteResult = await dataSource.deleteImport(log.ma_log)
       setDeleteMessage(
-        `Đã xoá ${deleteResult.so_dong_da_xoa} dòng GhiNhan của lần import ${deleteResult.ma_log}.`,
+        `Đã xoá ${deleteResult.so_dong_da_xoa} dòng ${typeLabel} của lần import ${deleteResult.ma_log}.`,
       )
       await loadImportLogs()
     } catch (error) {
@@ -2087,7 +2088,7 @@ export function ImportPage() {
           <div>
             <h3 className="text-base font-bold text-slate-900">Lịch sử import</h3>
             <p className="text-sm text-slate-600">
-              Xoá nhanh dữ liệu GhiNhan theo đúng lần import, log vẫn được giữ để đối chiếu.
+              Xoá nhanh dữ liệu GhiNhan hoặc Tin nhắn phụ huynh theo đúng lần import, log vẫn được giữ để đối chiếu.
             </p>
           </div>
           <button
@@ -2166,8 +2167,8 @@ export function ImportPage() {
                             className="inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-white"
                             title={
                               canDelete
-                                ? 'Xoá dữ liệu GhiNhan của lần import này'
-                                : 'Chỉ xoá được import GhiNhan chưa bị xoá'
+                                ? `Xoá dữ liệu ${importTypeLabel(log.loai_du_lieu)} của lần import này`
+                                : 'Chỉ xoá được import GhiNhan hoặc Tin nhắn phụ huynh chưa bị xoá'
                             }
                           >
                             {isDeleting ? 'Đang xoá...' : 'Xoá dữ liệu của lần này'}
@@ -2869,7 +2870,13 @@ function formatCell(value: unknown): string {
 }
 
 function canDeleteImportLog(log: NhatKyImport): boolean {
-  return log.loai_du_lieu === 'ghi_nhan' && log.trang_thai !== 'da_xoa'
+  return (
+    (log.loai_du_lieu === 'ghi_nhan' || log.loai_du_lieu === 'tin_nhan_phu_huynh') && log.trang_thai !== 'da_xoa'
+  )
+}
+
+function importTypeLabel(loai: LoaiDuLieuImport): string {
+  return IMPORT_OPTIONS.find((option) => option.value === loai)?.label || loai
 }
 
 function sortDateDesc(left: string, right: string): number {

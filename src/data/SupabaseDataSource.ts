@@ -443,19 +443,22 @@ export class SupabaseDataSource implements DataSource {
       .single()
     assertNoError(logError, 'Khong tim thay log import tren Supabase')
 
-    if ((log as NhatKyImport).loai_du_lieu !== 'ghi_nhan') {
-      throw new Error(`Chi ho tro xoa du lieu import GhiNhan: ${maLog}`)
+    const loaiDuLieu = (log as NhatKyImport).loai_du_lieu
+
+    if (loaiDuLieu !== 'ghi_nhan' && loaiDuLieu !== 'tin_nhan_phu_huynh') {
+      throw new Error(`Chi ho tro xoa du lieu import GhiNhan hoac Tin nhan phu huynh: ${maLog}`)
     }
 
+    const isTinNhan = loaiDuLieu === 'tin_nhan_phu_huynh'
     const { data, error } = await getSupabaseClient()
-      .from('ghi_nhan')
+      .from(isTinNhan ? 'noi_dung_tin_nhan' : 'ghi_nhan')
       .delete()
-      .eq('ma_log_import', maLog)
-      .select('ma_ghi_nhan')
-    assertNoError(error, 'Khong xoa duoc GhiNhan cua lan import tren Supabase')
+      .eq(isTinNhan ? 'nguon_import' : 'ma_log_import', maLog)
+      .select(isTinNhan ? 'id' : 'ma_ghi_nhan')
+    assertNoError(error, `Khong xoa duoc ${isTinNhan ? 'noi dung tin nhan' : 'GhiNhan'} cua lan import tren Supabase`)
 
     const deletedCount = data?.length || 0
-    const note = `Da xoa ${deletedCount} dong GhiNhan lien quan.`
+    const note = `Da xoa ${deletedCount} dong ${isTinNhan ? 'noi dung tin nhan' : 'GhiNhan'} lien quan.`
     await this.updateImportLog(maLog, {
       trang_thai: 'da_xoa',
       ghi_chu: note,
