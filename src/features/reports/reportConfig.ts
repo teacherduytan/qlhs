@@ -23,4 +23,10 @@ export interface BanCanSuSignature {
 // Chi lay chuc vu cap lop (bo qua "Khong giu chuc vu" va "To truong"/"To pho"
 // vi do la chuc vu theo tung to, so luong thay doi va khong phai dai dien
 // chung cho ca lop khi ky xac nhan bao cao).
-export const BAN_CAN_SU_SIGNATURE_ROLES = ['Lớp trưởng', 'Lớp phó học tập', 'Lớp phó lao động', 'Bí thư chi đoàn']
+export const BAN_CAN_SU_SIGNATURE_ROLES = [
+  'Lớp trưởng',
+  'Lớp phó học tập',
+  'Lớp phó lao động',
+  'Lớp phó kỷ luật',
+  'Bí thư chi đoàn',
+]

@@ -61,6 +61,7 @@ export interface BanCanSu {
   to: number | null
   ngay_bat_dau: string | null
   ma_pin?: string | null
+  duoc_de_xuat_ghi_nhan: boolean
 }
 
 export type TrangThaiDeXuatGhiNhan = 'cho_duyet' | 'da_duyet' | 'tu_choi'

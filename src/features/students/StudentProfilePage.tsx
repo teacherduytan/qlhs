@@ -31,6 +31,7 @@ type ProfileState =
       records: GhiNhan[]
       student: HocSinh
       role: string
+      canSubmitProposal: boolean
       tuanSo: number
       weekConfig: CauHinhTuan[]
     }
@@ -60,7 +61,6 @@ const PROFILE_SECTIONS: Array<{ id: ProfileSectionKey; label: string; icon: stri
   { id: 'info', label: 'Cá nhân', icon: '👤', tab: 'info' },
 ]
 
-const LOP_TRUONG_ELIGIBLE_ROLES = ['Lớp trưởng', 'Lớp phó học tập']
 const SDT_PATTERN = /^0\d{9}$/
 const MAT_KHAU_PATTERN = /^\d{3}$/
 const NEW_CATEGORY_VALUE = '__new__'
@@ -167,6 +167,7 @@ export function StudentProfilePage() {
           records: profile.records,
           student: profile.student,
           role: getStudentRole(profile.student.ma_hs, profile.banCanSu),
+          canSubmitProposal: canSubmitProposal(profile.student.ma_hs, profile.banCanSu),
           tuanSo,
           weekConfig: profile.weekConfig,
         })
@@ -393,7 +394,7 @@ export function StudentProfilePage() {
               ) : null}
             </section>
 
-            {LOP_TRUONG_ELIGIBLE_ROLES.includes(state.role) && token ? (
+            {state.canSubmitProposal && token ? (
               <section id="profile-lop-truong" className="scroll-mt-4">
                 <LopTruongPanel token={token} role={state.role} />
               </section>
@@ -1666,6 +1667,10 @@ function ProposalHistoryItem({
 function getStudentRole(maHs: string, banCanSu: BanCanSu[]): string {
   const role = banCanSu.find((item) => item.ma_hs === maHs)
   return role?.chuc_vu || 'Học sinh'
+}
+
+function canSubmitProposal(maHs: string, banCanSu: BanCanSu[]): boolean {
+  return banCanSu.some((item) => item.ma_hs === maHs && item.duoc_de_xuat_ghi_nhan)
 }
 
 function resolveStudentGroup(student: HocSinh): number | null {

@@ -36,13 +36,11 @@ const ROLE_OPTIONS = [
   'Lớp trưởng',
   'Lớp phó học tập',
   'Lớp phó lao động',
+  'Lớp phó kỷ luật',
   'Bí thư chi đoàn',
   'Tổ trưởng',
   'Tổ phó',
 ]
-
-const LOP_TRUONG_ROLE = 'Lớp trưởng'
-const LOP_TRUONG_ELIGIBLE_ROLES = ['Lớp trưởng', 'Lớp phó học tập']
 const NEW_CATEGORY_VALUE = '__new__'
 const NHOM_OPTIONS: Array<{ label: string; value: NhomDiem }> = [
   { label: 'Chuyên cần', value: 'CC' },
@@ -86,6 +84,7 @@ type RoleForm = {
   to: string
   ngayBatDau: string
   pin: string
+  duocDeXuat: boolean
 }
 
 export function TeacherStudentDetailPage() {
@@ -175,10 +174,11 @@ export function TeacherStudentDetailPage() {
     try {
       const maHsValue = state.student.ma_hs
       const existing = state.banCanSu.find((item) => item.ma_hs === maHsValue) || null
-      const patch: Pick<BanCanSu, 'to' | 'ngay_bat_dau' | 'ma_pin'> = {
+      const patch: Pick<BanCanSu, 'to' | 'ngay_bat_dau' | 'ma_pin' | 'duoc_de_xuat_ghi_nhan'> = {
         to: roleForm.to ? Number(roleForm.to) : null,
         ngay_bat_dau: roleForm.ngayBatDau || null,
-        ma_pin: LOP_TRUONG_ELIGIBLE_ROLES.includes(roleForm.chucVu) ? roleForm.pin.trim() || null : null,
+        ma_pin: roleForm.duocDeXuat ? roleForm.pin.trim() || null : null,
+        duoc_de_xuat_ghi_nhan: roleForm.duocDeXuat,
       }
 
       let nextEntry: BanCanSu | null = null
@@ -364,8 +364,9 @@ export function TeacherStudentDetailPage() {
                 <p className="text-xs font-semibold uppercase text-teal-700">Ban cán sự</p>
                 <h3 className="text-lg font-bold text-slate-950">Chức vụ trong lớp</h3>
                 <p className="text-sm text-slate-600">
-                  Chọn "{LOP_TRUONG_ROLE}" hoặc "Lớp phó học tập" và đặt mã PIN để học sinh này được quyền gửi đề
-                  xuất ghi nhận cho bạn cùng lớp qua link hồ sơ — giáo viên vẫn phải duyệt trước khi tính điểm.
+                  Tích "Cho phép gửi đề xuất ghi nhận" và đặt mã PIN để học sinh này được quyền gửi đề xuất ghi nhận
+                  cho bạn cùng lớp qua link hồ sơ, không phụ thuộc chức vụ cụ thể nào — giáo viên vẫn phải duyệt
+                  trước khi tính điểm.
                 </p>
               </div>
 
@@ -396,7 +397,18 @@ export function TeacherStudentDetailPage() {
                   value={roleForm.ngayBatDau}
                   onChange={(value) => setRoleForm({ ...roleForm, ngayBatDau: value })}
                 />
-                {LOP_TRUONG_ELIGIBLE_ROLES.includes(roleForm.chucVu) ? (
+                <label className="flex flex-col justify-end gap-1 text-sm font-medium text-slate-700">
+                  <span className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={roleForm.duocDeXuat}
+                      onChange={(event) => setRoleForm({ ...roleForm, duocDeXuat: event.target.checked })}
+                      className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    Cho phép gửi đề xuất ghi nhận
+                  </span>
+                </label>
+                {roleForm.duocDeXuat ? (
                   <TextField
                     label="Mã PIN (để gửi đề xuất ghi nhận)"
                     value={roleForm.pin}
@@ -529,11 +541,11 @@ export function TeacherStudentDetailPage() {
 
           <section className="rounded-lg border border-teal-200 bg-teal-100 shadow-sm">
             <div className="border-b border-teal-200 p-4">
-              <p className="text-xs font-semibold uppercase text-teal-700">Đề xuất từ lớp trưởng / lớp phó học tập</p>
+              <p className="text-xs font-semibold uppercase text-teal-700">Đề xuất từ ban cán sự lớp</p>
               <h3 className="text-xl font-bold text-slate-950">Lịch sử đề xuất ghi nhận cho học sinh này</h3>
               <p className="text-sm text-slate-600">
-                Các đề xuất mà lớp trưởng hoặc lớp phó học tập gửi cho bạn học này. Giáo viên có thể sửa hoặc xoá
-                trực tiếp tại đây.
+                Các đề xuất mà học sinh được cấp quyền (đánh dấu "Cho phép gửi đề xuất ghi nhận") gửi cho bạn học
+                này. Giáo viên có thể sửa hoặc xoá trực tiếp tại đây.
               </p>
             </div>
             <div className="space-y-2 bg-white p-4">
@@ -1089,5 +1101,6 @@ function roleFormFromBanCanSu(maHs: string, banCanSu: BanCanSu[]): RoleForm {
     to: current?.to ? String(current.to) : '',
     ngayBatDau: current?.ngay_bat_dau || '',
     pin: current?.ma_pin || '',
+    duocDeXuat: current?.duoc_de_xuat_ghi_nhan || false,
   }
 }
