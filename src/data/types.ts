@@ -256,16 +256,15 @@ export interface LienLacPhuHuynh {
   buoi: BuoiDiemDanh | 'ca_ngay' | null
 }
 
-export type LoaiKyTinNhan = 'tuan' | 'thang'
+export type NguonTinNhan = 'nhap_tay' | 'tu_dong'
 
 export interface NoiDungTinNhan {
   id: string
   ma_hs: string
-  loai_ky: LoaiKyTinNhan
-  tuan_so: number | null
-  thang: number | null
-  nam: number | null
   noi_dung: string
+  ghi_chu: string | null
+  nguon: NguonTinNhan
+  da_duyet: boolean
   nguon_import: string | null
   created_by: string | null
   created_at: string

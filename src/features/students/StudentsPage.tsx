@@ -791,7 +791,6 @@ export function StudentsPage() {
                                       smsBody={
                                         findCurrentMessage(
                                           messages.filter((message) => message.ma_hs === student.ma_hs),
-                                          weekConfig,
                                         )?.noi_dung || ''
                                       }
                                     />
@@ -803,7 +802,6 @@ export function StudentsPage() {
                                       smsBody={
                                         findCurrentMessage(
                                           messages.filter((message) => message.ma_hs === student.ma_hs),
-                                          weekConfig,
                                         )?.noi_dung || ''
                                       }
                                     />

@@ -23,7 +23,6 @@ import type {
   LienLacPhuHuynh,
   LoaiDuLieuImport,
   LoaiGhiNhan,
-  LoaiKyTinNhan,
   NhatKyImport,
   NoiDungTinNhan,
   PhuHuynh,
@@ -95,7 +94,7 @@ const TABLE_COLUMNS: Record<LoaiDuLieuImport, readonly string[]> = {
   ghi_nhan: GHI_NHAN_COLUMNS,
   phu_huynh: ['ma_hs', 'ho_ten_ph', 'quan_he', 'sdt', 'uu_tien_lien_he'],
   ban_can_su: ['ma_hs', 'chuc_vu', 'to', 'ngay_bat_dau'],
-  tin_nhan_phu_huynh: ['ma_hs', 'loai_ky', 'tuan_so', 'thang', 'nam', 'noi_dung', 'nguon_import', 'created_by'],
+  tin_nhan_phu_huynh: ['ma_hs', 'noi_dung', 'ghi_chu', 'nguon', 'da_duyet', 'nguon_import', 'created_by'],
 }
 
 const RECORD_TYPE_BY_GROUP: Record<DanhMucDiem['nhom'], LoaiGhiNhan> = {
@@ -398,13 +397,7 @@ export class SupabaseDataSource implements DataSource {
     try {
       if (rows.length > 0) {
         const tableName = tableNameForImport(loai)
-        // tin_nhan_phu_huynh: import lai dung 1 ky (tuan/thang) da co phai
-        // CAP NHAT (upsert), khong loi trung khoa - khac voi cac loai du
-        // lieu khac van insert thuan (them moi, khong ghi de ngam).
-        const { error } =
-          loai === 'tin_nhan_phu_huynh'
-            ? await getSupabaseClient().from(tableName).upsert(rows, { onConflict: 'ma_hs,ky_key' })
-            : await getSupabaseClient().from(tableName).insert(rows)
+        const { error } = await getSupabaseClient().from(tableName).insert(rows)
         assertNoError(error, `Khong ghi duoc ${tableName} tren Supabase`)
       }
 
@@ -840,7 +833,7 @@ export class SupabaseDataSource implements DataSource {
   }
 
   private async prepareTinNhanImportRow(row: AnyRow, maLog: string): Promise<AnyRow> {
-    const [students, weekConfig] = await Promise.all([this.getStudents(), this.getWeekConfig()])
+    const students = await this.getStudents()
 
     const maHs = stringOrNull(row.ma_hs)
     if (!maHs) throw new Error('tin_nhan_phu_huynh can ma_hs.')
@@ -848,40 +841,22 @@ export class SupabaseDataSource implements DataSource {
       throw new Error(`Khong tim thay ma_hs trong danh sach hoc sinh: ${maHs}`)
     }
 
-    const loaiKy = stringOrNull(row.loai_ky) as LoaiKyTinNhan | null
-    if (loaiKy !== 'tuan' && loaiKy !== 'thang') {
-      throw new Error('loai_ky phai la "tuan" hoac "thang".')
-    }
-
     const noiDung = stringOrNull(row.noi_dung)
     if (!noiDung) throw new Error('noi_dung khong duoc de trong.')
 
-    let tuanSo: number | null = null
-    let thang: number | null = null
-    let nam: number | null = null
-
-    if (loaiKy === 'tuan') {
-      tuanSo = numberOrNull(row.tuan_so)
-      if (!tuanSo || !weekConfig.some((week) => week.tuan_so === tuanSo)) {
-        throw new Error(`tuan_so khong hop le hoac khong ton tai trong CauHinhTuan: ${String(row.tuan_so)}`)
-      }
-    } else {
-      thang = numberOrNull(row.thang)
-      nam = numberOrNull(row.nam)
-      if (!thang || thang < 1 || thang > 12) throw new Error(`thang khong hop le: ${String(row.thang)}`)
-      if (!nam) throw new Error('loai_ky = "thang" can co nam.')
-    }
+    const {
+      data: { user },
+    } = await getSupabaseClient().auth.getUser()
 
     return pickColumns(
       stripUndefined({
         ma_hs: maHs,
-        loai_ky: loaiKy,
-        tuan_so: tuanSo,
-        thang,
-        nam,
         noi_dung: noiDung,
-        nguon_import: stringOrNull(row.nguon_import) || maLog,
-        created_by: stringOrNull(row.created_by),
+        ghi_chu: stringOrNull(row.ghi_chu),
+        nguon: 'nhap_tay',
+        da_duyet: true,
+        nguon_import: maLog,
+        created_by: user?.id || null,
       }),
       TABLE_COLUMNS.tin_nhan_phu_huynh,
     )

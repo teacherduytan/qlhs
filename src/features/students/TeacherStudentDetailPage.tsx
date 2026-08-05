@@ -5,7 +5,6 @@ import { CopyIcon } from '../../components/CopyIcon'
 import type {
   BanCanSu,
   BuoiDiemDanh,
-  CauHinhTuan,
   DanhMucDiem,
   DeXuatGhiNhan,
   DienHocSinh,
@@ -20,7 +19,7 @@ import type {
 import { formatTietLabel, getRecordPolarity } from '../records/recordInsights'
 import { Pagination, usePagination } from '../../components/Pagination'
 import { PhoneActionMenu, buildSmsHref } from '../../components/PhoneActionMenu'
-import { findCurrentMessage, formatKyLabel } from './messageContents'
+import { findCurrentMessage, formatMessageTimestamp } from './messageContents'
 
 const CONTACT_LABELS: Record<HinhThucLienLacPhuHuynh, string> = {
   dien_thoai: 'Điện thoại trực tiếp',
@@ -68,7 +67,6 @@ type DetailState =
       proposals: DeXuatGhiNhan[]
       records: GhiNhan[]
       student: HocSinh
-      weekConfig: CauHinhTuan[]
     }
 
 type StudentForm = {
@@ -127,9 +125,8 @@ export function TeacherStudentDetailPage() {
       dataSource.getParentContactHistory({ maHs }),
       dataSource.getDeXuatGhiNhan({ maHs }),
       dataSource.getMessageContents(maHs),
-      dataSource.getWeekConfig(),
     ])
-      .then(([students, parents, banCanSu, records, catalog, contacts, proposals, messages, weekConfig]) => {
+      .then(([students, parents, banCanSu, records, catalog, contacts, proposals, messages]) => {
         if (!active) return
         const student = students.find((item) => item.ma_hs === maHs)
         if (!student) {
@@ -146,7 +143,6 @@ export function TeacherStudentDetailPage() {
           proposals,
           records,
           student,
-          weekConfig,
         })
         setForm(formFromStudent(student))
         setRoleForm(roleFormFromBanCanSu(maHs, banCanSu))
@@ -262,7 +258,9 @@ export function TeacherStudentDetailPage() {
   }
 
   async function deleteMessage(message: NoiDungTinNhan) {
-    const ok = window.confirm(`Xoá nội dung tin nhắn ${formatKyLabel(message)}?`)
+    const ok = window.confirm(
+      `Xoá nội dung tin nhắn ${message.ghi_chu ? `"${message.ghi_chu}" ` : ''}(${formatMessageTimestamp(message)})?`,
+    )
     if (!ok) return
 
     setMessageSavingId(message.id)
@@ -328,7 +326,7 @@ export function TeacherStudentDetailPage() {
 
   const currentMessage = useMemo(() => {
     if (state.status !== 'success') return null
-    return findCurrentMessage(state.messages, state.weekConfig)
+    return findCurrentMessage(state.messages)
   }, [state])
   const messagesPage = usePagination(state.status === 'success' ? state.messages : [])
 
@@ -670,8 +668,8 @@ export function TeacherStudentDetailPage() {
               <p className="text-xs font-semibold uppercase text-cyan-700">SMS phụ huynh</p>
               <h3 className="text-xl font-bold text-slate-950">Lịch sử tin nhắn</h3>
               <p className="text-sm text-slate-600">
-                Nội dung SMS đã import theo từng tuần/tháng cho em này — bấm "Dùng nội dung này" để mở tin nhắn với
-                đúng nội dung của kỳ đó thay vì kỳ gần nhất.
+                Mỗi lần import là 1 bản ghi mới, giữ nguyên lịch sử — bấm "Dùng nội dung này" để mở tin nhắn với
+                đúng nội dung của dòng đó thay vì bản mới nhất.
               </p>
             </div>
             <div className="space-y-2 bg-white p-4">
@@ -689,7 +687,7 @@ export function TeacherStudentDetailPage() {
                   <div key={message.id} className="rounded-md border border-cyan-100 bg-cyan-100 p-3">
                     {editingMessageId === message.id ? (
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-slate-900">{formatKyLabel(message)}</p>
+                        <p className="text-sm font-semibold text-slate-900">{messageLabel(message)}</p>
                         <textarea
                           value={messageEditText}
                           onChange={(event) => setMessageEditText(event.target.value)}
@@ -717,7 +715,7 @@ export function TeacherStudentDetailPage() {
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-slate-900">
-                            {formatKyLabel(message)}
+                            {messageLabel(message)}
                             {currentMessage?.id === message.id ? (
                               <span className="ml-2 rounded-full bg-cyan-700 px-2 py-0.5 text-xs font-semibold text-white">
                                 Hiện tại
@@ -1272,6 +1270,10 @@ function formToPatch(form: StudentForm): Partial<HocSinh> {
 function nullable(value: string): string | null {
   const trimmed = value.trim()
   return trimmed ? trimmed : null
+}
+
+function messageLabel(message: NoiDungTinNhan): string {
+  return message.ghi_chu || formatMessageTimestamp(message)
 }
 
 function toText(value: unknown): string {
