@@ -1,11 +1,21 @@
 import { Fragment, type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { BanCanSu, CauHinhTuan, DanhMucDiem, DienHocSinh, GhiNhan, HocSinh } from '../../data/types'
+import type {
+  BanCanSu,
+  CauHinhTuan,
+  DanhMucDiem,
+  DienHocSinh,
+  GhiNhan,
+  HocSinh,
+  NoiDungTinNhan,
+} from '../../data/types'
 import { summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore } from '../scoring/scoring'
 import { getBadgeClassForGroup } from '../scoring/scoreStyles'
 import { Pagination, usePagination } from '../../components/Pagination'
+import { PhoneActionMenu } from '../../components/PhoneActionMenu'
+import { findCurrentMessage } from './messageContents'
 
 type StudentForm = {
   ho: string
@@ -43,6 +53,7 @@ export function StudentsPage() {
   const [catalog, setCatalog] = useState<DanhMucDiem[]>([])
   const [weekConfig, setWeekConfig] = useState<CauHinhTuan[]>([])
   const [banCanSu, setBanCanSu] = useState<BanCanSu[]>([])
+  const [messages, setMessages] = useState<NoiDungTinNhan[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -68,14 +79,16 @@ export function StudentsPage() {
       dataSource.getPointCatalog(),
       dataSource.getWeekConfig(),
       dataSource.getBanCanSu(),
+      dataSource.getMessageContents(),
     ])
-      .then(([studentRows, recordRows, catalogRows, weekRows, banCanSuRows]) => {
+      .then(([studentRows, recordRows, catalogRows, weekRows, banCanSuRows, messageRows]) => {
         if (active) {
           setStudents(studentRows)
           setRecords(recordRows)
           setCatalog(catalogRows)
           setWeekConfig(weekRows)
           setBanCanSu(banCanSuRows)
+          setMessages(messageRows)
           setLoadError(null)
         }
       })
@@ -769,6 +782,34 @@ export function StudentsPage() {
                                   </span>
                                 </div>
                               </div>
+                              {student.sdt_1 || student.sdt_2 ? (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {student.sdt_1 ? (
+                                    <StudentPhonePill
+                                      label="SĐT 1"
+                                      phone={student.sdt_1}
+                                      smsBody={
+                                        findCurrentMessage(
+                                          messages.filter((message) => message.ma_hs === student.ma_hs),
+                                          weekConfig,
+                                        )?.noi_dung || ''
+                                      }
+                                    />
+                                  ) : null}
+                                  {student.sdt_2 ? (
+                                    <StudentPhonePill
+                                      label="SĐT 2"
+                                      phone={student.sdt_2}
+                                      smsBody={
+                                        findCurrentMessage(
+                                          messages.filter((message) => message.ma_hs === student.ma_hs),
+                                          weekConfig,
+                                        )?.noi_dung || ''
+                                      }
+                                    />
+                                  ) : null}
+                                </div>
+                              ) : null}
                               <div className="mt-3 flex flex-wrap gap-2">
                                 <Link
                                   to={`/quan-ly/hoc-sinh/${student.ma_hs}`}
@@ -836,6 +877,15 @@ function TextField({
         className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
       />
     </label>
+  )
+}
+
+function StudentPhonePill({ label, phone, smsBody }: { label: string; phone: string; smsBody: string }) {
+  return (
+    <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+      <span className="text-xs font-semibold text-slate-500">{label}</span>
+      <PhoneActionMenu phone={phone} smsBody={smsBody} smsEmptyHint="Chưa có nội dung tin nhắn cho em này." />
+    </div>
   )
 }
 

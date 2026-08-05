@@ -14,7 +14,7 @@ export type PhamViDanhMuc = 'ca_nhan' | 'tap_the' | 'to_truc'
 
 export type NhomDiem = 'CC' | 'VS' | 'NN' | 'KL' | 'KT'
 
-export type LoaiDuLieuImport = 'hoc_sinh' | 'ghi_nhan' | 'phu_huynh' | 'ban_can_su'
+export type LoaiDuLieuImport = 'hoc_sinh' | 'ghi_nhan' | 'phu_huynh' | 'ban_can_su' | 'tin_nhan_phu_huynh'
 
 export type TrangThaiImport = 'thanh_cong' | 'loi_mot_phan' | 'that_bai' | 'da_xoa'
 
@@ -254,6 +254,21 @@ export interface LienLacPhuHuynh {
   ho_ten: string | null
   ngay: string | null
   buoi: BuoiDiemDanh | 'ca_ngay' | null
+}
+
+export type LoaiKyTinNhan = 'tuan' | 'thang'
+
+export interface NoiDungTinNhan {
+  id: string
+  ma_hs: string
+  loai_ky: LoaiKyTinNhan
+  tuan_so: number | null
+  thang: number | null
+  nam: number | null
+  noi_dung: string
+  nguon_import: string | null
+  created_by: string | null
+  created_at: string
 }
 
 export interface CapNhatDiemDanhInput {

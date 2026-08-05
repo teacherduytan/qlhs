@@ -89,6 +89,7 @@ const IMPORT_OPTIONS: Array<{ value: LoaiDuLieuImport; label: string }> = [
   { value: 'hoc_sinh', label: 'Học sinh' },
   { value: 'phu_huynh', label: 'Phụ huynh' },
   { value: 'ban_can_su', label: 'Ban cán sự' },
+  { value: 'tin_nhan_phu_huynh', label: 'Tin nhắn phụ huynh' },
 ]
 
 const PREVIEW_LIMIT = 8

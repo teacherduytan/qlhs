@@ -24,6 +24,7 @@ import type {
   DiemDanh,
   DiemDanhCanLienLac,
   LienLacPhuHuynh,
+  NoiDungTinNhan,
   SuaLienLacPhuHuynhInput,
   ThemLienLacPhuHuynhInput,
 } from './types'
@@ -89,6 +90,8 @@ export interface DataSource {
   getParentContactHistory(options?: { maHs?: string }): Promise<LienLacPhuHuynh[]>
   updateParentContact(id: string, patch: SuaLienLacPhuHuynhInput): Promise<void>
   deleteParentContact(id: string): Promise<void>
+
+  getMessageContents(maHs?: string): Promise<NoiDungTinNhan[]>
 
   verifyLopTruongPin(token: string, pin: string): Promise<boolean>
   getLopTruongData(token: string, pin: string): Promise<LopTruongData | null>

@@ -5,6 +5,7 @@ import { CopyIcon } from '../../components/CopyIcon'
 import type {
   BanCanSu,
   BuoiDiemDanh,
+  CauHinhTuan,
   DanhMucDiem,
   DeXuatGhiNhan,
   DienHocSinh,
@@ -13,10 +14,13 @@ import type {
   HocSinh,
   LienLacPhuHuynh,
   NhomDiem,
+  NoiDungTinNhan,
   PhuHuynh,
 } from '../../data/types'
 import { formatTietLabel, getRecordPolarity } from '../records/recordInsights'
 import { Pagination, usePagination } from '../../components/Pagination'
+import { PhoneActionMenu, buildSmsHref } from '../../components/PhoneActionMenu'
+import { findCurrentMessage, formatKyLabel } from './messageContents'
 
 const CONTACT_LABELS: Record<HinhThucLienLacPhuHuynh, string> = {
   dien_thoai: 'Điện thoại trực tiếp',
@@ -59,10 +63,12 @@ type DetailState =
       banCanSu: BanCanSu[]
       catalog: DanhMucDiem[]
       contacts: LienLacPhuHuynh[]
+      messages: NoiDungTinNhan[]
       parents: PhuHuynh[]
       proposals: DeXuatGhiNhan[]
       records: GhiNhan[]
       student: HocSinh
+      weekConfig: CauHinhTuan[]
     }
 
 type StudentForm = {
@@ -116,15 +122,28 @@ export function TeacherStudentDetailPage() {
       dataSource.getPointCatalog(),
       dataSource.getParentContactHistory({ maHs }),
       dataSource.getDeXuatGhiNhan({ maHs }),
+      dataSource.getMessageContents(maHs),
+      dataSource.getWeekConfig(),
     ])
-      .then(([students, parents, banCanSu, records, catalog, contacts, proposals]) => {
+      .then(([students, parents, banCanSu, records, catalog, contacts, proposals, messages, weekConfig]) => {
         if (!active) return
         const student = students.find((item) => item.ma_hs === maHs)
         if (!student) {
           setState({ status: 'not_found' })
           return
         }
-        setState({ status: 'success', banCanSu, catalog, contacts, parents, proposals, records, student })
+        setState({
+          status: 'success',
+          banCanSu,
+          catalog,
+          contacts,
+          messages,
+          parents,
+          proposals,
+          records,
+          student,
+          weekConfig,
+        })
         setForm(formFromStudent(student))
         setRoleForm(roleFormFromBanCanSu(maHs, banCanSu))
       })
@@ -250,6 +269,12 @@ export function TeacherStudentDetailPage() {
   const contactsPage = usePagination(state.status === 'success' ? state.contacts : [])
   const proposalsPage = usePagination(state.status === 'success' ? state.proposals : [])
 
+  const currentMessage = useMemo(() => {
+    if (state.status !== 'success') return null
+    return findCurrentMessage(state.messages, state.weekConfig)
+  }, [state])
+  const messagesPage = usePagination(state.status === 'success' ? state.messages : [])
+
   return (
     <section className="mx-auto max-w-5xl space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -344,14 +369,15 @@ export function TeacherStudentDetailPage() {
                 </span>
               </div>
               <div className="grid gap-2 text-sm">
-                <PhoneRow label="SĐT 1" value={state.student.sdt_1} />
-                <PhoneRow label="SĐT 2" value={state.student.sdt_2} />
+                <PhoneRow label="SĐT 1" value={state.student.sdt_1} smsBody={currentMessage?.noi_dung || ''} />
+                <PhoneRow label="SĐT 2" value={state.student.sdt_2} smsBody={currentMessage?.noi_dung || ''} />
                 {state.parents.map((parent) => (
                   <PhoneRow
                     key={`${parent.ma_hs}-${parent.quan_he}-${parent.sdt}`}
                     label={`${parent.quan_he || 'Phụ huynh'}${parent.uu_tien_lien_he ? ' ưu tiên' : ''}`}
                     name={parent.ho_ten_ph}
                     value={parent.sdt}
+                    smsBody={currentMessage?.noi_dung || ''}
                   />
                 ))}
               </div>
@@ -578,6 +604,54 @@ export function TeacherStudentDetailPage() {
                 onChange={proposalsPage.setPage}
                 page={proposalsPage.page}
                 totalPages={proposalsPage.totalPages}
+              />
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-cyan-200 bg-cyan-100 shadow-sm">
+            <div className="border-b border-cyan-200 p-4">
+              <p className="text-xs font-semibold uppercase text-cyan-700">SMS phụ huynh</p>
+              <h3 className="text-xl font-bold text-slate-950">Lịch sử tin nhắn</h3>
+              <p className="text-sm text-slate-600">
+                Nội dung SMS đã import theo từng tuần/tháng cho em này — bấm "Dùng nội dung này" để mở tin nhắn với
+                đúng nội dung của kỳ đó thay vì kỳ gần nhất.
+              </p>
+            </div>
+            <div className="space-y-2 bg-white p-4">
+              {state.messages.length === 0 ? (
+                <p className="rounded-md border border-cyan-100 bg-cyan-100 p-3 text-sm text-slate-600">
+                  Chưa có nội dung tin nhắn nào được import cho học sinh này.
+                </p>
+              ) : (
+                messagesPage.pageItems.map((message) => (
+                  <div
+                    key={message.id}
+                    className="flex flex-col gap-2 rounded-md border border-cyan-100 bg-cyan-100 p-3 sm:flex-row sm:items-start sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {formatKyLabel(message)}
+                        {currentMessage?.id === message.id ? (
+                          <span className="ml-2 rounded-full bg-cyan-700 px-2 py-0.5 text-xs font-semibold text-white">
+                            Hiện tại
+                          </span>
+                        ) : null}
+                      </p>
+                      <p className="wrap-break-word text-sm text-slate-700">{message.noi_dung}</p>
+                    </div>
+                    <a
+                      href={buildSmsHref(state.student.sdt_1 || state.student.sdt_2 || '', message.noi_dung)}
+                      className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-cyan-300 bg-white px-3 text-sm font-semibold text-cyan-800 hover:bg-cyan-100"
+                    >
+                      Dùng nội dung này
+                    </a>
+                  </div>
+                ))
+              )}
+              <Pagination
+                onChange={messagesPage.setPage}
+                page={messagesPage.page}
+                totalPages={messagesPage.totalPages}
               />
             </div>
           </section>
@@ -890,7 +964,17 @@ function TeacherProposalItem({
   )
 }
 
-function PhoneRow({ label, name, value }: { label: string; name?: string; value: unknown }) {
+function PhoneRow({
+  label,
+  name,
+  value,
+  smsBody,
+}: {
+  label: string
+  name?: string
+  value: unknown
+  smsBody: string
+}) {
   const phoneText = toText(value)
   const [copied, setCopied] = useState(false)
 
@@ -908,9 +992,11 @@ function PhoneRow({ label, name, value }: { label: string; name?: string; value:
       </div>
       {phoneText ? (
         <div className="flex shrink-0 items-center gap-1">
-          <a href={`tel:${normalizePhone(phoneText)}`} className="font-bold text-blue-700 hover:text-blue-800">
-            {phoneText}
-          </a>
+          <PhoneActionMenu
+            phone={phoneText}
+            smsBody={smsBody}
+            smsEmptyHint="Chưa có nội dung tin nhắn cho em này."
+          />
           <button
             type="button"
             onClick={() => void copyPhone()}
@@ -1080,10 +1166,6 @@ function formToPatch(form: StudentForm): Partial<HocSinh> {
 function nullable(value: string): string | null {
   const trimmed = value.trim()
   return trimmed ? trimmed : null
-}
-
-function normalizePhone(value: string): string {
-  return value.replace(/[^\d+]/g, '')
 }
 
 function toText(value: unknown): string {
