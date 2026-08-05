@@ -92,6 +92,8 @@ export interface DataSource {
   deleteParentContact(id: string): Promise<void>
 
   getMessageContents(maHs?: string): Promise<NoiDungTinNhan[]>
+  updateMessageContent(id: string, noiDung: string): Promise<NoiDungTinNhan>
+  deleteMessageContent(id: string): Promise<void>
 
   verifyLopTruongPin(token: string, pin: string): Promise<boolean>
   getLopTruongData(token: string, pin: string): Promise<LopTruongData | null>

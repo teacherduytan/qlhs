@@ -105,6 +105,10 @@ export function TeacherStudentDetailPage() {
   const [roleSaving, setRoleSaving] = useState(false)
   const [roleError, setRoleError] = useState<string | null>(null)
   const [roleMessage, setRoleMessage] = useState<string | null>(null)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [messageEditText, setMessageEditText] = useState('')
+  const [messageSavingId, setMessageSavingId] = useState<string | null>(null)
+  const [messageActionError, setMessageActionError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -221,6 +225,59 @@ export function TeacherStudentDetailPage() {
       setRoleError(error instanceof Error ? error.message : 'Không lưu được chức vụ.')
     } finally {
       setRoleSaving(false)
+    }
+  }
+
+  function startEditMessage(message: NoiDungTinNhan) {
+    setMessageActionError(null)
+    setEditingMessageId(message.id)
+    setMessageEditText(message.noi_dung)
+  }
+
+  function cancelEditMessage() {
+    setEditingMessageId(null)
+  }
+
+  async function saveEditMessage(message: NoiDungTinNhan) {
+    if (!messageEditText.trim()) {
+      setMessageActionError('Nội dung tin nhắn không được để trống.')
+      return
+    }
+
+    setMessageSavingId(message.id)
+    setMessageActionError(null)
+    try {
+      const updated = await dataSource.updateMessageContent(message.id, messageEditText)
+      setState((current) =>
+        current.status === 'success'
+          ? { ...current, messages: current.messages.map((item) => (item.id === message.id ? updated : item)) }
+          : current,
+      )
+      setEditingMessageId(null)
+    } catch (error) {
+      setMessageActionError(error instanceof Error ? error.message : 'Không sửa được nội dung tin nhắn.')
+    } finally {
+      setMessageSavingId(null)
+    }
+  }
+
+  async function deleteMessage(message: NoiDungTinNhan) {
+    const ok = window.confirm(`Xoá nội dung tin nhắn ${formatKyLabel(message)}?`)
+    if (!ok) return
+
+    setMessageSavingId(message.id)
+    setMessageActionError(null)
+    try {
+      await dataSource.deleteMessageContent(message.id)
+      setState((current) =>
+        current.status === 'success'
+          ? { ...current, messages: current.messages.filter((item) => item.id !== message.id) }
+          : current,
+      )
+    } catch (error) {
+      setMessageActionError(error instanceof Error ? error.message : 'Không xoá được nội dung tin nhắn.')
+    } finally {
+      setMessageSavingId(null)
     }
   }
 
@@ -618,33 +675,82 @@ export function TeacherStudentDetailPage() {
               </p>
             </div>
             <div className="space-y-2 bg-white p-4">
+              {messageActionError ? (
+                <p className="rounded-md border border-red-200 bg-red-100 p-3 text-sm font-semibold text-red-700">
+                  {messageActionError}
+                </p>
+              ) : null}
               {state.messages.length === 0 ? (
                 <p className="rounded-md border border-cyan-100 bg-cyan-100 p-3 text-sm text-slate-600">
                   Chưa có nội dung tin nhắn nào được import cho học sinh này.
                 </p>
               ) : (
                 messagesPage.pageItems.map((message) => (
-                  <div
-                    key={message.id}
-                    className="flex flex-col gap-2 rounded-md border border-cyan-100 bg-cyan-100 p-3 sm:flex-row sm:items-start sm:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900">
-                        {formatKyLabel(message)}
-                        {currentMessage?.id === message.id ? (
-                          <span className="ml-2 rounded-full bg-cyan-700 px-2 py-0.5 text-xs font-semibold text-white">
-                            Hiện tại
-                          </span>
-                        ) : null}
-                      </p>
-                      <p className="wrap-break-word text-sm text-slate-700">{message.noi_dung}</p>
-                    </div>
-                    <a
-                      href={buildSmsHref(state.student.sdt_1 || state.student.sdt_2 || '', message.noi_dung)}
-                      className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-cyan-300 bg-white px-3 text-sm font-semibold text-cyan-800 hover:bg-cyan-100"
-                    >
-                      Dùng nội dung này
-                    </a>
+                  <div key={message.id} className="rounded-md border border-cyan-100 bg-cyan-100 p-3">
+                    {editingMessageId === message.id ? (
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-slate-900">{formatKyLabel(message)}</p>
+                        <textarea
+                          value={messageEditText}
+                          onChange={(event) => setMessageEditText(event.target.value)}
+                          className="min-h-20 w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void saveEditMessage(message)}
+                            disabled={messageSavingId === message.id}
+                            className="h-9 rounded-md bg-cyan-700 px-3 text-sm font-semibold text-white hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                          >
+                            {messageSavingId === message.id ? 'Đang lưu...' : 'Lưu'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEditMessage}
+                            className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                          >
+                            Huỷ
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-900">
+                            {formatKyLabel(message)}
+                            {currentMessage?.id === message.id ? (
+                              <span className="ml-2 rounded-full bg-cyan-700 px-2 py-0.5 text-xs font-semibold text-white">
+                                Hiện tại
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="wrap-break-word text-sm text-slate-700">{message.noi_dung}</p>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap gap-2">
+                          <a
+                            href={buildSmsHref(state.student.sdt_1 || state.student.sdt_2 || '', message.noi_dung)}
+                            className="inline-flex h-9 items-center justify-center rounded-md border border-cyan-300 bg-white px-3 text-sm font-semibold text-cyan-800 hover:bg-cyan-100"
+                          >
+                            Dùng nội dung này
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => startEditMessage(message)}
+                            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                          >
+                            Sửa
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void deleteMessage(message)}
+                            disabled={messageSavingId === message.id}
+                            className="inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:text-slate-400"
+                          >
+                            {messageSavingId === message.id ? 'Đang xoá...' : 'Xoá'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}

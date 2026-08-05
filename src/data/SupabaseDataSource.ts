@@ -593,6 +593,22 @@ export class SupabaseDataSource implements DataSource {
     return (data || []) as NoiDungTinNhan[]
   }
 
+  async updateMessageContent(id: string, noiDung: string): Promise<NoiDungTinNhan> {
+    const { data, error } = await getSupabaseClient()
+      .from('noi_dung_tin_nhan')
+      .update({ noi_dung: noiDung.trim() })
+      .eq('id', id)
+      .select()
+      .single()
+    assertNoError(error, 'Khong sua duoc noi dung tin nhan tren Supabase')
+    return data as NoiDungTinNhan
+  }
+
+  async deleteMessageContent(id: string): Promise<void> {
+    const { error } = await getSupabaseClient().from('noi_dung_tin_nhan').delete().eq('id', id)
+    assertNoError(error, 'Khong xoa duoc noi dung tin nhan tren Supabase')
+  }
+
   async getParentContactHistory(options: { maHs?: string } = {}): Promise<LienLacPhuHuynh[]> {
     let query = getSupabaseClient()
       .from('lien_lac_phu_huynh')
