@@ -6,6 +6,7 @@ import { getRecordInsight } from './recordInsights'
 import { getBadgeClassForCatalog } from '../scoring/scoreStyles'
 import { selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
 import { Pagination, usePagination } from '../../components/Pagination'
+import { nextCodeForGroup } from '../catalog/catalogCode'
 
 type AttachMode = 'students' | 'team' | 'class'
 type CatalogTone = 'all' | 'positive' | 'violation' | 'neutral'
@@ -681,15 +682,26 @@ function ProposalReviewCard({
   const [selectedCatalog, setSelectedCatalog] = useState(proposal.ma_danh_muc || '')
   const [noiDung, setNoiDung] = useState(proposal.noi_dung || '')
   const [showCreateForm, setShowCreateForm] = useState(!proposal.ma_danh_muc)
-  const [createForm, setCreateForm] = useState({
-    ma_danh_muc: '',
-    nhom: (proposal.de_xuat_nhom || 'NN') as DanhMucDiem['nhom'],
-    ten_muc: proposal.noi_dung || '',
-    diem: '',
-    nghiem_trong: false,
+  const [createForm, setCreateForm] = useState(() => {
+    const nhom = (proposal.de_xuat_nhom || 'NN') as DanhMucDiem['nhom']
+    return {
+      ma_danh_muc: nextCodeForGroup(nhom, catalog),
+      nhom,
+      ten_muc: proposal.noi_dung || '',
+      diem: '',
+      nghiem_trong: false,
+    }
   })
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+
+  function changeCreateGroup(nhom: DanhMucDiem['nhom']) {
+    setCreateForm((current) => ({
+      ...current,
+      nhom,
+      ma_danh_muc: nextCodeForGroup(nhom, catalog),
+    }))
+  }
 
   async function createCatalogItem() {
     const code = createForm.ma_danh_muc.trim().toUpperCase()
@@ -783,10 +795,12 @@ function ProposalReviewCard({
       {showCreateForm ? (
         <div className="mt-2 grid gap-2 rounded-md border border-teal-100 bg-teal-100/50 p-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-            Mã mới
+            Mã mới (tự sinh theo nhóm, có thể sửa)
             <input
               value={createForm.ma_danh_muc}
-              onChange={(event) => setCreateForm((current) => ({ ...current, ma_danh_muc: event.target.value }))}
+              onChange={(event) =>
+                setCreateForm((current) => ({ ...current, ma_danh_muc: event.target.value.toUpperCase() }))
+              }
               placeholder="VD: NN12"
               className={inputClass}
             />
@@ -795,9 +809,7 @@ function ProposalReviewCard({
             Nhóm
             <select
               value={createForm.nhom}
-              onChange={(event) =>
-                setCreateForm((current) => ({ ...current, nhom: event.target.value as DanhMucDiem['nhom'] }))
-              }
+              onChange={(event) => changeCreateGroup(event.target.value as DanhMucDiem['nhom'])}
               className={selectClass}
             >
               <option value="CC">Chuyên cần</option>
