@@ -692,10 +692,32 @@ function ProposalReviewCard({
       nghiem_trong: false,
     }
   })
+  const [codeTouched, setCodeTouched] = useState(false)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
+  const codeConflict = catalog.some(
+    (item) => item.ma_danh_muc.trim().toUpperCase() === createForm.ma_danh_muc.trim().toUpperCase(),
+  )
+
+  // Nhieu the de xuat cung nhom co the goi y trung 1 ma (vi du 2 de xuat "KL" cung goi y KL18)
+  // vi tinh o thoi diem mo the, chua biet the kia se duoc duyet truoc. Khi 1 the khac duoc duyet
+  // (catalog cha cap nhat, truyen prop moi xuong tat ca the con), tu dong sinh lai ma neu ma dang
+  // de xuat (chua bi giao vien tu sua tay) vua bi trung do the kia vua tao xong duoi CSDL.
+  useEffect(() => {
+    if (codeTouched) return
+    setCreateForm((current) => {
+      const stillFree = !catalog.some(
+        (item) => item.ma_danh_muc.trim().toUpperCase() === current.ma_danh_muc.trim().toUpperCase(),
+      )
+      if (stillFree) return current
+      return { ...current, ma_danh_muc: nextCodeForGroup(current.nhom, catalog) }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalog, codeTouched])
+
   function changeCreateGroup(nhom: DanhMucDiem['nhom']) {
+    setCodeTouched(false)
     setCreateForm((current) => ({
       ...current,
       nhom,
@@ -717,7 +739,7 @@ function ProposalReviewCard({
       return
     }
     if (catalog.some((item) => item.ma_danh_muc === code)) {
-      setCreateError(`Mã ${code} đã tồn tại, hãy đổi mã khác.`)
+      setCreateError(`Mã ${code} đã bị trùng (có thể vừa được tạo từ 1 đề xuất khác) — hãy chọn mã khác.`)
       return
     }
 
@@ -798,12 +820,18 @@ function ProposalReviewCard({
             Mã mới (tự sinh theo nhóm, có thể sửa)
             <input
               value={createForm.ma_danh_muc}
-              onChange={(event) =>
+              onChange={(event) => {
+                setCodeTouched(true)
                 setCreateForm((current) => ({ ...current, ma_danh_muc: event.target.value.toUpperCase() }))
-              }
+              }}
               placeholder="VD: NN12"
               className={inputClass}
             />
+            {codeConflict ? (
+              <span className="font-normal normal-case text-red-600">
+                Mã {createForm.ma_danh_muc.trim().toUpperCase()} đã tồn tại — đổi mã khác.
+              </span>
+            ) : null}
           </label>
           <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
             Nhóm
