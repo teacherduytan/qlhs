@@ -54,6 +54,7 @@ export interface DataSource {
     item: Partial<DanhMucDiem>,
   ): Promise<DanhMucDiem>
   deletePointCatalogItem(maDanhMuc: string): Promise<void>
+  syncCatalogPointToRecords(maDanhMuc: string, diem: number): Promise<number>
   getHandlingCatalog(): Promise<DanhMucXuLy[]>
   addHandlingCatalogItem(item: DanhMucXuLy): Promise<DanhMucXuLy>
   updateHandlingCatalogItem(maXuLy: string, item: Partial<DanhMucXuLy>): Promise<DanhMucXuLy>

@@ -265,6 +265,16 @@ export class SupabaseDataSource implements DataSource {
     assertNoError(error, 'Khong xoa duoc DanhMucDiem tren Supabase')
   }
 
+  async syncCatalogPointToRecords(maDanhMuc: string, diem: number): Promise<number> {
+    const { data, error } = await getSupabaseClient()
+      .from('ghi_nhan')
+      .update({ diem_cong_tru: diem })
+      .eq('ma_danh_muc', maDanhMuc)
+      .select('ma_ghi_nhan')
+    assertNoError(error, 'Khong cap nhat diem cho GhiNhan da co cua danh muc nay')
+    return (data || []).length
+  }
+
   async getHandlingCatalog(): Promise<DanhMucXuLy[]> {
     const { data, error } = await getSupabaseClient()
       .from('danh_muc_xu_ly')

@@ -366,11 +366,34 @@ export function CatalogPage() {
         setCatalog((current) => [...current, created])
         closeForm()
       } else if (editingCode) {
+        const original = catalog.find((item) => item.ma_danh_muc === editingCode)
         const updated = await dataSource.updatePointCatalogItem(editingCode, payload)
         setCatalog((current) =>
           current.map((item) => (item.ma_danh_muc === editingCode ? updated : item)),
         )
         closeForm()
+
+        if (original && original.diem !== updated.diem) {
+          try {
+            const syncedCount = await dataSource.syncCatalogPointToRecords(editingCode, updated.diem)
+            setRecords((current) =>
+              current.map((record) =>
+                record.ma_danh_muc === editingCode ? { ...record, diem_cong_tru: updated.diem } : record,
+              ),
+            )
+            if (syncedCount > 0) {
+              setSaveMessage(
+                `Đã cập nhật danh mục ${updated.ma_danh_muc} và đồng bộ điểm mới (${formatPoint(updated.diem)}) cho ${syncedCount} lượt ghi nhận đã có sẵn.`,
+              )
+            }
+          } catch (error) {
+            setSaveError(
+              error instanceof Error
+                ? `Đã lưu danh mục nhưng chưa đồng bộ được điểm cho ghi nhận cũ: ${error.message}`
+                : 'Đã lưu danh mục nhưng chưa đồng bộ được điểm cho ghi nhận cũ.',
+            )
+          }
+        }
       }
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Không lưu được danh mục.')
