@@ -474,22 +474,56 @@ function StudentProfileHeader({
   student: HocSinh
 }) {
   return (
-    <div className="rounded-lg border border-sky-200 bg-sky-100 p-4 shadow-sm">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="relative overflow-hidden rounded-2xl border border-indigo-300 bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 p-5 text-white shadow-lg">
+      <div className="pointer-events-none absolute -right-8 -top-8 text-9xl opacity-15" aria-hidden="true">
+        🎓
+      </div>
+      <div className="pointer-events-none absolute -bottom-10 -left-6 text-8xl opacity-10" aria-hidden="true">
+        ✨
+      </div>
+
+      <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
-            {student.ten.slice(0, 1).toUpperCase()}
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/20 text-2xl font-extrabold text-white shadow-md ring-4 ring-white/40 backdrop-blur">
+            {student.anh_dai_dien ? (
+              <img src={student.anh_dai_dien} alt="" className="h-full w-full object-cover" />
+            ) : (
+              student.ten.slice(0, 1).toUpperCase()
+            )}
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase text-blue-600">{role}</p>
-            <h2 className="wrap-break-word text-xl font-bold text-slate-950 md:text-2xl">
+            <span className="inline-block rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide backdrop-blur">
+              {role}
+            </span>
+            <h2 className="wrap-break-word mt-1 text-xl font-extrabold drop-shadow-sm md:text-2xl">
               {student.ho} {student.ten}
             </h2>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {student.to ? (
+                <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold backdrop-blur">
+                  👥 Tổ {student.to}
+                </span>
+              ) : null}
+              <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold backdrop-blur">
+                {student.nu ? '💁‍♀️ Nữ' : '🙋‍♂️ Nam'}
+              </span>
+              {student.la_co_do ? (
+                <span className="rounded-full bg-red-500/80 px-2.5 py-1 text-xs font-bold backdrop-blur">
+                  🚩 Cờ đỏ
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-4 rounded-md bg-white px-3 py-2 ring-1 ring-sky-100 md:block md:text-center">
-          <p className="text-lg font-bold text-slate-900">{recordCount}</p>
-          <p className="text-xs font-semibold text-slate-500">ghi nhận</p>
+
+        <div className="flex shrink-0 items-center gap-3 rounded-xl bg-white/95 px-4 py-3 text-center shadow-md">
+          <span className="text-2xl" aria-hidden="true">
+            📋
+          </span>
+          <div>
+            <p className="text-2xl font-extrabold leading-none text-indigo-700">{recordCount}</p>
+            <p className="text-xs font-semibold text-slate-500">ghi nhận</p>
+          </div>
         </div>
       </div>
     </div>
