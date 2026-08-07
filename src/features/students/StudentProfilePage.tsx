@@ -385,15 +385,12 @@ export function StudentProfilePage() {
               weekConfig={state.weekConfig}
             />
 
+            {state.canSubmitProposal && token ? <LopTruongPanel token={token} role={state.role} /> : null}
+
             <ProfileTabs activeTab={activeTab} onChange={openTab} />
 
             <div id="profile-tab-content" className="scroll-mt-4 space-y-3">
-              {activeTab === 'noi-bat' ? (
-                <>
-                  {state.canSubmitProposal && token ? <LopTruongPanel token={token} role={state.role} /> : null}
-                  <FeaturedRecords catalog={state.catalog} records={state.records} />
-                </>
-              ) : null}
+              {activeTab === 'noi-bat' ? <FeaturedRecords catalog={state.catalog} records={state.records} /> : null}
 
               {activeTab === 'records' ? (
                 <RecordHistory
@@ -1246,11 +1243,34 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-lg border border-teal-300 bg-teal-100 p-4 text-left shadow-sm hover:bg-teal-100"
+        className="group relative w-full overflow-hidden rounded-2xl border border-teal-300 bg-linear-to-br from-teal-500 via-emerald-500 to-cyan-500 p-5 text-left text-white shadow-lg transition hover:shadow-2xl hover:brightness-105 active:scale-[0.99]"
       >
-        <p className="text-xs font-semibold uppercase text-teal-700">Dành cho {role}</p>
-        <p className="mt-1 font-bold text-slate-900">Nhập đề xuất ghi nhận cho lớp</p>
-        <p className="mt-1 text-sm text-slate-600">Gõ mã PIN riêng để mở form, giáo viên sẽ duyệt trước khi tính điểm.</p>
+        <div className="pointer-events-none absolute -right-6 -top-8 text-9xl opacity-10 transition group-hover:scale-110" aria-hidden="true">
+          ✍️
+        </div>
+        <div className="relative flex items-center gap-4">
+          <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/40" aria-hidden="true" />
+            <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/25 text-3xl shadow-inner backdrop-blur">
+              📢
+            </span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold uppercase tracking-wide text-teal-50">Dành cho {role}</p>
+            <p className="mt-0.5 wrap-break-word text-lg font-extrabold drop-shadow-sm">
+              Nhập đề xuất ghi nhận cho lớp
+            </p>
+            <p className="mt-1 text-sm text-teal-50/90">
+              Gõ mã PIN riêng để mở form, giáo viên sẽ duyệt trước khi tính điểm.
+            </p>
+          </div>
+          <span
+            className="hidden shrink-0 text-2xl transition-transform group-hover:translate-x-1 sm:inline"
+            aria-hidden="true"
+          >
+            →
+          </span>
+        </div>
       </button>
     )
   }
