@@ -578,7 +578,7 @@ function UnifiedLoginPage({
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !email.trim() || !teacherPassword.trim()}
               className="mt-5 h-11 w-full rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
               {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
@@ -600,7 +600,7 @@ function UnifiedLoginPage({
             </label>
 
             <label className="mt-3 flex flex-col gap-1 text-sm font-medium text-slate-700">
-              Mật khẩu (3 số cuối SĐT)
+              Mật khẩu
               <input
                 type="password"
                 inputMode="numeric"
