@@ -431,9 +431,9 @@ export function StudentProfilePage() {
       {state.status === 'success' && score ? (
         <nav
           aria-label="Điều hướng nhanh hồ sơ"
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-300 bg-slate-100 shadow-[0_-2px_6px_rgba(0,0,0,0.08)] md:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:hidden"
         >
-          <div className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-1 pt-1 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          <div className="mx-auto flex max-w-3xl items-center justify-around gap-1 rounded-2xl border border-slate-200 bg-white/85 px-1.5 py-2 shadow-[0_-4px_20px_rgba(15,23,42,0.12)] backdrop-blur-lg">
             {PROFILE_TABS.map((item) => {
               const active = item.id === activeTab
               return (
@@ -441,14 +441,18 @@ export function StudentProfilePage() {
                   key={item.id}
                   type="button"
                   onClick={() => openTab(item.id)}
-                  className={`flex min-w-16 shrink-0 flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-center ${
-                    active ? 'text-blue-700' : 'text-slate-500'
+                  className={`group relative flex flex-1 flex-col items-center gap-1 rounded-xl py-1 transition ${
+                    active ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
-                  <span className="text-lg leading-none" aria-hidden="true">
-                    {item.icon}
+                  <span
+                    className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 ${
+                      active ? 'scale-105 bg-blue-100 shadow-inner' : 'scale-100 group-active:scale-95'
+                    }`}
+                  >
+                    <NavTabIcon id={item.id} />
                   </span>
-                  <span className={`text-[11px] leading-tight ${active ? 'font-semibold' : 'font-medium'}`}>
+                  <span className={`text-[11px] leading-tight ${active ? 'font-bold' : 'font-medium'}`}>
                     {item.label}
                   </span>
                 </button>
@@ -755,6 +759,73 @@ function FeaturedRecordCard({
         ) : null}
       </div>
     </details>
+  )
+}
+
+// Icon SVG rieng cho thanh dieu huong duoi cung tren di dong - dung SVG net
+// ve thay vi emoji de nhin sac net/dong bo hon tren moi thiet bi (emoji hien
+// khac nhau tuy font he thong). Chi dung o day, ProfileTabs/menu van giu icon
+// emoji trong PROFILE_TABS nhu cu, khong doi cau truc du lieu dung chung.
+function NavTabIcon({ id }: { id: ProfileTab }) {
+  const className = 'h-5 w-5'
+
+  if (id === 'noi-bat') {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+        <path d="M12 2.7l2.83 5.86 6.37.6-4.8 4.35 1.36 6.32L12 16.9l-5.76 3.02 1.36-6.32-4.8-4.35 6.37-.6L12 2.7z" />
+      </svg>
+    )
+  }
+
+  if (id === 'records') {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={className}
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 7.5v5l3.2 1.8" />
+      </svg>
+    )
+  }
+
+  if (id === 'score') {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={className}
+        aria-hidden="true"
+      >
+        <path d="M4.5 20V13M12 20V6.5M19.5 20v-9" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M4.5 19.5c0-3.6 3.4-5.5 7.5-5.5s7.5 1.9 7.5 5.5" />
+    </svg>
   )
 }
 
