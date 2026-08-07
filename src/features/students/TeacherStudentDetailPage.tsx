@@ -496,20 +496,22 @@ export function TeacherStudentDetailPage() {
           <CompanionSection state={state} setState={setState} />
 
           <div className="rounded-lg border border-slate-300 bg-slate-100 p-1 shadow-sm">
-            <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
+            <div className="flex gap-1 overflow-x-auto md:grid md:grid-cols-4">
               {TEACHER_TABS.map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex min-h-11 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-sm font-semibold transition ${
+                  className={`flex min-h-14 min-w-20 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-1.5 text-center text-xs font-semibold transition md:min-h-11 md:min-w-0 md:flex-row md:gap-1.5 md:text-sm ${
                     activeTab === tab.id
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >
-                  <span aria-hidden="true">{tab.icon}</span>
-                  {tab.label}
+                  <span className="text-base leading-none md:text-sm" aria-hidden="true">
+                    {tab.icon}
+                  </span>
+                  <span className="leading-tight">{tab.label}</span>
                 </button>
               ))}
             </div>
