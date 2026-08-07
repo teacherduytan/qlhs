@@ -93,6 +93,8 @@ export function StudentProfilePage() {
   const [matKhau, setMatKhau] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
   const [loggingIn, setLoggingIn] = useState(false)
+  const [bottomNavVisible, setBottomNavVisible] = useState(true)
+  const lastScrollY = useRef(0)
 
   useEffect(() => {
     if (!menuOpen) return
@@ -106,6 +108,30 @@ export function StudentProfilePage() {
     document.addEventListener('pointerdown', handlePointerDown)
     return () => document.removeEventListener('pointerdown', handlePointerDown)
   }, [menuOpen])
+
+  // Giong app Facebook: keo xuong -> an thanh dieu huong duoi cung de nhuong
+  // cho hoc sinh doc noi dung, keo len -> hien lai ngay.
+  useEffect(() => {
+    lastScrollY.current = window.scrollY
+
+    function handleScroll() {
+      const currentY = window.scrollY
+      const delta = currentY - lastScrollY.current
+
+      if (currentY < 24) {
+        setBottomNavVisible(true)
+      } else if (delta > 8) {
+        setBottomNavVisible(false)
+      } else if (delta < -8) {
+        setBottomNavVisible(true)
+      }
+
+      lastScrollY.current = currentY
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const score = useMemo(() => {
     if (state.status !== 'success') {
@@ -431,7 +457,9 @@ export function StudentProfilePage() {
       {state.status === 'success' && score ? (
         <nav
           aria-label="Điều hướng nhanh hồ sơ"
-          className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:hidden"
+          className={`fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] transition-transform duration-200 md:hidden ${
+            bottomNavVisible ? 'translate-y-0' : 'translate-y-full'
+          }`}
         >
           <div className="mx-auto flex max-w-3xl items-center justify-around gap-1 rounded-2xl border border-slate-200 bg-white/85 px-1.5 py-2 shadow-[0_-4px_20px_rgba(15,23,42,0.12)] backdrop-blur-lg">
             {PROFILE_TABS.map((item) => {
