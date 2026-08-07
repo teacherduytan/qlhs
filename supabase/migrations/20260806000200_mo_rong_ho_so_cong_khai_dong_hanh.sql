@@ -7,6 +7,12 @@
 --   - duyet: CHI cac dong dong_hanh_duyet cua hoc sinh nay co trang_thai='da_duyet'
 --     (khong tra 'cho_duyet' hay 'da_an' de tuyet doi khong lo cau chua duyet qua
 --     RPC cong khai nay)
+--
+-- Postgres khong cho "create or replace function" doi kieu tra ve khi ham dung
+-- OUT parameters/RETURNS TABLE va so cot/kieu cot thay doi (loi 42P13) - phai
+-- drop ham cu truoc roi tao lai.
+drop function if exists public.lay_ho_so_cong_khai(text, text, text);
+
 create or replace function public.lay_ho_so_cong_khai(
   p_token text,
   p_sdt text,
