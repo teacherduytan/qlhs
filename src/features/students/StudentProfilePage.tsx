@@ -645,15 +645,18 @@ function FeaturedRecords({ catalog, records }: { catalog: DanhMucDiem[]; records
   const summary = summarizeRecordImpacts(records, catalogByCode)
 
   return (
-    <div className="rounded-lg border border-blue-300 bg-blue-100 shadow-sm">
-      <div className="border-b border-blue-200 p-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+    <div className="overflow-hidden rounded-2xl border border-blue-300 shadow-lg">
+      <div className="relative bg-linear-to-br from-blue-600 to-cyan-500 p-4 text-white">
+        <div className="pointer-events-none absolute -right-4 -top-4 text-7xl opacity-15" aria-hidden="true">
+          🏆
+        </div>
+        <div className="relative flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase text-blue-700">Ghi nhận của em</p>
-            <h2 className="wrap-break-word text-xl font-bold text-slate-950">Ghi nhận tích cực và cần lưu ý trên lớp</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Các dòng thầy/cô đã nhập từ phiếu ghi nhận vào hệ thống.
-            </p>
+            <p className="text-xs font-bold uppercase tracking-wide text-blue-100">🏆 Ghi nhận của em</p>
+            <h2 className="wrap-break-word mt-0.5 text-lg font-extrabold md:text-xl">
+              Điểm sáng &amp; điều cần lưu ý
+            </h2>
+            <p className="mt-1 text-xs text-blue-100">Chạm vào từng dòng để xem chi tiết đầy đủ.</p>
           </div>
           <div className="shrink-0">
             <ImpactSummary negative={summary.negative} positive={summary.positive} />
@@ -662,30 +665,99 @@ function FeaturedRecords({ catalog, records }: { catalog: DanhMucDiem[]; records
       </div>
 
       {latestRecords.length ? (
-        <div className="space-y-2 p-4">
+        <div className="divide-y divide-slate-100 bg-white">
           {latestRecords.map((record, index) => (
-            <article
+            <FeaturedRecordCard
               key={record.ma_ghi_nhan || `${record.ngay}-${record.ma_danh_muc}-${index}`}
-              className={`rounded-md border p-3 shadow-sm ${getRecordCardClass(
-                record,
-                record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined,
-              )}`}
-            >
-              <RecordSummary
-                allRecords={records}
-                record={record}
-                catalogByCode={catalogByCode}
-                featured
-              />
-            </article>
+              allRecords={records}
+              catalogByCode={catalogByCode}
+              record={record}
+            />
           ))}
         </div>
       ) : (
-        <div className="p-4 text-sm text-slate-600">
+        <div className="bg-white p-4 text-sm text-slate-600">
           Chưa có ghi nhận nào được nhập cho hồ sơ này.
         </div>
       )}
     </div>
+  )
+}
+
+// Vien mau (border-l) noi bat + tom tat 1 dong; bam vao (hover tren desktop
+// nho :hover cua <summary>) moi mo het chi tiet - dung <details>/<summary>
+// nen co san dieu huong ban phim + khong can useState rieng cho tung the.
+function FeaturedRecordCard({
+  allRecords,
+  catalogByCode,
+  record,
+}: {
+  allRecords: GhiNhan[]
+  catalogByCode: Map<string, DanhMucDiem>
+  record: GhiNhan
+}) {
+  const pointText = getRecordPointText(record)
+  const insight = getRecordInsight(record, allRecords, catalogByCode)
+  const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
+  const accentClass =
+    insight.polarity === 'positive'
+      ? 'border-l-emerald-500'
+      : insight.polarity === 'negative'
+        ? 'border-l-red-500'
+        : 'border-l-slate-300'
+  const icon = insight.polarity === 'positive' ? '🌟' : insight.polarity === 'negative' ? '⚠️' : '📌'
+
+  return (
+    <details className={`group border-l-4 ${accentClass} open:bg-slate-50`}>
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+        <span className="shrink-0 text-xl" aria-hidden="true">
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-slate-900">
+            {record.noi_dung || record.ly_do || 'Không có mô tả'}
+          </p>
+          <p className="truncate text-xs text-slate-500">
+            {record.ma_danh_muc || labelRecordType(record.loai)} · {formatDate(record.ngay)}
+            {pointText ? ` · ${pointText}` : ''}
+          </p>
+        </div>
+        <span
+          className="shrink-0 text-slate-400 transition-transform group-open:rotate-180"
+          aria-hidden="true"
+        >
+          ▾
+        </span>
+      </summary>
+
+      <div className="px-4 pb-4 pl-12">
+        <p className="text-sm font-medium text-slate-700">
+          <CatalogCodeBadge
+            catalogItem={catalogItem}
+            code={record.ma_danh_muc || record.loai}
+            label={record.ma_danh_muc || labelRecordType(record.loai)}
+          />
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2 text-xs font-medium">
+          <ImpactBadge insight={insight} />
+          <Badge className={getBadgeClassForRecord(record, catalogByCode)}>
+            {labelRecordDisplay(record, catalogItem)}
+          </Badge>
+          {formatTietLabel(record.tiet) ? <Badge>{formatTietLabel(record.tiet) as string}</Badge> : null}
+          {record.mon_hoc ? <Badge>{record.mon_hoc}</Badge> : null}
+          {pointText ? <Badge>{pointText}</Badge> : null}
+          {insight.polarity === 'negative' && insight.duplicateCount ? (
+            <Badge className="border-red-200 bg-red-100 text-red-700">{`Lần ${insight.duplicateCount}`}</Badge>
+          ) : null}
+        </div>
+        {insight.polarity === 'negative' && insight.intervention ? (
+          <div className="mt-3 rounded-md border border-red-100 bg-red-100 px-3 py-2 text-xs text-red-800">
+            <p className="font-bold">{insight.intervention.label}</p>
+            <p className="mt-1">{insight.intervention.action}</p>
+          </div>
+        ) : null}
+      </div>
+    </details>
   )
 }
 
@@ -929,15 +1001,13 @@ function RecordSummary({
 
 function ImpactSummary({ negative, positive }: { negative: number; positive: number }) {
   return (
-    <div className="grid min-w-48 grid-cols-2 overflow-hidden rounded-md border border-white/80 bg-white text-center shadow-sm">
-      <div className="border-r border-slate-100 px-3 py-2">
-        <p className="text-xs font-semibold uppercase text-emerald-700">Tích cực</p>
-        <p className="text-lg font-bold text-emerald-700">+{positive}</p>
-      </div>
-      <div className="px-3 py-2">
-        <p className="text-xs font-semibold uppercase text-red-700">Vi phạm</p>
-        <p className="text-lg font-bold text-red-700">-{negative}</p>
-      </div>
+    <div className="flex gap-2">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-extrabold text-emerald-700 shadow-sm">
+        <span aria-hidden="true">🌟</span>+{positive}
+      </span>
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-extrabold text-red-700 shadow-sm">
+        <span aria-hidden="true">⚠️</span>-{negative}
+      </span>
     </div>
   )
 }
