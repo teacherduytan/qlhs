@@ -106,9 +106,19 @@ type RoleForm = {
   duocDeXuat: boolean
 }
 
+type TeacherTab = 'ghi-nhan' | 'lien-lac' | 'ban-can-su' | 'thong-tin'
+
+const TEACHER_TABS: Array<{ id: TeacherTab; label: string; icon: string }> = [
+  { id: 'ghi-nhan', label: 'Ghi nhận & đề xuất', icon: '📝' },
+  { id: 'lien-lac', label: 'Liên lạc PH', icon: '📞' },
+  { id: 'ban-can-su', label: 'Ban cán sự', icon: '🎓' },
+  { id: 'thong-tin', label: 'Thông tin', icon: '👤' },
+]
+
 export function TeacherStudentDetailPage() {
   const { maHs } = useParams()
   const [state, setState] = useState<DetailState>({ status: 'loading' })
+  const [activeTab, setActiveTab] = useState<TeacherTab>('ghi-nhan')
   const [form, setForm] = useState<StudentForm | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -485,7 +495,27 @@ export function TeacherStudentDetailPage() {
 
           <CompanionSection state={state} setState={setState} />
 
-          {roleForm ? (
+          <div className="rounded-lg border border-slate-300 bg-slate-100 p-1 shadow-sm">
+            <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
+              {TEACHER_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex min-h-11 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-sm font-semibold transition ${
+                    activeTab === tab.id
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                >
+                  <span aria-hidden="true">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {roleForm && activeTab === 'ban-can-su' ? (
             <section className="rounded-lg border border-teal-200 bg-teal-100 shadow-sm">
               <div className="border-b border-teal-200 p-4">
                 <p className="text-xs font-semibold uppercase text-teal-700">Ban cán sự</p>
@@ -560,6 +590,8 @@ export function TeacherStudentDetailPage() {
             </section>
           ) : null}
 
+          {activeTab === 'ghi-nhan' ? (
+          <>
           <section className="rounded-lg border border-blue-300 bg-blue-100 shadow-sm">
             <div className="flex flex-col gap-2 border-b border-blue-200 p-4 md:flex-row md:items-end md:justify-between">
               <div className="min-w-0">
@@ -708,7 +740,11 @@ export function TeacherStudentDetailPage() {
               />
             </div>
           </section>
+          </>
+          ) : null}
 
+          {activeTab === 'lien-lac' ? (
+          <>
           <section className="rounded-lg border border-cyan-200 bg-cyan-100 shadow-sm">
             <div className="border-b border-cyan-200 p-4">
               <p className="text-xs font-semibold uppercase text-cyan-700">SMS phụ huynh</p>
@@ -853,7 +889,10 @@ export function TeacherStudentDetailPage() {
               />
             </div>
           </section>
+          </>
+          ) : null}
 
+          {activeTab === 'thong-tin' ? (
           <form onSubmit={saveStudent} className="rounded-lg border border-violet-200 bg-violet-100 p-4 shadow-sm">
             <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0">
@@ -920,6 +959,7 @@ export function TeacherStudentDetailPage() {
               </label>
             </div>
           </form>
+          ) : null}
         </>
       ) : null}
     </section>

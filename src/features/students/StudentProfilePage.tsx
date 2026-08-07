@@ -48,7 +48,7 @@ function loginStorageKey(token: string): string {
   return `qlhs_hs_login_${token}`
 }
 
-type ProfileTab = 'records' | 'score' | 'info'
+type ProfileTab = 'noi-bat' | 'records' | 'score' | 'info'
 
 type WizardStep = 'students' | 'catalog' | 'details' | 'review'
 
@@ -59,14 +59,11 @@ const WIZARD_STEPS: Array<{ key: WizardStep; label: string }> = [
   { key: 'review', label: '4. Xác nhận' },
 ]
 
-type ProfileSectionKey = 'summary' | 'featured' | 'records' | 'score' | 'info'
-
-const PROFILE_SECTIONS: Array<{ id: ProfileSectionKey; label: string; icon: string; tab?: ProfileTab }> = [
-  { id: 'summary', label: 'Tóm tắt', icon: '🧾' },
-  { id: 'featured', label: 'Ghi nhận', icon: '⭐' },
-  { id: 'records', label: 'Lịch sử', icon: '🕘', tab: 'records' },
-  { id: 'score', label: 'Điểm tuần', icon: '📊', tab: 'score' },
-  { id: 'info', label: 'Cá nhân', icon: '👤', tab: 'info' },
+const PROFILE_TABS: Array<{ id: ProfileTab; label: string; icon: string }> = [
+  { id: 'noi-bat', label: 'Nổi bật', icon: '⭐' },
+  { id: 'records', label: 'Lịch sử', icon: '🕘' },
+  { id: 'score', label: 'Điểm tuần', icon: '📊' },
+  { id: 'info', label: 'Cá nhân', icon: '👤' },
 ]
 
 const SDT_PATTERN = /^0\d{9}$/
@@ -86,20 +83,10 @@ const MON_LABELS: Record<string, string> = {
   SHCN: 'Sinh hoạt chủ nhiệm (SHCN)',
 }
 
-const INITIAL_PROFILE_COLLAPSED: Record<ProfileSectionKey, boolean> = {
-  featured: false,
-  info: false,
-  records: false,
-  score: false,
-  summary: false,
-}
-
 export function StudentProfilePage() {
   const { token } = useParams()
   const [state, setState] = useState<ProfileState>({ status: 'login' })
-  const [activeTab, setActiveTab] = useState<ProfileTab>('records')
-  const [collapsedSections, setCollapsedSections] =
-    useState<Record<ProfileSectionKey, boolean>>(INITIAL_PROFILE_COLLAPSED)
+  const [activeTab, setActiveTab] = useState<ProfileTab>('noi-bat')
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
   const [sdt, setSdt] = useState('')
@@ -246,19 +233,11 @@ export function StudentProfilePage() {
     setMenuOpen(false)
   }
 
-  function toggleSection(section: ProfileSectionKey) {
-    setCollapsedSections((current) => ({ ...current, [section]: !current[section] }))
-  }
-
-  function openSection(section: ProfileSectionKey) {
-    const target = PROFILE_SECTIONS.find((item) => item.id === section)
-    if (target?.tab) {
-      setActiveTab(target.tab)
-    }
-    setCollapsedSections((current) => ({ ...current, [section]: false }))
+  function openTab(tab: ProfileTab) {
+    setActiveTab(tab)
     setMenuOpen(false)
     window.setTimeout(() => {
-      document.getElementById(`profile-${section}`)?.scrollIntoView({
+      document.getElementById('profile-tab-content')?.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
       })
@@ -287,18 +266,17 @@ export function StudentProfilePage() {
 
               {menuOpen ? (
                 <div className="absolute right-0 top-12 z-50 w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                  {PROFILE_SECTIONS.map((item) => (
+                  {PROFILE_TABS.map((item) => (
                     <button
                       key={item.id}
                       type="button"
-                      onClick={() => openSection(item.id)}
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
+                      onClick={() => openTab(item.id)}
+                      className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-slate-100 ${
+                        activeTab === item.id ? 'bg-blue-50 text-blue-700' : 'text-slate-700'
+                      }`}
                     >
                       <span aria-hidden="true">{item.icon}</span>
                       {item.label}
-                      {collapsedSections[item.id] ? (
-                        <span className="ml-auto text-xs text-slate-400">(gọn)</span>
-                      ) : null}
                     </button>
                   ))}
                   <div className="my-2 border-t border-slate-100" />
@@ -390,112 +368,64 @@ export function StudentProfilePage() {
 
         {state.status === 'success' && score ? (
           <>
-            <section id="profile-summary" className="scroll-mt-4 space-y-3">
-              <ProfileSectionHeader
-                collapsed={collapsedSections.summary}
-                title="Tóm tắt hồ sơ"
-                onToggle={() => toggleSection('summary')}
-              />
-              {!collapsedSections.summary ? (
-                <StudentProfileHeader
-                  recordCount={state.records.length}
-                  role={state.role}
-                  student={state.student}
+            <StudentProfileHeader
+              recordCount={state.records.length}
+              role={state.role}
+              student={state.student}
+            />
+
+            <CompanionSummary
+              attendance={state.attendance}
+              catalog={state.catalog}
+              duyet={state.duyet}
+              huyHieu={state.huyHieu}
+              maHs={state.student.ma_hs}
+              records={state.records}
+              tuanSo={state.tuanSo}
+              weekConfig={state.weekConfig}
+            />
+
+            <ProfileTabs activeTab={activeTab} onChange={openTab} />
+
+            <div id="profile-tab-content" className="scroll-mt-4 space-y-3">
+              {activeTab === 'noi-bat' ? (
+                <>
+                  {state.canSubmitProposal && token ? <LopTruongPanel token={token} role={state.role} /> : null}
+                  <FeaturedRecords catalog={state.catalog} records={state.records} />
+                </>
+              ) : null}
+
+              {activeTab === 'records' ? (
+                <RecordHistory
+                  catalog={state.catalog}
+                  records={state.records}
+                  selectedWeek={findWeek(state.weekConfig, state.tuanSo)}
+                  tuanSo={state.tuanSo}
                 />
               ) : null}
-            </section>
 
-            <section id="profile-dong-hanh" className="scroll-mt-4">
-              <CompanionSummary
-                attendance={state.attendance}
-                catalog={state.catalog}
-                duyet={state.duyet}
-                huyHieu={state.huyHieu}
-                maHs={state.student.ma_hs}
-                records={state.records}
-                tuanSo={state.tuanSo}
-                weekConfig={state.weekConfig}
-              />
-            </section>
-
-            {state.canSubmitProposal && token ? (
-              <section id="profile-lop-truong" className="scroll-mt-4">
-                <LopTruongPanel token={token} role={state.role} />
-              </section>
-            ) : null}
-
-            <section id="profile-featured" className="scroll-mt-4 space-y-3">
-              <ProfileSectionHeader
-                collapsed={collapsedSections.featured}
-                title="Ghi nhận mới nhất"
-                onToggle={() => toggleSection('featured')}
-              />
-              {!collapsedSections.featured ? (
-                <FeaturedRecords catalog={state.catalog} records={state.records} />
-              ) : null}
-            </section>
-
-            <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
-
-            {activeTab === 'records' ? (
-              <section id="profile-records" className="scroll-mt-4 space-y-3">
-                <ProfileSectionHeader
-                  collapsed={collapsedSections.records}
-                  title="Lịch sử ghi nhận"
-                  onToggle={() => toggleSection('records')}
-                />
-                {!collapsedSections.records ? (
-                  <RecordHistory
-                    catalog={state.catalog}
-                    records={state.records}
-                    selectedWeek={findWeek(state.weekConfig, state.tuanSo)}
-                    tuanSo={state.tuanSo}
-                  />
-                ) : null}
-              </section>
-            ) : null}
-
-            {activeTab === 'score' ? (
-              <section id="profile-score" className="scroll-mt-4 space-y-3">
-                <ProfileSectionHeader
-                  collapsed={collapsedSections.score}
-                  title="Điểm tuần"
-                  onToggle={() => toggleSection('score')}
-                />
-                {!collapsedSections.score ? (
-                  <>
-                <div className="rounded-lg border border-amber-200 bg-amber-100 p-4 shadow-sm">
-                  <div className="max-w-xs">
-                    <WeekSelector
-                      label="Tuần tính điểm"
-                      value={state.tuanSo}
-                      weeks={state.weekConfig}
-                      onChange={(tuanSo) =>
-                        setState((current) =>
-                          current.status === 'success' ? { ...current, tuanSo } : current,
-                        )
-                      }
-                    />
+              {activeTab === 'score' ? (
+                <>
+                  <div className="rounded-lg border border-amber-200 bg-amber-100 p-4 shadow-sm">
+                    <div className="max-w-xs">
+                      <WeekSelector
+                        label="Tuần tính điểm"
+                        value={state.tuanSo}
+                        weeks={state.weekConfig}
+                        onChange={(tuanSo) =>
+                          setState((current) =>
+                            current.status === 'success' ? { ...current, tuanSo } : current,
+                          )
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
-                <ScoreSummary score={score} />
-                  </>
-                ) : null}
-              </section>
-            ) : null}
+                  <ScoreSummary score={score} />
+                </>
+              ) : null}
 
-            {activeTab === 'info' ? (
-              <section id="profile-info" className="scroll-mt-4 space-y-3">
-                <ProfileSectionHeader
-                  collapsed={collapsedSections.info}
-                  title="Thông tin cá nhân"
-                  onToggle={() => toggleSection('info')}
-                />
-                {!collapsedSections.info ? (
-                  <ProfileCard student={state.student} role={state.role} />
-                ) : null}
-              </section>
-            ) : null}
+              {activeTab === 'info' ? <ProfileCard student={state.student} role={state.role} /> : null}
+            </div>
           </>
         ) : null}
       </section>
@@ -507,13 +437,13 @@ export function StudentProfilePage() {
           className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-300 bg-slate-100 shadow-[0_-2px_6px_rgba(0,0,0,0.08)] md:hidden"
         >
           <div className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-1 pt-1 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-            {PROFILE_SECTIONS.map((item) => {
-              const active = item.tab ? item.tab === activeTab : false
+            {PROFILE_TABS.map((item) => {
+              const active = item.id === activeTab
               return (
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => openSection(item.id)}
+                  onClick={() => openTab(item.id)}
                   className={`flex min-w-16 shrink-0 flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-center ${
                     active ? 'text-blue-700' : 'text-slate-500'
                   }`}
@@ -566,36 +496,6 @@ function StudentProfileHeader({
   )
 }
 
-function ProfileSectionHeader({
-  collapsed,
-  onToggle,
-  title,
-}: {
-  collapsed: boolean
-  onToggle: () => void
-  title: string
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-lg bg-blue-700 px-4 py-2.5 shadow-sm">
-      <h2 className="min-w-0 wrap-break-word text-base font-bold text-white">{title}</h2>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={collapsed ? 'Mở rộng' : 'Thu gọn'}
-        aria-expanded={!collapsed}
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30"
-      >
-        <span
-          aria-hidden="true"
-          className={`inline-block text-base leading-none transition-transform ${collapsed ? '' : 'rotate-180'}`}
-        >
-          ▾
-        </span>
-      </button>
-    </div>
-  )
-}
-
 function CompanionSummary({
   attendance,
   catalog,
@@ -625,53 +525,82 @@ function CompanionSummary({
   const canhBao = duyetTuanNay.filter((item) => item.loai === 'canh_bao' && item.noi_dung_da_duyet)
   const dinhHuong = duyetTuanNay.filter((item) => item.loai === 'dinh_huong' && item.noi_dung_da_duyet)
 
-  if (huyHieuKhop.length === 0 && canhBao.length === 0 && dinhHuong.length === 0) {
-    return null
-  }
+  const loiMoDau =
+    huyHieuKhop.length > 0
+      ? '🎉 Tuần này em có nhiều điểm sáng lắm, tiếp tục phát huy nhé!'
+      : canhBao.length > 0
+        ? '💪 Có vài điều cần chú ý tuần này, cùng cải thiện nhé em!'
+        : '🌱 Một tuần bình yên — cố gắng ghi thêm điểm cộng nhé!'
 
   return (
-    <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-100 p-4 shadow-sm">
-      <p className="text-xs font-semibold uppercase text-amber-700">Đồng hành tuần này</p>
-
-      {huyHieuKhop.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {huyHieuKhop.map((item) => (
-            <span
-              key={item.ma_huy_hieu}
-              className="rounded-full border border-amber-300 bg-white px-3 py-1 text-sm font-semibold text-amber-800"
-              title={item.mo_ta || undefined}
-            >
-              {item.icon} {item.ten_huy_hieu}
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      {canhBao.length > 0 ? (
+    <div className="relative overflow-hidden rounded-2xl border border-amber-300 bg-linear-to-br from-amber-100 via-orange-50 to-yellow-100 p-5 shadow-md">
+      <div className="pointer-events-none absolute -right-6 -top-6 text-8xl opacity-20" aria-hidden="true">
+        🤝
+      </div>
+      <div className="relative space-y-4">
         <div>
-          <p className="text-xs font-semibold text-slate-600">Điều cần chú ý</p>
-          <ul className="mt-1 space-y-1">
-            {canhBao.map((item) => (
-              <li key={item.id} className="rounded-md border border-amber-200 bg-white p-2 text-sm text-slate-800">
-                {item.noi_dung_da_duyet}
-              </li>
-            ))}
-          </ul>
+          <p className="text-xs font-bold uppercase tracking-wide text-amber-700">🤝 Đồng hành tuần này</p>
+          <p className="mt-1 text-base font-semibold text-slate-800">{loiMoDau}</p>
         </div>
-      ) : null}
 
-      {dinhHuong.length > 0 ? (
         <div>
-          <p className="text-xs font-semibold text-slate-600">Hướng cải thiện</p>
-          <ul className="mt-1 space-y-1">
-            {dinhHuong.map((item) => (
-              <li key={item.id} className="rounded-md border border-amber-200 bg-white p-2 text-sm text-slate-800">
-                {item.noi_dung_da_duyet}
-              </li>
-            ))}
-          </ul>
+          <p className="text-xs font-bold uppercase text-amber-700">Huy hiệu</p>
+          {huyHieuKhop.length > 0 ? (
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {huyHieuKhop.map((item) => (
+                <div
+                  key={item.ma_huy_hieu}
+                  title={item.mo_ta || undefined}
+                  className="flex flex-col items-center gap-1 rounded-xl border border-amber-300 bg-white p-3 text-center shadow-sm transition hover:scale-105 hover:shadow-md"
+                >
+                  <span className="text-3xl leading-none" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  <span className="text-xs font-bold text-amber-900">{item.ten_huy_hieu}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-slate-600">
+              Chưa có huy hiệu tuần này — cố gắng lên, tuần sau em sẽ có ngay! 🌟
+            </p>
+          )}
         </div>
-      ) : null}
+
+        {canhBao.length > 0 ? (
+          <div>
+            <p className="text-xs font-bold uppercase text-amber-700">⚠️ Điều cần chú ý</p>
+            <ul className="mt-2 space-y-2">
+              {canhBao.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-start gap-2 rounded-xl border border-orange-200 bg-white p-3 text-sm text-slate-800 shadow-sm"
+                >
+                  <span aria-hidden="true">⚠️</span>
+                  <span>{item.noi_dung_da_duyet}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {dinhHuong.length > 0 ? (
+          <div>
+            <p className="text-xs font-bold uppercase text-amber-700">💡 Hướng cải thiện</p>
+            <ul className="mt-2 space-y-2">
+              {dinhHuong.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-start gap-2 rounded-xl border border-sky-200 bg-white p-3 text-sm text-slate-800 shadow-sm"
+                >
+                  <span aria-hidden="true">💡</span>
+                  <span>{item.noi_dung_da_duyet}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -733,26 +662,21 @@ function ProfileTabs({
   activeTab: ProfileTab
   onChange: (tab: ProfileTab) => void
 }) {
-  const tabs: Array<{ id: ProfileTab; label: string }> = [
-    { id: 'records', label: 'Tất cả ghi nhận' },
-    { id: 'score', label: 'Điểm tuần' },
-    { id: 'info', label: 'Thông tin cá nhân' },
-  ]
-
   return (
-    <div className="rounded-lg border border-slate-300 bg-slate-100 p-1 shadow-sm">
-      <div className="grid grid-cols-3 gap-1">
-        {tabs.map((tab) => (
+    <div className="hidden rounded-lg border border-slate-300 bg-slate-100 p-1 shadow-sm md:block">
+      <div className="grid grid-cols-4 gap-1">
+        {PROFILE_TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => onChange(tab.id)}
-            className={`min-h-11 rounded-md px-2 py-2 text-sm font-semibold transition ${
+            className={`flex min-h-11 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-sm font-semibold transition ${
               activeTab === tab.id
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
+            <span aria-hidden="true">{tab.icon}</span>
             {tab.label}
           </button>
         ))}
