@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { dataSource } from '../../data/client'
 import type {
+  BacTinhTu,
   CauDinhHuongDongHanh,
   CauHinhTuan,
   ChiSoDongHanh,
@@ -16,9 +17,12 @@ import type {
 } from '../../data/types'
 import { apDungHuyHieu, apDungLuat, chonCauDinhHuong } from './applyRules'
 import { tinhChiSoTuan } from './computeMetrics'
+import { DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH, tinhRankTuan } from './rankTinhTu'
+import { TheNhanVatTuan } from './TheNhanVatTuan'
+import { calculateWeeklyStudentScore } from '../scoring/scoring'
 import { findWeek, selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
 
-type Tab = 'canh_bao' | 'huy_hieu' | 'cau_dinh_huong' | 'chi_so'
+type Tab = 'canh_bao' | 'huy_hieu' | 'cau_dinh_huong' | 'chi_so' | 'rank'
 
 type PageState =
   | { status: 'loading' }
@@ -34,6 +38,8 @@ type PageState =
       records: GhiNhan[]
       attendance: DongHanhDiemDanh[]
       weekConfig: CauHinhTuan[]
+      rankBac: BacTinhTu[]
+      cauHinh: Record<string, string>
     }
 
 const MUC_DO_OPTIONS: Array<{ value: MucDoCanhBao; label: string }> = [
@@ -50,6 +56,7 @@ const TABS: Array<{ key: Tab; label: string }> = [
   { key: 'huy_hieu', label: 'Huy hiệu' },
   { key: 'cau_dinh_huong', label: 'Câu định hướng' },
   { key: 'chi_so', label: 'Chỉ số' },
+  { key: 'rank', label: 'Bậc tinh tú' },
 ]
 
 export function RuleManagerPage() {
@@ -68,22 +75,28 @@ export function RuleManagerPage() {
       dataSource.getRecords(),
       dataSource.getAttendanceEntries(),
       dataSource.getWeekConfig(),
+      dataSource.getRankBacTinhTu(),
+      dataSource.getDongHanhCauHinh(),
     ])
-      .then(([chiSo, luat, huyHieu, cauDinhHuong, students, catalog, records, attendance, weekConfig]) => {
-        if (!mounted) return
-        setState({
-          status: 'success',
-          chiSo,
-          luat,
-          huyHieu,
-          cauDinhHuong,
-          students,
-          catalog,
-          records,
-          attendance,
-          weekConfig,
-        })
-      })
+      .then(
+        ([chiSo, luat, huyHieu, cauDinhHuong, students, catalog, records, attendance, weekConfig, rankBac, cauHinh]) => {
+          if (!mounted) return
+          setState({
+            status: 'success',
+            chiSo,
+            luat,
+            huyHieu,
+            cauDinhHuong,
+            students,
+            catalog,
+            records,
+            attendance,
+            weekConfig,
+            rankBac,
+            cauHinh,
+          })
+        },
+      )
       .catch((error: unknown) => {
         if (mounted) {
           setState({
@@ -138,6 +151,7 @@ export function RuleManagerPage() {
       {tab === 'huy_hieu' ? <HuyHieuTab state={state} setState={setState} /> : null}
       {tab === 'cau_dinh_huong' ? <CauDinhHuongTab state={state} setState={setState} /> : null}
       {tab === 'chi_so' ? <ChiSoTab state={state} /> : null}
+      {tab === 'rank' ? <RankTab state={state} setState={setState} /> : null}
 
       <PreviewPanel state={state} />
     </div>
@@ -871,6 +885,255 @@ function ChiSoTab({ state }: { state: SuccessState }) {
   )
 }
 
+// ===================== Tab: Bac tinh tu =====================
+
+const EMPTY_BAC: BacTinhTu = {
+  bac: 0,
+  ma: '',
+  ten: '',
+  icon: '🌟',
+  diem_toi_thieu: 0,
+  mo_ta: '',
+  dang_bat: true,
+}
+
+function RankTab({ state, setState }: { state: SuccessState; setState: SetState }) {
+  const [form, setForm] = useState<BacTinhTu>(EMPTY_BAC)
+  const [editing, setEditing] = useState<number | '__new__' | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [diemThuong, setDiemThuong] = useState(
+    state.cauHinh.diem_thuong_moi_huy_hieu || String(DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH),
+  )
+  const [savingDiemThuong, setSavingDiemThuong] = useState(false)
+
+  function startEdit(item: BacTinhTu) {
+    setEditing(item.bac)
+    setForm(item)
+    setError(null)
+  }
+
+  function startAdd() {
+    setEditing('__new__')
+    setForm(EMPTY_BAC)
+    setError(null)
+  }
+
+  function cancel() {
+    setEditing(null)
+    setForm(EMPTY_BAC)
+    setError(null)
+  }
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!form.ma.trim() || !form.ten.trim() || !form.icon.trim() || !form.bac) {
+      setError('Cần nhập đủ Bậc (số), Mã, Tên, Icon.')
+      return
+    }
+
+    setSaving(true)
+    setError(null)
+    try {
+      if (editing === '__new__') {
+        const created = await dataSource.addRankBacTinhTu(form)
+        withSuccess(setState, (current) => ({
+          ...current,
+          rankBac: [...current.rankBac, created].sort((a, b) => a.bac - b.bac),
+        }))
+      } else if (typeof editing === 'number') {
+        const updated = await dataSource.updateRankBacTinhTu(editing, form)
+        withSuccess(setState, (current) => ({
+          ...current,
+          rankBac: current.rankBac.map((item) => (item.bac === editing ? updated : item)),
+        }))
+      }
+      cancel()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không lưu được bậc.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function remove(bac: number) {
+    if (!window.confirm(`Xoá bậc ${bac}?`)) return
+    try {
+      await dataSource.deleteRankBacTinhTu(bac)
+      withSuccess(setState, (current) => ({
+        ...current,
+        rankBac: current.rankBac.filter((item) => item.bac !== bac),
+      }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không xoá được bậc.')
+    }
+  }
+
+  async function toggle(item: BacTinhTu) {
+    try {
+      const updated = await dataSource.updateRankBacTinhTu(item.bac, { dang_bat: !item.dang_bat })
+      withSuccess(setState, (current) => ({
+        ...current,
+        rankBac: current.rankBac.map((row) => (row.bac === item.bac ? updated : row)),
+      }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không đổi được trạng thái.')
+    }
+  }
+
+  async function saveDiemThuong(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSavingDiemThuong(true)
+    setError(null)
+    try {
+      await dataSource.updateDongHanhCauHinh('diem_thuong_moi_huy_hieu', diemThuong)
+      withSuccess(setState, (current) => ({
+        ...current,
+        cauHinh: { ...current.cauHinh, diem_thuong_moi_huy_hieu: diemThuong },
+      }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không lưu được điểm thưởng.')
+    } finally {
+      setSavingDiemThuong(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {error ? <p className="rounded-md border border-red-200 bg-red-100 p-2 text-sm font-semibold text-red-700">{error}</p> : null}
+
+      <form onSubmit={saveDiemThuong} className="flex flex-wrap items-end gap-2 rounded-lg border border-amber-200 bg-amber-100/40 p-3">
+        <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+          Điểm thưởng mỗi huy hiệu đạt trong tuần
+          <input
+            type="number"
+            value={diemThuong}
+            onChange={(event) => setDiemThuong(event.target.value)}
+            className="h-9 w-32 rounded-md border border-slate-300 bg-white px-2 text-sm"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={savingDiemThuong}
+          className="h-9 rounded-md bg-amber-700 px-3 text-sm font-semibold text-white hover:bg-amber-800 disabled:bg-slate-400"
+        >
+          {savingDiemThuong ? 'Đang lưu...' : 'Lưu'}
+        </button>
+      </form>
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table className="w-full min-w-170 text-sm">
+          <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
+            <tr>
+              <th className="px-3 py-2">Bậc</th>
+              <th className="px-3 py-2">Icon</th>
+              <th className="px-3 py-2">Tên</th>
+              <th className="px-3 py-2">Mã</th>
+              <th className="px-3 py-2">Điểm tối thiểu</th>
+              <th className="px-3 py-2">Bật</th>
+              <th className="px-3 py-2">Sửa</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {state.rankBac.map((item) => (
+              <tr key={item.bac} className={item.dang_bat ? '' : 'opacity-50'}>
+                <td className="px-3 py-2 font-semibold">{item.bac}</td>
+                <td className="px-3 py-2 text-lg">{item.icon}</td>
+                <td className="px-3 py-2">{item.ten}</td>
+                <td className="px-3 py-2 font-mono text-xs">{item.ma}</td>
+                <td className="px-3 py-2">{item.diem_toi_thieu}</td>
+                <td className="px-3 py-2">
+                  <input type="checkbox" checked={item.dang_bat} onChange={() => void toggle(item)} className="h-4 w-4" />
+                </td>
+                <td className="px-3 py-2">
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => startEdit(item)} className="text-xs font-semibold text-blue-700 hover:underline">
+                      Sửa
+                    </button>
+                    <button type="button" onClick={() => void remove(item.bac)} className="text-xs font-semibold text-red-700 hover:underline">
+                      Xoá
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {editing ? (
+        <form onSubmit={save} className="grid gap-2 rounded-lg border border-teal-200 bg-teal-100/40 p-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Bậc (số, càng cao càng mạnh)
+            <input
+              type="number"
+              value={form.bac || ''}
+              disabled={editing !== '__new__'}
+              onChange={(event) => setForm((current) => ({ ...current, bac: Number(event.target.value) }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm disabled:bg-slate-100"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Mã (không dấu)
+            <input
+              value={form.ma}
+              onChange={(event) => setForm((current) => ({ ...current, ma: event.target.value }))}
+              placeholder="VD: sieu_tan_tinh"
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Tên hiển thị
+            <input
+              value={form.ten}
+              onChange={(event) => setForm((current) => ({ ...current, ten: event.target.value }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Icon (emoji)
+            <input
+              value={form.icon}
+              onChange={(event) => setForm((current) => ({ ...current, icon: event.target.value }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Điểm tối thiểu để đạt bậc này
+            <input
+              type="number"
+              value={form.diem_toi_thieu}
+              onChange={(event) => setForm((current) => ({ ...current, diem_toi_thieu: Number(event.target.value) }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600 sm:col-span-2 lg:col-span-3">
+            Mô tả ngắn
+            <input
+              value={form.mo_ta || ''}
+              onChange={(event) => setForm((current) => ({ ...current, mo_ta: event.target.value }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          {error ? <p className="text-xs font-semibold text-red-700 sm:col-span-2 lg:col-span-4">{error}</p> : null}
+          <div className="flex gap-2 sm:col-span-2 lg:col-span-4">
+            <button type="submit" disabled={saving} className="h-9 rounded-md bg-teal-700 px-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:bg-slate-400">
+              {saving ? 'Đang lưu...' : 'Lưu'}
+            </button>
+            <button type="button" onClick={cancel} className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+              Huỷ
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" onClick={startAdd} className="h-9 rounded-md border border-teal-300 bg-teal-100 px-3 text-sm font-semibold text-teal-700 hover:bg-teal-100">
+          + Thêm bậc
+        </button>
+      )}
+    </div>
+  )
+}
+
 // ===================== Xem thu (preview) =====================
 
 function PreviewPanel({ state }: { state: SuccessState }) {
@@ -898,6 +1161,34 @@ function PreviewPanel({ state }: { state: SuccessState }) {
   const luatKhop = chiSo ? apDungLuat(chiSo, state.luat) : []
   const huyHieuKhop = chiSo ? apDungHuyHieu(chiSo, state.huyHieu) : []
   const cauDinhHuong = chiSo ? chonCauDinhHuong(luatKhop, state.cauDinhHuong) : null
+
+  const diemThuongMoiHuyHieu = Number(state.cauHinh.diem_thuong_moi_huy_hieu) || DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH
+  const score = student
+    ? calculateWeeklyStudentScore({ catalog: state.catalog, records: state.records, student, tuanSo })
+    : null
+  const rank = score
+    ? tinhRankTuan(score.diem_xep_loai_thi_dua, huyHieuKhop.length, state.rankBac, diemThuongMoiHuyHieu)
+    : null
+  const bacTuanTruoc = (() => {
+    if (!rank || tuanSoTruoc === null || !student) return null
+    const scoreTruoc = calculateWeeklyStudentScore({
+      catalog: state.catalog,
+      records: state.records,
+      student,
+      tuanSo: tuanSoTruoc,
+    })
+    const chiSoTruoc = tinhChiSoTuan({
+      attendance: state.attendance,
+      catalog: state.catalog,
+      maHs: student.ma_hs,
+      records: state.records,
+      tuanSo: tuanSoTruoc,
+      tuanSoTruoc: null,
+    })
+    const huyHieuTruoc = apDungHuyHieu(chiSoTruoc, state.huyHieu)
+    return tinhRankTuan(scoreTruoc.diem_xep_loai_thi_dua, huyHieuTruoc.length, state.rankBac, diemThuongMoiHuyHieu)
+      .bacHienTai
+  })()
 
   return (
     <div className="rounded-lg border border-blue-200 bg-blue-100/40 p-4">
@@ -929,13 +1220,23 @@ function PreviewPanel({ state }: { state: SuccessState }) {
         </select>
       </div>
 
-      {chiSo ? (
+      {chiSo && student && rank ? (
         <div className="mt-3 space-y-2 text-sm">
           <div className="rounded-md border border-slate-200 bg-white p-2 text-xs text-slate-600">
             Vắng KP: {chiSo.vang_khong_phep} · Vắng CP: {chiSo.vang_co_phep} · Trễ: {chiSo.di_tre} · Lỗi tuần này:{' '}
             {chiSo.so_loi_tuan_nay} · Lỗi tuần trước: {chiSo.so_loi_tuan_truoc} · Xu hướng: {chiSo.xu_huong_loi} · Nghiêm trọng:{' '}
             {chiSo.co_nghiem_trong ? 'Có' : 'Không'}
           </div>
+
+          <TheNhanVatTuan
+            bacTuanTruoc={bacTuanTruoc}
+            hoTen={`${student.ho} ${student.ten}`}
+            huyHieu={huyHieuKhop.map((item) => ({ ma: item.ma_huy_hieu, ten: item.ten_huy_hieu, icon: item.icon || undefined }))}
+            rank={rank}
+            thangBac={state.rankBac}
+            tuanLabel={`Tuần ${tuanSo}`}
+            vietTat={student.ten.slice(0, 1).toUpperCase()}
+          />
 
           <div>
             <p className="text-xs font-semibold text-slate-600">Huy hiệu tuần này ({huyHieuKhop.length})</p>

@@ -34,6 +34,8 @@ import type {
   DongHanhDuyet,
   TrangThaiDuyetDongHanh,
   LoaiDuyetDongHanh,
+  BacTinhTu,
+  RankLichSuTuan,
 } from './types'
 
 /** Lớp trung gian dữ liệu — mọi UI chỉ gọi qua interface này (tài liệu 01) */
@@ -150,4 +152,26 @@ export interface DataSource {
     noi_dung_da_duyet: string
     trang_thai: TrangThaiDuyetDongHanh
   }): Promise<DongHanhDuyet>
+
+  getRankBacTinhTu(): Promise<BacTinhTu[]>
+  addRankBacTinhTu(item: BacTinhTu): Promise<BacTinhTu>
+  updateRankBacTinhTu(bac: number, patch: Partial<BacTinhTu>): Promise<BacTinhTu>
+  deleteRankBacTinhTu(bac: number): Promise<void>
+
+  getDongHanhCauHinh(): Promise<Record<string, string>>
+  updateDongHanhCauHinh(khoa: string, giaTri: string): Promise<void>
+
+  getRankLichSuTuan(maHs?: string): Promise<RankLichSuTuan[]>
+  upsertRankLichSuTuan(input: RankLichSuTuan): Promise<RankLichSuTuan>
+  chotRankTuanCongKhai(input: {
+    token: string
+    sdt: string
+    matKhau: string
+    tuanSo: number
+    diemRenLuyen: number
+    soHuyHieu: number
+    diemThuong: number
+    diemTuan: number
+    bacDat: number
+  }): Promise<void>
 }

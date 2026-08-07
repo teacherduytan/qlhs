@@ -338,6 +338,9 @@ export interface PublicStudentProfile {
   attendance: DongHanhDiemDanh[]
   huyHieu: HuyHieuDongHanh[]
   duyet: DongHanhDuyet[]
+  rankBac: BacTinhTu[]
+  rankLichSu: RankLichSuTuan[]
+  dongHanhCauHinh: Record<string, string>
 }
 
 // ===== He thong Dong hanh (xem docs/11-dac-ta-he-thong-dong-hanh.md) =====
@@ -439,4 +442,38 @@ export interface ChiSoTuan {
 export interface LuatKhop {
   luat: LuatDongHanh
   cauHienThi: string
+}
+
+// ===== He thong Rank "Tinh tu" (xem docs/thethanghang/12-dac-ta-rank-tinh-tu.md) =====
+
+export interface BacTinhTu {
+  bac: number
+  ma: string
+  ten: string
+  icon: string
+  diem_toi_thieu: number
+  mo_ta: string | null
+  dang_bat: boolean
+}
+
+export interface RankLichSuTuan {
+  id?: number
+  ma_hs: string
+  tuan_so: number
+  diem_ren_luyen: number
+  so_huy_hieu: number
+  diem_thuong: number
+  diem_tuan: number
+  bac_dat: number
+  thoi_diem_chot?: string
+}
+
+export interface KetQuaRank {
+  diemRenLuyen: number
+  diemThuong: number
+  diemTuan: number
+  bacHienTai: BacTinhTu
+  bacKeTiep: BacTinhTu | null
+  conThieu: number
+  phanTramToiKeTiep: number
 }

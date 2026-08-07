@@ -40,6 +40,8 @@ import type {
   DongHanhDiemDanh,
   TrangThaiDuyetDongHanh,
   LoaiDuyetDongHanh,
+  BacTinhTu,
+  RankLichSuTuan,
 } from './types'
 
 type AnyRow = Record<string, unknown>
@@ -53,6 +55,9 @@ interface PublicProfileRpcRow {
   attendance: DongHanhDiemDanh[] | null
   huy_hieu: HuyHieuDongHanh[] | null
   duyet: DongHanhDuyet[] | null
+  rank_bac: BacTinhTu[] | null
+  rank_lich_su: RankLichSuTuan[] | null
+  dong_hanh_cau_hinh: Record<string, string> | null
 }
 
 const GHI_NHAN_COLUMNS = [
@@ -1201,6 +1206,111 @@ export class SupabaseDataSource implements DataSource {
     assertNoError(error, 'Khong luu duoc trang thai duyet Dong hanh tren Supabase')
     return data as DongHanhDuyet
   }
+
+  async getRankBacTinhTu(): Promise<BacTinhTu[]> {
+    const { data, error } = await getSupabaseClient().from('rank_bac_tinh_tu').select('*').order('bac')
+    assertNoError(error, 'Khong doc duoc RankBacTinhTu tu Supabase')
+    return (data || []) as BacTinhTu[]
+  }
+
+  async addRankBacTinhTu(item: BacTinhTu): Promise<BacTinhTu> {
+    const { data, error } = await getSupabaseClient()
+      .from('rank_bac_tinh_tu')
+      .insert(stripUndefined(item as unknown as AnyRow))
+      .select()
+      .single()
+    assertNoError(error, 'Khong tao duoc RankBacTinhTu tren Supabase')
+    return data as BacTinhTu
+  }
+
+  async updateRankBacTinhTu(bac: number, patch: Partial<BacTinhTu>): Promise<BacTinhTu> {
+    const { data, error } = await getSupabaseClient()
+      .from('rank_bac_tinh_tu')
+      .update(stripUndefined(patch as AnyRow))
+      .eq('bac', bac)
+      .select()
+      .single()
+    assertNoError(error, 'Khong cap nhat duoc RankBacTinhTu tren Supabase')
+    return data as BacTinhTu
+  }
+
+  async deleteRankBacTinhTu(bac: number): Promise<void> {
+    const { error } = await getSupabaseClient().from('rank_bac_tinh_tu').delete().eq('bac', bac)
+    assertNoError(error, 'Khong xoa duoc RankBacTinhTu tren Supabase')
+  }
+
+  async getDongHanhCauHinh(): Promise<Record<string, string>> {
+    const { data, error } = await getSupabaseClient().from('dong_hanh_cau_hinh').select('khoa, gia_tri')
+    assertNoError(error, 'Khong doc duoc cau hinh Dong hanh tu Supabase')
+    const result: Record<string, string> = {}
+    for (const row of (data || []) as Array<{ khoa: string; gia_tri: string }>) {
+      result[row.khoa] = row.gia_tri
+    }
+    return result
+  }
+
+  async updateDongHanhCauHinh(khoa: string, giaTri: string): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('dong_hanh_cau_hinh')
+      .upsert({ khoa, gia_tri: giaTri }, { onConflict: 'khoa' })
+    assertNoError(error, 'Khong luu duoc cau hinh Dong hanh tren Supabase')
+  }
+
+  async getRankLichSuTuan(maHs?: string): Promise<RankLichSuTuan[]> {
+    let query = getSupabaseClient().from('rank_lich_su_tuan').select('*').order('tuan_so', { ascending: false })
+    if (maHs) query = query.eq('ma_hs', maHs)
+
+    const { data, error } = await query
+    assertNoError(error, 'Khong doc duoc RankLichSuTuan tu Supabase')
+    return (data || []) as RankLichSuTuan[]
+  }
+
+  async upsertRankLichSuTuan(input: RankLichSuTuan): Promise<RankLichSuTuan> {
+    const { data, error } = await getSupabaseClient()
+      .from('rank_lich_su_tuan')
+      .upsert(
+        {
+          ma_hs: input.ma_hs,
+          tuan_so: input.tuan_so,
+          diem_ren_luyen: input.diem_ren_luyen,
+          so_huy_hieu: input.so_huy_hieu,
+          diem_thuong: input.diem_thuong,
+          diem_tuan: input.diem_tuan,
+          bac_dat: input.bac_dat,
+          thoi_diem_chot: new Date().toISOString(),
+        },
+        { onConflict: 'ma_hs,tuan_so' },
+      )
+      .select()
+      .single()
+    assertNoError(error, 'Khong luu duoc RankLichSuTuan tren Supabase')
+    return data as RankLichSuTuan
+  }
+
+  async chotRankTuanCongKhai(input: {
+    token: string
+    sdt: string
+    matKhau: string
+    tuanSo: number
+    diemRenLuyen: number
+    soHuyHieu: number
+    diemThuong: number
+    diemTuan: number
+    bacDat: number
+  }): Promise<void> {
+    const { error } = await getSupabaseClient().rpc('chot_rank_tuan_cong_khai', {
+      p_token: input.token,
+      p_sdt: input.sdt,
+      p_mat_khau: input.matKhau,
+      p_tuan_so: input.tuanSo,
+      p_diem_ren_luyen: input.diemRenLuyen,
+      p_so_huy_hieu: input.soHuyHieu,
+      p_diem_thuong: input.diemThuong,
+      p_diem_tuan: input.diemTuan,
+      p_bac_dat: input.bacDat,
+    })
+    assertNoError(error, 'Khong chot duoc rank tuan tren Supabase')
+  }
 }
 
 function tableNameForImport(loai: LoaiDuLieuImport): string {
@@ -1230,6 +1340,9 @@ function mapPublicProfileRpcRow(data: unknown): PublicStudentProfile | null {
     attendance: row.attendance || [],
     huyHieu: row.huy_hieu || [],
     duyet: row.duyet || [],
+    rankBac: row.rank_bac || [],
+    rankLichSu: row.rank_lich_su || [],
+    dongHanhCauHinh: row.dong_hanh_cau_hinh || {},
   }
 }
 

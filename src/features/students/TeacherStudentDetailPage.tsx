@@ -1,8 +1,9 @@
-import { type Dispatch, type FormEvent, type SetStateAction, useEffect, useMemo, useState } from 'react'
+import { type Dispatch, type FormEvent, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import { CopyIcon } from '../../components/CopyIcon'
 import type {
+  BacTinhTu,
   BanCanSu,
   BuoiDiemDanh,
   CauDinhHuongDongHanh,
@@ -21,6 +22,7 @@ import type {
   NhomDiem,
   NoiDungTinNhan,
   PhuHuynh,
+  RankLichSuTuan,
 } from '../../data/types'
 import { formatTietLabel, getRecordPolarity } from '../records/recordInsights'
 import { Pagination, usePagination } from '../../components/Pagination'
@@ -28,6 +30,9 @@ import { PhoneActionMenu, buildSmsHref } from '../../components/PhoneActionMenu'
 import { findCurrentMessage, formatMessageTimestamp } from './messageContents'
 import { apDungHuyHieu, apDungLuat, chonCauDinhHuong } from '../companion/applyRules'
 import { tinhChiSoTuan } from '../companion/computeMetrics'
+import { DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH, tinhRankTuan } from '../companion/rankTinhTu'
+import { TheNhanVatTuan } from '../companion/TheNhanVatTuan'
+import { calculateWeeklyStudentScore } from '../scoring/scoring'
 import { findWeek, selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
 
 const CONTACT_LABELS: Record<HinhThucLienLacPhuHuynh, string> = {
@@ -82,6 +87,9 @@ type DetailState =
       huyHieu: HuyHieuDongHanh[]
       cauDinhHuong: CauDinhHuongDongHanh[]
       duyet: DongHanhDuyet[]
+      rankBac: BacTinhTu[]
+      rankLichSu: RankLichSuTuan[]
+      dongHanhCauHinh: Record<string, string>
     }
 
 type StudentForm = {
@@ -156,6 +164,9 @@ export function TeacherStudentDetailPage() {
       dataSource.getDongHanhHuyHieu(),
       dataSource.getDongHanhCauDinhHuong(),
       dataSource.getDongHanhDuyet(maHs),
+      dataSource.getRankBacTinhTu(),
+      dataSource.getRankLichSuTuan(maHs),
+      dataSource.getDongHanhCauHinh(),
     ])
       .then(
         ([
@@ -173,6 +184,9 @@ export function TeacherStudentDetailPage() {
           huyHieu,
           cauDinhHuong,
           duyet,
+          rankBac,
+          rankLichSu,
+          dongHanhCauHinh,
         ]) => {
           if (!active) return
           const student = students.find((item) => item.ma_hs === maHs)
@@ -196,6 +210,9 @@ export function TeacherStudentDetailPage() {
             huyHieu,
             cauDinhHuong,
             duyet,
+            rankBac,
+            rankLichSu,
+            dongHanhCauHinh,
           })
           setForm(formFromStudent(student))
           setRoleForm(roleFormFromBanCanSu(maHs, banCanSu))
@@ -997,6 +1014,49 @@ function CompanionSection({
   const luatKhop = apDungLuat(chiSo, state.luat)
   const cauGoiY = chonCauDinhHuong(luatKhop, state.cauDinhHuong)
 
+  const score = calculateWeeklyStudentScore({
+    catalog: state.catalog,
+    records: state.records,
+    student: state.student,
+    tuanSo,
+  })
+  const diemThuongMoiHuyHieu =
+    Number(state.dongHanhCauHinh.diem_thuong_moi_huy_hieu) || DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH
+  const rank = tinhRankTuan(score.diem_xep_loai_thi_dua, huyHieuKhop.length, state.rankBac, diemThuongMoiHuyHieu)
+  const bacTuanTruocEntry =
+    tuanSoTruoc !== null ? state.rankLichSu.find((item) => item.tuan_so === tuanSoTruoc) : undefined
+  const bacTuanTruoc = bacTuanTruocEntry ? state.rankBac.find((b) => b.bac === bacTuanTruocEntry.bac_dat) || null : null
+
+  const chotKeyRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (state.rankBac.length === 0) return
+    const chotKey = `${tuanSo}:${rank.diemTuan}:${rank.bacHienTai.bac}`
+    if (chotKeyRef.current === chotKey) return
+    chotKeyRef.current = chotKey
+
+    dataSource
+      .upsertRankLichSuTuan({
+        ma_hs: state.student.ma_hs,
+        tuan_so: tuanSo,
+        diem_ren_luyen: rank.diemRenLuyen,
+        so_huy_hieu: huyHieuKhop.length,
+        diem_thuong: rank.diemThuong,
+        diem_tuan: rank.diemTuan,
+        bac_dat: rank.bacHienTai.bac,
+      })
+      .then((saved) => {
+        setState((current) =>
+          current.status === 'success'
+            ? { ...current, rankLichSu: [saved, ...current.rankLichSu.filter((item) => item.tuan_so !== tuanSo)] }
+            : current,
+        )
+      })
+      .catch(() => {
+        // Khong chan hien thi neu chot loi - the van hien dung ket qua vua tinh.
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tuanSo, rank.diemTuan, rank.bacHienTai.bac, state.rankBac.length])
+
   const duyetTuanNay = state.duyet.filter((item) => item.tuan_so === tuanSo)
   const duyetTheoMa = new Map(duyetTuanNay.map((item) => [`${item.loai}:${item.ma_luat}`, item]))
 
@@ -1061,6 +1121,18 @@ function CompanionSection({
       <div className="space-y-3 bg-white p-4">
         {error ? (
           <p className="rounded-md border border-red-200 bg-red-100 p-2 text-sm font-semibold text-red-700">{error}</p>
+        ) : null}
+
+        {state.rankBac.length > 0 ? (
+          <TheNhanVatTuan
+            bacTuanTruoc={bacTuanTruoc}
+            hoTen={`${state.student.ho} ${state.student.ten}`}
+            huyHieu={huyHieuKhop.map((item) => ({ ma: item.ma_huy_hieu, ten: item.ten_huy_hieu, icon: item.icon || undefined }))}
+            rank={rank}
+            thangBac={state.rankBac}
+            tuanLabel={`Tuần ${tuanSo}`}
+            vietTat={state.student.ten.slice(0, 1).toUpperCase()}
+          />
         ) : null}
 
         <div>

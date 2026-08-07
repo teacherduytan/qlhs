@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type {
+  BacTinhTu,
   BanCanSu,
   CauHinhTuan,
   DanhMucDiem,
@@ -13,9 +14,12 @@ import type {
   HuyHieuDongHanh,
   LopTruongData,
   NhomDiem,
+  RankLichSuTuan,
 } from '../../data/types'
 import { apDungHuyHieu } from '../companion/applyRules'
 import { tinhChiSoTuan } from '../companion/computeMetrics'
+import { DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH, tinhRankTuan } from '../companion/rankTinhTu'
+import { TheNhanVatTuan } from '../companion/TheNhanVatTuan'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
 import { formatTietLabel, getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
@@ -42,6 +46,9 @@ type ProfileState =
       attendance: DongHanhDiemDanh[]
       huyHieu: HuyHieuDongHanh[]
       duyet: DongHanhDuyet[]
+      rankBac: BacTinhTu[]
+      rankLichSu: RankLichSuTuan[]
+      dongHanhCauHinh: Record<string, string>
     }
 
 export function loginStorageKey(token: string): string {
@@ -194,6 +201,9 @@ export function StudentProfilePage() {
           attendance: profile.attendance,
           huyHieu: profile.huyHieu,
           duyet: profile.duyet,
+          rankBac: profile.rankBac,
+          rankLichSu: profile.rankLichSu,
+          dongHanhCauHinh: profile.dongHanhCauHinh,
         })
       })
       .catch((error: unknown) => {
@@ -394,6 +404,35 @@ export function StudentProfilePage() {
 
         {state.status === 'success' && score ? (
           <>
+            <RankTuanSection
+              attendance={state.attendance}
+              catalog={state.catalog}
+              dongHanhCauHinh={state.dongHanhCauHinh}
+              huyHieu={state.huyHieu}
+              matKhau={matKhau}
+              rankBac={state.rankBac}
+              rankLichSu={state.rankLichSu}
+              records={state.records}
+              sdt={sdt}
+              student={state.student}
+              token={token || ''}
+              tuanSo={state.tuanSo}
+              weekConfig={state.weekConfig}
+              onChot={(entry) =>
+                setState((current) =>
+                  current.status === 'success'
+                    ? {
+                        ...current,
+                        rankLichSu: [
+                          entry,
+                          ...current.rankLichSu.filter((item) => item.tuan_so !== entry.tuan_so),
+                        ],
+                      }
+                    : current,
+                )
+              }
+            />
+
             <StudentProfileHeader
               recordCount={state.records.length}
               role={state.role}
@@ -556,6 +595,113 @@ function StudentProfileHeader({
         </div>
       </div>
     </div>
+  )
+}
+
+// The nhan vat phong cach game (docs/thethanghang/12-dac-ta-rank-tinh-tu.md),
+// dat tren cung trang ho so - day la thu hoc sinh muon thay dau tien. Tu tinh
+// bac + "chot" (upsert) ket qua qua RPC chot_rank_tuan_cong_khai moi khi tuan
+// dang xem thay doi, de rank_lich_su_tuan tu day dan theo thuc te su dung
+// (khong sinh san hang loat, dung theo dung "Cach ghi" o muc 2b dac ta).
+function RankTuanSection({
+  attendance,
+  catalog,
+  dongHanhCauHinh,
+  huyHieu,
+  matKhau,
+  onChot,
+  rankBac,
+  rankLichSu,
+  records,
+  sdt,
+  student,
+  token,
+  tuanSo,
+  weekConfig,
+}: {
+  attendance: DongHanhDiemDanh[]
+  catalog: DanhMucDiem[]
+  dongHanhCauHinh: Record<string, string>
+  huyHieu: HuyHieuDongHanh[]
+  matKhau: string
+  onChot: (entry: RankLichSuTuan) => void
+  rankBac: BacTinhTu[]
+  rankLichSu: RankLichSuTuan[]
+  records: GhiNhan[]
+  sdt: string
+  student: HocSinh
+  token: string
+  tuanSo: number
+  weekConfig: CauHinhTuan[]
+}) {
+  const chotKeyRef = useRef<string | null>(null)
+  const weeks = sortWeeks(weekConfig)
+  const weekIndex = weeks.findIndex((week) => week.tuan_so === tuanSo)
+  const tuanSoTruoc = weekIndex > 0 ? weeks[weekIndex - 1].tuan_so : null
+
+  const score = useMemo(
+    () => calculateWeeklyStudentScore({ catalog, records, student, tuanSo }),
+    [catalog, records, student, tuanSo],
+  )
+  const chiSo = useMemo(
+    () => tinhChiSoTuan({ attendance, catalog, maHs: student.ma_hs, records, tuanSo, tuanSoTruoc: null }),
+    [attendance, catalog, records, student.ma_hs, tuanSo],
+  )
+  const huyHieuKhop = apDungHuyHieu(chiSo, huyHieu)
+  const diemThuongMoiHuyHieu = Number(dongHanhCauHinh.diem_thuong_moi_huy_hieu) || DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH
+  const rank = tinhRankTuan(score.diem_xep_loai_thi_dua, huyHieuKhop.length, rankBac, diemThuongMoiHuyHieu)
+
+  const bacTuanTruocEntry = tuanSoTruoc !== null ? rankLichSu.find((item) => item.tuan_so === tuanSoTruoc) : undefined
+  const bacTuanTruoc = bacTuanTruocEntry ? rankBac.find((b) => b.bac === bacTuanTruocEntry.bac_dat) || null : null
+
+  useEffect(() => {
+    if (!token || !sdt || !matKhau) return
+    const chotKey = `${tuanSo}:${rank.diemTuan}:${rank.bacHienTai.bac}`
+    if (chotKeyRef.current === chotKey) return
+    chotKeyRef.current = chotKey
+
+    dataSource
+      .chotRankTuanCongKhai({
+        token,
+        sdt,
+        matKhau,
+        tuanSo,
+        diemRenLuyen: rank.diemRenLuyen,
+        soHuyHieu: huyHieuKhop.length,
+        diemThuong: rank.diemThuong,
+        diemTuan: rank.diemTuan,
+        bacDat: rank.bacHienTai.bac,
+      })
+      .then(() => {
+        onChot({
+          ma_hs: student.ma_hs,
+          tuan_so: tuanSo,
+          diem_ren_luyen: rank.diemRenLuyen,
+          so_huy_hieu: huyHieuKhop.length,
+          diem_thuong: rank.diemThuong,
+          diem_tuan: rank.diemTuan,
+          bac_dat: rank.bacHienTai.bac,
+        })
+      })
+      .catch(() => {
+        // Khong chan hien thi neu chot loi (vd mat mang) - the van hien dung
+        // ket qua vua tinh, chi khong luu duoc lich su lan nay.
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, sdt, matKhau, tuanSo, rank.diemTuan, rank.bacHienTai.bac])
+
+  if (rankBac.length === 0) return null
+
+  return (
+    <TheNhanVatTuan
+      bacTuanTruoc={bacTuanTruoc}
+      hoTen={`${student.ho} ${student.ten}`}
+      huyHieu={huyHieuKhop.map((item) => ({ ma: item.ma_huy_hieu, ten: item.ten_huy_hieu, icon: item.icon || undefined }))}
+      rank={rank}
+      thangBac={rankBac}
+      tuanLabel={weeks[weekIndex] ? `Tuần ${tuanSo}` : `Tuần ${tuanSo}`}
+      vietTat={student.ten.slice(0, 1).toUpperCase()}
+    />
   )
 }
 

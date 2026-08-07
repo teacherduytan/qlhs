@@ -257,3 +257,19 @@ Trong lúc triển khai thực tế, nếu AI trong IDE phát hiện điểm nà
 - Đề xuất của AI: nếu giáo viên cần sửa `ten_hien_thi`/`mo_ta` (không phải thêm chỉ số tính toán mới — việc đó bắt buộc phải sửa code), có thể bổ sung form sửa đơn giản ở lần sau; hiện chưa làm vì đặc tả không yêu cầu rõ.
 - Trạng thái: chờ kiến trúc sư rà (không chặn, chỉ là phạm vi tối giản).
 
+### [KN-07] tinhRankTuan() them 2 tham so tuy chon thay vi giu dung 2 tham so nhu dac ta 12 yeu cau
+- Thuộc mục: liên quan `docs/thethanghang/12-dac-ta-rank-tinh-tu.md` mục 3 ("Hàm `tinhRankTuan()` giữ nguyên chữ ký")
+- Loại: [quyết định có đánh đổi — đã tự chọn, cần kiến trúc sư xác nhận]
+- Hiện trạng đặc tả nói: sửa `rankTinhTu.ts` để đọc `THANG_TINH_TU`/`DIEM_THUONG_MOI_HUY_HIEU` từ CSDL thay vì hằng số cứng, nhưng "Hàm `tinhRankTuan()` giữ nguyên chữ ký" — tức chỉ nhận `(diemRenLuyen, soHuyHieu)`.
+- Thực tế gặp phải: nếu hàm chỉ nhận đúng 2 tham số mà vẫn phải đọc "từ CSDL", cách duy nhất là dùng biến module-level có thể gán lại (mutable global state) — dễ gây lỗi ẩn (một nơi quên gọi cập nhật biến toàn cục trước khi tính, hoặc 2 nơi tính đồng thời dùng nhầm giá trị cũ/mới), khó test, không tường minh.
+- Đề xuất của AI: giữ 2 tham số đầu `(diemRenLuyen, soHuyHieu)` như đặc tả, nhưng thêm 2 tham số cuối **tuỳ chọn** `thangBac`/`diemThuongMoiHuyHieu` (có giá trị mặc định = hằng số fallback `THANG_TINH_TU_MAC_DINH`/`DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH`) — nơi gọi (trang cá nhân, `RuleManagerPage`, trang giáo viên) tự truyền dữ liệu đã tải từ CSDL vào, hàm vẫn thuần (pure function), dễ test, không phụ thuộc biến toàn cục. Nếu không truyền, hàm tự dùng fallback y hệt hành vi đặc tả mô tả cho "offline/chưa tải xong".
+- Trạng thái: chờ kiến trúc sư rà.
+
+### [KN-08] Chon huong tach quyen ghi rank_lich_su_tuan qua RPC rieng (dung theo goi y du phong cua dac ta 12)
+- Thuộc mục: liên quan `docs/thethanghang/12-dac-ta-rank-tinh-tu.md` mục 2b ("Cân nhắc kỹ thuật cho IDE AI")
+- Loại: [quyết định có đánh đổi — đã chọn đúng theo phương án dự phòng đặc tả gợi ý, ghi lại để thống nhất theo đúng yêu cầu của đặc tả]
+- Hiện trạng đặc tả nói: nếu việc "upsert-khi-xem" gây khó vì bản công khai (`anon`, học sinh) không có quyền ghi trực tiếp, thì tách — bản công khai chỉ ĐỌC `rank_lich_su_tuan`, còn ghi/chốt do giáo viên hoặc 1 RPC `security definer` đảm nhiệm.
+- Thực tế gặp phải: đúng như đặc tả lường trước — bảng `rank_lich_su_tuan` chỉ có policy `authenticated can manage`, học sinh xem qua `anon` không có quyền ghi trực tiếp.
+- Đề xuất của AI (đã áp dụng, không phải chỉ đề xuất): thêm RPC `chot_rank_tuan_cong_khai(p_token, p_sdt, p_mat_khau, p_tuan_so, ...)` (SECURITY DEFINER) — tự xác thực lại token+sdt+mật khẩu giống hệt `lay_ho_so_cong_khai` (không tin tưởng dữ liệu client gửi lên) rồi mới upsert. Trang cá nhân công khai tự tính rank ở client (dùng dữ liệu điểm/huy hiệu đã có sẵn trong response `lay_ho_so_cong_khai`) rồi gọi RPC này để "chốt" mỗi khi xem 1 tuần mới — không đọc lại `rank_lich_su_tuan` để tính tuần hiện tại, chỉ đọc để tra "tuần trước". Phía giáo viên (`TeacherStudentDetailPage.tsx`) ghi trực tiếp qua `dataSource.upsertRankLichSuTuan()` (dùng quyền `authenticated`, không qua RPC) vì đã đăng nhập thật.
+- Trạng thái: chờ kiến trúc sư rà — đặc biệt xác nhận việc trang công khai tự tính điểm/huy hiệu ở client rồi mới gửi lên "chốt" (thay vì để CSDL tự tính lại) có chấp nhận được không, hay cần RPC tính lại hoàn toàn phía server để tránh học sinh can thiệp giá trị gửi lên (rủi ro: học sinh sửa code JS trình duyệt gửi sai điểm — hậu quả chỉ là tự ghi sai lịch sử của chính mình, không ảnh hưởng người khác và không phải điểm chính thức dùng nơi khác, nhưng cần giáo viên xác nhận có chấp nhận rủi ro này không).
+
