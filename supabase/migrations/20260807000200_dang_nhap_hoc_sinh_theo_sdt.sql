@@ -1,3 +1,8 @@
+-- ============================================================================
+-- QLHS 11C5 - He thong quan ly hoc sinh
+-- (c) Nguyen Duy Tan - Giao vien Tin hoc, GVCN 11C5
+-- ============================================================================
+
 -- Cho phep hoc sinh dang nhap bang SDT+mat khau ma KHONG can biet truoc token
 -- rieng cua minh trong URL. Ly do: khi hoc sinh "Them vao man hinh chinh" tren
 -- dien thoai, PWA luon mo dung start_url khai bao trong manifest (vite.config.ts:

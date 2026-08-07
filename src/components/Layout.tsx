@@ -520,112 +520,148 @@ function UnifiedLoginPage({
 
   return (
     <TeacherAuthShell>
-      <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <div>
-          <p className="text-xs font-semibold uppercase text-blue-600">QLHS 11C5</p>
-          <h1 className="mt-1 text-xl font-bold text-slate-900">Đăng nhập</h1>
+      <div className="relative w-full max-w-sm">
+        <div className="qlhs-glow relative overflow-hidden rounded-2xl border border-white/30 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
+          <div className="pointer-events-none absolute -right-8 -top-10 text-9xl opacity-10" aria-hidden="true">
+            🎓
+          </div>
+
+          <div className="relative text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/15 text-4xl shadow-inner backdrop-blur">
+              <span className="inline-block animate-bounce">🎓</span>
+            </div>
+            <p className="mt-3 text-xs font-bold uppercase tracking-widest text-white/70">QLHS 11C5</p>
+            <h1 className="mt-1 bg-linear-to-r from-cyan-300 via-fuchsia-300 to-amber-300 bg-clip-text text-2xl font-extrabold text-transparent drop-shadow-sm">
+              Chào mừng trở lại!
+            </h1>
+          </div>
+
+          <div className="relative mt-5 grid grid-cols-2 gap-1 rounded-md bg-white/10 p-1 backdrop-blur">
+            <button
+              type="button"
+              onClick={() => switchMode('teacher')}
+              className={`h-10 rounded-md text-sm font-semibold transition ${
+                mode === 'teacher'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              👩‍🏫 Giáo viên
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode('student')}
+              className={`h-10 rounded-md text-sm font-semibold transition ${
+                mode === 'student'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              🎓 Học sinh
+            </button>
+          </div>
+
+          {mode === 'teacher' ? (
+            <form key="teacher" onSubmit={handleTeacherSubmit} className="relative mt-4">
+              <label className="flex flex-col gap-1 text-sm font-medium text-white/90">
+                Email
+                <input
+                  autoComplete="username"
+                  autoFocus
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="h-11 rounded-md border border-white/30 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
+                />
+              </label>
+
+              <label className="mt-3 flex flex-col gap-1 text-sm font-medium text-white/90">
+                Mật khẩu
+                <input
+                  autoComplete="current-password"
+                  required
+                  type="password"
+                  value={teacherPassword}
+                  onChange={(event) => setTeacherPassword(event.target.value)}
+                  className="h-11 rounded-md border border-white/30 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
+                />
+              </label>
+
+              {error ? (
+                <p className="mt-3 rounded-md bg-red-500/20 px-3 py-2 text-sm font-semibold text-red-100">{error}</p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={submitting || !email.trim() || !teacherPassword.trim()}
+                className="mt-5 h-11 w-full rounded-md bg-linear-to-r from-cyan-500 to-blue-600 px-4 text-sm font-bold text-white shadow-lg transition hover:brightness-110 hover:shadow-cyan-500/50 disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 disabled:brightness-100"
+              >
+                {submitting ? 'Đang đăng nhập...' : 'Đăng nhập →'}
+              </button>
+            </form>
+          ) : (
+            <form key="student" onSubmit={handleStudentSubmit} className="relative mt-4">
+              <label className="flex flex-col gap-1 text-sm font-medium text-white/90">
+                Số điện thoại
+                <input
+                  autoFocus
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={sdt}
+                  onChange={(event) => setSdt(event.target.value.replace(/\D/g, ''))}
+                  className="h-11 rounded-md border border-white/30 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-200"
+                />
+              </label>
+
+              <label className="mt-3 flex flex-col gap-1 text-sm font-medium text-white/90">
+                Mật khẩu
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={3}
+                  value={studentPassword}
+                  onChange={(event) => setStudentPassword(event.target.value.replace(/\D/g, ''))}
+                  className="h-11 rounded-md border border-white/30 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-200"
+                />
+              </label>
+
+              {error ? (
+                <p className="mt-3 rounded-md bg-red-500/20 px-3 py-2 text-sm font-semibold text-red-100">{error}</p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={submitting || !sdt.trim() || !studentPassword.trim()}
+                className="mt-5 h-11 w-full rounded-md bg-linear-to-r from-fuchsia-500 to-amber-400 px-4 text-sm font-bold text-white shadow-lg transition hover:brightness-110 hover:shadow-fuchsia-500/50 disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 disabled:brightness-100"
+              >
+                {submitting ? 'Đang đăng nhập...' : 'Vào lớp thôi! 🚀'}
+              </button>
+            </form>
+          )}
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-md bg-slate-100 p-1">
-          <button
-            type="button"
-            onClick={() => switchMode('teacher')}
-            className={`h-10 rounded-md text-sm font-semibold transition ${
-              mode === 'teacher' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            👩‍🏫 Giáo viên
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode('student')}
-            className={`h-10 rounded-md text-sm font-semibold transition ${
-              mode === 'student' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            🎓 Học sinh
-          </button>
-        </div>
-
-        {mode === 'teacher' ? (
-          <form key="teacher" onSubmit={handleTeacherSubmit} className="mt-4">
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-              Email
-              <input
-                autoComplete="username"
-                autoFocus
-                required
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-            </label>
-
-            <label className="mt-3 flex flex-col gap-1 text-sm font-medium text-slate-700">
-              Mật khẩu
-              <input
-                autoComplete="current-password"
-                required
-                type="password"
-                value={teacherPassword}
-                onChange={(event) => setTeacherPassword(event.target.value)}
-                className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-            </label>
-
-            {error ? <p className="mt-3 text-sm font-semibold text-red-700">{error}</p> : null}
-
-            <button
-              type="submit"
-              disabled={submitting || !email.trim() || !teacherPassword.trim()}
-              className="mt-5 h-11 w-full rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-            >
-              {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
-            </button>
-          </form>
-        ) : (
-          <form key="student" onSubmit={handleStudentSubmit} className="mt-4">
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-              Số điện thoại
-              <input
-                autoFocus
-                type="tel"
-                inputMode="numeric"
-                maxLength={10}
-                value={sdt}
-                onChange={(event) => setSdt(event.target.value.replace(/\D/g, ''))}
-                className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-            </label>
-
-            <label className="mt-3 flex flex-col gap-1 text-sm font-medium text-slate-700">
-              Mật khẩu
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={3}
-                value={studentPassword}
-                onChange={(event) => setStudentPassword(event.target.value.replace(/\D/g, ''))}
-                className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-            </label>
-
-            {error ? <p className="mt-3 text-sm font-semibold text-red-700">{error}</p> : null}
-
-            <button
-              type="submit"
-              disabled={submitting || !sdt.trim() || !studentPassword.trim()}
-              className="mt-5 h-11 w-full rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-            >
-              {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
-            </button>
-          </form>
-        )}
+        <p className="relative mt-4 text-center text-xs font-medium text-white/60">
+          © 2026 Nguyễn Duy Tân — Giáo viên Tin học
+        </p>
       </div>
     </TeacherAuthShell>
   )
 }
+
+const LOGIN_SPARKLES: Array<{ emoji: string; left: string; delay: string; duration: string; size: string }> = [
+  { emoji: '✨', left: '4%', delay: '0s', duration: '9s', size: 'text-xl' },
+  { emoji: '🌟', left: '14%', delay: '2.5s', duration: '11s', size: 'text-2xl' },
+  { emoji: '💫', left: '24%', delay: '1s', duration: '8s', size: 'text-lg' },
+  { emoji: '⭐', left: '36%', delay: '4s', duration: '10s', size: 'text-xl' },
+  { emoji: '✨', left: '48%', delay: '0.5s', duration: '12s', size: 'text-lg' },
+  { emoji: '🎓', left: '58%', delay: '3s', duration: '9s', size: 'text-2xl' },
+  { emoji: '💫', left: '68%', delay: '5.5s', duration: '10s', size: 'text-lg' },
+  { emoji: '🌟', left: '78%', delay: '1.8s', duration: '8.5s', size: 'text-xl' },
+  { emoji: '✨', left: '88%', delay: '3.8s', duration: '11s', size: 'text-lg' },
+  { emoji: '⭐', left: '94%', delay: '0.8s', duration: '9.5s', size: 'text-xl' },
+]
 
 function TeacherAuthShell({
   children,
@@ -635,9 +671,21 @@ function TeacherAuthShell({
   message?: string
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-200 px-4 py-8">
+    <main className="qlhs-login-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8">
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        {LOGIN_SPARKLES.map((sparkle, index) => (
+          <span
+            key={index}
+            className={`qlhs-sparkle ${sparkle.size}`}
+            style={{ left: sparkle.left, animationDelay: sparkle.delay, animationDuration: sparkle.duration }}
+          >
+            {sparkle.emoji}
+          </span>
+        ))}
+      </div>
+
       {children || (
-        <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-medium text-slate-600 shadow-sm">
+        <div className="relative rounded-lg border border-slate-200 bg-white p-4 text-sm font-medium text-slate-600 shadow-sm">
           {message}
         </div>
       )}

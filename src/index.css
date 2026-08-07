@@ -27,3 +27,70 @@ select,
 textarea {
   font-size: 16px;
 }
+
+/* Hieu ung cho man hinh dang nhap (Layout.tsx UnifiedLoginPage) - nen gradient
+   chuyen dong lien tuc + cac hat sparkle bay len nhe nhang, dung chung 1 lan
+   cho toan app nen dat o day thay vi lap lai trong component. */
+@keyframes qlhs-gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes qlhs-float-up {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-110vh) rotate(20deg);
+    opacity: 0;
+  }
+}
+
+@keyframes qlhs-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 20px 2px rgba(255, 255, 255, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 36px 8px rgba(255, 255, 255, 0.6);
+  }
+}
+
+.qlhs-login-bg {
+  background: linear-gradient(-45deg, #4c1d95, #1d4ed8, #db2777, #4c1d95);
+  background-size: 400% 400%;
+  animation: qlhs-gradient-shift 12s ease infinite;
+}
+
+.qlhs-sparkle {
+  position: absolute;
+  bottom: -10%;
+  animation-name: qlhs-float-up;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+.qlhs-glow {
+  animation: qlhs-glow-pulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qlhs-login-bg,
+  .qlhs-sparkle,
+  .qlhs-glow {
+    animation: none !important;
+  }
+}
