@@ -430,15 +430,17 @@ export function Layout() {
   )
 }
 
+type LoginMode = 'teacher' | 'student'
+
 // Man hinh dang nhap goc (/) dung chung cho ca giao vien va hoc sinh, vi PWA
 // "Them vao man hinh chinh" luon mo dung start_url khai bao trong manifest
 // (khong the mo thang /hs/:token), nen day phai la noi hoc sinh dang nhap
 // duoc tu icon ngoai man hinh chinh thay vi bi ket o form giao vien nhu truoc.
-// Tu dong nhan dien: gia tri giong so dien thoai (0 + 9 chu so) -> dang nhap
-// hoc sinh (tra ve token qua RPC lay_ho_so_cong_khai_theo_sdt, luu session
-// dung dinh dang loginStorageKey() roi dieu huong sang /hs/:token de
-// StudentProfilePage tu nap tiep khong can dang nhap lai); con lai -> dang
-// nhap giao vien nhu cu.
+// Co 2 nut chuyen doi ro rang "Giao vien"/"Hoc sinh" (khong tu doan dinh dang
+// o 1 o nhap chung) - hoc sinh dang nhap bang SDT tra ve token qua RPC
+// lay_ho_so_cong_khai_theo_sdt, luu session dung dinh dang loginStorageKey()
+// roi dieu huong sang /hs/:token de StudentProfilePage tu nap tiep khong can
+// dang nhap lai; giao vien van dang nhap Supabase email/mat khau nhu cu.
 function UnifiedLoginPage({
   initialError,
   onTeacherSuccess,
@@ -447,41 +449,68 @@ function UnifiedLoginPage({
   onTeacherSuccess: (email: string | null) => void
 }) {
   const navigate = useNavigate()
-  const [identifier, setIdentifier] = useState('')
-  const [password, setPassword] = useState('')
+  const [mode, setMode] = useState<LoginMode>('teacher')
+  const [email, setEmail] = useState('')
+  const [teacherPassword, setTeacherPassword] = useState('')
+  const [sdt, setSdt] = useState('')
+  const [studentPassword, setStudentPassword] = useState('')
   const [error, setError] = useState<string | null>(initialError || null)
   const [submitting, setSubmitting] = useState(false)
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function switchMode(nextMode: LoginMode) {
+    setMode(nextMode)
+    setError(null)
+  }
+
+  async function handleTeacherSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSubmitting(true)
     setError(null)
 
-    const identifierTrimmed = identifier.trim()
+    try {
+      const session = await loginTeacherWithSupabase(email.trim(), teacherPassword)
+      setEmail('')
+      setTeacherPassword('')
+      onTeacherSuccess(session.email)
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : 'Không đăng nhập được.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleStudentSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const sdtTrimmed = sdt.trim()
+    const passwordTrimmed = studentPassword.trim()
+
+    if (!PHONE_PATTERN.test(sdtTrimmed)) {
+      setError('Số điện thoại phải gồm đúng 10 chữ số, bắt đầu bằng số 0.')
+      return
+    }
+    if (!/^\d{3}$/.test(passwordTrimmed)) {
+      setError('Mật khẩu phải gồm đúng 3 chữ số.')
+      return
+    }
+
+    setSubmitting(true)
+    setError(null)
 
     try {
-      if (PHONE_PATTERN.test(identifierTrimmed)) {
-        const profile = await dataSource.getPublicStudentProfileByPhone(identifierTrimmed, password.trim())
-        if (!profile) {
-          setError('Số điện thoại hoặc mật khẩu không đúng.')
-          return
-        }
-
-        const token = profile.student.token_ho_so
-        window.sessionStorage.setItem(
-          loginStorageKey(token),
-          JSON.stringify({ sdt: identifierTrimmed, matKhau: password.trim() }),
-        )
-        setIdentifier('')
-        setPassword('')
-        navigate(`/hs/${token}`)
+      const profile = await dataSource.getPublicStudentProfileByPhone(sdtTrimmed, passwordTrimmed)
+      if (!profile) {
+        setError('Số điện thoại hoặc mật khẩu không đúng.')
         return
       }
 
-      const session = await loginTeacherWithSupabase(identifierTrimmed, password)
-      setIdentifier('')
-      setPassword('')
-      onTeacherSuccess(session.email)
+      const token = profile.student.token_ho_so
+      window.sessionStorage.setItem(
+        loginStorageKey(token),
+        JSON.stringify({ sdt: sdtTrimmed, matKhau: passwordTrimmed }),
+      )
+      setSdt('')
+      setStudentPassword('')
+      navigate(`/hs/${token}`)
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : 'Không đăng nhập được.')
     } finally {
@@ -491,50 +520,109 @@ function UnifiedLoginPage({
 
   return (
     <TeacherAuthShell>
-      <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div>
           <p className="text-xs font-semibold uppercase text-blue-600">QLHS 11C5</p>
           <h1 className="mt-1 text-xl font-bold text-slate-900">Đăng nhập</h1>
-          <p className="mt-1 text-xs text-slate-500">
-            Giáo viên dùng email, học sinh dùng số điện thoại của mình.
-          </p>
         </div>
 
-        <label className="mt-5 flex flex-col gap-1 text-sm font-medium text-slate-700">
-          Email (giáo viên) hoặc số điện thoại (học sinh)
-          <input
-            autoComplete="username"
-            autoFocus
-            required
-            type="text"
-            value={identifier}
-            onChange={(event) => setIdentifier(event.target.value)}
-            className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
-        </label>
+        <div className="mt-4 grid grid-cols-2 gap-1 rounded-md bg-slate-100 p-1">
+          <button
+            type="button"
+            onClick={() => switchMode('teacher')}
+            className={`h-10 rounded-md text-sm font-semibold transition ${
+              mode === 'teacher' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            👩‍🏫 Giáo viên
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode('student')}
+            className={`h-10 rounded-md text-sm font-semibold transition ${
+              mode === 'student' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            🎓 Học sinh
+          </button>
+        </div>
 
-        <label className="mt-3 flex flex-col gap-1 text-sm font-medium text-slate-700">
-          Mật khẩu
-          <input
-            autoComplete="current-password"
-            required
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
-        </label>
+        {mode === 'teacher' ? (
+          <form key="teacher" onSubmit={handleTeacherSubmit} className="mt-4">
+            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              Email
+              <input
+                autoComplete="username"
+                autoFocus
+                required
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
 
-        {error ? <p className="mt-3 text-sm font-semibold text-red-700">{error}</p> : null}
+            <label className="mt-3 flex flex-col gap-1 text-sm font-medium text-slate-700">
+              Mật khẩu
+              <input
+                autoComplete="current-password"
+                required
+                type="password"
+                value={teacherPassword}
+                onChange={(event) => setTeacherPassword(event.target.value)}
+                className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-5 h-11 w-full rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-        >
-          {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
-        </button>
-      </form>
+            {error ? <p className="mt-3 text-sm font-semibold text-red-700">{error}</p> : null}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="mt-5 h-11 w-full rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            </button>
+          </form>
+        ) : (
+          <form key="student" onSubmit={handleStudentSubmit} className="mt-4">
+            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              Số điện thoại
+              <input
+                autoFocus
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                value={sdt}
+                onChange={(event) => setSdt(event.target.value.replace(/\D/g, ''))}
+                className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+
+            <label className="mt-3 flex flex-col gap-1 text-sm font-medium text-slate-700">
+              Mật khẩu (3 số cuối SĐT)
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={3}
+                value={studentPassword}
+                onChange={(event) => setStudentPassword(event.target.value.replace(/\D/g, ''))}
+                className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+
+            {error ? <p className="mt-3 text-sm font-semibold text-red-700">{error}</p> : null}
+
+            <button
+              type="submit"
+              disabled={submitting || !sdt.trim() || !studentPassword.trim()}
+              className="mt-5 h-11 w-full rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            </button>
+          </form>
+        )}
+      </div>
     </TeacherAuthShell>
   )
 }
