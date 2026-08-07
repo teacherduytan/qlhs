@@ -22,6 +22,7 @@ const navItems = [
   { to: '/bao-cao', label: 'Báo cáo', icon: '🧾' },
   { to: '/danh-muc', label: 'Danh mục', icon: '📚' },
   { to: '/import', label: 'Import', icon: '📥' },
+  { to: '/dong-hanh', label: 'Đồng hành', icon: '🤝' },
 ]
 
 function NavLinkList({

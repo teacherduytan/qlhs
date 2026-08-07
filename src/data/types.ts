@@ -335,4 +335,108 @@ export interface PublicStudentProfile {
   records: GhiNhan[]
   student: HocSinh
   weekConfig: CauHinhTuan[]
+  attendance: DongHanhDiemDanh[]
+  huyHieu: HuyHieuDongHanh[]
+  duyet: DongHanhDuyet[]
+}
+
+// ===== He thong Dong hanh (xem docs/11-dac-ta-he-thong-dong-hanh.md) =====
+
+export type KieuChiSoDongHanh = 'so' | 'so_theo_ma' | 'boolean'
+
+export interface ChiSoDongHanh {
+  ma_chi_so: string
+  ten_hien_thi: string
+  kieu: KieuChiSoDongHanh
+  mo_ta: string | null
+  thu_tu: number
+}
+
+export type PhepSoSanh = '>=' | '>' | '=' | '<' | '<='
+
+export type MucDoCanhBao = 'khan' | 'canh_bao' | 'nhac_som' | 'nhac_nhe'
+
+export interface LuatDongHanh {
+  ma_luat: string
+  ten_luat: string
+  ma_chi_so: string
+  phep_so_sanh: PhepSoSanh
+  nguong: number | null
+  ma_danh_muc_ap_dung: string | null
+  muc_do: MucDoCanhBao
+  cau_hien_thi: string
+  uu_tien: number
+  nhom_che: string | null
+  can_duyet: boolean
+  dang_bat: boolean
+  thu_tu: number
+}
+
+export interface DieuKienHuyHieu {
+  ma_chi_so: string
+  phep: PhepSoSanh
+  nguong: number
+}
+
+export interface HuyHieuDongHanh {
+  ma_huy_hieu: string
+  ten_huy_hieu: string
+  icon: string | null
+  dieu_kien: DieuKienHuyHieu[]
+  mo_ta: string | null
+  tu_dong: boolean
+  dang_bat: boolean
+  thu_tu: number
+}
+
+export interface CauDinhHuongDongHanh {
+  ma_cau: string
+  gan_voi: string
+  cau: string
+  dang_bat: boolean
+  thu_tu: number
+}
+
+export type TrangThaiDuyetDongHanh = 'cho_duyet' | 'da_duyet' | 'da_an'
+
+export type LoaiDuyetDongHanh = 'canh_bao' | 'dinh_huong'
+
+export interface DongHanhDuyet {
+  id: number
+  ma_hs: string
+  tuan_so: number
+  loai: LoaiDuyetDongHanh
+  ma_luat: string | null
+  noi_dung_da_duyet: string | null
+  trang_thai: TrangThaiDuyetDongHanh
+  nguoi_duyet: string | null
+  thoi_diem: string
+}
+
+export interface DongHanhDiemDanh {
+  id: string
+  ma_hs: string | null
+  ngay: string
+  tuan_so: number
+  buoi: BuoiDiemDanh | 'ca_ngay'
+  trang_thai: TrangThaiDiemDanh | 'vang_co_phep_sang' | 'vang_khong_phep_sang'
+}
+
+export interface ChiSoTuan {
+  vang_khong_phep: number
+  vang_co_phep: number
+  di_tre: number
+  so_lan_theo_ma: Record<string, number>
+  co_nghiem_trong: boolean
+  ma_nghiem_trong: string | null
+  so_loi_tuan_nay: number
+  so_loi_tuan_truoc: number
+  xu_huong_loi: number
+  co_ghi_nhan_tich_cuc: boolean
+  co_vi_pham_ne_nep: boolean
+}
+
+export interface LuatKhop {
+  luat: LuatDongHanh
+  cauHienThi: string
 }

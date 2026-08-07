@@ -27,6 +27,13 @@ import type {
   NoiDungTinNhan,
   SuaLienLacPhuHuynhInput,
   ThemLienLacPhuHuynhInput,
+  ChiSoDongHanh,
+  LuatDongHanh,
+  HuyHieuDongHanh,
+  CauDinhHuongDongHanh,
+  DongHanhDuyet,
+  TrangThaiDuyetDongHanh,
+  LoaiDuyetDongHanh,
 } from './types'
 
 /** Lớp trung gian dữ liệu — mọi UI chỉ gọi qua interface này (tài liệu 01) */
@@ -112,4 +119,34 @@ export interface DataSource {
     >
   ): Promise<void>
   deleteDeXuatGhiNhanByTeacher(id: string): Promise<void>
+
+  getDongHanhChiSo(): Promise<ChiSoDongHanh[]>
+
+  getDongHanhLuat(): Promise<LuatDongHanh[]>
+  addDongHanhLuat(item: LuatDongHanh): Promise<LuatDongHanh>
+  updateDongHanhLuat(maLuat: string, patch: Partial<LuatDongHanh>): Promise<LuatDongHanh>
+  deleteDongHanhLuat(maLuat: string): Promise<void>
+
+  getDongHanhHuyHieu(): Promise<HuyHieuDongHanh[]>
+  addDongHanhHuyHieu(item: HuyHieuDongHanh): Promise<HuyHieuDongHanh>
+  updateDongHanhHuyHieu(maHuyHieu: string, patch: Partial<HuyHieuDongHanh>): Promise<HuyHieuDongHanh>
+  deleteDongHanhHuyHieu(maHuyHieu: string): Promise<void>
+
+  getDongHanhCauDinhHuong(): Promise<CauDinhHuongDongHanh[]>
+  addDongHanhCauDinhHuong(item: CauDinhHuongDongHanh): Promise<CauDinhHuongDongHanh>
+  updateDongHanhCauDinhHuong(
+    maCau: string,
+    patch: Partial<CauDinhHuongDongHanh>,
+  ): Promise<CauDinhHuongDongHanh>
+  deleteDongHanhCauDinhHuong(maCau: string): Promise<void>
+
+  getDongHanhDuyet(maHs?: string): Promise<DongHanhDuyet[]>
+  duyetDongHanh(input: {
+    ma_hs: string
+    tuan_so: number
+    loai: LoaiDuyetDongHanh
+    ma_luat: string | null
+    noi_dung_da_duyet: string
+    trang_thai: TrangThaiDuyetDongHanh
+  }): Promise<DongHanhDuyet>
 }

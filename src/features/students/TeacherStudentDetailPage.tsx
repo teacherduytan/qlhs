@@ -1,17 +1,23 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type Dispatch, type FormEvent, type SetStateAction, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import { CopyIcon } from '../../components/CopyIcon'
 import type {
   BanCanSu,
   BuoiDiemDanh,
+  CauDinhHuongDongHanh,
+  CauHinhTuan,
   DanhMucDiem,
   DeXuatGhiNhan,
   DienHocSinh,
+  DongHanhDiemDanh,
+  DongHanhDuyet,
   GhiNhan,
   HinhThucLienLacPhuHuynh,
   HocSinh,
+  HuyHieuDongHanh,
   LienLacPhuHuynh,
+  LuatDongHanh,
   NhomDiem,
   NoiDungTinNhan,
   PhuHuynh,
@@ -20,6 +26,9 @@ import { formatTietLabel, getRecordPolarity } from '../records/recordInsights'
 import { Pagination, usePagination } from '../../components/Pagination'
 import { PhoneActionMenu, buildSmsHref } from '../../components/PhoneActionMenu'
 import { findCurrentMessage, formatMessageTimestamp } from './messageContents'
+import { apDungHuyHieu, apDungLuat, chonCauDinhHuong } from '../companion/applyRules'
+import { tinhChiSoTuan } from '../companion/computeMetrics'
+import { findWeek, selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
 
 const CONTACT_LABELS: Record<HinhThucLienLacPhuHuynh, string> = {
   dien_thoai: 'Điện thoại trực tiếp',
@@ -67,6 +76,12 @@ type DetailState =
       proposals: DeXuatGhiNhan[]
       records: GhiNhan[]
       student: HocSinh
+      attendance: DongHanhDiemDanh[]
+      weekConfig: CauHinhTuan[]
+      luat: LuatDongHanh[]
+      huyHieu: HuyHieuDongHanh[]
+      cauDinhHuong: CauDinhHuongDongHanh[]
+      duyet: DongHanhDuyet[]
     }
 
 type StudentForm = {
@@ -125,28 +140,57 @@ export function TeacherStudentDetailPage() {
       dataSource.getParentContactHistory({ maHs }),
       dataSource.getDeXuatGhiNhan({ maHs }),
       dataSource.getMessageContents(maHs),
+      dataSource.getAttendanceEntries(),
+      dataSource.getWeekConfig(),
+      dataSource.getDongHanhLuat(),
+      dataSource.getDongHanhHuyHieu(),
+      dataSource.getDongHanhCauDinhHuong(),
+      dataSource.getDongHanhDuyet(maHs),
     ])
-      .then(([students, parents, banCanSu, records, catalog, contacts, proposals, messages]) => {
-        if (!active) return
-        const student = students.find((item) => item.ma_hs === maHs)
-        if (!student) {
-          setState({ status: 'not_found' })
-          return
-        }
-        setState({
-          status: 'success',
+      .then(
+        ([
+          students,
+          parents,
           banCanSu,
+          records,
           catalog,
           contacts,
-          messages,
-          parents,
           proposals,
-          records,
-          student,
-        })
-        setForm(formFromStudent(student))
-        setRoleForm(roleFormFromBanCanSu(maHs, banCanSu))
-      })
+          messages,
+          attendance,
+          weekConfig,
+          luat,
+          huyHieu,
+          cauDinhHuong,
+          duyet,
+        ]) => {
+          if (!active) return
+          const student = students.find((item) => item.ma_hs === maHs)
+          if (!student) {
+            setState({ status: 'not_found' })
+            return
+          }
+          setState({
+            status: 'success',
+            banCanSu,
+            catalog,
+            contacts,
+            messages,
+            parents,
+            proposals,
+            records,
+            student,
+            attendance,
+            weekConfig,
+            luat,
+            huyHieu,
+            cauDinhHuong,
+            duyet,
+          })
+          setForm(formFromStudent(student))
+          setRoleForm(roleFormFromBanCanSu(maHs, banCanSu))
+        },
+      )
       .catch((error: unknown) => {
         if (active) {
           setState({
@@ -438,6 +482,8 @@ export function TeacherStudentDetailPage() {
               </div>
             </div>
           </section>
+
+          <CompanionSection state={state} setState={setState} />
 
           {roleForm ? (
             <section className="rounded-lg border border-teal-200 bg-teal-100 shadow-sm">
@@ -876,6 +922,218 @@ export function TeacherStudentDetailPage() {
           </form>
         </>
       ) : null}
+    </section>
+  )
+}
+
+function CompanionSection({
+  state,
+  setState,
+}: {
+  state: Extract<DetailState, { status: 'success' }>
+  setState: Dispatch<SetStateAction<DetailState>>
+}) {
+  const weeks = sortWeeks(state.weekConfig)
+  const [tuanSo, setTuanSo] = useState(() => selectDefaultWeek(state.weekConfig, state.records))
+  const [busyKey, setBusyKey] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const tuanSoTruoc = (() => {
+    const index = weeks.findIndex((week) => week.tuan_so === tuanSo)
+    return index > 0 ? weeks[index - 1].tuan_so : null
+  })()
+
+  const chiSo = tinhChiSoTuan({
+    attendance: state.attendance,
+    catalog: state.catalog,
+    maHs: state.student.ma_hs,
+    records: state.records,
+    tuanSo,
+    tuanSoTruoc,
+  })
+  const huyHieuKhop = apDungHuyHieu(chiSo, state.huyHieu)
+  const luatKhop = apDungLuat(chiSo, state.luat)
+  const cauGoiY = chonCauDinhHuong(luatKhop, state.cauDinhHuong)
+
+  const duyetTuanNay = state.duyet.filter((item) => item.tuan_so === tuanSo)
+  const duyetTheoMa = new Map(duyetTuanNay.map((item) => [`${item.loai}:${item.ma_luat}`, item]))
+
+  async function duyet(
+    loai: 'canh_bao' | 'dinh_huong',
+    maLuat: string,
+    noiDung: string,
+    trangThai: 'da_duyet' | 'da_an',
+  ) {
+    const key = `${loai}:${maLuat}`
+    setBusyKey(key)
+    setError(null)
+    try {
+      const saved = await dataSource.duyetDongHanh({
+        ma_hs: state.student.ma_hs,
+        tuan_so: tuanSo,
+        loai,
+        ma_luat: maLuat,
+        noi_dung_da_duyet: noiDung,
+        trang_thai: trangThai,
+      })
+      setState((current) =>
+        current.status === 'success'
+          ? {
+              ...current,
+              duyet: [saved, ...current.duyet.filter((item) => !(item.tuan_so === tuanSo && item.loai === loai && item.ma_luat === maLuat))],
+            }
+          : current,
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không lưu được trạng thái duyệt.')
+    } finally {
+      setBusyKey(null)
+    }
+  }
+
+  return (
+    <section className="rounded-lg border border-amber-200 bg-amber-100 shadow-sm">
+      <div className="border-b border-amber-200 p-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase text-amber-700">Hệ thống Đồng hành</p>
+            <h3 className="text-lg font-bold text-slate-950">Huy hiệu, cảnh báo & hướng cải thiện</h3>
+            <p className="text-sm text-slate-600">
+              Huy hiệu tự động hiện luôn. Câu cảnh báo/định hướng cần bấm Duyệt mới hiện cho học sinh xem.
+            </p>
+          </div>
+          <select
+            value={tuanSo}
+            onChange={(event) => setTuanSo(Number(event.target.value))}
+            className="h-9 rounded-md border border-amber-300 bg-white px-2 text-sm font-semibold text-slate-900"
+          >
+            {weeks.map((week) => (
+              <option key={week.tuan_so} value={week.tuan_so}>
+                Tuần {week.tuan_so}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="space-y-3 bg-white p-4">
+        {error ? (
+          <p className="rounded-md border border-red-200 bg-red-100 p-2 text-sm font-semibold text-red-700">{error}</p>
+        ) : null}
+
+        <div>
+          <p className="text-xs font-semibold uppercase text-slate-600">Huy hiệu tuần này</p>
+          {huyHieuKhop.length === 0 ? (
+            <p className="mt-1 text-sm text-slate-500">Chưa đạt huy hiệu nào tuần này.</p>
+          ) : (
+            <div className="mt-1 flex flex-wrap gap-2">
+              {huyHieuKhop.map((item) => (
+                <span key={item.ma_huy_hieu} className="rounded-full border border-amber-300 bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
+                  {item.icon} {item.ten_huy_hieu}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase text-slate-600">Điều cần chú ý ({luatKhop.length})</p>
+          {luatKhop.length === 0 ? (
+            <p className="mt-1 text-sm text-slate-500">Không có cảnh báo nào tuần này.</p>
+          ) : (
+            <ul className="mt-1 space-y-2">
+              {luatKhop.map(({ luat, cauHienThi }) => {
+                const daDuyet = duyetTheoMa.get(`canh_bao:${luat.ma_luat}`)
+                const key = `canh_bao:${luat.ma_luat}`
+                return (
+                  <li key={luat.ma_luat} className="rounded-md border border-slate-200 p-2">
+                    <p className="text-sm text-slate-800">
+                      <span className="font-semibold">[{luat.muc_do}]</span> {cauHienThi}
+                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          daDuyet?.trang_thai === 'da_duyet'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {daDuyet?.trang_thai === 'da_duyet' ? 'Đã duyệt — học sinh thấy được' : 'Chưa duyệt'}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={busyKey === key}
+                        onClick={() => void duyet('canh_bao', luat.ma_luat, cauHienThi, 'da_duyet')}
+                        className="text-xs font-semibold text-emerald-700 hover:underline disabled:text-slate-400"
+                      >
+                        Duyệt
+                      </button>
+                      {daDuyet?.trang_thai === 'da_duyet' ? (
+                        <button
+                          type="button"
+                          disabled={busyKey === key}
+                          onClick={() => void duyet('canh_bao', luat.ma_luat, cauHienThi, 'da_an')}
+                          className="text-xs font-semibold text-red-700 hover:underline disabled:text-slate-400"
+                        >
+                          Ẩn
+                        </button>
+                      ) : null}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase text-slate-600">Hướng cải thiện</p>
+          {cauGoiY ? (
+            (() => {
+              const key = `dinh_huong:${cauGoiY.ma_cau}`
+              const daDuyet = duyetTheoMa.get(key)
+              return (
+                <div className="mt-1 rounded-md border border-slate-200 p-2">
+                  <p className="text-sm text-slate-800">{cauGoiY.cau}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        daDuyet?.trang_thai === 'da_duyet' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {daDuyet?.trang_thai === 'da_duyet' ? 'Đã duyệt — học sinh thấy được' : 'Chưa duyệt'}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={busyKey === key}
+                      onClick={() => void duyet('dinh_huong', cauGoiY.ma_cau, cauGoiY.cau, 'da_duyet')}
+                      className="text-xs font-semibold text-emerald-700 hover:underline disabled:text-slate-400"
+                    >
+                      Duyệt
+                    </button>
+                    {daDuyet?.trang_thai === 'da_duyet' ? (
+                      <button
+                        type="button"
+                        disabled={busyKey === key}
+                        onClick={() => void duyet('dinh_huong', cauGoiY.ma_cau, cauGoiY.cau, 'da_an')}
+                        className="text-xs font-semibold text-red-700 hover:underline disabled:text-slate-400"
+                      >
+                        Ẩn
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              )
+            })()
+          ) : (
+            <p className="mt-1 text-sm text-slate-500">Không có câu định hướng phù hợp.</p>
+          )}
+        </div>
+
+        {findWeek(state.weekConfig, tuanSo) ? null : (
+          <p className="text-xs text-red-600">Không tìm thấy cấu hình tuần này.</p>
+        )}
+      </div>
     </section>
   )
 }

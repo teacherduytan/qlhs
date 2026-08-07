@@ -6,16 +6,21 @@ import type {
   CauHinhTuan,
   DanhMucDiem,
   DeXuatGhiNhan,
+  DongHanhDiemDanh,
+  DongHanhDuyet,
   GhiNhan,
   HocSinh,
+  HuyHieuDongHanh,
   LopTruongData,
   NhomDiem,
 } from '../../data/types'
+import { apDungHuyHieu } from '../companion/applyRules'
+import { tinhChiSoTuan } from '../companion/computeMetrics'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
 import { formatTietLabel, getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
 import { getBadgeClassForRecord } from '../scoring/scoreStyles'
-import { findWeek, selectDefaultWeek, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
+import { findWeek, selectDefaultWeek, sortWeeks, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
 import { getStudentGroup } from './studentGroups'
 import { Pagination, usePagination } from '../../components/Pagination'
 import { PullToRefresh } from '../../components/PullToRefresh'
@@ -34,6 +39,9 @@ type ProfileState =
       canSubmitProposal: boolean
       tuanSo: number
       weekConfig: CauHinhTuan[]
+      attendance: DongHanhDiemDanh[]
+      huyHieu: HuyHieuDongHanh[]
+      duyet: DongHanhDuyet[]
     }
 
 function loginStorageKey(token: string): string {
@@ -170,6 +178,9 @@ export function StudentProfilePage() {
           canSubmitProposal: canSubmitProposal(profile.student.ma_hs, profile.banCanSu),
           tuanSo,
           weekConfig: profile.weekConfig,
+          attendance: profile.attendance,
+          huyHieu: profile.huyHieu,
+          duyet: profile.duyet,
         })
       })
       .catch((error: unknown) => {
@@ -394,6 +405,19 @@ export function StudentProfilePage() {
               ) : null}
             </section>
 
+            <section id="profile-dong-hanh" className="scroll-mt-4">
+              <CompanionSummary
+                attendance={state.attendance}
+                catalog={state.catalog}
+                duyet={state.duyet}
+                huyHieu={state.huyHieu}
+                maHs={state.student.ma_hs}
+                records={state.records}
+                tuanSo={state.tuanSo}
+                weekConfig={state.weekConfig}
+              />
+            </section>
+
             {state.canSubmitProposal && token ? (
               <section id="profile-lop-truong" className="scroll-mt-4">
                 <LopTruongPanel token={token} role={state.role} />
@@ -568,6 +592,86 @@ function ProfileSectionHeader({
           ▾
         </span>
       </button>
+    </div>
+  )
+}
+
+function CompanionSummary({
+  attendance,
+  catalog,
+  duyet,
+  huyHieu,
+  maHs,
+  records,
+  tuanSo,
+  weekConfig,
+}: {
+  attendance: DongHanhDiemDanh[]
+  catalog: DanhMucDiem[]
+  duyet: DongHanhDuyet[]
+  huyHieu: HuyHieuDongHanh[]
+  maHs: string
+  records: GhiNhan[]
+  tuanSo: number
+  weekConfig: CauHinhTuan[]
+}) {
+  const weeks = sortWeeks(weekConfig)
+  const weekIndex = weeks.findIndex((week) => week.tuan_so === tuanSo)
+  const tuanSoTruoc = weekIndex > 0 ? weeks[weekIndex - 1].tuan_so : null
+
+  const chiSo = tinhChiSoTuan({ attendance, catalog, maHs, records, tuanSo, tuanSoTruoc })
+  const huyHieuKhop = apDungHuyHieu(chiSo, huyHieu)
+  const duyetTuanNay = duyet.filter((item) => item.tuan_so === tuanSo)
+  const canhBao = duyetTuanNay.filter((item) => item.loai === 'canh_bao' && item.noi_dung_da_duyet)
+  const dinhHuong = duyetTuanNay.filter((item) => item.loai === 'dinh_huong' && item.noi_dung_da_duyet)
+
+  if (huyHieuKhop.length === 0 && canhBao.length === 0 && dinhHuong.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-100 p-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase text-amber-700">Đồng hành tuần này</p>
+
+      {huyHieuKhop.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {huyHieuKhop.map((item) => (
+            <span
+              key={item.ma_huy_hieu}
+              className="rounded-full border border-amber-300 bg-white px-3 py-1 text-sm font-semibold text-amber-800"
+              title={item.mo_ta || undefined}
+            >
+              {item.icon} {item.ten_huy_hieu}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {canhBao.length > 0 ? (
+        <div>
+          <p className="text-xs font-semibold text-slate-600">Điều cần chú ý</p>
+          <ul className="mt-1 space-y-1">
+            {canhBao.map((item) => (
+              <li key={item.id} className="rounded-md border border-amber-200 bg-white p-2 text-sm text-slate-800">
+                {item.noi_dung_da_duyet}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {dinhHuong.length > 0 ? (
+        <div>
+          <p className="text-xs font-semibold text-slate-600">Hướng cải thiện</p>
+          <ul className="mt-1 space-y-1">
+            {dinhHuong.map((item) => (
+              <li key={item.id} className="rounded-md border border-amber-200 bg-white p-2 text-sm text-slate-800">
+                {item.noi_dung_da_duyet}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   )
 }

@@ -32,6 +32,14 @@ import type {
   ThemLienLacPhuHuynhInput,
   TrangThaiImport,
   TrangThaiXuLyTapThe,
+  ChiSoDongHanh,
+  LuatDongHanh,
+  HuyHieuDongHanh,
+  CauDinhHuongDongHanh,
+  DongHanhDuyet,
+  DongHanhDiemDanh,
+  TrangThaiDuyetDongHanh,
+  LoaiDuyetDongHanh,
 } from './types'
 
 type AnyRow = Record<string, unknown>
@@ -42,6 +50,9 @@ interface PublicProfileRpcRow {
   records: GhiNhan[] | null
   student: HocSinh | null
   week_config: CauHinhTuan[] | null
+  attendance: DongHanhDiemDanh[] | null
+  huy_hieu: HuyHieuDongHanh[] | null
+  duyet: DongHanhDuyet[] | null
 }
 
 const GHI_NHAN_COLUMNS = [
@@ -135,6 +146,9 @@ export class SupabaseDataSource implements DataSource {
       records: row.records || [],
       student: row.student,
       weekConfig: row.week_config || [],
+      attendance: row.attendance || [],
+      huyHieu: row.huy_hieu || [],
+      duyet: row.duyet || [],
     }
   }
 
@@ -1024,6 +1038,174 @@ export class SupabaseDataSource implements DataSource {
     const lastValue = firstRow ? String(firstRow[keyColumn] || '') : ''
     const start = parsePrefixedNumber(lastValue, prefix) + 1
     return Array.from({ length: count }, (_, index) => `${prefix}${String(start + index).padStart(width, '0')}`)
+  }
+
+  async getDongHanhChiSo(): Promise<ChiSoDongHanh[]> {
+    const { data, error } = await getSupabaseClient()
+      .from('dong_hanh_chi_so')
+      .select('*')
+      .order('thu_tu')
+    assertNoError(error, 'Khong doc duoc ChiSoDongHanh tu Supabase')
+    return (data || []) as ChiSoDongHanh[]
+  }
+
+  async getDongHanhLuat(): Promise<LuatDongHanh[]> {
+    const { data, error } = await getSupabaseClient()
+      .from('dong_hanh_luat')
+      .select('*')
+      .order('thu_tu')
+    assertNoError(error, 'Khong doc duoc LuatDongHanh tu Supabase')
+    return (data || []) as LuatDongHanh[]
+  }
+
+  async addDongHanhLuat(item: LuatDongHanh): Promise<LuatDongHanh> {
+    const { data, error } = await getSupabaseClient()
+      .from('dong_hanh_luat')
+      .insert(stripUndefined(item as unknown as AnyRow))
+      .select()
+      .single()
+    assertNoError(error, 'Khong tao duoc LuatDongHanh tren Supabase')
+    return data as LuatDongHanh
+  }
+
+  async updateDongHanhLuat(maLuat: string, patch: Partial<LuatDongHanh>): Promise<LuatDongHanh> {
+    const { data, error } = await getSupabaseClient()
+      .from('dong_hanh_luat')
+      .update(stripUndefined(patch as AnyRow))
+      .eq('ma_luat', maLuat)
+      .select()
+      .single()
+    assertNoError(error, 'Khong cap nhat duoc LuatDongHanh tren Supabase')
+    return data as LuatDongHanh
+  }
+
+  async deleteDongHanhLuat(maLuat: string): Promise<void> {
+    const { error } = await getSupabaseClient().from('dong_hanh_luat').delete().eq('ma_luat', maLuat)
+    assertNoError(error, 'Khong xoa duoc LuatDongHanh tren Supabase')
+  }
+
+  async getDongHanhHuyHieu(): Promise<HuyHieuDongHanh[]> {
+    const { data, error } = await getSupabaseClient()
+      .from('dong_hanh_huy_hieu')
+      .select('*')
+      .order('thu_tu')
+    assertNoError(error, 'Khong doc duoc HuyHieuDongHanh tu Supabase')
+    return (data || []) as HuyHieuDongHanh[]
+  }
+
+  async addDongHanhHuyHieu(item: HuyHieuDongHanh): Promise<HuyHieuDongHanh> {
+    const { data, error } = await getSupabaseClient()
+      .from('dong_hanh_huy_hieu')
+      .insert(stripUndefined(item as unknown as AnyRow))
+      .select()
+      .single()
+    assertNoError(error, 'Khong tao duoc HuyHieuDongHanh tren Supabase')
+    return data as HuyHieuDongHanh
+  }
+
+  async updateDongHanhHuyHieu(
+    maHuyHieu: string,
+    patch: Partial<HuyHieuDongHanh>,
+  ): Promise<HuyHieuDongHanh> {
+    const { data, error } = await getSupabaseClient()
+      .from('dong_hanh_huy_hieu')
+      .update(stripUndefined(patch as AnyRow))
+      .eq('ma_huy_hieu', maHuyHieu)
+      .select()
+      .single()
+    assertNoError(error, 'Khong cap nhat duoc HuyHieuDongHanh tren Supabase')
+    return data as HuyHieuDongHanh
+  }
+
+  async deleteDongHanhHuyHieu(maHuyHieu: string): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('dong_hanh_huy_hieu')
+      .delete()
+      .eq('ma_huy_hieu', maHuyHieu)
+    assertNoError(error, 'Khong xoa duoc HuyHieuDongHanh tren Supabase')
+  }
+
+  async getDongHanhCauDinhHuong(): Promise<CauDinhHuongDongHanh[]> {
+    const { data, error } = await getSupabaseClient()
+      .from('dong_hanh_cau_dinh_huong')
+      .select('*')
+      .order('thu_tu')
+    assertNoError(error, 'Khong doc duoc CauDinhHuongDongHanh tu Supabase')
+    return (data || []) as CauDinhHuongDongHanh[]
+  }
+
+  async addDongHanhCauDinhHuong(item: CauDinhHuongDongHanh): Promise<CauDinhHuongDongHanh> {
+    const { data, error } = await getSupabaseClient()
+      .from('dong_hanh_cau_dinh_huong')
+      .insert(stripUndefined(item as unknown as AnyRow))
+      .select()
+      .single()
+    assertNoError(error, 'Khong tao duoc CauDinhHuongDongHanh tren Supabase')
+    return data as CauDinhHuongDongHanh
+  }
+
+  async updateDongHanhCauDinhHuong(
+    maCau: string,
+    patch: Partial<CauDinhHuongDongHanh>,
+  ): Promise<CauDinhHuongDongHanh> {
+    const { data, error } = await getSupabaseClient()
+      .from('dong_hanh_cau_dinh_huong')
+      .update(stripUndefined(patch as AnyRow))
+      .eq('ma_cau', maCau)
+      .select()
+      .single()
+    assertNoError(error, 'Khong cap nhat duoc CauDinhHuongDongHanh tren Supabase')
+    return data as CauDinhHuongDongHanh
+  }
+
+  async deleteDongHanhCauDinhHuong(maCau: string): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('dong_hanh_cau_dinh_huong')
+      .delete()
+      .eq('ma_cau', maCau)
+    assertNoError(error, 'Khong xoa duoc CauDinhHuongDongHanh tren Supabase')
+  }
+
+  async getDongHanhDuyet(maHs?: string): Promise<DongHanhDuyet[]> {
+    let query = getSupabaseClient().from('dong_hanh_duyet').select('*').order('thoi_diem', { ascending: false })
+    if (maHs) query = query.eq('ma_hs', maHs)
+
+    const { data, error } = await query
+    assertNoError(error, 'Khong doc duoc DongHanhDuyet tu Supabase')
+    return (data || []) as DongHanhDuyet[]
+  }
+
+  async duyetDongHanh(input: {
+    ma_hs: string
+    tuan_so: number
+    loai: LoaiDuyetDongHanh
+    ma_luat: string | null
+    noi_dung_da_duyet: string
+    trang_thai: TrangThaiDuyetDongHanh
+  }): Promise<DongHanhDuyet> {
+    const {
+      data: { session },
+    } = await getSupabaseClient().auth.getSession()
+
+    const { data, error } = await getSupabaseClient()
+      .from('dong_hanh_duyet')
+      .upsert(
+        {
+          ma_hs: input.ma_hs,
+          tuan_so: input.tuan_so,
+          loai: input.loai,
+          ma_luat: input.ma_luat,
+          noi_dung_da_duyet: input.noi_dung_da_duyet,
+          trang_thai: input.trang_thai,
+          nguoi_duyet: session?.user.email || null,
+          thoi_diem: new Date().toISOString(),
+        },
+        { onConflict: 'ma_hs,tuan_so,loai,ma_luat' },
+      )
+      .select()
+      .single()
+    assertNoError(error, 'Khong luu duoc trang thai duyet Dong hanh tren Supabase')
+    return data as DongHanhDuyet
   }
 }
 

@@ -7,6 +7,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage'
 import { ImportPage } from './features/import/ImportPage'
 import { ParentContactHistoryPage } from './features/attendance/ParentContactHistoryPage'
 import { RecordEntryPage } from './features/records/RecordEntryPage'
+import { RuleManagerPage } from './features/companion/RuleManagerPage'
 import { ReportsPage } from './features/reports/ReportsPage'
 import { StudentProfilePage } from './features/students/StudentProfilePage'
 import { StudentsPage } from './features/students/StudentsPage'
@@ -27,6 +28,7 @@ export const router = createHashRouter([
       { path: 'bao-cao', element: <ReportsPage /> },
       { path: 'danh-muc', element: <CatalogPage /> },
       { path: 'import', element: <ImportPage /> },
+      { path: 'dong-hanh', element: <RuleManagerPage /> },
     ],
   },
   {
