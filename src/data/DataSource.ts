@@ -40,6 +40,7 @@ import type {
 export interface DataSource {
   getStudents(): Promise<HocSinh[]>
   getPublicStudentProfile(token: string, sdt: string, matKhau: string): Promise<PublicStudentProfile | null>
+  getPublicStudentProfileByPhone(sdt: string, matKhau: string): Promise<PublicStudentProfile | null>
   addStudent(student: HocSinh): Promise<HocSinh>
   updateStudent(maHs: string, student: Partial<HocSinh>): Promise<HocSinh>
   deleteStudent(maHs: string): Promise<void>

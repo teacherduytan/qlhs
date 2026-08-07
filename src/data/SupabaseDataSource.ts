@@ -134,22 +134,16 @@ export class SupabaseDataSource implements DataSource {
       p_mat_khau: matKhau,
     })
     assertNoError(error, 'Khong doc duoc ho so cong khai tu Supabase')
+    return mapPublicProfileRpcRow(data)
+  }
 
-    const row = Array.isArray(data) && data.length > 0 ? (data[0] as PublicProfileRpcRow) : null
-    if (!row?.student) {
-      return null
-    }
-
-    return {
-      banCanSu: row.ban_can_su || [],
-      catalog: row.catalog || [],
-      records: row.records || [],
-      student: row.student,
-      weekConfig: row.week_config || [],
-      attendance: row.attendance || [],
-      huyHieu: row.huy_hieu || [],
-      duyet: row.duyet || [],
-    }
+  async getPublicStudentProfileByPhone(sdt: string, matKhau: string): Promise<PublicStudentProfile | null> {
+    const { data, error } = await getSupabaseClient().rpc('lay_ho_so_cong_khai_theo_sdt', {
+      p_sdt: sdt,
+      p_mat_khau: matKhau,
+    })
+    assertNoError(error, 'Khong doc duoc ho so cong khai theo SDT tu Supabase')
+    return mapPublicProfileRpcRow(data)
   }
 
   async addStudent(student: HocSinh): Promise<HocSinh> {
@@ -1219,6 +1213,24 @@ function tableNameForImport(loai: LoaiDuLieuImport): string {
 
 function assertNoError(error: { message?: string } | null, prefix: string): void {
   if (error) throw new Error(`${prefix}: ${error.message || 'loi khong ro'}`)
+}
+
+function mapPublicProfileRpcRow(data: unknown): PublicStudentProfile | null {
+  const row = Array.isArray(data) && data.length > 0 ? (data[0] as PublicProfileRpcRow) : null
+  if (!row?.student) {
+    return null
+  }
+
+  return {
+    banCanSu: row.ban_can_su || [],
+    catalog: row.catalog || [],
+    records: row.records || [],
+    student: row.student,
+    weekConfig: row.week_config || [],
+    attendance: row.attendance || [],
+    huyHieu: row.huy_hieu || [],
+    duyet: row.duyet || [],
+  }
 }
 
 function asRecord(value: unknown): AnyRow {

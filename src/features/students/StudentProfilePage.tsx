@@ -44,7 +44,7 @@ type ProfileState =
       duyet: DongHanhDuyet[]
     }
 
-function loginStorageKey(token: string): string {
+export function loginStorageKey(token: string): string {
   return `qlhs_hs_login_${token}`
 }
 

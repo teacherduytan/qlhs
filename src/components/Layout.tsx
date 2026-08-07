@@ -1,5 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { dataSource } from '../data/client'
 import {
   getTeacherAuthSession,
@@ -9,8 +9,11 @@ import {
 import { downloadPrintableForm } from '../features/forms/downloadPrintableForm'
 import { getSupabaseClient } from '../lib/supabaseClient'
 import type { DanhMucDiem, DeXuatGhiNhan, HocSinh } from '../data/types'
+import { loginStorageKey } from '../features/students/StudentProfilePage'
 import { Pagination, usePagination } from './Pagination'
 import { PullToRefresh } from './PullToRefresh'
+
+const PHONE_PATTERN = /^0\d{9}$/
 
 const navItems = [
   { to: '/', label: 'Tổng quan', icon: '🏠' },
@@ -213,9 +216,9 @@ export function Layout() {
 
   if (authState.status === 'unauthenticated') {
     return (
-      <TeacherLoginPage
+      <UnifiedLoginPage
         initialError={authState.message}
-        onSuccess={(email) => setAuthState({ email, status: 'authenticated' })}
+        onTeacherSuccess={(email) => setAuthState({ email, status: 'authenticated' })}
       />
     )
   }
@@ -427,14 +430,24 @@ export function Layout() {
   )
 }
 
-function TeacherLoginPage({
+// Man hinh dang nhap goc (/) dung chung cho ca giao vien va hoc sinh, vi PWA
+// "Them vao man hinh chinh" luon mo dung start_url khai bao trong manifest
+// (khong the mo thang /hs/:token), nen day phai la noi hoc sinh dang nhap
+// duoc tu icon ngoai man hinh chinh thay vi bi ket o form giao vien nhu truoc.
+// Tu dong nhan dien: gia tri giong so dien thoai (0 + 9 chu so) -> dang nhap
+// hoc sinh (tra ve token qua RPC lay_ho_so_cong_khai_theo_sdt, luu session
+// dung dinh dang loginStorageKey() roi dieu huong sang /hs/:token de
+// StudentProfilePage tu nap tiep khong can dang nhap lai); con lai -> dang
+// nhap giao vien nhu cu.
+function UnifiedLoginPage({
   initialError,
-  onSuccess,
+  onTeacherSuccess,
 }: {
   initialError?: string
-  onSuccess: (email: string | null) => void
+  onTeacherSuccess: (email: string | null) => void
 }) {
-  const [email, setEmail] = useState('')
+  const navigate = useNavigate()
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(initialError || null)
   const [submitting, setSubmitting] = useState(false)
@@ -444,11 +457,31 @@ function TeacherLoginPage({
     setSubmitting(true)
     setError(null)
 
+    const identifierTrimmed = identifier.trim()
+
     try {
-      const session = await loginTeacherWithSupabase(email.trim(), password)
-      setEmail('')
+      if (PHONE_PATTERN.test(identifierTrimmed)) {
+        const profile = await dataSource.getPublicStudentProfileByPhone(identifierTrimmed, password.trim())
+        if (!profile) {
+          setError('Số điện thoại hoặc mật khẩu không đúng.')
+          return
+        }
+
+        const token = profile.student.token_ho_so
+        window.sessionStorage.setItem(
+          loginStorageKey(token),
+          JSON.stringify({ sdt: identifierTrimmed, matKhau: password.trim() }),
+        )
+        setIdentifier('')
+        setPassword('')
+        navigate(`/hs/${token}`)
+        return
+      }
+
+      const session = await loginTeacherWithSupabase(identifierTrimmed, password)
+      setIdentifier('')
       setPassword('')
-      onSuccess(session.email)
+      onTeacherSuccess(session.email)
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : 'Không đăng nhập được.')
     } finally {
@@ -461,18 +494,21 @@ function TeacherLoginPage({
       <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div>
           <p className="text-xs font-semibold uppercase text-blue-600">QLHS 11C5</p>
-          <h1 className="mt-1 text-xl font-bold text-slate-900">Đăng nhập giáo viên</h1>
+          <h1 className="mt-1 text-xl font-bold text-slate-900">Đăng nhập</h1>
+          <p className="mt-1 text-xs text-slate-500">
+            Giáo viên dùng email, học sinh dùng số điện thoại của mình.
+          </p>
         </div>
 
         <label className="mt-5 flex flex-col gap-1 text-sm font-medium text-slate-700">
-          Email
+          Email (giáo viên) hoặc số điện thoại (học sinh)
           <input
             autoComplete="username"
             autoFocus
             required
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            type="text"
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value)}
             className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
         </label>
