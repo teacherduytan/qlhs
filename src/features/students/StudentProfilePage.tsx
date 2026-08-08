@@ -351,12 +351,13 @@ export function StudentProfilePage() {
                 <input
                   autoFocus
                   type="text"
-                  inputMode="numeric"
+                  inputMode="text"
                   autoComplete="username"
                   value={sdt}
                   onChange={(event) => {
                     const value = event.target.value
-                    setSdt(value === ADMIN_SDT ? value : value.replace(/\D/g, '').slice(0, 10))
+                    const looksLikeAdmin = ADMIN_SDT.startsWith(value.toLowerCase())
+                    setSdt(looksLikeAdmin ? value : value.replace(/\D/g, '').slice(0, 10))
                     setLoginError(null)
                   }}
                   className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -371,7 +372,7 @@ export function StudentProfilePage() {
                   value={matKhau}
                   onChange={(event) => {
                     const value = event.target.value
-                    setMatKhau(sdt === ADMIN_SDT ? value : value.replace(/\D/g, '').slice(0, 3))
+                    setMatKhau(sdt.toLowerCase() === ADMIN_SDT ? value : value.replace(/\D/g, '').slice(0, 3))
                     setLoginError(null)
                   }}
                   className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
