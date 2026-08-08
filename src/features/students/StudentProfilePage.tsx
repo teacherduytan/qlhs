@@ -75,6 +75,11 @@ const PROFILE_TABS: Array<{ id: ProfileTab; label: string; icon: string }> = [
 
 const SDT_PATTERN = /^0\d{9}$/
 const MAT_KHAU_PATTERN = /^\d{3}$/
+// Tai khoan xem thu danh cho giao vien - dang nhap duoc vao ho so cong khai
+// cua BAT KY token nao (van phai biet dung link rieng cua em do) ma khong
+// can biet SDT that cua hoc sinh. Xem migration 20260808000400.
+const ADMIN_SDT = 'admin'
+const ADMIN_MAT_KHAU = 'admin123@@'
 const NEW_CATEGORY_VALUE = '__new__'
 const NHOM_OPTIONS: Array<{ label: string; value: NhomDiem }> = [
   { label: 'Chuyên cần', value: 'CC' },
@@ -247,14 +252,17 @@ export function StudentProfilePage() {
     event.preventDefault()
     const sdtTrimmed = sdt.trim()
     const matKhauTrimmed = matKhau.trim()
+    const isAdminLogin = sdtTrimmed === ADMIN_SDT && matKhauTrimmed === ADMIN_MAT_KHAU
 
-    if (!SDT_PATTERN.test(sdtTrimmed)) {
-      setLoginError('Số điện thoại phải gồm đúng 10 chữ số, bắt đầu bằng số 0.')
-      return
-    }
-    if (!MAT_KHAU_PATTERN.test(matKhauTrimmed)) {
-      setLoginError('Mật khẩu phải gồm đúng 3 chữ số.')
-      return
+    if (!isAdminLogin) {
+      if (!SDT_PATTERN.test(sdtTrimmed)) {
+        setLoginError('Số điện thoại phải gồm đúng 10 chữ số, bắt đầu bằng số 0.')
+        return
+      }
+      if (!MAT_KHAU_PATTERN.test(matKhauTrimmed)) {
+        setLoginError('Mật khẩu phải gồm đúng 3 chữ số.')
+        return
+      }
     }
 
     loadProfile(sdtTrimmed, matKhauTrimmed)
@@ -342,12 +350,13 @@ export function StudentProfilePage() {
                 Số điện thoại
                 <input
                   autoFocus
-                  type="tel"
+                  type="text"
                   inputMode="numeric"
+                  autoComplete="username"
                   value={sdt}
-                  maxLength={10}
                   onChange={(event) => {
-                    setSdt(event.target.value.replace(/\D/g, ''))
+                    const value = event.target.value
+                    setSdt(value === ADMIN_SDT ? value : value.replace(/\D/g, '').slice(0, 10))
                     setLoginError(null)
                   }}
                   className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -357,11 +366,12 @@ export function StudentProfilePage() {
                 Mật khẩu
                 <input
                   type="password"
-                  inputMode="numeric"
-                  maxLength={3}
+                  inputMode="text"
+                  autoComplete="current-password"
                   value={matKhau}
                   onChange={(event) => {
-                    setMatKhau(event.target.value.replace(/\D/g, ''))
+                    const value = event.target.value
+                    setMatKhau(sdt === ADMIN_SDT ? value : value.replace(/\D/g, '').slice(0, 3))
                     setLoginError(null)
                   }}
                   className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
