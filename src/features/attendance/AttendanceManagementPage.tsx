@@ -775,7 +775,15 @@ function QuickMarkForm({
   const [selectedCodes, setSelectedCodes] = useState<string[]>([])
   const [assignments, setAssignments] = useState<Record<string, LuaChonDiemDanh>>({})
   const [contacts, setContacts] = useState<Record<string, ContactDraft>>({})
+  const [searchQuery, setSearchQuery] = useState('')
   const studentByCode = useMemo(() => new Map(students.map((student) => [student.ma_hs, student])), [students])
+  const visibleStudents = useMemo(() => {
+    const normalizedQuery = normalizeSearchText(searchQuery)
+    if (!normalizedQuery) return students
+    return students.filter((student) =>
+      normalizeSearchText(`${student.ho} ${student.ten}`).includes(normalizedQuery),
+    )
+  }, [students, searchQuery])
 
   function toggleStudent(maHs: string) {
     setSelectedCodes((current) =>
@@ -811,6 +819,7 @@ function QuickMarkForm({
     setSelectedCodes([])
     setAssignments({})
     setContacts({})
+    setSearchQuery('')
   }
 
   function submitAll() {
@@ -833,24 +842,35 @@ function QuickMarkForm({
         <p className="text-sm font-semibold text-slate-900">
           Bước 1 · Chọn học sinh cần ghi điểm danh ({selectedCodes.length} đã chọn)
         </p>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Tìm theo tên học sinh..."
+          className="mt-2 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+        />
         <div className="mt-2 max-h-64 overflow-y-auto rounded-md border border-slate-200">
-          {students.map((student) => (
-            <label
-              key={student.ma_hs}
-              className="flex cursor-pointer items-center gap-2 border-b border-slate-100 px-3 py-2 text-sm last:border-b-0 hover:bg-slate-50"
-            >
-              <input
-                type="checkbox"
-                checked={selectedCodes.includes(student.ma_hs)}
-                onChange={() => toggleStudent(student.ma_hs)}
-                className="h-4 w-4 rounded border-slate-300 text-emerald-600"
-              />
-              <span className="min-w-0 flex-1 truncate text-slate-800">
-                {student.ho} {student.ten}
-              </span>
-              <span className="shrink-0 text-xs text-slate-400">{student.ma_hs}</span>
-            </label>
-          ))}
+          {visibleStudents.length === 0 ? (
+            <p className="px-3 py-4 text-center text-sm text-slate-400">Không tìm thấy học sinh phù hợp</p>
+          ) : (
+            visibleStudents.map((student) => (
+              <label
+                key={student.ma_hs}
+                className="flex cursor-pointer items-center gap-2 border-b border-slate-100 px-3 py-2 text-sm last:border-b-0 hover:bg-slate-50"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedCodes.includes(student.ma_hs)}
+                  onChange={() => toggleStudent(student.ma_hs)}
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600"
+                />
+                <span className="min-w-0 flex-1 truncate text-slate-800">
+                  {student.ho} {student.ten}
+                </span>
+                <span className="shrink-0 text-xs text-slate-400">{student.ma_hs}</span>
+              </label>
+            ))
+          )}
         </div>
         <button
           type="button"
@@ -1225,6 +1245,14 @@ function PhoneQuickAction({ label, phone, onCopy }: { label: string; phone: stri
 
 function normalizePhone(value: string): string {
   return value.replace(/[^\d+]/g, '')
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
 }
 
 function countAbsencesByStudent(entries: DiemDanh[]): Map<string, number> {
