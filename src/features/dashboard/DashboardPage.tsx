@@ -281,6 +281,15 @@ export function DashboardPage() {
       tuanSo: state.tuanSo,
     })
 
+    // "Si so" o khoi Tom tat nhanh phai dem dong theo dung tuan dang xem
+    // (dang_hoc), khong duoc lay thang state.students.length - neu khong 1
+    // em moi them vao lop se bi tinh vao si so cua ca nhung tuan truoc khi
+    // em do nhap hoc.
+    const weekReferenceDate = selectedWeek ? parseIsoDate(selectedWeek.den_ngay) || new Date() : new Date()
+    const activeStudentCount = state.students.filter((student) =>
+      isActiveStudent(student, weekReferenceDate),
+    ).length
+
     return {
       catalogByCode,
       collectiveEvents,
@@ -291,6 +300,7 @@ export function DashboardPage() {
       previousScores,
       groupViewRows,
       actualWeek,
+      activeStudentCount,
       selectedWeek,
       sortedScores,
       studentById,
@@ -513,7 +523,7 @@ export function DashboardPage() {
             {!collapsedSections.summary ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <SummaryMetric label="Tuần" tone="week" value={state.tuanSo} />
-                <SummaryMetric label="Sĩ số" tone="class" value={state.students.length} />
+                <SummaryMetric label="Sĩ số" tone="class" value={body.activeStudentCount} />
                 <SummaryMetric
                   label="Cần chú ý"
                   tone="attention"

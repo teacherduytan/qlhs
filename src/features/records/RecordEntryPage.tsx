@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { CauHinhTuan, DanhMucDiem, DeXuatGhiNhan, GhiNhan, HocSinh, LoaiGhiNhan } from '../../data/types'
 import { getRecordInsight } from './recordInsights'
+import { isActiveStudent } from '../dashboard/DashboardPage'
 import { getBadgeClassForCatalog } from '../scoring/scoreStyles'
 import { selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
 import { Pagination, usePagination } from '../../components/Pagination'
@@ -106,10 +107,14 @@ export function RecordEntryPage() {
     }
   }, [])
 
+  // Danh sach chon hoc sinh de ghi nhan chi gom em dang_hoc dung ngay dang
+  // ghi nhan (form.date) - khong the ghi nhan cho 1 em chua nhap hoc/da roi
+  // lop vao ngay do.
   const sortedStudents = useMemo(() => {
     if (state.status !== 'success') return []
-    return [...state.students].sort(compareStudents)
-  }, [state])
+    const referenceDate = parseIsoDate(form.date)
+    return state.students.filter((student) => isActiveStudent(student, referenceDate)).sort(compareStudents)
+  }, [state, form.date])
 
   const sortedWeeks = useMemo(() => {
     if (state.status !== 'success') return []
@@ -1128,6 +1133,11 @@ function toDateInputValue(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function parseIsoDate(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year, (month || 1) - 1, day || 1)
 }
 
 function formatShortDate(value: string): string {

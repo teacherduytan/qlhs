@@ -167,6 +167,13 @@ export function AttendanceManagementPage() {
   // (ngay_nhap_hoc/ngay_roi_lop), khong the dung students.length tho - neu khong,
   // 1 em moi them vao lop se bi tinh nham vao si so cua ca nhung ngay TRUOC KHI
   // em do nhap hoc, va 1 em da roi lop van tiep tuc bi dem vao si so hien tai.
+  // Danh sach de chon diem danh (QuickMarkForm) chi duoc gom hoc sinh dang_hoc
+  // dung ngay dang xem - khong the diem danh ho 1 em chua nhap hoc/da roi lop.
+  const activeStudentsForSelectedDate = useMemo(() => {
+    const referenceDate = parseIsoDate(selectedDate)
+    return students.filter((student) => isActiveStudent(student, referenceDate))
+  }, [students, selectedDate])
+
   const sessionSummary = useMemo(() => {
     const referenceDate = parseIsoDate(selectedDate)
     const activeCount = students.filter((student) => isActiveStudent(student, referenceDate)).length
@@ -482,7 +489,7 @@ export function AttendanceManagementPage() {
           <QuickMarkForm
             disabled={saving}
             onSaveBulk={(entries) => saveAttendanceBulk(entries)}
-            students={students}
+            students={activeStudentsForSelectedDate}
           />
 
           <div className="mt-5 border-t border-emerald-200 pt-4">
