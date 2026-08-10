@@ -251,6 +251,55 @@ export function AttendanceManagementPage() {
     }
   }
 
+  async function saveAttendanceBulk(
+    entries: Array<{ student: HocSinh; status: LuaChonDiemDanh; contact: ContactDraft }>,
+  ) {
+    if (!activeWeek || entries.length === 0) return
+
+    setSaving(true)
+    setError(null)
+    setMessage(null)
+
+    const failed: string[] = []
+
+    try {
+      for (const { student, status, contact } of entries) {
+        try {
+          const id = await dataSource.upsertAttendanceEntry({
+            buoi: selectedBuoi,
+            ma_hs: student.ma_hs,
+            ngay: selectedDate,
+            trang_thai: status,
+            tuan_so: activeWeek.tuan_so,
+          })
+
+          if (id && status !== 'co_mat' && contact.noi_dung.trim()) {
+            await dataSource.addParentContact({
+              diem_danh_id: id,
+              hinh_thuc: contact.hinh_thuc,
+              noi_dung: contact.noi_dung.trim(),
+              ma_hs: student.ma_hs,
+              ho_ten: `${student.ho} ${student.ten}`,
+              ngay: selectedDate,
+              buoi: selectedBuoi,
+            })
+          }
+        } catch {
+          failed.push(`${student.ho} ${student.ten}`)
+        }
+      }
+
+      await refreshCurrentData()
+      if (failed.length === 0) {
+        setMessage(`Đã ghi điểm danh ${SESSION_LABELS[selectedBuoi].toLowerCase()} cho ${entries.length} học sinh.`)
+      } else {
+        setError(`Ghi được ${entries.length - failed.length}/${entries.length} học sinh, lỗi: ${failed.join(', ')}.`)
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function savePendingContact(target: DiemDanhCanLienLac, contact: ContactDraft) {
     setSaving(true)
     setError(null)
@@ -432,7 +481,7 @@ export function AttendanceManagementPage() {
 
           <QuickMarkForm
             disabled={saving}
-            onSave={(student, status, contact) => saveAttendance(student, status, contact)}
+            onSaveBulk={(entries) => saveAttendanceBulk(entries)}
             students={students}
           />
 
@@ -699,89 +748,204 @@ export function AttendanceManagementPage() {
   )
 }
 
+const EMPTY_CONTACT: ContactDraft = { hinh_thuc: 'dien_thoai', noi_dung: '' }
+
+// Ghi diem danh nhanh theo 2 buoc: (1) tich chon nhieu hoc sinh vang cung
+// luc -> Xac nhan chon; (2) voi tung em da chon, chon rieng loai vang ke ben
+// ten (khong bat buoc ca nhom phai cung 1 loai vang nhu truoc), sau khi goi
+// dien thoai phu huynh thi dien noi dung cuoc goi ngay tai do -> Xac nhan
+// diem danh de luu tat ca 1 luot.
 function QuickMarkForm({
   disabled,
-  onSave,
+  onSaveBulk,
   students,
 }: {
   disabled: boolean
-  onSave: (student: HocSinh, status: LuaChonDiemDanh, contact: ContactDraft) => void
+  onSaveBulk: (entries: Array<{ student: HocSinh; status: LuaChonDiemDanh; contact: ContactDraft }>) => void
   students: HocSinh[]
 }) {
-  const [selectedCode, setSelectedCode] = useState('')
-  const [status, setStatus] = useState<LuaChonDiemDanh>('vang_co_phep')
-  const [contact, setContact] = useState<ContactDraft>({ hinh_thuc: 'dien_thoai', noi_dung: '' })
+  const [step, setStep] = useState<'select' | 'assign'>('select')
+  const [selectedCodes, setSelectedCodes] = useState<string[]>([])
+  const [assignments, setAssignments] = useState<Record<string, LuaChonDiemDanh>>({})
+  const [contacts, setContacts] = useState<Record<string, ContactDraft>>({})
   const studentByCode = useMemo(() => new Map(students.map((student) => [student.ma_hs, student])), [students])
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const student = studentByCode.get(selectedCode)
-    if (!student) return
-    onSave(student, status, contact)
-    setSelectedCode('')
-    setStatus('vang_co_phep')
-    setContact({ hinh_thuc: 'dien_thoai', noi_dung: '' })
+  function toggleStudent(maHs: string) {
+    setSelectedCodes((current) =>
+      current.includes(maHs) ? current.filter((code) => code !== maHs) : [...current, maHs],
+    )
+  }
+
+  function confirmSelection() {
+    if (selectedCodes.length === 0) return
+    setAssignments((current) => {
+      const next = { ...current }
+      for (const code of selectedCodes) {
+        if (!next[code]) next[code] = 'vang_co_phep'
+      }
+      return next
+    })
+    setContacts((current) => {
+      const next = { ...current }
+      for (const code of selectedCodes) {
+        if (!next[code]) next[code] = { ...EMPTY_CONTACT }
+      }
+      return next
+    })
+    setStep('assign')
+  }
+
+  function removeFromAssign(maHs: string) {
+    setSelectedCodes((current) => current.filter((code) => code !== maHs))
+  }
+
+  function resetAll() {
+    setStep('select')
+    setSelectedCodes([])
+    setAssignments({})
+    setContacts({})
+  }
+
+  function submitAll() {
+    const entries = selectedCodes
+      .map((code) => studentByCode.get(code))
+      .filter((student): student is HocSinh => Boolean(student))
+      .map((student) => ({
+        student,
+        status: assignments[student.ma_hs] || 'vang_co_phep',
+        contact: contacts[student.ma_hs] || EMPTY_CONTACT,
+      }))
+    if (entries.length === 0) return
+    onSaveBulk(entries)
+    resetAll()
+  }
+
+  if (step === 'select') {
+    return (
+      <div className="mt-4 rounded-md border border-emerald-100 bg-white p-3">
+        <p className="text-sm font-semibold text-slate-900">
+          Bước 1 · Chọn học sinh cần ghi điểm danh ({selectedCodes.length} đã chọn)
+        </p>
+        <div className="mt-2 max-h-64 overflow-y-auto rounded-md border border-slate-200">
+          {students.map((student) => (
+            <label
+              key={student.ma_hs}
+              className="flex cursor-pointer items-center gap-2 border-b border-slate-100 px-3 py-2 text-sm last:border-b-0 hover:bg-slate-50"
+            >
+              <input
+                type="checkbox"
+                checked={selectedCodes.includes(student.ma_hs)}
+                onChange={() => toggleStudent(student.ma_hs)}
+                className="h-4 w-4 rounded border-slate-300 text-emerald-600"
+              />
+              <span className="min-w-0 flex-1 truncate text-slate-800">
+                {student.ho} {student.ten}
+              </span>
+              <span className="shrink-0 text-xs text-slate-400">{student.ma_hs}</span>
+            </label>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={disabled || selectedCodes.length === 0}
+          onClick={confirmSelection}
+          className="mt-3 h-10 w-full rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 md:w-auto"
+        >
+          Xác nhận đã chọn ({selectedCodes.length})
+        </button>
+      </div>
+    )
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 grid gap-3 rounded-md border border-emerald-100 bg-white p-3 md:grid-cols-3">
-      <select
-        value={selectedCode}
-        onChange={(event) => setSelectedCode(event.target.value)}
-        className={inputClass}
-      >
-        <option value="">Chọn học sinh...</option>
-        {students.map((student) => (
-          <option key={student.ma_hs} value={student.ma_hs}>
-            {student.ho} {student.ten} ({student.ma_hs})
-          </option>
-        ))}
-      </select>
+    <div className="mt-4 rounded-md border border-emerald-100 bg-white p-3">
+      <p className="text-sm font-semibold text-slate-900">Bước 2 · Chọn loại vắng cho từng học sinh</p>
+      <div className="mt-2 space-y-3">
+        {selectedCodes.map((code) => {
+          const student = studentByCode.get(code)
+          if (!student) return null
+          const status = assignments[code] || 'vang_co_phep'
+          const contact = contacts[code] || EMPTY_CONTACT
 
-      <select
-        value={status}
-        onChange={(event) => setStatus(event.target.value as LuaChonDiemDanh)}
-        className={inputClass}
-      >
-        {STATUS_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+          return (
+            <div key={code} className="rounded-md border border-slate-200 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
+                  {student.ho} {student.ten}
+                </span>
+                <select
+                  value={status}
+                  onChange={(event) =>
+                    setAssignments((current) => ({ ...current, [code]: event.target.value as LuaChonDiemDanh }))
+                  }
+                  className={inputClass}
+                >
+                  {STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => removeFromAssign(code)}
+                  className="text-xs font-semibold text-rose-600 hover:underline"
+                >
+                  Bỏ
+                </button>
+              </div>
 
-      <button
-        type="submit"
-        disabled={disabled || !selectedCode}
-        className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-      >
-        {disabled ? 'Đang lưu...' : 'Ghi điểm danh'}
-      </button>
+              {status !== 'co_mat' ? (
+                <div className="mt-2 space-y-2">
+                  <select
+                    value={contact.hinh_thuc}
+                    onChange={(event) =>
+                      setContacts((current) => ({
+                        ...current,
+                        [code]: { ...contact, hinh_thuc: event.target.value as HinhThucLienLacPhuHuynh },
+                      }))
+                    }
+                    className={inputClass + ' w-full'}
+                  >
+                    {CONTACT_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <textarea
+                    value={contact.noi_dung}
+                    onChange={(event) =>
+                      setContacts((current) => ({ ...current, [code]: { ...contact, noi_dung: event.target.value } }))
+                    }
+                    placeholder="Sau khi gọi phụ huynh, điền lại nội dung đã trao đổi (có thể để trống)"
+                    className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              ) : null}
+            </div>
+          )
+        })}
+      </div>
 
-      {status !== 'co_mat' ? (
-        <div className="space-y-2 md:col-span-3">
-          <select
-            value={contact.hinh_thuc}
-            onChange={(event) =>
-              setContact((current) => ({ ...current, hinh_thuc: event.target.value as HinhThucLienLacPhuHuynh }))
-            }
-            className={inputClass + ' w-full'}
-          >
-            {CONTACT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <textarea
-            value={contact.noi_dung}
-            onChange={(event) => setContact((current) => ({ ...current, noi_dung: event.target.value }))}
-            placeholder="Nội dung liên lạc phụ huynh (có thể để trống)"
-            className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
-        </div>
-      ) : null}
-    </form>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setStep('select')}
+          className="h-10 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+        >
+          ← Chọn lại học sinh
+        </button>
+        <button
+          type="button"
+          disabled={disabled || selectedCodes.length === 0}
+          onClick={submitAll}
+          className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          {disabled ? 'Đang lưu...' : `Xác nhận điểm danh (${selectedCodes.length})`}
+        </button>
+      </div>
+    </div>
   )
 }
 
