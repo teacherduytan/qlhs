@@ -158,7 +158,23 @@ export class SupabaseDataSource implements DataSource {
       .select()
       .single()
     assertNoError(error, 'Khong tao duoc HocSinh tren Supabase')
-    return data as HocSinh
+    const created = data as HocSinh
+
+    // Hoc sinh moi phai duoc them vao dung nhom diem danh giong het quy tac
+    // seed ban dau (migration 20260723000500), neu khong se bi loai hoan toan
+    // khoi bao cao si so (tinh_bao_cao_si_so chi lay theo thanh_vien_nhom_diem_danh,
+    // khong tu suy ra tu bang hoc_sinh) va khong the diem danh an/ngu trua.
+    const groups = ['CHINH_KHOA']
+    if (created.dien === 'BT' || created.dien === 'NT') {
+      groups.push('AN_TRUA')
+      if (!created.nu) groups.push('NGU_TRUA')
+    }
+    const { error: groupError } = await getSupabaseClient()
+      .from('thanh_vien_nhom_diem_danh')
+      .insert(groups.map((maNhom) => ({ ma_nhom: maNhom, ma_hs: created.ma_hs })))
+    assertNoError(groupError, 'Khong them duoc hoc sinh vao nhom diem danh tren Supabase')
+
+    return created
   }
 
   async updateStudent(maHs: string, student: Partial<HocSinh>): Promise<HocSinh> {
@@ -422,6 +438,22 @@ export class SupabaseDataSource implements DataSource {
         const tableName = tableNameForImport(loai)
         const { error } = await getSupabaseClient().from(tableName).insert(rows)
         assertNoError(error, `Khong ghi duoc ${tableName} tren Supabase`)
+
+        if (loai === 'hoc_sinh') {
+          const groupRows = rows.flatMap((row) => {
+            const maHs = row.ma_hs as string
+            const groups = ['CHINH_KHOA']
+            if (row.dien === 'BT' || row.dien === 'NT') {
+              groups.push('AN_TRUA')
+              if (!row.nu) groups.push('NGU_TRUA')
+            }
+            return groups.map((maNhom) => ({ ma_nhom: maNhom, ma_hs: maHs }))
+          })
+          const { error: groupError } = await getSupabaseClient()
+            .from('thanh_vien_nhom_diem_danh')
+            .insert(groupRows)
+          assertNoError(groupError, 'Khong them duoc hoc sinh vao nhom diem danh tren Supabase')
+        }
       }
 
       const status: TrangThaiImport =

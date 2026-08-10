@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import { Pagination, usePagination } from '../../components/Pagination'
 import { CopyIcon } from '../../components/CopyIcon'
+import { isActiveStudent } from '../dashboard/DashboardPage'
 import type {
   BuoiDiemDanh,
   CauHinhTuan,
@@ -162,14 +163,20 @@ export function AttendanceManagementPage() {
   const weekAbsentCountByStudent = useMemo(() => countAbsencesByStudent(weekEntries), [weekEntries])
   const monthAbsentCountByStudent = useMemo(() => countAbsencesByStudent(dateMonthEntries), [dateMonthEntries])
 
-  const sessionSummary = useMemo(
-    () => summarizeAttendance(Array.from(currentEntryByStudent.values()), students.length),
-    [currentEntryByStudent, students.length],
-  )
-  const monthSummary = useMemo(
-    () => summarizeAttendance(overviewMonthEntries, students.length),
-    [overviewMonthEntries, students.length],
-  )
+  // Si so phai tinh theo dung so hoc sinh CON TRONG LOP tai ngay/thang dang xem
+  // (ngay_nhap_hoc/ngay_roi_lop), khong the dung students.length tho - neu khong,
+  // 1 em moi them vao lop se bi tinh nham vao si so cua ca nhung ngay TRUOC KHI
+  // em do nhap hoc, va 1 em da roi lop van tiep tuc bi dem vao si so hien tai.
+  const sessionSummary = useMemo(() => {
+    const referenceDate = parseIsoDate(selectedDate)
+    const activeCount = students.filter((student) => isActiveStudent(student, referenceDate)).length
+    return summarizeAttendance(Array.from(currentEntryByStudent.values()), activeCount)
+  }, [currentEntryByStudent, students, selectedDate])
+  const monthSummary = useMemo(() => {
+    const referenceDate = parseIsoDate(lastDayOfMonth(selectedMonth))
+    const activeCount = students.filter((student) => isActiveStudent(student, referenceDate)).length
+    return summarizeAttendance(overviewMonthEntries, activeCount)
+  }, [overviewMonthEntries, students, selectedMonth])
 
   const monthExceptions = useMemo(
     () => [...overviewMonthEntries].sort((left, right) => right.ngay.localeCompare(left.ngay)),

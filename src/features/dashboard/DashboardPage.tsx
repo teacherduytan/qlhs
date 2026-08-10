@@ -2091,7 +2091,11 @@ function buildOverviewStats({
 }): OverviewStatGroups {
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
   const studentById = new Map(students.map((student) => [student.ma_hs, student]))
-  const activeStudents = students.filter((student) => isActiveStudent(student))
+  // Dung dung ngay cua TUAN DANG XEM (khong phai hom nay) - giao vien co the
+  // luot xem tuan cu, neu luon lay "hom nay" thi 1 hoc sinh moi them vao lop
+  // se khong duoc tinh vao si so cua nhung tuan cu truoc khi em do nhap hoc.
+  const weekReferenceDate = selectedWeek ? parseIsoDate(selectedWeek.den_ngay) || new Date() : new Date()
+  const activeStudents = students.filter((student) => isActiveStudent(student, weekReferenceDate))
   const weekRecords = records.filter((record) => record.tuan_so === tuanSo)
   const personalWeekRecords = weekRecords.filter((record) => record.ma_hs)
   const studentsWithRecords = new Set(personalWeekRecords.map((record) => record.ma_hs))
