@@ -29,6 +29,8 @@ type StudentForm = {
   sdt_2: string
   la_co_do: boolean
   ghi_chu: string
+  ngay_nhap_hoc: string
+  ngay_roi_lop: string
 }
 
 type StudentSortKey = 'tt_asc' | 'name_asc' | 'name_desc' | 'team_asc'
@@ -45,6 +47,8 @@ const EMPTY_FORM: StudentForm = {
   sdt_2: '',
   la_co_do: false,
   ghi_chu: '',
+  ngay_nhap_hoc: '',
+  ngay_roi_lop: '',
 }
 
 export function StudentsPage() {
@@ -166,7 +170,7 @@ export function StudentsPage() {
   function openAddForm() {
     setFormMode('add')
     setEditingStudent(null)
-    setForm(EMPTY_FORM)
+    setForm({ ...EMPTY_FORM, ngay_nhap_hoc: todayIsoDate() })
     setSaveError(null)
   }
 
@@ -397,6 +401,18 @@ export function StudentsPage() {
               onChange={(value) => setForm((current) => ({ ...current, sdt_2: value }))}
             />
             <TextField
+              label="Ngày nhập học"
+              type="date"
+              value={form.ngay_nhap_hoc}
+              onChange={(value) => setForm((current) => ({ ...current, ngay_nhap_hoc: value }))}
+            />
+            <TextField
+              label="Ngày rời lớp"
+              type="date"
+              value={form.ngay_roi_lop}
+              onChange={(value) => setForm((current) => ({ ...current, ngay_roi_lop: value }))}
+            />
+            <TextField
               label="Ghi chú"
               value={form.ghi_chu}
               onChange={(value) => setForm((current) => ({ ...current, ghi_chu: value }))}
@@ -539,6 +555,18 @@ export function StudentsPage() {
                   label="SĐT 2"
                   value={form.sdt_2}
                   onChange={(value) => setForm((current) => ({ ...current, sdt_2: value }))}
+                />
+                <TextField
+                  label="Ngày nhập học"
+                  type="date"
+                  value={form.ngay_nhap_hoc}
+                  onChange={(value) => setForm((current) => ({ ...current, ngay_nhap_hoc: value }))}
+                />
+                <TextField
+                  label="Ngày rời lớp"
+                  type="date"
+                  value={form.ngay_roi_lop}
+                  onChange={(value) => setForm((current) => ({ ...current, ngay_roi_lop: value }))}
                 />
                 <TextField
                   label="Ghi chú"
@@ -964,6 +992,8 @@ function formFromStudent(student: HocSinh): StudentForm {
     sdt_2: toText(student.sdt_2),
     la_co_do: student.la_co_do,
     ghi_chu: toText(student.ghi_chu),
+    ngay_nhap_hoc: toText(student.ngay_nhap_hoc),
+    ngay_roi_lop: toText(student.ngay_roi_lop),
   }
 }
 
@@ -978,6 +1008,8 @@ function formToPatch(form: StudentForm): Partial<HocSinh> {
     to: form.to ? Number(form.to) : null,
     sdt_1: nullable(form.sdt_1),
     sdt_2: nullable(form.sdt_2),
+    ngay_nhap_hoc: nullable(form.ngay_nhap_hoc),
+    ngay_roi_lop: nullable(form.ngay_roi_lop),
     la_co_do: form.la_co_do,
     ghi_chu: nullable(form.ghi_chu),
   }
@@ -988,8 +1020,6 @@ function createStudent(form: StudentForm, students: HocSinh[]): HocSinh {
     ma_hs: nextStudentId(students),
     tt: nextOrder(students),
     ...formToPatch(form),
-    ngay_nhap_hoc: null,
-    ngay_roi_lop: null,
     token_ho_so: randomToken(),
     anh_dai_dien: null,
   } as HocSinh
@@ -1018,6 +1048,13 @@ function randomToken(): string {
 function nullable(value: string): string | null {
   const trimmed = value.trim()
   return trimmed ? trimmed : null
+}
+
+function todayIsoDate(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${now.getFullYear()}-${month}-${day}`
 }
 
 function toText(value: unknown): string {

@@ -104,6 +104,8 @@ type StudentForm = {
   sdt_2: string
   la_co_do: boolean
   ghi_chu: string
+  ngay_nhap_hoc: string
+  ngay_roi_lop: string
 }
 
 type RoleForm = {
@@ -950,6 +952,22 @@ export function TeacherStudentDetailPage() {
               <TextField label="Ngày sinh" type="date" value={form.ngay_sinh} onChange={(value) => setForm({ ...form, ngay_sinh: value })} />
               <TextField label="SĐT 1" value={form.sdt_1} onChange={(value) => setForm({ ...form, sdt_1: value })} />
               <TextField label="SĐT 2" value={form.sdt_2} onChange={(value) => setForm({ ...form, sdt_2: value })} />
+              <TextField
+                label="Ngày nhập học"
+                type="date"
+                value={form.ngay_nhap_hoc}
+                onChange={(value) => setForm({ ...form, ngay_nhap_hoc: value })}
+              />
+              <TextField
+                label="Ngày rời lớp"
+                type="date"
+                value={form.ngay_roi_lop}
+                onChange={(value) => setForm({ ...form, ngay_roi_lop: value })}
+              />
+              <p className="text-xs text-slate-500 sm:col-span-2 lg:col-span-4">
+                Để trống "Ngày rời lớp" nếu học sinh đang học bình thường. Học sinh chuyển trường: điền đúng ngày rời lớp
+                tại đây thay vì xoá hồ sơ — dữ liệu ghi nhận/điểm danh trước đó vẫn được giữ nguyên.
+              </p>
               <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                 <input
                   type="checkbox"
@@ -1620,6 +1638,8 @@ function formFromStudent(student: HocSinh): StudentForm {
     sdt_2: toText(student.sdt_2),
     la_co_do: student.la_co_do,
     ghi_chu: toText(student.ghi_chu),
+    ngay_nhap_hoc: toText(student.ngay_nhap_hoc),
+    ngay_roi_lop: toText(student.ngay_roi_lop),
   }
 }
 
@@ -1636,6 +1656,8 @@ function formToPatch(form: StudentForm): Partial<HocSinh> {
     sdt_2: nullable(form.sdt_2),
     la_co_do: form.la_co_do,
     ghi_chu: nullable(form.ghi_chu),
+    ngay_nhap_hoc: nullable(form.ngay_nhap_hoc),
+    ngay_roi_lop: nullable(form.ngay_roi_lop),
   }
 }
 
