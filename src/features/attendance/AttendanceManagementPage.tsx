@@ -869,16 +869,25 @@ function QuickMarkForm({
 
           return (
             <div key={code} className="rounded-md border border-slate-200 p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
-                  {student.ho} {student.ten}
-                </span>
+              <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                <div className="flex items-center justify-between gap-2 md:min-w-0 md:flex-1">
+                  <span className="wrap-break-word text-sm font-semibold text-slate-900">
+                    {student.ho} {student.ten}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeFromAssign(code)}
+                    className="shrink-0 text-xs font-semibold text-rose-600 hover:underline md:hidden"
+                  >
+                    Bỏ
+                  </button>
+                </div>
                 <select
                   value={status}
                   onChange={(event) =>
                     setAssignments((current) => ({ ...current, [code]: event.target.value as LuaChonDiemDanh }))
                   }
-                  className={inputClass}
+                  className={inputClass + ' w-full md:w-auto'}
                 >
                   {STATUS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -889,7 +898,7 @@ function QuickMarkForm({
                 <button
                   type="button"
                   onClick={() => removeFromAssign(code)}
-                  className="text-xs font-semibold text-rose-600 hover:underline"
+                  className="hidden shrink-0 text-xs font-semibold text-rose-600 hover:underline md:inline"
                 >
                   Bỏ
                 </button>
