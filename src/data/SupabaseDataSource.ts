@@ -190,6 +190,16 @@ export class SupabaseDataSource implements DataSource {
 
   async deleteStudent(maHs: string): Promise<void> {
     const { error } = await getSupabaseClient().from('hoc_sinh').delete().eq('ma_hs', maHs)
+    if (error?.code === '23503') {
+      // foreign_key_violation - hoc sinh da co du lieu tham chieu (GhiNhan...),
+      // FK ghi_nhan.ma_hs dat "on delete restrict" nen chan xoa de giu nguyen
+      // ven lich su (xem migration 20260808000600). Doi voi hoc sinh chuyen
+      // truong, dung "Ngay roi lop" thay vi xoa that.
+      throw new Error(
+        'Không xoá được: học sinh này đã có dữ liệu Ghi nhận/điểm danh gắn với mình. ' +
+          'Nếu học sinh chuyển trường, hãy sửa hồ sơ và điền "Ngày rời lớp" thay vì xoá, để không mất lịch sử.',
+      )
+    }
     assertNoError(error, 'Khong xoa duoc HocSinh tren Supabase')
   }
 

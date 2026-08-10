@@ -216,7 +216,9 @@ export function StudentsPage() {
   }
 
   async function deleteStudent(student: HocSinh) {
-    const ok = window.confirm(`Xoá ${student.ho} ${student.ten} khỏi tab HocSinh?`)
+    const ok = window.confirm(
+      `Xoá ${student.ho} ${student.ten} khỏi tab HocSinh? Nếu em đã có Ghi nhận/điểm danh, hệ thống sẽ chặn để giữ dữ liệu lịch sử — dùng "Ngày rời lớp" trong form sửa hồ sơ nếu em chuyển trường.`,
+    )
     if (!ok) {
       return
     }
