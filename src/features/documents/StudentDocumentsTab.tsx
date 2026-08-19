@@ -58,7 +58,7 @@ export function StudentDocumentsTab({ maHs }: { maHs: string }) {
         ) : items.length === 0 ? (
           <p className="text-sm text-slate-500">Chưa có tài liệu nào đính kèm cho học sinh này.</p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
               <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3 shadow-sm">
                 <TaiLieuPagesPreview trang={item.trang} className="h-32 w-full" />

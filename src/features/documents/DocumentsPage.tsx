@@ -488,8 +488,8 @@ function UploadEntryCard({
       <div className="flex flex-1 flex-col gap-2">
         {entry.error ? <p className="text-xs font-semibold text-red-700">{entry.error}</p> : null}
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-slate-700">
             Loại tài liệu
             <DanhMucTaiLieuSelect
               danhMuc={danhMuc}
@@ -498,13 +498,13 @@ function UploadEntryCard({
               onCreated={onDanhMucCreated}
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+          <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-slate-700">
             Ngày viết
             <input
               type="date"
               value={entry.ngayViet}
               onChange={(event) => onChange({ ngayViet: event.target.value })}
-              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </label>
         </div>
@@ -520,7 +520,7 @@ function UploadEntryCard({
             <select
               value={entry.ghiNhanId}
               onChange={(event) => onChange({ ghiNhanId: event.target.value })}
-              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">— Không liên kết —</option>
               {relatedRecords.map((record) => (
@@ -593,13 +593,13 @@ function LibraryPanel({ students, danhMuc }: { students: HocSinh[]; danhMuc: Dan
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-4">
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+      <div className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-2 lg:grid-cols-4">
+        <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-slate-700">
           Loại tài liệu
           <select
             value={filters.danhMucId}
             onChange={(event) => setFilters({ ...filters, danhMucId: event.target.value })}
-            className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           >
             <option value="">Tất cả</option>
             {danhMuc.map((item) => (
@@ -609,12 +609,12 @@ function LibraryPanel({ students, danhMuc }: { students: HocSinh[]; danhMuc: Dan
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+        <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-slate-700">
           Học sinh
           <select
             value={filters.maHs}
             onChange={(event) => setFilters({ ...filters, maHs: event.target.value })}
-            className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           >
             <option value="">Tất cả</option>
             {students.map((student) => (
@@ -624,22 +624,22 @@ function LibraryPanel({ students, danhMuc }: { students: HocSinh[]; danhMuc: Dan
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+        <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-slate-700">
           Từ ngày viết
           <input
             type="date"
             value={filters.tuNgay}
             onChange={(event) => setFilters({ ...filters, tuNgay: event.target.value })}
-            className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+        <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-slate-700">
           Đến ngày viết
           <input
             type="date"
             value={filters.denNgay}
             onChange={(event) => setFilters({ ...filters, denNgay: event.target.value })}
-            className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
         </label>
       </div>
@@ -653,7 +653,7 @@ function LibraryPanel({ students, danhMuc }: { students: HocSinh[]; danhMuc: Dan
           Không có tài liệu nào khớp bộ lọc.
         </p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {items.map((item) =>
             editingId === item.id ? (
               <TaiLieuEditCard
@@ -773,7 +773,7 @@ function TaiLieuEditCard({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-blue-300 bg-blue-50 p-3 shadow-sm sm:col-span-2 lg:col-span-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-blue-300 bg-blue-50 p-3 shadow-sm md:col-span-2 lg:col-span-3">
       <p className="text-xs font-semibold uppercase text-blue-700">Sửa tài liệu</p>
 
       <div className="flex flex-wrap gap-2">
@@ -819,8 +819,8 @@ function TaiLieuEditCard({
         </label>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-slate-700">
           Loại tài liệu
           <DanhMucTaiLieuSelect
             danhMuc={danhMucList}
@@ -829,13 +829,13 @@ function TaiLieuEditCard({
             onCreated={(created) => setDanhMucList((current) => [...current, created])}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+        <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-slate-700">
           Ngày viết
           <input
             type="date"
             value={ngayViet}
             onChange={(event) => setNgayViet(event.target.value)}
-            className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
         </label>
       </div>
