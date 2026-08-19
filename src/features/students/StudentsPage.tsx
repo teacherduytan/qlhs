@@ -16,6 +16,21 @@ import { getBadgeClassForGroup } from '../scoring/scoreStyles'
 import { Pagination, usePagination } from '../../components/Pagination'
 import { PhoneActionMenu } from '../../components/PhoneActionMenu'
 import { findCurrentMessage } from './messageContents'
+import { isActiveStudent } from '../dashboard/DashboardPage'
+import { REPORT_CONFIG } from '../reports/reportConfig'
+import { STUDENT_EXPORT_COLUMNS, type StudentExportColumnKey } from './studentExportColumns'
+
+function slugifyFileNamePart(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+const DEFAULT_EXPORT_COLUMNS: StudentExportColumnKey[] = ['nu', 'ngay_sinh', 'to', 'sdt_1', 'sdt_2']
 
 type StudentForm = {
   ho: string
@@ -73,6 +88,13 @@ export function StudentsPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [deletingMaHs, setDeletingMaHs] = useState<string | null>(null)
+  const [exportOpen, setExportOpen] = useState(false)
+  const [exportIncludeActive, setExportIncludeActive] = useState(true)
+  const [exportIncludeLeft, setExportIncludeLeft] = useState(false)
+  const [exportColumns, setExportColumns] = useState<StudentExportColumnKey[]>(DEFAULT_EXPORT_COLUMNS)
+  const [exportFormat, setExportFormat] = useState<'xlsx' | 'md'>('xlsx')
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -248,6 +270,45 @@ export function StudentsPage() {
     window.setTimeout(() => setCopyMessage(null), 2500)
   }
 
+  function toggleExportColumn(key: StudentExportColumnKey) {
+    setExportColumns((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+    )
+  }
+
+  async function runExport() {
+    if (!exportIncludeActive && !exportIncludeLeft) {
+      setExportError('Cần chọn ít nhất 1 trạng thái: đang học hoặc đã nghỉ học.')
+      return
+    }
+
+    setExportError(null)
+    setExporting(true)
+    try {
+      const referenceDate = new Date()
+      const rows = students
+        .filter((student) => {
+          const active = isActiveStudent(student, referenceDate)
+          return (active && exportIncludeActive) || (!active && exportIncludeLeft)
+        })
+        .sort((left, right) => compareStudents(left, right, 'tt_asc'))
+
+      const fileBaseName = `danh-sach-hoc-sinh-lop-${slugifyFileNamePart(REPORT_CONFIG.tenLop)}-${todayIsoDate()}`
+      if (exportFormat === 'md') {
+        const { exportStudentsToMarkdown } = await import('./exportStudentsMarkdown')
+        await exportStudentsToMarkdown(rows, exportColumns, fileBaseName)
+      } else {
+        const { exportStudentsToExcel } = await import('./exportStudentsExcel')
+        await exportStudentsToExcel(rows, exportColumns, fileBaseName)
+      }
+      setExportOpen(false)
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'Không xuất được danh sách học sinh.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <section className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -257,13 +318,25 @@ export function StudentsPage() {
             Tìm kiếm, thêm, sửa và xoá học sinh trực tiếp trên tab HocSinh.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openAddForm}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-        >
-          Thêm học sinh
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setExportError(null)
+              setExportOpen(true)
+            }}
+            className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
+          >
+            Xuất danh sách
+          </button>
+          <button
+            type="button"
+            onClick={openAddForm}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+          >
+            Thêm học sinh
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 lg:grid-cols-[1fr_160px_160px_200px_auto] lg:items-end">
@@ -622,6 +695,121 @@ export function StudentsPage() {
               </button>
             </div>
           </form>
+        </div>
+      ) : null}
+
+      {exportOpen ? (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 p-4 sm:items-center">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="export-students-title"
+            className="my-8 w-full max-w-lg rounded-lg bg-white shadow-xl sm:my-8"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+              <div>
+                <h3 id="export-students-title" className="text-lg font-bold text-slate-900">
+                  Xuất danh sách học sinh
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">Chọn trạng thái, thuộc tính và định dạng file cần xuất.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExportOpen(false)}
+                className="rounded-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                Đóng
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
+              <p className="text-sm font-semibold text-slate-900">Trạng thái</p>
+              <div className="mt-2 flex flex-wrap gap-4">
+                <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={exportIncludeActive}
+                    onChange={(event) => setExportIncludeActive(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                  />
+                  Học sinh đang học
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={exportIncludeLeft}
+                    onChange={(event) => setExportIncludeLeft(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                  />
+                  Học sinh đã nghỉ học
+                </label>
+              </div>
+
+              <p className="mt-4 text-sm font-semibold text-slate-900">Định dạng file</p>
+              <div className="mt-2 flex flex-wrap gap-4">
+                <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input
+                    type="radio"
+                    name="export-format"
+                    checked={exportFormat === 'xlsx'}
+                    onChange={() => setExportFormat('xlsx')}
+                    className="h-4 w-4 border-slate-300 text-blue-600"
+                  />
+                  Excel (.xlsx)
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input
+                    type="radio"
+                    name="export-format"
+                    checked={exportFormat === 'md'}
+                    onChange={() => setExportFormat('md')}
+                    className="h-4 w-4 border-slate-300 text-blue-600"
+                  />
+                  Markdown (.md — gọn, tiết kiệm dung lượng text)
+                </label>
+              </div>
+
+              <p className="mt-4 text-sm font-semibold text-slate-900">Thuộc tính xuất kèm</p>
+              <p className="mt-1 text-xs text-slate-500">STT, Mã HS và Họ tên luôn được xuất mặc định.</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {STUDENT_EXPORT_COLUMNS.map((column) => (
+                  <label key={column.key} className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={exportColumns.includes(column.key)}
+                      onChange={() => toggleExportColumn(column.key)}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                    />
+                    {column.label}
+                  </label>
+                ))}
+              </div>
+
+              {exportError ? (
+                <div className="mt-4 rounded-md border border-amber-200 bg-amber-100 px-3 py-2 text-sm text-amber-900">
+                  {exportError}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setExportOpen(false)}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Huỷ
+              </button>
+              <button
+                type="button"
+                onClick={runExport}
+                disabled={exporting}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {exporting ? 'Đang xuất...' : exportFormat === 'md' ? 'Xuất Markdown' : 'Xuất Excel'}
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
 
