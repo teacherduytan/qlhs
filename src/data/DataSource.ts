@@ -36,6 +36,14 @@ import type {
   LoaiDuyetDongHanh,
   BacTinhTu,
   RankLichSuTuan,
+  DiemCauHinhThanhPhan,
+  DiemCauHinhHeSoDieuKien,
+  DiemNguongXepLoai,
+  DanhMucTaiLieu,
+  TaiLieuChiTiet,
+  TaiLieuUploadInput,
+  TaiLieuCapNhatInput,
+  TaiLieuBoLoc,
 } from './types'
 
 /** Lớp trung gian dữ liệu — mọi UI chỉ gọi qua interface này (tài liệu 01) */
@@ -174,4 +182,37 @@ export interface DataSource {
     diemTuan: number
     bacDat: number
   }): Promise<void>
+
+  getDiemCauHinhThanhPhan(): Promise<DiemCauHinhThanhPhan[]>
+  addDiemCauHinhThanhPhan(item: DiemCauHinhThanhPhan): Promise<DiemCauHinhThanhPhan>
+  updateDiemCauHinhThanhPhan(
+    maThanhPhan: string,
+    patch: Partial<DiemCauHinhThanhPhan>,
+  ): Promise<DiemCauHinhThanhPhan>
+  deleteDiemCauHinhThanhPhan(maThanhPhan: string): Promise<void>
+
+  getDiemCauHinhHeSoDieuKien(): Promise<DiemCauHinhHeSoDieuKien[]>
+  addDiemCauHinhHeSoDieuKien(item: DiemCauHinhHeSoDieuKien): Promise<DiemCauHinhHeSoDieuKien>
+  updateDiemCauHinhHeSoDieuKien(
+    id: number,
+    patch: Partial<DiemCauHinhHeSoDieuKien>,
+  ): Promise<DiemCauHinhHeSoDieuKien>
+  deleteDiemCauHinhHeSoDieuKien(id: number): Promise<void>
+
+  getDiemNguongXepLoai(): Promise<DiemNguongXepLoai[]>
+  addDiemNguongXepLoai(item: DiemNguongXepLoai): Promise<DiemNguongXepLoai>
+  updateDiemNguongXepLoai(maXepLoai: string, patch: Partial<DiemNguongXepLoai>): Promise<DiemNguongXepLoai>
+  deleteDiemNguongXepLoai(maXepLoai: string): Promise<void>
+
+  getDiemCauHinhChung(): Promise<Record<string, string>>
+  updateDiemCauHinhChung(khoa: string, giaTri: string): Promise<void>
+
+  getDanhMucTaiLieu(): Promise<DanhMucTaiLieu[]>
+  addDanhMucTaiLieu(item: { ten: string; tinh_la_cam_ket: boolean }): Promise<DanhMucTaiLieu>
+
+  getTaiLieu(filter?: TaiLieuBoLoc): Promise<TaiLieuChiTiet[]>
+  uploadTaiLieu(input: TaiLieuUploadInput): Promise<TaiLieuChiTiet>
+  updateTaiLieu(id: string, patch: TaiLieuCapNhatInput): Promise<TaiLieuChiTiet>
+  deleteTaiLieu(id: string): Promise<void>
+  getTaiLieuUrl(duongDanLuuTru: string): Promise<string>
 }

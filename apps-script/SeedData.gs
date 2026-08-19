@@ -603,6 +603,7 @@ function seedInitialData(spreadsheetId) {
   seedHocSinh_(ss.getSheetByName('HocSinh'));
   seedCauHinhTuan_(ss.getSheetByName('CauHinhTuan'));
   Logger.log('Đã nạp ' + HOCSINH_SEED.length + ' học sinh và ' + CAU_HINH_TUAN_SEED.length + ' tuần.');
+  return ss.getUrl();
 }
 
 function seedHocSinh_(sheet) {
@@ -614,7 +615,7 @@ function seedHocSinh_(sheet) {
     });
   });
   if (sheet.getLastRow() > 1) {
-    sheet.getRange(2, 1, sheet.getLastRow(), headers.length).clearContent();
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).clearContent();
   }
   sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
 }
@@ -628,7 +629,23 @@ function seedCauHinhTuan_(sheet) {
     });
   });
   if (sheet.getLastRow() > 1) {
-    sheet.getRange(2, 1, sheet.getLastRow(), headers.length).clearContent();
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).clearContent();
   }
   sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+}
+
+/** ID Sheet QLHS lớp 11C5 — từ URL Google Sheets */
+var QLHS_SPREADSHEET_ID = '1MyaHUH8GUDPMxza0KMeUscRDKI7-ligxW7eYCPn_gJY';
+
+/**
+ * Chạy hàm này để nạp 36 học sinh + 2 tuần.
+ * - Script gắn với Sheet (Mở rộng → Apps Script): dùng Sheet đang mở.
+ * - Script độc lập (script.google.com): dùng QLHS_SPREADSHEET_ID ở trên.
+ */
+function seedQLHS11C5() {
+  var active = SpreadsheetApp.getActiveSpreadsheet();
+  var id = active ? active.getId() : QLHS_SPREADSHEET_ID;
+  var url = seedInitialData(id);
+  Logger.log('Xong. Mở Sheet: ' + (active ? active.getUrl() : 'https://docs.google.com/spreadsheets/d/' + id + '/edit'));
+  return url;
 }

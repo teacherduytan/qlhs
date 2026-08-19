@@ -46,6 +46,7 @@ function seedInitialData(spreadsheetId) {
   seedHocSinh_(ss.getSheetByName('HocSinh'));
   seedCauHinhTuan_(ss.getSheetByName('CauHinhTuan'));
   Logger.log('Đã nạp ' + HOCSINH_SEED.length + ' học sinh và ' + CAU_HINH_TUAN_SEED.length + ' tuần.');
+  return ss.getUrl();
 }
 
 function seedHocSinh_(sheet) {
@@ -57,7 +58,7 @@ function seedHocSinh_(sheet) {
     });
   });
   if (sheet.getLastRow() > 1) {
-    sheet.getRange(2, 1, sheet.getLastRow(), headers.length).clearContent();
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).clearContent();
   }
   sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
 }
@@ -71,11 +72,22 @@ function seedCauHinhTuan_(sheet) {
     });
   });
   if (sheet.getLastRow() > 1) {
-    sheet.getRange(2, 1, sheet.getLastRow(), headers.length).clearContent();
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).clearContent();
   }
   sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
 }
 `;
 
-fs.writeFileSync(path.join(root, 'apps-script/SeedData.gs'), gs, 'utf8');
+const tail = `
+/** ID Sheet QLHS lớp 11C5 */
+var QLHS_SPREADSHEET_ID = '1MyaHUH8GUDPMxza0KMeUscRDKI7-ligxW7eYCPn_gJY';
+
+function seedQLHS11C5() {
+  var active = SpreadsheetApp.getActiveSpreadsheet();
+  var id = active ? active.getId() : QLHS_SPREADSHEET_ID;
+  return seedInitialData(id);
+}
+`;
+
+fs.writeFileSync(path.join(root, 'apps-script/SeedData.gs'), gs + tail, 'utf8');
 console.log('Generated:', students.length, 'students,', weeks.length, 'weeks');

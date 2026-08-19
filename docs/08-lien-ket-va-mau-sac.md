@@ -4,18 +4,26 @@
 
 ## Phần 1 — Nguyên tắc liên kết chi tiết (drill-down)
 
-**Nguyên tắc chung**: mọi con số/thẻ tổng hợp hiển thị trên Tổng quan đều phải bấm được, dẫn thẳng tới đúng danh sách chi tiết cấu thành con số đó. Không có "số chết" (hiện số nhưng không bấm được gì).
+> **Cập nhật (11/07/2026)**: nâng thành nguyên tắc **bắt buộc tuyệt đối, không còn ngoại lệ** — trước đây TK01/TK06/TK07/TK08 được ghi "không bắt buộc bấm được", nay **tất cả đều bắt buộc**. Không có "số chết" nào trên toàn bộ báo cáo.
 
-### Bảng ánh xạ: bấm vào đâu → dẫn tới đâu
+**Nguyên tắc chung**: mọi con số/thẻ/badge hiển thị trên Tổng quan, hồ sơ học sinh, Nhật ký theo ngày, danh sách học sinh đều phải:
+1. Đổi con trỏ thành hình bàn tay khi rê chuột qua (`cursor: pointer`).
+2. Có phản hồi thị giác nhỏ khi hover (gạch chân nhạt hoặc đổi nền nhạt hơn) — để người dùng biết chỗ đó bấm được mà không cần đoán.
+3. Bấm vào → dẫn đúng tới danh sách/màn chi tiết cấu thành con số đó.
+
+### Bảng ánh xạ: bấm vào đâu → dẫn tới đâu (đã cập nhật — không còn mục "không bắt buộc")
 
 | Vùng bấm | Dẫn tới |
 |---|---|
+| Thẻ **TK01** (Sĩ số & học sinh "sạch") | Bấm vào số "22 em không có ghi nhận" → mở danh sách đúng các em đó (để biết ai đang ổn, cũng hữu ích) |
 | Thẻ **TK02** (Học sinh cần chú ý) | Mở danh sách rút gọn đúng những em đó (tên + điểm thành phần thấp nhất), bấm tiếp vào 1 tên → hồ sơ đầy đủ |
 | Thẻ **TK03** (Vi phạm nghiêm trọng) | Mở danh sách các dòng `GhiNhan` nghiêm trọng trong tuần (tên học sinh + mã + ngày + đã xử lý chưa), bấm vào tên → hồ sơ |
-| Thẻ **TK04** (Sự kiện tập thể/tổ trực chờ xử lý) | Mở danh sách các sự kiện đó. Xem "Phần 1b" bên dưới để biết bấm vào từng loại sự kiện dẫn tới đâu |
+| Thẻ **TK04** (Sự kiện tập thể/tổ trực chờ xử lý) | Mở danh sách các sự kiện đó. Xem "Phần 1b" để biết bấm vào từng loại sự kiện dẫn tới đâu |
 | Thẻ **TK05** (Vi phạm phổ biến nhất) | Mở danh sách toàn bộ các dòng `GhiNhan` mang đúng mã đó trong tuần, kèm tên học sinh liên quan |
-| Thẻ **TK01, TK06, TK07, TK08** | Không bắt buộc bấm được (chỉ mang tính thông tin bối cảnh) — nhưng nếu dễ làm, TK06 (điểm TB theo nhóm) nên bấm vào 1 nhóm (VD "KL: 85") → lọc dashboard chỉ hiện các vi phạm nhóm KL trong tuần |
-| Bất kỳ badge/chip mã vi phạm (VD `KL09`) xuất hiện ở hồ sơ, nhật ký theo ngày, dashboard... | Bấm vào → popup nhỏ hiện mô tả đầy đủ mã đó (tên, điểm trừ, phạm vi) từ bảng tra cứu — không cần mở file riêng để tra |
+| Thẻ **TK06** (Điểm trung bình theo nhóm, VD "KL: 85") | Bấm vào 1 nhóm → nhảy thẳng tới khu vực **"Xem theo Nhóm vi phạm"** (Phần 1c, mới) với đúng nhóm đó đã chọn sẵn |
+| Thẻ **TK07** (Xu hướng so tuần trước) | Bấm vào → mở bảng so sánh chi tiết từng nhóm giữa tuần đang xem và tuần liền trước (không chỉ 1 con số chênh lệch chung) |
+| Thẻ **TK08** (Nhịp độ ghi nhận) | Bấm vào → nhảy tới khu "Nhật ký theo ngày" (C033/C040), tự động chọn sẵn ngày gần nhất có ghi nhận |
+| Bất kỳ badge/chip mã vi phạm (VD `KL09`) ở bất kỳ đâu | Bấm vào → popup nhỏ hiện mô tả đầy đủ mã đó (tên, điểm trừ, phạm vi) từ bảng tra cứu |
 
 ### Phần 1b — Bấm vào sự kiện tập thể/tổ trực (TK04) dẫn tới đâu, chi tiết hơn
 
@@ -26,9 +34,14 @@
   - Vẫn giữ nguyên 3 nút xử lý nhanh đã có (Gán 1 học sinh / Áp dụng cho cả tổ / Bỏ qua — từ C021a)
 - **Nếu sự kiện có `pham_vi = tap_the`** (VD: cả lớp ồn giờ chào cờ): bấm vào → mở chi tiết sự kiện (mô tả, ngày, mã) kèm 3 nút xử lý nhanh như cũ (Gán 1 học sinh / Áp dụng cho cả lớp / Bỏ qua) — không cần "Thông tin Tổ" vì áp dụng cho cả lớp, không phải 1 tổ riêng.
 
-### Ví dụ cụ thể để AI hiểu đúng
+### Phần 1c — Khu vực "Xem theo Nhóm vi phạm" (mới)
 
-> Giáo viên thấy thẻ TK04 ghi "5 sự kiện đang chờ xử lý", bấm vào → thấy danh sách 5 dòng, trong đó có "Tổ 2 — Vệ sinh không đúng giờ (VS01)". Bấm vào đúng dòng đó → mở ra: *"Tổ 2 (Tổ trưởng: Nguyễn Trọng Hòa) — 12 học sinh: [danh sách tên] — Lịch sử: đây là lần thứ 2 tổ 2 bị nhắc trong tháng"* + 3 nút xử lý.
+Trả lời đúng câu hỏi "lỗi của ai thuộc nhóm nào" — 1 khu vực/tab riêng trên Dashboard (cạnh "Tổng quan" và "Nhật ký theo ngày"):
+
+1. **Bộ chọn nhóm**: 5 nút — Chuyên cần / Vệ sinh / Nề nếp / Kỷ luật / Học tập — dùng đúng màu tương ứng theo Phần 2 bên dưới, để bấm nhanh bằng mắt không cần đọc chữ.
+2. **Khi chọn 1 nhóm** (VD: Kỷ luật): hiện danh sách toàn bộ học sinh có ít nhất 1 ghi nhận thuộc nhóm đó trong tuần đang xem, **sắp xếp điểm thấp nhất lên đầu** (tệ nhất trước). Mỗi dòng gồm: tên học sinh, điểm hiện tại của nhóm đó, số lần vi phạm, danh sách mã vi phạm cụ thể (dạng badge màu). Bấm vào 1 dòng → hồ sơ đầy đủ của em đó.
+3. Học sinh không có vi phạm nhóm đó (còn nguyên 100 điểm) mặc định **không hiện** trong danh sách này (để tập trung vào ai cần chú ý) — có 1 công tắc nhỏ "Hiện cả học sinh không vi phạm" nếu giáo viên muốn xem đủ 36 em.
+4. Nhóm **Học tập** hiển thị khác 1 chút (không phải "vi phạm"): sắp xếp điểm học tập từ thấp đến cao, mỗi dòng hiện điểm trung bình + danh sách điểm số từng môn trong tuần.
 
 ## Phần 2 — Hệ màu theo nhóm nội dung (dùng nhất quán toàn app)
 
@@ -53,4 +66,4 @@
 
 ## Phần 3 — Commit liên quan
 
-Xem tài liệu 06, mục "Đợt phát hiện #6": **C045** (drill-down cho các thẻ TK), **C046** (màn "Thông tin Tổ"), **C047** (áp dụng hệ màu nhất quán toàn app).
+Xem tài liệu 06, mục "Đợt phát hiện #6" và "#7": **C045** (drill-down cơ bản cho các thẻ TK), **C046** (màn "Thông tin Tổ"), **C047** (áp dụng hệ màu nhất quán toàn app), **C049** (khu vực "Xem theo Nhóm vi phạm"), **C050** (áp dụng nguyên tắc điều hướng bắt buộc toàn bộ, không còn ngoại lệ).

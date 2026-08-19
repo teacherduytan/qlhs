@@ -152,9 +152,9 @@ Cách chia trọng số (4 mảng Chuyên cần/Vệ sinh/Nề nếp/Kỷ luật
 
 **Tuy nhiên không loại trừ khả năng đây là sơ suất khi soạn thảo** (nhân đôi cho "có trọng số hơn" mà không tính kỹ hệ quả nén thang điểm) — không có cách nào khẳng định chắc chắn ý đồ thật từ 1 văn bản hành chính. **Cách xử lý đúng đắn nhất: hỏi thẳng Ban Thi đua Khen thưởng của trường** câu hỏi cụ thể ở mục README "việc cần làm ngay", thay vì tự suy đoán mãi.
 
-## 6. (Tuỳ chọn — KHÔNG có trong quy chế trường) Nhóm điểm cộng khích lệ
+## 6. Nhóm điểm cộng khích lệ
 
-Quy chế nhà trường chỉ có điểm trừ, không có điểm cộng. Nếu anh muốn bổ sung tính khích lệ (không bắt buộc, không thuộc hệ thống chính thức của trường, chỉ hiển thị thêm cho riêng lớp chủ nhiệm), có thể thêm nhóm `KT` riêng, tách biệt hoàn toàn khỏi 4 nội dung chính thức để không làm sai lệch số liệu báo cáo lên trường:
+> **Đã xác nhận kích hoạt (12/07/2026)**: phiếu ghi nhận mới có hẳn cột "Nội dung thành tích" riêng — nghĩa là anh đã xác nhận muốn dùng nhóm này, không còn là tuỳ chọn nữa. Quy chế nhà trường không có nhóm này (chỉ có điểm trừ) — đây là phần **bổ sung riêng của lớp**, tách biệt hoàn toàn khỏi 4 nội dung chính thức để không làm sai lệch số liệu báo cáo lên trường.
 
 | Mã | Tiêu chí | Điểm cộng (chỉ áp dụng nội bộ lớp) |
 |---|---|---|
@@ -162,9 +162,9 @@ Quy chế nhà trường chỉ có điểm trừ, không có điểm cộng. N�
 | KT02 | Giúp đỡ bạn trong học tập | +2 |
 | KT03 | Được tuyên dương trong tuần | +3 |
 | KT04 | Hoàn thành tốt nhiệm vụ ban cán sự lớp | +2 |
-| KT05 | Có hành động tích cực hỗ trợ tập thể lớp | +2 |
+| KT05 | Hành động tích cực hỗ trợ tập thể lớp (việc tốt không thuộc 4 mã trên) | +2 |
 
-→ Đã bật theo C058: hiển thị/lưu dưới dạng "Điểm khích lệ riêng của lớp" **tách biệt**, không cộng vào công thức xếp loại thi đua chính thức ở mục 4, để không làm lệch số liệu khi đối chiếu với trường.
+→ Hiển thị dưới dạng "Điểm khích lệ riêng của lớp" **tách biệt** trên hồ sơ học sinh, không cộng vào công thức xếp loại thi đua chính thức ở mục 4, để không làm lệch số liệu khi đối chiếu với trường. **Kích hoạt ngay ở Giai đoạn 1** (xem tài liệu 06, commit C058) — cần nạp đủ danh mục KT01–KT04 vào `DanhMucDiem` nếu chưa có.
 
 ## 7. Công thức tính (áp dụng ở `features/scoring`)
 

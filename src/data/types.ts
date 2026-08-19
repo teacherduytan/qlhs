@@ -477,3 +477,98 @@ export interface KetQuaRank {
   conThieu: number
   phanTramToiKeTiep: number
 }
+
+// ===== Cau hinh hoa cong thuc diem ren luyen (xem docs/13-cau-hinh-hoa-cong-thuc-diem-ren-luyen.md) =====
+
+export type LoaiTinhThanhPhanDiem = 'tich_luy_danh_muc' | 'trung_binh_diem_so'
+
+export interface DiemCauHinhThanhPhan {
+  ma_thanh_phan: string
+  ten_hien_thi: string
+  loai_tinh: LoaiTinhThanhPhanDiem
+  nhom_diem_lien_ket: NhomDiem | null
+  thang_goc_min: number
+  thang_goc_max: number
+  he_so_chuan_hoa: number
+  trong_so: number
+  bat_buoc: boolean
+  dang_bat: boolean
+  thu_tu: number
+}
+
+export interface DiemCauHinhHeSoDieuKien {
+  id?: number
+  ma_dieu_kien: string
+  ten_hien_thi: string
+  ma_thanh_phan: string | null
+  dieu_kien_hoc_sinh: string
+  chi_ap_dung_khi_am: boolean
+  he_so: number
+  dang_bat: boolean
+}
+
+export interface DiemNguongXepLoai {
+  ma_xep_loai: string
+  ten_hien_thi: string
+  diem_toi_thieu: number
+  thu_tu: number
+}
+
+// ===== Thu vien tai lieu hoc sinh (xem docs/11-thu-vien-tai-lieu-hoc-sinh.md) =====
+
+export interface DanhMucTaiLieu {
+  id: string
+  ten: string
+  thu_tu: number
+  tinh_la_cam_ket: boolean
+  active: boolean
+}
+
+export interface TaiLieu {
+  id: string
+  danh_muc_tai_lieu_id: string
+  ghi_nhan_id: string | null
+  duong_dan_luu_tru: string
+  ten_file_goc: string | null
+  loai_tep: string | null
+  kich_thuoc_byte: number | null
+  ngay_viet: string | null
+  ghi_chu: string | null
+  nguoi_tai_len: string | null
+  thoi_gian_tai_len: string
+}
+
+export interface TaiLieuHocSinhTom {
+  ma_hs: string
+  ho: string
+  ten: string
+}
+
+export interface TaiLieuChiTiet extends TaiLieu {
+  danh_muc: DanhMucTaiLieu | null
+  hoc_sinh: TaiLieuHocSinhTom[]
+}
+
+export interface TaiLieuUploadInput {
+  file: File
+  danhMucTaiLieuId: string
+  ngayViet: string
+  maHsList: string[]
+  ghiNhanId?: string | null
+  ghiChu?: string | null
+}
+
+export interface TaiLieuCapNhatInput {
+  danhMucTaiLieuId?: string
+  ngayViet?: string | null
+  ghiNhanId?: string | null
+  ghiChu?: string | null
+  maHsList?: string[]
+}
+
+export interface TaiLieuBoLoc {
+  maHs?: string
+  danhMucId?: string
+  tuNgay?: string
+  denNgay?: string
+}

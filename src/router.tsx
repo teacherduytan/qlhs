@@ -4,6 +4,7 @@ import { AttendanceManagementPage } from './features/attendance/AttendanceManage
 import { AttendanceReportPage } from './features/attendance/AttendanceReportPage'
 import { CatalogPage } from './features/catalog/CatalogPage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
+import { DocumentsPage } from './features/documents/DocumentsPage'
 import { ImportPage } from './features/import/ImportPage'
 import { ParentContactHistoryPage } from './features/attendance/ParentContactHistoryPage'
 import { RecordEntryPage } from './features/records/RecordEntryPage'
@@ -29,6 +30,7 @@ export const router = createHashRouter([
       { path: 'danh-muc', element: <CatalogPage /> },
       { path: 'import', element: <ImportPage /> },
       { path: 'dong-hanh', element: <RuleManagerPage /> },
+      { path: 'tai-lieu', element: <DocumentsPage /> },
     ],
   },
   {

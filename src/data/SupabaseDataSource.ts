@@ -42,7 +42,19 @@ import type {
   LoaiDuyetDongHanh,
   BacTinhTu,
   RankLichSuTuan,
+  DiemCauHinhThanhPhan,
+  DiemCauHinhHeSoDieuKien,
+  DiemNguongXepLoai,
+  DanhMucTaiLieu,
+  TaiLieuChiTiet,
+  TaiLieuUploadInput,
+  TaiLieuCapNhatInput,
+  TaiLieuBoLoc,
 } from './types'
+
+const TAI_LIEU_BUCKET = 'bien-ban-vi-pham'
+const TAI_LIEU_SELECT =
+  '*, danh_muc:danh_muc_tai_lieu_id(*), tai_lieu_hoc_sinh(ma_hs, hoc_sinh(ma_hs, ho, ten))'
 
 type AnyRow = Record<string, unknown>
 
@@ -1353,6 +1365,305 @@ export class SupabaseDataSource implements DataSource {
     })
     assertNoError(error, 'Khong chot duoc rank tuan tren Supabase')
   }
+
+  async getDiemCauHinhThanhPhan(): Promise<DiemCauHinhThanhPhan[]> {
+    const { data, error } = await getSupabaseClient()
+      .from('diem_cau_hinh_thanh_phan')
+      .select('*')
+      .order('thu_tu')
+    assertNoError(error, 'Khong doc duoc cau hinh thanh phan diem tu Supabase')
+    return (data || []) as DiemCauHinhThanhPhan[]
+  }
+
+  async addDiemCauHinhThanhPhan(item: DiemCauHinhThanhPhan): Promise<DiemCauHinhThanhPhan> {
+    const { data, error } = await getSupabaseClient()
+      .from('diem_cau_hinh_thanh_phan')
+      .insert(stripUndefined(item as unknown as AnyRow))
+      .select()
+      .single()
+    assertNoError(error, 'Khong tao duoc cau hinh thanh phan diem tren Supabase')
+    return data as DiemCauHinhThanhPhan
+  }
+
+  async updateDiemCauHinhThanhPhan(
+    maThanhPhan: string,
+    patch: Partial<DiemCauHinhThanhPhan>,
+  ): Promise<DiemCauHinhThanhPhan> {
+    const { data, error } = await getSupabaseClient()
+      .from('diem_cau_hinh_thanh_phan')
+      .update(stripUndefined(patch as AnyRow))
+      .eq('ma_thanh_phan', maThanhPhan)
+      .select()
+      .single()
+    assertNoError(error, 'Khong cap nhat duoc cau hinh thanh phan diem tren Supabase')
+    return data as DiemCauHinhThanhPhan
+  }
+
+  async deleteDiemCauHinhThanhPhan(maThanhPhan: string): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('diem_cau_hinh_thanh_phan')
+      .delete()
+      .eq('ma_thanh_phan', maThanhPhan)
+    assertNoError(error, 'Khong xoa duoc cau hinh thanh phan diem tren Supabase')
+  }
+
+  async getDiemCauHinhHeSoDieuKien(): Promise<DiemCauHinhHeSoDieuKien[]> {
+    const { data, error } = await getSupabaseClient()
+      .from('diem_cau_hinh_he_so_dieu_kien')
+      .select('*')
+      .order('id')
+    assertNoError(error, 'Khong doc duoc cau hinh he so dieu kien diem tu Supabase')
+    return (data || []) as DiemCauHinhHeSoDieuKien[]
+  }
+
+  async addDiemCauHinhHeSoDieuKien(item: DiemCauHinhHeSoDieuKien): Promise<DiemCauHinhHeSoDieuKien> {
+    const { id: _id, ...rest } = item
+    const { data, error } = await getSupabaseClient()
+      .from('diem_cau_hinh_he_so_dieu_kien')
+      .insert(stripUndefined(rest as unknown as AnyRow))
+      .select()
+      .single()
+    assertNoError(error, 'Khong tao duoc cau hinh he so dieu kien diem tren Supabase')
+    return data as DiemCauHinhHeSoDieuKien
+  }
+
+  async updateDiemCauHinhHeSoDieuKien(
+    id: number,
+    patch: Partial<DiemCauHinhHeSoDieuKien>,
+  ): Promise<DiemCauHinhHeSoDieuKien> {
+    const { data, error } = await getSupabaseClient()
+      .from('diem_cau_hinh_he_so_dieu_kien')
+      .update(stripUndefined(patch as AnyRow))
+      .eq('id', id)
+      .select()
+      .single()
+    assertNoError(error, 'Khong cap nhat duoc cau hinh he so dieu kien diem tren Supabase')
+    return data as DiemCauHinhHeSoDieuKien
+  }
+
+  async deleteDiemCauHinhHeSoDieuKien(id: number): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('diem_cau_hinh_he_so_dieu_kien')
+      .delete()
+      .eq('id', id)
+    assertNoError(error, 'Khong xoa duoc cau hinh he so dieu kien diem tren Supabase')
+  }
+
+  async getDiemNguongXepLoai(): Promise<DiemNguongXepLoai[]> {
+    const { data, error } = await getSupabaseClient()
+      .from('diem_nguong_xep_loai')
+      .select('*')
+      .order('thu_tu')
+    assertNoError(error, 'Khong doc duoc nguong xep loai diem tu Supabase')
+    return (data || []) as DiemNguongXepLoai[]
+  }
+
+  async addDiemNguongXepLoai(item: DiemNguongXepLoai): Promise<DiemNguongXepLoai> {
+    const { data, error } = await getSupabaseClient()
+      .from('diem_nguong_xep_loai')
+      .insert(stripUndefined(item as unknown as AnyRow))
+      .select()
+      .single()
+    assertNoError(error, 'Khong tao duoc nguong xep loai diem tren Supabase')
+    return data as DiemNguongXepLoai
+  }
+
+  async updateDiemNguongXepLoai(
+    maXepLoai: string,
+    patch: Partial<DiemNguongXepLoai>,
+  ): Promise<DiemNguongXepLoai> {
+    const { data, error } = await getSupabaseClient()
+      .from('diem_nguong_xep_loai')
+      .update(stripUndefined(patch as AnyRow))
+      .eq('ma_xep_loai', maXepLoai)
+      .select()
+      .single()
+    assertNoError(error, 'Khong cap nhat duoc nguong xep loai diem tren Supabase')
+    return data as DiemNguongXepLoai
+  }
+
+  async deleteDiemNguongXepLoai(maXepLoai: string): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('diem_nguong_xep_loai')
+      .delete()
+      .eq('ma_xep_loai', maXepLoai)
+    assertNoError(error, 'Khong xoa duoc nguong xep loai diem tren Supabase')
+  }
+
+  async getDiemCauHinhChung(): Promise<Record<string, string>> {
+    const { data, error } = await getSupabaseClient().from('diem_cau_hinh_chung').select('khoa, gia_tri')
+    assertNoError(error, 'Khong doc duoc cau hinh chung diem tu Supabase')
+    const result: Record<string, string> = {}
+    for (const row of (data || []) as Array<{ khoa: string; gia_tri: string }>) {
+      result[row.khoa] = row.gia_tri
+    }
+    return result
+  }
+
+  async updateDiemCauHinhChung(khoa: string, giaTri: string): Promise<void> {
+    const { error } = await getSupabaseClient()
+      .from('diem_cau_hinh_chung')
+      .upsert({ khoa, gia_tri: giaTri }, { onConflict: 'khoa' })
+    assertNoError(error, 'Khong luu duoc cau hinh chung diem tren Supabase')
+  }
+
+  async getDanhMucTaiLieu(): Promise<DanhMucTaiLieu[]> {
+    const { data, error } = await getSupabaseClient()
+      .from('danh_muc_tai_lieu')
+      .select('*')
+      .order('thu_tu')
+    assertNoError(error, 'Khong doc duoc DanhMucTaiLieu tu Supabase')
+    return (data || []) as DanhMucTaiLieu[]
+  }
+
+  async addDanhMucTaiLieu(item: { ten: string; tinh_la_cam_ket: boolean }): Promise<DanhMucTaiLieu> {
+    const { data, error } = await getSupabaseClient()
+      .from('danh_muc_tai_lieu')
+      .insert({ ten: item.ten.trim(), tinh_la_cam_ket: item.tinh_la_cam_ket })
+      .select()
+      .single()
+    assertNoError(error, 'Khong tao duoc DanhMucTaiLieu tren Supabase')
+    return data as DanhMucTaiLieu
+  }
+
+  async getTaiLieu(filter: TaiLieuBoLoc = {}): Promise<TaiLieuChiTiet[]> {
+    let taiLieuIds: string[] | null = null
+    if (filter.maHs) {
+      const { data, error } = await getSupabaseClient()
+        .from('tai_lieu_hoc_sinh')
+        .select('tai_lieu_id')
+        .eq('ma_hs', filter.maHs)
+      assertNoError(error, 'Khong loc duoc TaiLieu theo hoc sinh tren Supabase')
+      taiLieuIds = (data || []).map((row) => row.tai_lieu_id as string)
+      if (taiLieuIds.length === 0) return []
+    }
+
+    let query = getSupabaseClient()
+      .from('tai_lieu')
+      .select(TAI_LIEU_SELECT)
+      .order('ngay_viet', { ascending: false })
+
+    if (taiLieuIds) query = query.in('id', taiLieuIds)
+    if (filter.danhMucId) query = query.eq('danh_muc_tai_lieu_id', filter.danhMucId)
+    if (filter.tuNgay) query = query.gte('ngay_viet', filter.tuNgay)
+    if (filter.denNgay) query = query.lte('ngay_viet', filter.denNgay)
+
+    const { data, error } = await query
+    assertNoError(error, 'Khong doc duoc TaiLieu tu Supabase')
+    return ((data || []) as unknown as AnyRow[]).map(mapTaiLieuRow)
+  }
+
+  async uploadTaiLieu(input: TaiLieuUploadInput): Promise<TaiLieuChiTiet> {
+    if (input.maHsList.length === 0) {
+      throw new Error('Phải chọn ít nhất 1 học sinh liên quan.')
+    }
+
+    const path = buildTaiLieuStoragePath(input.file.name, input.ngayViet)
+    const { error: uploadError } = await getSupabaseClient()
+      .storage.from(TAI_LIEU_BUCKET)
+      .upload(path, input.file, { contentType: input.file.type || undefined })
+    assertNoError(uploadError, 'Khong tai len duoc file tren Supabase Storage')
+
+    const {
+      data: { user },
+    } = await getSupabaseClient().auth.getUser()
+
+    const { data, error } = await getSupabaseClient()
+      .from('tai_lieu')
+      .insert({
+        danh_muc_tai_lieu_id: input.danhMucTaiLieuId,
+        ghi_nhan_id: input.ghiNhanId || null,
+        duong_dan_luu_tru: path,
+        ten_file_goc: input.file.name,
+        loai_tep: input.file.type || null,
+        kich_thuoc_byte: input.file.size,
+        ngay_viet: input.ngayViet,
+        ghi_chu: input.ghiChu?.trim() || null,
+        nguoi_tai_len: user?.id || null,
+      })
+      .select('id')
+      .single()
+
+    if (error) {
+      // Rollback file da upload neu insert dong CSDL that bai, tranh rac Storage
+      // khong co dong tro toi (vi upload va insert khong nam trong 1 transaction).
+      await getSupabaseClient().storage.from(TAI_LIEU_BUCKET).remove([path])
+      throw new Error(`Khong tao duoc TaiLieu tren Supabase: ${error.message || 'loi khong ro'}`)
+    }
+
+    const taiLieuId = (data as AnyRow).id as string
+    const { error: linkError } = await getSupabaseClient()
+      .from('tai_lieu_hoc_sinh')
+      .insert(input.maHsList.map((maHs) => ({ tai_lieu_id: taiLieuId, ma_hs: maHs })))
+    assertNoError(linkError, 'Khong gan duoc hoc sinh vao TaiLieu tren Supabase')
+
+    return this.fetchTaiLieuById(taiLieuId)
+  }
+
+  async updateTaiLieu(id: string, patch: TaiLieuCapNhatInput): Promise<TaiLieuChiTiet> {
+    const fields: AnyRow = {}
+    if (patch.danhMucTaiLieuId !== undefined) fields.danh_muc_tai_lieu_id = patch.danhMucTaiLieuId
+    if (patch.ngayViet !== undefined) fields.ngay_viet = patch.ngayViet
+    if (patch.ghiNhanId !== undefined) fields.ghi_nhan_id = patch.ghiNhanId
+    if (patch.ghiChu !== undefined) fields.ghi_chu = patch.ghiChu?.trim() || null
+
+    if (Object.keys(fields).length > 0) {
+      const { error } = await getSupabaseClient().from('tai_lieu').update(fields).eq('id', id)
+      assertNoError(error, 'Khong cap nhat duoc TaiLieu tren Supabase')
+    }
+
+    if (patch.maHsList) {
+      if (patch.maHsList.length === 0) {
+        throw new Error('Phải chọn ít nhất 1 học sinh liên quan.')
+      }
+      const { error: deleteError } = await getSupabaseClient()
+        .from('tai_lieu_hoc_sinh')
+        .delete()
+        .eq('tai_lieu_id', id)
+      assertNoError(deleteError, 'Khong cap nhat duoc danh sach hoc sinh cua TaiLieu tren Supabase')
+
+      const { error: insertError } = await getSupabaseClient()
+        .from('tai_lieu_hoc_sinh')
+        .insert(patch.maHsList.map((maHs) => ({ tai_lieu_id: id, ma_hs: maHs })))
+      assertNoError(insertError, 'Khong gan lai duoc hoc sinh cho TaiLieu tren Supabase')
+    }
+
+    return this.fetchTaiLieuById(id)
+  }
+
+  async deleteTaiLieu(id: string): Promise<void> {
+    const { data, error } = await getSupabaseClient()
+      .from('tai_lieu')
+      .select('duong_dan_luu_tru')
+      .eq('id', id)
+      .single()
+    assertNoError(error, 'Khong tim thay TaiLieu tren Supabase')
+
+    const { error: deleteError } = await getSupabaseClient().from('tai_lieu').delete().eq('id', id)
+    assertNoError(deleteError, 'Khong xoa duoc TaiLieu tren Supabase')
+
+    const duongDan = (data as AnyRow).duong_dan_luu_tru as string
+    const { error: storageError } = await getSupabaseClient().storage.from(TAI_LIEU_BUCKET).remove([duongDan])
+    assertNoError(storageError, 'Khong xoa duoc file tren Supabase Storage')
+  }
+
+  async getTaiLieuUrl(duongDanLuuTru: string): Promise<string> {
+    const { data, error } = await getSupabaseClient()
+      .storage.from(TAI_LIEU_BUCKET)
+      .createSignedUrl(duongDanLuuTru, 60 * 10)
+    assertNoError(error, 'Khong tao duoc duong dan xem TaiLieu tren Supabase')
+    return (data as { signedUrl: string }).signedUrl
+  }
+
+  private async fetchTaiLieuById(id: string): Promise<TaiLieuChiTiet> {
+    const { data, error } = await getSupabaseClient()
+      .from('tai_lieu')
+      .select(TAI_LIEU_SELECT)
+      .eq('id', id)
+      .single()
+    assertNoError(error, 'Khong doc lai duoc TaiLieu tren Supabase')
+    return mapTaiLieuRow(data as unknown as AnyRow)
+  }
 }
 
 function tableNameForImport(loai: LoaiDuLieuImport): string {
@@ -1488,4 +1799,42 @@ function addDays(isoDate: string, days: number): string {
     String(date.getUTCMonth() + 1).padStart(2, '0'),
     String(date.getUTCDate()).padStart(2, '0'),
   ].join('-')
+}
+
+function mapTaiLieuRow(row: AnyRow): TaiLieuChiTiet {
+  const hocSinhRows = (row.tai_lieu_hoc_sinh || []) as AnyRow[]
+  return {
+    id: row.id as string,
+    danh_muc_tai_lieu_id: row.danh_muc_tai_lieu_id as string,
+    ghi_nhan_id: (row.ghi_nhan_id as string) || null,
+    duong_dan_luu_tru: row.duong_dan_luu_tru as string,
+    ten_file_goc: (row.ten_file_goc as string) || null,
+    loai_tep: (row.loai_tep as string) || null,
+    kich_thuoc_byte: (row.kich_thuoc_byte as number) || null,
+    ngay_viet: (row.ngay_viet as string) || null,
+    ghi_chu: (row.ghi_chu as string) || null,
+    nguoi_tai_len: (row.nguoi_tai_len as string) || null,
+    thoi_gian_tai_len: row.thoi_gian_tai_len as string,
+    danh_muc: (row.danh_muc as DanhMucTaiLieu) || null,
+    hoc_sinh: hocSinhRows
+      .map((item) => item.hoc_sinh as AnyRow | null)
+      .filter((hs): hs is AnyRow => Boolean(hs))
+      .map((hs) => ({ ma_hs: hs.ma_hs as string, ho: hs.ho as string, ten: hs.ten as string })),
+  }
+}
+
+function buildTaiLieuStoragePath(fileName: string, ngayViet: string): string {
+  const namHoc = schoolYearFromIsoDate(ngayViet)
+  const dotIndex = fileName.lastIndexOf('.')
+  const ext = dotIndex >= 0 ? fileName.slice(dotIndex + 1) : ''
+  const random = Math.random().toString(36).slice(2, 6)
+  return `${namHoc}/${Date.now()}_${random}${ext ? `.${ext}` : ''}`
+}
+
+function schoolYearFromIsoDate(isoDate: string): string {
+  const [yearStr, monthStr] = (isoDate || '').split('-')
+  const now = new Date()
+  const year = Number(yearStr) || now.getFullYear()
+  const month = Number(monthStr) || now.getMonth() + 1
+  return month >= 8 ? `${year}-${year + 1}` : `${year - 1}-${year}`
 }

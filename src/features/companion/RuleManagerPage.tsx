@@ -8,21 +8,29 @@ import type {
   DongHanhDiemDanh,
   DanhMucDiem,
   DieuKienHuyHieu,
+  DiemCauHinhHeSoDieuKien,
+  DiemCauHinhThanhPhan,
+  DiemNguongXepLoai,
   GhiNhan,
   HocSinh,
   HuyHieuDongHanh,
+  LoaiTinhThanhPhanDiem,
   LuatDongHanh,
   MucDoCanhBao,
+  NhomDiem,
   PhepSoSanh,
 } from '../../data/types'
 import { apDungHuyHieu, apDungLuat, chonCauDinhHuong } from './applyRules'
 import { tinhChiSoTuan } from './computeMetrics'
 import { DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH, tinhRankTuan } from './rankTinhTu'
 import { TheNhanVatTuan } from './TheNhanVatTuan'
-import { calculateWeeklyStudentScore } from '../scoring/scoring'
+import {
+  DEFAULT_SO_THAP_PHAN_LAM_TRON,
+  calculateWeeklyStudentScore,
+} from '../scoring/scoring'
 import { findWeek, selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
 
-type Tab = 'canh_bao' | 'huy_hieu' | 'cau_dinh_huong' | 'chi_so' | 'rank'
+type Tab = 'canh_bao' | 'huy_hieu' | 'cau_dinh_huong' | 'chi_so' | 'rank' | 'diem'
 
 type PageState =
   | { status: 'loading' }
@@ -40,6 +48,10 @@ type PageState =
       weekConfig: CauHinhTuan[]
       rankBac: BacTinhTu[]
       cauHinh: Record<string, string>
+      diemThanhPhan: DiemCauHinhThanhPhan[]
+      diemHeSoDieuKien: DiemCauHinhHeSoDieuKien[]
+      diemNguongXepLoai: DiemNguongXepLoai[]
+      diemCauHinhChung: Record<string, string>
     }
 
 const MUC_DO_OPTIONS: Array<{ value: MucDoCanhBao; label: string }> = [
@@ -57,6 +69,7 @@ const TABS: Array<{ key: Tab; label: string }> = [
   { key: 'cau_dinh_huong', label: 'Câu định hướng' },
   { key: 'chi_so', label: 'Chỉ số' },
   { key: 'rank', label: 'Bậc tinh tú' },
+  { key: 'diem', label: 'Công thức điểm rèn luyện' },
 ]
 
 export function RuleManagerPage() {
@@ -77,9 +90,29 @@ export function RuleManagerPage() {
       dataSource.getWeekConfig(),
       dataSource.getRankBacTinhTu(),
       dataSource.getDongHanhCauHinh(),
+      dataSource.getDiemCauHinhThanhPhan(),
+      dataSource.getDiemCauHinhHeSoDieuKien(),
+      dataSource.getDiemNguongXepLoai(),
+      dataSource.getDiemCauHinhChung(),
     ])
       .then(
-        ([chiSo, luat, huyHieu, cauDinhHuong, students, catalog, records, attendance, weekConfig, rankBac, cauHinh]) => {
+        ([
+          chiSo,
+          luat,
+          huyHieu,
+          cauDinhHuong,
+          students,
+          catalog,
+          records,
+          attendance,
+          weekConfig,
+          rankBac,
+          cauHinh,
+          diemThanhPhan,
+          diemHeSoDieuKien,
+          diemNguongXepLoai,
+          diemCauHinhChung,
+        ]) => {
           if (!mounted) return
           setState({
             status: 'success',
@@ -94,6 +127,10 @@ export function RuleManagerPage() {
             weekConfig,
             rankBac,
             cauHinh,
+            diemThanhPhan,
+            diemHeSoDieuKien,
+            diemNguongXepLoai,
+            diemCauHinhChung,
           })
         },
       )
@@ -152,6 +189,7 @@ export function RuleManagerPage() {
       {tab === 'cau_dinh_huong' ? <CauDinhHuongTab state={state} setState={setState} /> : null}
       {tab === 'chi_so' ? <ChiSoTab state={state} /> : null}
       {tab === 'rank' ? <RankTab state={state} setState={setState} /> : null}
+      {tab === 'diem' ? <DiemCongThucTab state={state} setState={setState} /> : null}
 
       <PreviewPanel state={state} />
     </div>
@@ -1130,6 +1168,697 @@ function RankTab({ state, setState }: { state: SuccessState; setState: SetState 
           + Thêm bậc
         </button>
       )}
+    </div>
+  )
+}
+
+// ===================== Tab: Cong thuc diem ren luyen =====================
+
+const EMPTY_THANH_PHAN: DiemCauHinhThanhPhan = {
+  ma_thanh_phan: '',
+  ten_hien_thi: '',
+  loai_tinh: 'tich_luy_danh_muc',
+  nhom_diem_lien_ket: 'CC',
+  thang_goc_min: 0,
+  thang_goc_max: 100,
+  he_so_chuan_hoa: 1,
+  trong_so: 1,
+  bat_buoc: true,
+  dang_bat: true,
+  thu_tu: 0,
+}
+
+const EMPTY_NGUONG: DiemNguongXepLoai = {
+  ma_xep_loai: '',
+  ten_hien_thi: '',
+  diem_toi_thieu: 0,
+  thu_tu: 0,
+}
+
+const LOAI_TINH_OPTIONS: Array<{ value: LoaiTinhThanhPhanDiem; label: string }> = [
+  { value: 'tich_luy_danh_muc', label: 'Tích luỹ danh mục (như CC/VS/NN/KL)' },
+  { value: 'trung_binh_diem_so', label: 'Trung bình điểm số (như Học tập)' },
+]
+
+const NHOM_DIEM_OPTIONS: NhomDiem[] = ['CC', 'VS', 'NN', 'KL', 'KT']
+
+function DiemCongThucTab({ state, setState }: { state: SuccessState; setState: SetState }) {
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+        Pipeline tính điểm cố định trong code (xem <code>scoring.ts</code>), chỉ tham số (trọng số, hệ số chuẩn
+        hoá, ngưỡng, có bắt buộc hay không) nằm ở đây — sửa xong <b>Lưu</b> là các trang xem hồ sơ dùng ngay,
+        không cần deploy lại. Xem chi tiết công thức ở{' '}
+        <code>docs/13-cau-hinh-hoa-cong-thuc-diem-ren-luyen.md</code>.
+      </div>
+
+      <ThanhPhanManager state={state} setState={setState} />
+      <NguongXepLoaiManager state={state} setState={setState} />
+      <HeSoDieuKienManager state={state} setState={setState} />
+      <LamTronManager state={state} setState={setState} />
+      <DiemPreviewPanel state={state} />
+    </div>
+  )
+}
+
+function ThanhPhanManager({ state, setState }: { state: SuccessState; setState: SetState }) {
+  const [form, setForm] = useState<DiemCauHinhThanhPhan>(EMPTY_THANH_PHAN)
+  const [editing, setEditing] = useState<string | '__new__' | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function startEdit(item: DiemCauHinhThanhPhan) {
+    setEditing(item.ma_thanh_phan)
+    setForm(item)
+    setError(null)
+  }
+
+  function startAdd() {
+    setEditing('__new__')
+    setForm(EMPTY_THANH_PHAN)
+    setError(null)
+  }
+
+  function cancel() {
+    setEditing(null)
+    setForm(EMPTY_THANH_PHAN)
+    setError(null)
+  }
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!form.ma_thanh_phan.trim() || !form.ten_hien_thi.trim()) {
+      setError('Cần nhập Mã thành phần và Tên hiển thị.')
+      return
+    }
+    if (form.loai_tinh === 'tich_luy_danh_muc' && !form.nhom_diem_lien_ket) {
+      setError('Kiểu "Tích luỹ danh mục" cần chọn Nhóm điểm liên kết.')
+      return
+    }
+
+    setSaving(true)
+    setError(null)
+    try {
+      const payload: DiemCauHinhThanhPhan = {
+        ...form,
+        nhom_diem_lien_ket: form.loai_tinh === 'trung_binh_diem_so' ? null : form.nhom_diem_lien_ket,
+      }
+      if (editing === '__new__') {
+        const created = await dataSource.addDiemCauHinhThanhPhan(payload)
+        withSuccess(setState, (current) => ({
+          ...current,
+          diemThanhPhan: [...current.diemThanhPhan, created].sort((a, b) => a.thu_tu - b.thu_tu),
+        }))
+      } else if (typeof editing === 'string') {
+        const updated = await dataSource.updateDiemCauHinhThanhPhan(editing, payload)
+        withSuccess(setState, (current) => ({
+          ...current,
+          diemThanhPhan: current.diemThanhPhan.map((item) =>
+            item.ma_thanh_phan === editing ? updated : item,
+          ),
+        }))
+      }
+      cancel()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không lưu được thành phần.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function remove(maThanhPhan: string) {
+    if (!window.confirm(`Xoá thành phần ${maThanhPhan}? Công thức sẽ tự bỏ nó khi tính điểm.`)) return
+    try {
+      await dataSource.deleteDiemCauHinhThanhPhan(maThanhPhan)
+      withSuccess(setState, (current) => ({
+        ...current,
+        diemThanhPhan: current.diemThanhPhan.filter((item) => item.ma_thanh_phan !== maThanhPhan),
+      }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không xoá được thành phần.')
+    }
+  }
+
+  async function toggle(item: DiemCauHinhThanhPhan) {
+    try {
+      const updated = await dataSource.updateDiemCauHinhThanhPhan(item.ma_thanh_phan, {
+        dang_bat: !item.dang_bat,
+      })
+      withSuccess(setState, (current) => ({
+        ...current,
+        diemThanhPhan: current.diemThanhPhan.map((row) =>
+          row.ma_thanh_phan === item.ma_thanh_phan ? updated : row,
+        ),
+      }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không đổi được trạng thái.')
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-bold text-slate-900">Thành phần tham gia công thức</h3>
+      {error ? <p className="rounded-md border border-red-200 bg-red-100 p-2 text-sm font-semibold text-red-700">{error}</p> : null}
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table className="w-full min-w-220 text-sm">
+          <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
+            <tr>
+              <th className="px-3 py-2">Mã</th>
+              <th className="px-3 py-2">Tên</th>
+              <th className="px-3 py-2">Kiểu tính</th>
+              <th className="px-3 py-2">Thang gốc</th>
+              <th className="px-3 py-2">Hệ số chuẩn hoá</th>
+              <th className="px-3 py-2">Trọng số</th>
+              <th className="px-3 py-2">Bắt buộc</th>
+              <th className="px-3 py-2">Bật</th>
+              <th className="px-3 py-2">Sửa</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {[...state.diemThanhPhan]
+              .sort((a, b) => a.thu_tu - b.thu_tu)
+              .map((item) => (
+                <tr key={item.ma_thanh_phan} className={item.dang_bat ? '' : 'opacity-50'}>
+                  <td className="px-3 py-2 font-mono text-xs font-semibold">{item.ma_thanh_phan}</td>
+                  <td className="px-3 py-2">{item.ten_hien_thi}</td>
+                  <td className="px-3 py-2 text-xs">
+                    {item.loai_tinh === 'tich_luy_danh_muc' ? `Tích luỹ (${item.nhom_diem_lien_ket})` : 'TB điểm số'}
+                  </td>
+                  <td className="px-3 py-2 text-xs">
+                    {item.thang_goc_min}–{item.thang_goc_max}
+                  </td>
+                  <td className="px-3 py-2">×{item.he_so_chuan_hoa}</td>
+                  <td className="px-3 py-2">{item.trong_so}</td>
+                  <td className="px-3 py-2 text-xs">{item.bat_buoc ? 'Luôn tính' : 'Chỉ khi có dữ liệu'}</td>
+                  <td className="px-3 py-2">
+                    <input type="checkbox" checked={item.dang_bat} onChange={() => void toggle(item)} className="h-4 w-4" />
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => startEdit(item)} className="text-xs font-semibold text-blue-700 hover:underline">
+                        Sửa
+                      </button>
+                      <button type="button" onClick={() => void remove(item.ma_thanh_phan)} className="text-xs font-semibold text-red-700 hover:underline">
+                        Xoá
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+
+      {editing ? (
+        <form onSubmit={save} className="grid gap-2 rounded-lg border border-teal-200 bg-teal-100/40 p-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Mã thành phần (không dấu)
+            <input
+              value={form.ma_thanh_phan}
+              disabled={editing !== '__new__'}
+              onChange={(event) => setForm((current) => ({ ...current, ma_thanh_phan: event.target.value }))}
+              placeholder="VD: DD (đạo đức)"
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm disabled:bg-slate-100"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Tên hiển thị
+            <input
+              value={form.ten_hien_thi}
+              onChange={(event) => setForm((current) => ({ ...current, ten_hien_thi: event.target.value }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Kiểu tính
+            <select
+              value={form.loai_tinh}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, loai_tinh: event.target.value as LoaiTinhThanhPhanDiem }))
+              }
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            >
+              {LOAI_TINH_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {form.loai_tinh === 'tich_luy_danh_muc' ? (
+            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+              Nhóm điểm liên kết
+              <select
+                value={form.nhom_diem_lien_ket || ''}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, nhom_diem_lien_ket: event.target.value as NhomDiem }))
+                }
+                className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+              >
+                {NHOM_DIEM_OPTIONS.map((nhom) => (
+                  <option key={nhom} value={nhom}>
+                    {nhom}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Thang gốc tối thiểu
+            <input
+              type="number"
+              value={form.thang_goc_min}
+              onChange={(event) => setForm((current) => ({ ...current, thang_goc_min: Number(event.target.value) }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Thang gốc tối đa
+            <input
+              type="number"
+              value={form.thang_goc_max}
+              onChange={(event) => setForm((current) => ({ ...current, thang_goc_max: Number(event.target.value) }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Hệ số chuẩn hoá (nhân để quy về 0–100 chung)
+            <input
+              type="number"
+              step="0.1"
+              value={form.he_so_chuan_hoa}
+              onChange={(event) => setForm((current) => ({ ...current, he_so_chuan_hoa: Number(event.target.value) }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Trọng số khi gộp
+            <input
+              type="number"
+              step="0.1"
+              value={form.trong_so}
+              onChange={(event) => setForm((current) => ({ ...current, trong_so: Number(event.target.value) }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Thứ tự hiển thị
+            <input
+              type="number"
+              value={form.thu_tu}
+              onChange={(event) => setForm((current) => ({ ...current, thu_tu: Number(event.target.value) }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+            <input
+              type="checkbox"
+              checked={form.bat_buoc}
+              onChange={(event) => setForm((current) => ({ ...current, bat_buoc: event.target.checked }))}
+              className="h-4 w-4"
+            />
+            Luôn tính dù tuần đó không có dữ liệu (bắt buộc)
+          </label>
+          {error ? <p className="text-xs font-semibold text-red-700 sm:col-span-2 lg:col-span-4">{error}</p> : null}
+          <div className="flex gap-2 sm:col-span-2 lg:col-span-4">
+            <button type="submit" disabled={saving} className="h-9 rounded-md bg-teal-700 px-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:bg-slate-400">
+              {saving ? 'Đang lưu...' : 'Lưu'}
+            </button>
+            <button type="button" onClick={cancel} className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+              Huỷ
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" onClick={startAdd} className="h-9 rounded-md border border-teal-300 bg-teal-100 px-3 text-sm font-semibold text-teal-700 hover:bg-teal-100">
+          + Thêm thành phần
+        </button>
+      )}
+    </div>
+  )
+}
+
+function NguongXepLoaiManager({ state, setState }: { state: SuccessState; setState: SetState }) {
+  const [form, setForm] = useState<DiemNguongXepLoai>(EMPTY_NGUONG)
+  const [editing, setEditing] = useState<string | '__new__' | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function startEdit(item: DiemNguongXepLoai) {
+    setEditing(item.ma_xep_loai)
+    setForm(item)
+    setError(null)
+  }
+
+  function startAdd() {
+    setEditing('__new__')
+    setForm(EMPTY_NGUONG)
+    setError(null)
+  }
+
+  function cancel() {
+    setEditing(null)
+    setForm(EMPTY_NGUONG)
+    setError(null)
+  }
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!form.ma_xep_loai.trim() || !form.ten_hien_thi.trim()) {
+      setError('Cần nhập Mã xếp loại và Tên hiển thị.')
+      return
+    }
+
+    setSaving(true)
+    setError(null)
+    try {
+      if (editing === '__new__') {
+        const created = await dataSource.addDiemNguongXepLoai(form)
+        withSuccess(setState, (current) => ({
+          ...current,
+          diemNguongXepLoai: [...current.diemNguongXepLoai, created].sort((a, b) => a.thu_tu - b.thu_tu),
+        }))
+      } else if (typeof editing === 'string') {
+        const updated = await dataSource.updateDiemNguongXepLoai(editing, form)
+        withSuccess(setState, (current) => ({
+          ...current,
+          diemNguongXepLoai: current.diemNguongXepLoai.map((item) =>
+            item.ma_xep_loai === editing ? updated : item,
+          ),
+        }))
+      }
+      cancel()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không lưu được ngưỡng xếp loại.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function remove(maXepLoai: string) {
+    if (!window.confirm(`Xoá xếp loại ${maXepLoai}?`)) return
+    try {
+      await dataSource.deleteDiemNguongXepLoai(maXepLoai)
+      withSuccess(setState, (current) => ({
+        ...current,
+        diemNguongXepLoai: current.diemNguongXepLoai.filter((item) => item.ma_xep_loai !== maXepLoai),
+      }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không xoá được ngưỡng xếp loại.')
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-bold text-slate-900">Ngưỡng xếp loại (1 bảng duy nhất, thang 0–100)</h3>
+      {error ? <p className="rounded-md border border-red-200 bg-red-100 p-2 text-sm font-semibold text-red-700">{error}</p> : null}
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table className="w-full min-w-120 text-sm">
+          <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
+            <tr>
+              <th className="px-3 py-2">Mã</th>
+              <th className="px-3 py-2">Tên hiển thị</th>
+              <th className="px-3 py-2">Điểm tối thiểu</th>
+              <th className="px-3 py-2">Sửa</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {[...state.diemNguongXepLoai]
+              .sort((a, b) => b.thu_tu - a.thu_tu)
+              .map((item) => (
+                <tr key={item.ma_xep_loai}>
+                  <td className="px-3 py-2 font-mono text-xs font-semibold">{item.ma_xep_loai}</td>
+                  <td className="px-3 py-2">{item.ten_hien_thi}</td>
+                  <td className="px-3 py-2">{item.diem_toi_thieu}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => startEdit(item)} className="text-xs font-semibold text-blue-700 hover:underline">
+                        Sửa
+                      </button>
+                      <button type="button" onClick={() => void remove(item.ma_xep_loai)} className="text-xs font-semibold text-red-700 hover:underline">
+                        Xoá
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+
+      {editing ? (
+        <form onSubmit={save} className="grid gap-2 rounded-lg border border-teal-200 bg-teal-100/40 p-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Mã xếp loại (không dấu)
+            <input
+              value={form.ma_xep_loai}
+              disabled={editing !== '__new__'}
+              onChange={(event) => setForm((current) => ({ ...current, ma_xep_loai: event.target.value }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm disabled:bg-slate-100"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Tên hiển thị
+            <input
+              value={form.ten_hien_thi}
+              onChange={(event) => setForm((current) => ({ ...current, ten_hien_thi: event.target.value }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Điểm tối thiểu (0–100)
+            <input
+              type="number"
+              value={form.diem_toi_thieu}
+              onChange={(event) => setForm((current) => ({ ...current, diem_toi_thieu: Number(event.target.value) }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Thứ tự
+            <input
+              type="number"
+              value={form.thu_tu}
+              onChange={(event) => setForm((current) => ({ ...current, thu_tu: Number(event.target.value) }))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+            />
+          </label>
+          {error ? <p className="text-xs font-semibold text-red-700 sm:col-span-2 lg:col-span-4">{error}</p> : null}
+          <div className="flex gap-2 sm:col-span-2 lg:col-span-4">
+            <button type="submit" disabled={saving} className="h-9 rounded-md bg-teal-700 px-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:bg-slate-400">
+              {saving ? 'Đang lưu...' : 'Lưu'}
+            </button>
+            <button type="button" onClick={cancel} className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+              Huỷ
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" onClick={startAdd} className="h-9 rounded-md border border-teal-300 bg-teal-100 px-3 text-sm font-semibold text-teal-700 hover:bg-teal-100">
+          + Thêm xếp loại
+        </button>
+      )}
+    </div>
+  )
+}
+
+function HeSoDieuKienManager({ state, setState }: { state: SuccessState; setState: SetState }) {
+  const [saving, setSaving] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function save(item: DiemCauHinhHeSoDieuKien, heSo: number) {
+    if (item.id === undefined) return
+    setSaving(item.id)
+    setError(null)
+    try {
+      const updated = await dataSource.updateDiemCauHinhHeSoDieuKien(item.id, { he_so: heSo })
+      withSuccess(setState, (current) => ({
+        ...current,
+        diemHeSoDieuKien: current.diemHeSoDieuKien.map((row) => (row.id === item.id ? updated : row)),
+      }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không lưu được hệ số điều kiện.')
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  async function toggle(item: DiemCauHinhHeSoDieuKien) {
+    if (item.id === undefined) return
+    try {
+      const updated = await dataSource.updateDiemCauHinhHeSoDieuKien(item.id, { dang_bat: !item.dang_bat })
+      withSuccess(setState, (current) => ({
+        ...current,
+        diemHeSoDieuKien: current.diemHeSoDieuKien.map((row) => (row.id === item.id ? updated : row)),
+      }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không đổi được trạng thái.')
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-bold text-slate-900">Hệ số điều kiện (vd cờ đỏ vi phạm bị trừ điểm gấp đôi)</h3>
+      {error ? <p className="rounded-md border border-red-200 bg-red-100 p-2 text-sm font-semibold text-red-700">{error}</p> : null}
+
+      <div className="space-y-2">
+        {state.diemHeSoDieuKien.map((item) => (
+          <div
+            key={item.ma_dieu_kien}
+            className={`flex flex-wrap items-end gap-2 rounded-lg border border-amber-200 bg-amber-100/40 p-3 ${
+              item.dang_bat ? '' : 'opacity-50'
+            }`}
+          >
+            <div className="flex-1 min-w-55">
+              <p className="text-sm font-semibold text-slate-800">{item.ten_hien_thi}</p>
+              <p className="text-xs text-slate-500">
+                Cột điều kiện: <code>{item.dieu_kien_hoc_sinh}</code> ·{' '}
+                {item.ma_thanh_phan ? `chỉ áp dụng thành phần ${item.ma_thanh_phan}` : 'áp dụng mọi thành phần'} ·{' '}
+                {item.chi_ap_dung_khi_am ? 'chỉ khi điểm bị trừ (âm)' : 'áp dụng cả điểm cộng lẫn trừ'}
+              </p>
+            </div>
+            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+              Hệ số nhân
+              <input
+                type="number"
+                step="0.1"
+                defaultValue={item.he_so}
+                key={`${item.id}-${item.he_so}`}
+                onBlur={(event) => {
+                  const value = Number(event.target.value)
+                  if (!Number.isNaN(value) && value !== item.he_so) void save(item, value)
+                }}
+                className="h-9 w-24 rounded-md border border-slate-300 bg-white px-2 text-sm"
+              />
+            </label>
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+              <input type="checkbox" checked={item.dang_bat} onChange={() => void toggle(item)} className="h-4 w-4" />
+              Bật
+            </label>
+            {saving === item.id ? <span className="text-xs text-slate-500">Đang lưu...</span> : null}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function LamTronManager({ state, setState }: { state: SuccessState; setState: SetState }) {
+  const [value, setValue] = useState(
+    state.diemCauHinhChung.lam_tron_so_thap_phan || String(DEFAULT_SO_THAP_PHAN_LAM_TRON),
+  )
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSaving(true)
+    setError(null)
+    try {
+      await dataSource.updateDiemCauHinhChung('lam_tron_so_thap_phan', value)
+      withSuccess(setState, (current) => ({
+        ...current,
+        diemCauHinhChung: { ...current.diemCauHinhChung, lam_tron_so_thap_phan: value },
+      }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không lưu được số thập phân làm tròn.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3">
+      <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+        Số chữ số thập phân khi làm tròn điểm xếp loại
+        <input
+          type="number"
+          min={0}
+          max={4}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          className="h-9 w-32 rounded-md border border-slate-300 bg-white px-2 text-sm"
+        />
+      </label>
+      <button type="submit" disabled={saving} className="h-9 rounded-md bg-teal-700 px-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:bg-slate-400">
+        {saving ? 'Đang lưu...' : 'Lưu'}
+      </button>
+      {error ? <p className="text-xs font-semibold text-red-700">{error}</p> : null}
+    </form>
+  )
+}
+
+function DiemPreviewPanel({ state }: { state: SuccessState }) {
+  const weeks = sortWeeks(state.weekConfig)
+  const [maHs, setMaHs] = useState(state.students[0]?.ma_hs || '')
+  const [tuanSo, setTuanSo] = useState(() => selectDefaultWeek(state.weekConfig, state.records))
+  const student = state.students.find((item) => item.ma_hs === maHs)
+
+  const score = student
+    ? calculateWeeklyStudentScore({
+        catalog: state.catalog,
+        records: state.records,
+        student,
+        tuanSo,
+        thanhPhanCauHinh: state.diemThanhPhan,
+        heSoDieuKienCauHinh: state.diemHeSoDieuKien,
+        nguongXepLoai: state.diemNguongXepLoai,
+        soThapPhanLamTron: Number(state.diemCauHinhChung.lam_tron_so_thap_phan) || DEFAULT_SO_THAP_PHAN_LAM_TRON,
+      })
+    : null
+
+  return (
+    <div className="rounded-lg border border-blue-200 bg-blue-100/40 p-4">
+      <p className="text-xs font-semibold uppercase text-blue-700">Xem thử ngay</p>
+      <h3 className="text-base font-bold text-slate-900">Công thức hiện tại (đã lưu) cho ra điểm gì</h3>
+
+      <div className="mt-2 flex flex-wrap gap-2">
+        <select
+          value={maHs}
+          onChange={(event) => setMaHs(event.target.value)}
+          className="h-9 min-w-[220px] rounded-md border border-slate-300 bg-white px-2 text-sm"
+        >
+          {state.students.map((item) => (
+            <option key={item.ma_hs} value={item.ma_hs}>
+              {item.tt}. {item.ho} {item.ten}
+            </option>
+          ))}
+        </select>
+        <select
+          value={tuanSo}
+          onChange={(event) => setTuanSo(Number(event.target.value))}
+          className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+        >
+          {weeks.map((week) => (
+            <option key={week.tuan_so} value={week.tuan_so}>
+              Tuần {week.tuan_so}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {score ? (
+        <div className="mt-3 space-y-2 text-sm">
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(score.thanh_phan).map(([ma, giaTri]) => (
+              <span key={ma} className="rounded-full border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700">
+                {ma}: {giaTri}
+              </span>
+            ))}
+          </div>
+          <p className="text-xs text-slate-600">
+            Học tập (hiển thị, thang 0–20): {score.diem_hoc_tap ?? 'Chưa có dữ liệu tuần này'}
+          </p>
+          <p className="text-base font-bold text-slate-900">
+            Điểm xếp loại thi đua: {score.diem_xep_loai_thi_dua} · {score.xep_loai}
+            {score.can_canh_bao_ngay ? <span className="ml-2 text-red-700">(có vi phạm nghiêm trọng)</span> : null}
+          </p>
+        </div>
+      ) : null}
+
+      {findWeek(state.weekConfig, tuanSo) ? null : <p className="mt-2 text-xs text-red-600">Không tìm thấy dữ liệu tuần này.</p>}
     </div>
   )
 }

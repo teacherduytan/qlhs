@@ -34,6 +34,7 @@ import { DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH, tinhRankTuan } from '../companion/ra
 import { TheNhanVatTuan } from '../companion/TheNhanVatTuan'
 import { calculateWeeklyStudentScore } from '../scoring/scoring'
 import { findWeek, selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
+import { StudentDocumentsTab } from '../documents/StudentDocumentsTab'
 
 const CONTACT_LABELS: Record<HinhThucLienLacPhuHuynh, string> = {
   dien_thoai: 'Điện thoại trực tiếp',
@@ -116,12 +117,13 @@ type RoleForm = {
   duocDeXuat: boolean
 }
 
-type TeacherTab = 'ghi-nhan' | 'lien-lac' | 'ban-can-su' | 'thong-tin'
+type TeacherTab = 'ghi-nhan' | 'lien-lac' | 'ban-can-su' | 'tai-lieu' | 'thong-tin'
 
 const TEACHER_TABS: Array<{ id: TeacherTab; label: string; icon: string }> = [
   { id: 'ghi-nhan', label: 'Ghi nhận & đề xuất', icon: '📝' },
   { id: 'lien-lac', label: 'Liên lạc PH', icon: '📞' },
   { id: 'ban-can-su', label: 'Ban cán sự', icon: '🎓' },
+  { id: 'tai-lieu', label: 'Tài liệu đính kèm', icon: '📎' },
   { id: 'thong-tin', label: 'Thông tin', icon: '👤' },
 ]
 
@@ -515,7 +517,7 @@ export function TeacherStudentDetailPage() {
           <CompanionSection state={state} setState={setState} />
 
           <div className="rounded-lg border border-slate-300 bg-slate-100 p-1 shadow-sm">
-            <div className="flex gap-1 overflow-x-auto md:grid md:grid-cols-4">
+            <div className="flex gap-1 overflow-x-auto md:grid md:grid-cols-5">
               {TEACHER_TABS.map((tab) => (
                 <button
                   key={tab.id}
@@ -912,6 +914,8 @@ export function TeacherStudentDetailPage() {
           </section>
           </>
           ) : null}
+
+          {activeTab === 'tai-lieu' ? <StudentDocumentsTab maHs={state.student.ma_hs} /> : null}
 
           {activeTab === 'thong-tin' ? (
           <form onSubmit={saveStudent} className="rounded-lg border border-violet-200 bg-violet-100 p-4 shadow-sm">

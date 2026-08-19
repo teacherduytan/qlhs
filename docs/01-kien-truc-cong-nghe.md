@@ -88,6 +88,19 @@ Vì học sinh là **người chưa đủ 18 tuổi** và dữ liệu bao gồm 
 - Nội dung vi phạm hiển thị nên **khách quan, không xúc phạm**, đúng tinh thần giáo dục.
 - Về lâu dài, nếu trường có Google Workspace for Education, nên chuyển sang đăng nhập bằng email trường thay vì link ẩn danh — ghi chú việc này như một hạng mục của giai đoạn sau.
 
+### Bổ sung quan trọng (12/07/2026): 2 route tách biệt cho hồ sơ học sinh
+
+Phát sinh nhu cầu giáo viên cần xem/sửa thông tin đầy đủ hơn (kể cả SĐT phụ huynh) ngay trong hồ sơ — **không được làm chung 1 route với link công khai gửi học sinh**, vì sẽ làm lộ thông tin nhạy cảm qua đúng link học sinh đang cầm. Chốt lại kiến trúc:
+
+| Route | Dành cho | Hiển thị |
+|---|---|---|
+| `/#/hs/<token>` | Học sinh (link công khai, gửi riêng từng em) | Giới hạn — **không** SĐT phụ huynh, **không** cho edit, đúng như thiết kế ban đầu ở mục 6 phía trên |
+| `/#/quan-ly/hoc-sinh/<ma_hs>` (mới) | Giáo viên (chỉ vào được từ trong Danh sách học sinh) | Đầy đủ — có SĐT phụ huynh (dạng bấm gọi trên di động), cho edit trực tiếp |
+
+Dùng `ma_hs` (mã nội bộ) cho route giáo viên thay vì `token_ho_so` — để 2 route không thể suy ra lẫn nhau, và route giáo viên không bị lộ ra ngoài nếu học sinh đoán/thử URL.
+
+> ⚠️ **Sửa lại (12/07/2026, sau khi phát hiện lỗ hổng thật)**: bảng trên **chưa đủ** — tách 2 đường dẫn khác nhau **không phải là bảo mật thật**, chỉ là "giấu". Trong 1 ứng dụng SPA, toàn bộ route đều nằm sẵn trong cùng 1 file code tải về máy mọi người truy cập (kể cả học sinh) — không có gì ngăn ai đó gõ thẳng URL hoặc bấm menu điều hướng chung. Thực tế học sinh đã điều hướng được từ `/#/hs/<token>` sang vùng giáo viên và tự sửa được dữ liệu. **Nguyên tắc đúng phải là**: mọi route trừ `/#/hs/<token>` đều cần một lớp đăng nhập thật (màn nhập mật khẩu giáo viên + xác thực phía server qua Apps Script, không nhúng bất kỳ mật khẩu/secret nào vào file code build ra) — xem chi tiết cơ chế ở tài liệu 06, commit **C060**.
+
 ## 7. Nguyên tắc bất biến dữ liệu lịch sử (quan trọng — phát hiện từ dữ liệu thật anh cung cấp)
 
 Đối chiếu file điểm danh thật anh gửi (`Diem_danh_11C5...xlsx`), có **bằng chứng thực tế** cho một lỗi thiết kế cần tránh: sheet `11C5` được ghi là *"DANH SÁCH GỐC DUY NHẤT — các sheet điểm danh tự đọc theo đây"*, và đối chiếu với sheet `Backup 11C5` (bản cũ hơn) cho thấy **em Nguyễn Văn Chính (TT 3)** trước đó có `DIỆN = BT`, nay đã đổi thành `DIỆN = 2B`.
