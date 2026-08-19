@@ -528,14 +528,21 @@ export interface TaiLieu {
   id: string
   danh_muc_tai_lieu_id: string
   ghi_nhan_id: string | null
-  duong_dan_luu_tru: string
-  ten_file_goc: string | null
-  loai_tep: string | null
-  kich_thuoc_byte: number | null
   ngay_viet: string | null
   ghi_chu: string | null
   nguoi_tai_len: string | null
   thoi_gian_tai_len: string
+}
+
+/** 1 trang/anh cu the cua 1 tai_lieu — vd 2 to giay chup thanh 2 anh nhung cung 1 ban tuong trinh. */
+export interface TaiLieuTrang {
+  id: string
+  tai_lieu_id: string
+  thu_tu: number
+  duong_dan_luu_tru: string
+  ten_file_goc: string | null
+  loai_tep: string | null
+  kich_thuoc_byte: number | null
 }
 
 export interface TaiLieuHocSinhTom {
@@ -547,10 +554,11 @@ export interface TaiLieuHocSinhTom {
 export interface TaiLieuChiTiet extends TaiLieu {
   danh_muc: DanhMucTaiLieu | null
   hoc_sinh: TaiLieuHocSinhTom[]
+  trang: TaiLieuTrang[]
 }
 
 export interface TaiLieuUploadInput {
-  file: File
+  files: File[]
   danhMucTaiLieuId: string
   ngayViet: string
   maHsList: string[]

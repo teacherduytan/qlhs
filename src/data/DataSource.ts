@@ -212,6 +212,8 @@ export interface DataSource {
 
   getTaiLieu(filter?: TaiLieuBoLoc): Promise<TaiLieuChiTiet[]>
   uploadTaiLieu(input: TaiLieuUploadInput): Promise<TaiLieuChiTiet>
+  addTaiLieuTrang(taiLieuId: string, files: File[]): Promise<TaiLieuChiTiet>
+  deleteTaiLieuTrang(trangId: string): Promise<TaiLieuChiTiet>
   updateTaiLieu(id: string, patch: TaiLieuCapNhatInput): Promise<TaiLieuChiTiet>
   deleteTaiLieu(id: string): Promise<void>
   getTaiLieuUrl(duongDanLuuTru: string): Promise<string>

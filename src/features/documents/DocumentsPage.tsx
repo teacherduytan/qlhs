@@ -2,24 +2,32 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { DanhMucTaiLieu, GhiNhan, HocSinh, TaiLieuChiTiet } from '../../data/types'
-import { chuanBiFileTaiLen, formatKichThuoc } from './imageCompression'
+import { chuanBiFileTaiLen } from './imageCompression'
 import { StudentMultiSelect } from './StudentMultiSelect'
 import { DanhMucTaiLieuSelect } from './DanhMucTaiLieuSelect'
 import { TaiLieuThumbnail } from './TaiLieuThumbnail'
+import { TaiLieuPagesPreview } from './TaiLieuPagesPreview'
 
 type PageTab = 'tai-len' | 'thu-vien'
 
-interface UploadEntry {
+/** 1 trang/anh cu the trong 1 UploadEntry — nhieu trang cung 1 UploadEntry = nhieu anh cua CUNG 1 tai lieu giay. */
+interface EntryPage {
   key: string
   file: File
   previewUrl: string
   isImage: boolean
+  canhBao: string | null
+}
+
+/** 1 UploadEntry = 1 tai_lieu se duoc tao, co the gom nhieu trang (vd chup 2 to giay cua 1 ban tuong trinh). */
+interface UploadEntry {
+  key: string
+  pages: EntryPage[]
   danhMucId: string
   ngayViet: string
   maHsList: string[]
   ghiNhanId: string
   ghiChu: string
-  canhBao: string | null
   status: 'pending' | 'uploading' | 'done' | 'error'
   error: string | null
 }
@@ -133,30 +141,58 @@ function UploadPanel({
 
   const defaultDanhMucId = danhMuc[0]?.id || ''
 
-  async function handleFilesPicked(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) return
-    setSubmitMessage(null)
-    setSubmitError(null)
-
+  async function preparePages(fileList: FileList | null): Promise<EntryPage[]> {
+    if (!fileList || fileList.length === 0) return []
     const files = Array.from(fileList)
     const prepared = await Promise.all(files.map((file) => chuanBiFileTaiLen(file)))
-
-    const newEntries: UploadEntry[] = prepared.map(({ file, canhBao }) => ({
+    return prepared.map(({ file, canhBao }) => ({
       key: nextEntryKey(),
       file,
       previewUrl: URL.createObjectURL(file),
       isImage: file.type.startsWith('image/'),
+      canhBao,
+    }))
+  }
+
+  // Moi lan chon/chup file o o chinh = 1 tai lieu moi (co the nhieu trang neu chon
+  // nhieu file cung luc, vd 2 to giay cua cung 1 ban tuong trinh chup thanh 2 anh).
+  async function handleNewDocumentFilesPicked(fileList: FileList | null) {
+    const pages = await preparePages(fileList)
+    if (pages.length === 0) return
+    setSubmitMessage(null)
+    setSubmitError(null)
+
+    const newEntry: UploadEntry = {
+      key: nextEntryKey(),
+      pages,
       danhMucId: defaultDanhMucId,
       ngayViet: todayIso(),
       maHsList: preselectMaHs ? [preselectMaHs] : [],
       ghiNhanId: '',
       ghiChu: '',
-      canhBao,
       status: 'pending',
       error: null,
-    }))
+    }
+    setEntries((current) => [...current, newEntry])
+  }
 
-    setEntries((current) => [...current, ...newEntries])
+  async function addPagesToEntry(key: string, fileList: FileList | null) {
+    const pages = await preparePages(fileList)
+    if (pages.length === 0) return
+    setEntries((current) =>
+      current.map((entry) => (entry.key === key ? { ...entry, pages: [...entry.pages, ...pages] } : entry)),
+    )
+  }
+
+  function removePageFromEntry(entryKey: string, pageKey: string) {
+    setEntries((current) =>
+      current.map((entry) => {
+        if (entry.key !== entryKey) return entry
+        const target = entry.pages.find((page) => page.key === pageKey)
+        if (target) URL.revokeObjectURL(target.previewUrl)
+        return { ...entry, pages: entry.pages.filter((page) => page.key !== pageKey) }
+      }),
+    )
   }
 
   function updateEntry(key: string, patch: Partial<UploadEntry>) {
@@ -166,7 +202,7 @@ function UploadPanel({
   function removeEntry(key: string) {
     setEntries((current) => {
       const target = current.find((entry) => entry.key === key)
-      if (target) URL.revokeObjectURL(target.previewUrl)
+      target?.pages.forEach((page) => URL.revokeObjectURL(page.previewUrl))
       return current.filter((entry) => entry.key !== key)
     })
   }
@@ -205,6 +241,10 @@ function UploadPanel({
   async function submitAll() {
     if (entries.length === 0) return
     for (const entry of entries) {
+      if (entry.pages.length === 0) {
+        setSubmitError('Mỗi tài liệu phải có ít nhất 1 trang (ảnh/PDF).')
+        return
+      }
       if (entry.maHsList.length === 0) {
         setSubmitError('Mỗi tài liệu phải chọn ít nhất 1 học sinh liên quan.')
         return
@@ -224,7 +264,7 @@ function UploadPanel({
       updateEntry(entry.key, { status: 'uploading', error: null })
       try {
         await dataSource.uploadTaiLieu({
-          file: entry.file,
+          files: entry.pages.map((page) => page.file),
           danhMucTaiLieuId: entry.danhMucId,
           ngayViet: entry.ngayViet,
           maHsList: entry.maHsList,
@@ -243,7 +283,7 @@ function UploadPanel({
 
     setSubmitting(false)
     if (successCount === entries.length) {
-      entries.forEach((entry) => URL.revokeObjectURL(entry.previewUrl))
+      entries.forEach((entry) => entry.pages.forEach((page) => URL.revokeObjectURL(page.previewUrl)))
       setEntries([])
       setSubmitMessage(`Đã lưu ${successCount} tài liệu.`)
     } else {
@@ -257,8 +297,10 @@ function UploadPanel({
         <span className="text-3xl" aria-hidden="true">
           📷
         </span>
-        <span className="text-sm font-semibold text-blue-700">Chọn hoặc chụp ảnh / PDF</span>
-        <span className="text-xs text-slate-500">Có thể chọn nhiều file cùng lúc</span>
+        <span className="text-sm font-semibold text-blue-700">Chọn hoặc chụp ảnh / PDF cho 1 tài liệu mới</span>
+        <span className="text-xs text-slate-500">
+          Chọn nhiều ảnh cùng lúc nếu tài liệu có nhiều trang (vd 2 tờ giấy của cùng 1 bản tường trình)
+        </span>
         <input
           type="file"
           accept="image/*,application/pdf"
@@ -266,7 +308,7 @@ function UploadPanel({
           multiple
           className="hidden"
           onChange={(event) => {
-            void handleFilesPicked(event.target.files)
+            void handleNewDocumentFilesPicked(event.target.files)
             event.target.value = ''
           }}
         />
@@ -293,6 +335,8 @@ function UploadPanel({
             recordsByMaHs={recordsByMaHs}
             onChange={(patch) => updateEntry(entry.key, patch)}
             onRemove={() => removeEntry(entry.key)}
+            onAddPages={(fileList) => void addPagesToEntry(entry.key, fileList)}
+            onRemovePage={(pageKey) => removePageFromEntry(entry.key, pageKey)}
             onDanhMucCreated={onDanhMucCreated}
             onMaHsListSettled={(maHsList) => void ensureRecordsLoaded(maHsList)}
           />
@@ -325,6 +369,8 @@ function UploadEntryCard({
   recordsByMaHs,
   onChange,
   onRemove,
+  onAddPages,
+  onRemovePage,
   onDanhMucCreated,
   onMaHsListSettled,
 }: {
@@ -335,6 +381,8 @@ function UploadEntryCard({
   recordsByMaHs: Record<string, GhiNhan[]>
   onChange: (patch: Partial<UploadEntry>) => void
   onRemove: () => void
+  onAddPages: (fileList: FileList | null) => void
+  onRemovePage: (pageKey: string) => void
   onDanhMucCreated: (item: DanhMucTaiLieu) => void
   onMaHsListSettled: (maHsList: string[]) => void
 }) {
@@ -371,37 +419,72 @@ function UploadEntryCard({
           : null
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:flex-row">
-      <div className="shrink-0 sm:w-32">
-        {entry.isImage ? (
-          <img src={entry.previewUrl} alt="" className="h-32 w-full rounded-md object-cover sm:w-32" />
-        ) : (
-          <div className="flex h-32 w-full items-center justify-center rounded-md bg-slate-100 text-3xl sm:w-32" aria-hidden="true">
-            📄
-          </div>
-        )}
-        <p className="mt-1 truncate text-xs text-slate-500" title={entry.file.name}>
-          {entry.file.name}
+    <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase text-slate-500">
+          Tài liệu {index + 1} · {entry.pages.length} trang
         </p>
-        <p className="text-xs text-slate-400">{formatKichThuoc(entry.file.size)}</p>
+        <div className="flex items-center gap-2">
+          {statusBadge ? (
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge.className}`}>
+              {statusBadge.text}
+            </span>
+          ) : null}
+          <button type="button" onClick={onRemove} className="text-xs font-semibold text-red-600 hover:underline">
+            Xoá cả tài liệu
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {entry.pages.map((page, pageIndex) => (
+          <div key={page.key} className="relative w-20 shrink-0">
+            {page.isImage ? (
+              <img src={page.previewUrl} alt="" className="h-20 w-20 rounded-md object-cover" />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-md bg-slate-100 text-2xl" aria-hidden="true">
+                📄
+              </div>
+            )}
+            <span className="absolute left-1 top-1 rounded bg-black/70 px-1 text-[10px] font-semibold text-white">
+              {pageIndex + 1}
+            </span>
+            <button
+              type="button"
+              onClick={() => onRemovePage(page.key)}
+              title="Xoá trang này"
+              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white shadow"
+            >
+              ×
+            </button>
+            {page.canhBao ? (
+              <p className="mt-0.5 truncate text-[10px] font-medium text-amber-700" title={page.canhBao}>
+                ⚠
+              </p>
+            ) : null}
+          </div>
+        ))}
+
+        <label className="flex h-20 w-20 shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md border-2 border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-600">
+          <span className="text-lg" aria-hidden="true">
+            +
+          </span>
+          <span className="text-[10px] font-semibold">Thêm trang</span>
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            capture="environment"
+            multiple
+            className="hidden"
+            onChange={(event) => {
+              onAddPages(event.target.files)
+              event.target.value = ''
+            }}
+          />
+        </label>
       </div>
 
       <div className="flex flex-1 flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase text-slate-500">File {index + 1}</p>
-          <div className="flex items-center gap-2">
-            {statusBadge ? (
-              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge.className}`}>
-                {statusBadge.text}
-              </span>
-            ) : null}
-            <button type="button" onClick={onRemove} className="text-xs font-semibold text-red-600 hover:underline">
-              Xoá
-            </button>
-          </div>
-        </div>
-
-        {entry.canhBao ? <p className="text-xs font-medium text-amber-700">{entry.canhBao}</p> : null}
         {entry.error ? <p className="text-xs font-semibold text-red-700">{entry.error}</p> : null}
 
         <div className="grid gap-2 sm:grid-cols-2">
@@ -585,7 +668,7 @@ function LibraryPanel({ students, danhMuc }: { students: HocSinh[]; danhMuc: Dan
               />
             ) : (
               <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-                <TaiLieuThumbnail duongDanLuuTru={item.duong_dan_luu_tru} loaiTep={item.loai_tep} className="h-36 w-full" />
+                <TaiLieuPagesPreview trang={item.trang} className="h-36 w-full" />
                 <p className="text-sm font-semibold text-slate-900">{item.danh_muc?.ten || 'Không rõ loại'}</p>
                 <p className="text-xs text-slate-500">{item.ngay_viet || 'Chưa rõ ngày viết'}</p>
                 <p className="text-xs text-slate-600">
@@ -635,7 +718,9 @@ function TaiLieuEditCard({
   const [maHsList, setMaHsList] = useState(item.hoc_sinh.map((hs) => hs.ma_hs))
   const [ghiChu, setGhiChu] = useState(item.ghi_chu || '')
   const [danhMucList, setDanhMucList] = useState(danhMuc)
+  const [trang, setTrang] = useState(item.trang)
   const [busy, setBusy] = useState(false)
+  const [pageBusy, setPageBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function save() {
@@ -656,10 +741,77 @@ function TaiLieuEditCard({
     }
   }
 
+  async function addPages(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return
+    setPageBusy(true)
+    setError(null)
+    try {
+      const files = await Promise.all(Array.from(fileList).map((file) => chuanBiFileTaiLen(file)))
+      const updated = await dataSource.addTaiLieuTrang(item.id, files.map((f) => f.file))
+      setTrang(updated.trang)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không thêm được trang.')
+    } finally {
+      setPageBusy(false)
+    }
+  }
+
+  async function removePage(trangId: string) {
+    if (!window.confirm('Xoá trang này khỏi tài liệu?')) return
+    setPageBusy(true)
+    setError(null)
+    try {
+      const updated = await dataSource.deleteTaiLieuTrang(trangId)
+      setTrang(updated.trang)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không xoá được trang.')
+    } finally {
+      setPageBusy(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-blue-300 bg-blue-50 p-3 shadow-sm sm:col-span-2 lg:col-span-3">
       <p className="text-xs font-semibold uppercase text-blue-700">Sửa tài liệu</p>
-      <TaiLieuThumbnail duongDanLuuTru={item.duong_dan_luu_tru} loaiTep={item.loai_tep} className="h-40 w-40" />
+
+      <div className="flex flex-wrap gap-2">
+        {trang.map((page, pageIndex) => (
+          <div key={page.id} className="relative w-20 shrink-0">
+            <TaiLieuThumbnail duongDanLuuTru={page.duong_dan_luu_tru} loaiTep={page.loai_tep} className="h-20 w-20" />
+            <span className="absolute left-1 top-1 rounded bg-black/70 px-1 text-[10px] font-semibold text-white">
+              {pageIndex + 1}
+            </span>
+            <button
+              type="button"
+              disabled={pageBusy}
+              onClick={() => void removePage(page.id)}
+              title="Xoá trang này"
+              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white shadow disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <label className="flex h-20 w-20 shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md border-2 border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-600">
+          <span className="text-lg" aria-hidden="true">
+            +
+          </span>
+          <span className="text-[10px] font-semibold">Thêm trang</span>
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            capture="environment"
+            multiple
+            className="hidden"
+            disabled={pageBusy}
+            onChange={(event) => {
+              void addPages(event.target.files)
+              event.target.value = ''
+            }}
+          />
+        </label>
+      </div>
+
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
           Loại tài liệu

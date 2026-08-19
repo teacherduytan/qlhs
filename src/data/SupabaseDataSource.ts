@@ -54,7 +54,7 @@ import type {
 
 const TAI_LIEU_BUCKET = 'bien-ban-vi-pham'
 const TAI_LIEU_SELECT =
-  '*, danh_muc:danh_muc_tai_lieu_id(*), tai_lieu_hoc_sinh(ma_hs, hoc_sinh(ma_hs, ho, ten))'
+  '*, danh_muc:danh_muc_tai_lieu_id(*), tai_lieu_hoc_sinh(ma_hs, hoc_sinh(ma_hs, ho, ten)), trang:tai_lieu_trang(*)'
 
 type AnyRow = Record<string, unknown>
 
@@ -1542,6 +1542,7 @@ export class SupabaseDataSource implements DataSource {
       .from('tai_lieu')
       .select(TAI_LIEU_SELECT)
       .order('ngay_viet', { ascending: false })
+      .order('thu_tu', { ascending: true, foreignTable: 'tai_lieu_trang' })
 
     if (taiLieuIds) query = query.in('id', taiLieuIds)
     if (filter.danhMucId) query = query.eq('danh_muc_tai_lieu_id', filter.danhMucId)
@@ -1557,12 +1558,9 @@ export class SupabaseDataSource implements DataSource {
     if (input.maHsList.length === 0) {
       throw new Error('Phải chọn ít nhất 1 học sinh liên quan.')
     }
-
-    const path = buildTaiLieuStoragePath(input.file.name, input.ngayViet)
-    const { error: uploadError } = await getSupabaseClient()
-      .storage.from(TAI_LIEU_BUCKET)
-      .upload(path, input.file, { contentType: input.file.type || undefined })
-    assertNoError(uploadError, 'Khong tai len duoc file tren Supabase Storage')
+    if (input.files.length === 0) {
+      throw new Error('Phải chọn ít nhất 1 trang (ảnh/PDF).')
+    }
 
     const {
       data: { user },
@@ -1573,31 +1571,107 @@ export class SupabaseDataSource implements DataSource {
       .insert({
         danh_muc_tai_lieu_id: input.danhMucTaiLieuId,
         ghi_nhan_id: input.ghiNhanId || null,
-        duong_dan_luu_tru: path,
-        ten_file_goc: input.file.name,
-        loai_tep: input.file.type || null,
-        kich_thuoc_byte: input.file.size,
         ngay_viet: input.ngayViet,
         ghi_chu: input.ghiChu?.trim() || null,
         nguoi_tai_len: user?.id || null,
       })
       .select('id')
       .single()
+    assertNoError(error, 'Khong tao duoc TaiLieu tren Supabase')
+    const taiLieuId = (data as AnyRow).id as string
 
-    if (error) {
-      // Rollback file da upload neu insert dong CSDL that bai, tranh rac Storage
-      // khong co dong tro toi (vi upload va insert khong nam trong 1 transaction).
-      await getSupabaseClient().storage.from(TAI_LIEU_BUCKET).remove([path])
-      throw new Error(`Khong tao duoc TaiLieu tren Supabase: ${error.message || 'loi khong ro'}`)
+    try {
+      await this.uploadTaiLieuPages(taiLieuId, input.files, 1)
+
+      const { error: linkError } = await getSupabaseClient()
+        .from('tai_lieu_hoc_sinh')
+        .insert(input.maHsList.map((maHs) => ({ tai_lieu_id: taiLieuId, ma_hs: maHs })))
+      assertNoError(linkError, 'Khong gan duoc hoc sinh vao TaiLieu tren Supabase')
+    } catch (innerError) {
+      // Dong tai_lieu vua tao khong con y nghia neu chua co trang/hoc sinh nao gan
+      // duoc thanh cong — xoa luon (kem cac trang/file da tai len o buoc truoc) thay
+      // vi de lai dong CSDL "rong" khong ai truy cap toi.
+      await this.deleteTaiLieu(taiLieuId).catch(() => {})
+      throw innerError
     }
 
-    const taiLieuId = (data as AnyRow).id as string
-    const { error: linkError } = await getSupabaseClient()
-      .from('tai_lieu_hoc_sinh')
-      .insert(input.maHsList.map((maHs) => ({ tai_lieu_id: taiLieuId, ma_hs: maHs })))
-    assertNoError(linkError, 'Khong gan duoc hoc sinh vao TaiLieu tren Supabase')
+    return this.fetchTaiLieuById(taiLieuId)
+  }
+
+  async addTaiLieuTrang(taiLieuId: string, files: File[]): Promise<TaiLieuChiTiet> {
+    if (files.length === 0) {
+      throw new Error('Chưa chọn file nào để thêm.')
+    }
+    const { data, error } = await getSupabaseClient()
+      .from('tai_lieu_trang')
+      .select('thu_tu')
+      .eq('tai_lieu_id', taiLieuId)
+      .order('thu_tu', { ascending: false })
+      .limit(1)
+    assertNoError(error, 'Khong doc duoc so trang hien tai cua TaiLieu tren Supabase')
+    const startThuTu = (((data?.[0] as AnyRow)?.thu_tu as number) || 0) + 1
+
+    await this.uploadTaiLieuPages(taiLieuId, files, startThuTu)
+    return this.fetchTaiLieuById(taiLieuId)
+  }
+
+  async deleteTaiLieuTrang(trangId: string): Promise<TaiLieuChiTiet> {
+    const { data, error } = await getSupabaseClient()
+      .from('tai_lieu_trang')
+      .select('tai_lieu_id, duong_dan_luu_tru')
+      .eq('id', trangId)
+      .single()
+    assertNoError(error, 'Khong tim thay trang tai lieu tren Supabase')
+    const row = data as AnyRow
+    const taiLieuId = row.tai_lieu_id as string
+
+    const { count, error: countError } = await getSupabaseClient()
+      .from('tai_lieu_trang')
+      .select('id', { count: 'exact', head: true })
+      .eq('tai_lieu_id', taiLieuId)
+    assertNoError(countError, 'Khong dem duoc so trang cua TaiLieu tren Supabase')
+    if ((count || 0) <= 1) {
+      throw new Error('Đây là trang cuối cùng của tài liệu — hãy xoá cả tài liệu thay vì xoá trang này.')
+    }
+
+    const { error: deleteError } = await getSupabaseClient().from('tai_lieu_trang').delete().eq('id', trangId)
+    assertNoError(deleteError, 'Khong xoa duoc trang tai lieu tren Supabase')
+
+    const { error: storageError } = await getSupabaseClient()
+      .storage.from(TAI_LIEU_BUCKET)
+      .remove([row.duong_dan_luu_tru as string])
+    assertNoError(storageError, 'Khong xoa duoc file cua trang tai lieu tren Supabase Storage')
 
     return this.fetchTaiLieuById(taiLieuId)
+  }
+
+  private async uploadTaiLieuPages(taiLieuId: string, files: File[], startThuTu: number): Promise<void> {
+    const uploadedPaths: string[] = []
+    for (const file of files) {
+      const path = buildTaiLieuStoragePath(file.name)
+      const { error: uploadError } = await getSupabaseClient()
+        .storage.from(TAI_LIEU_BUCKET)
+        .upload(path, file, { contentType: file.type || undefined })
+      if (uploadError) {
+        await getSupabaseClient().storage.from(TAI_LIEU_BUCKET).remove(uploadedPaths)
+        throw new Error(`Khong tai len duoc file "${file.name}" tren Supabase Storage: ${uploadError.message || 'loi khong ro'}`)
+      }
+      uploadedPaths.push(path)
+    }
+
+    const rows = files.map((file, index) => ({
+      tai_lieu_id: taiLieuId,
+      thu_tu: startThuTu + index,
+      duong_dan_luu_tru: uploadedPaths[index],
+      ten_file_goc: file.name,
+      loai_tep: file.type || null,
+      kich_thuoc_byte: file.size,
+    }))
+    const { error: insertError } = await getSupabaseClient().from('tai_lieu_trang').insert(rows)
+    if (insertError) {
+      await getSupabaseClient().storage.from(TAI_LIEU_BUCKET).remove(uploadedPaths)
+      throw new Error(`Khong tao duoc trang tai lieu tren Supabase: ${insertError.message || 'loi khong ro'}`)
+    }
   }
 
   async updateTaiLieu(id: string, patch: TaiLieuCapNhatInput): Promise<TaiLieuChiTiet> {
@@ -1633,18 +1707,19 @@ export class SupabaseDataSource implements DataSource {
 
   async deleteTaiLieu(id: string): Promise<void> {
     const { data, error } = await getSupabaseClient()
-      .from('tai_lieu')
+      .from('tai_lieu_trang')
       .select('duong_dan_luu_tru')
-      .eq('id', id)
-      .single()
-    assertNoError(error, 'Khong tim thay TaiLieu tren Supabase')
+      .eq('tai_lieu_id', id)
+    assertNoError(error, 'Khong doc duoc cac trang cua TaiLieu tren Supabase')
 
     const { error: deleteError } = await getSupabaseClient().from('tai_lieu').delete().eq('id', id)
     assertNoError(deleteError, 'Khong xoa duoc TaiLieu tren Supabase')
 
-    const duongDan = (data as AnyRow).duong_dan_luu_tru as string
-    const { error: storageError } = await getSupabaseClient().storage.from(TAI_LIEU_BUCKET).remove([duongDan])
-    assertNoError(storageError, 'Khong xoa duoc file tren Supabase Storage')
+    const paths = ((data || []) as AnyRow[]).map((row) => row.duong_dan_luu_tru as string)
+    if (paths.length > 0) {
+      const { error: storageError } = await getSupabaseClient().storage.from(TAI_LIEU_BUCKET).remove(paths)
+      assertNoError(storageError, 'Khong xoa duoc file tren Supabase Storage')
+    }
   }
 
   async getTaiLieuUrl(duongDanLuuTru: string): Promise<string> {
@@ -1803,14 +1878,11 @@ function addDays(isoDate: string, days: number): string {
 
 function mapTaiLieuRow(row: AnyRow): TaiLieuChiTiet {
   const hocSinhRows = (row.tai_lieu_hoc_sinh || []) as AnyRow[]
+  const trangRows = (row.trang || []) as AnyRow[]
   return {
     id: row.id as string,
     danh_muc_tai_lieu_id: row.danh_muc_tai_lieu_id as string,
     ghi_nhan_id: (row.ghi_nhan_id as string) || null,
-    duong_dan_luu_tru: row.duong_dan_luu_tru as string,
-    ten_file_goc: (row.ten_file_goc as string) || null,
-    loai_tep: (row.loai_tep as string) || null,
-    kich_thuoc_byte: (row.kich_thuoc_byte as number) || null,
     ngay_viet: (row.ngay_viet as string) || null,
     ghi_chu: (row.ghi_chu as string) || null,
     nguoi_tai_len: (row.nguoi_tai_len as string) || null,
@@ -1820,15 +1892,27 @@ function mapTaiLieuRow(row: AnyRow): TaiLieuChiTiet {
       .map((item) => item.hoc_sinh as AnyRow | null)
       .filter((hs): hs is AnyRow => Boolean(hs))
       .map((hs) => ({ ma_hs: hs.ma_hs as string, ho: hs.ho as string, ten: hs.ten as string })),
+    trang: trangRows
+      .map((item) => ({
+        id: item.id as string,
+        tai_lieu_id: item.tai_lieu_id as string,
+        thu_tu: item.thu_tu as number,
+        duong_dan_luu_tru: item.duong_dan_luu_tru as string,
+        ten_file_goc: (item.ten_file_goc as string) || null,
+        loai_tep: (item.loai_tep as string) || null,
+        kich_thuoc_byte: (item.kich_thuoc_byte as number) || null,
+      }))
+      .sort((a, b) => a.thu_tu - b.thu_tu),
   }
 }
 
-function buildTaiLieuStoragePath(fileName: string, ngayViet: string): string {
-  const namHoc = schoolYearFromIsoDate(ngayViet)
+function buildTaiLieuStoragePath(fileName: string): string {
+  const now = new Date()
+  const namHoc = schoolYearFromIsoDate(formatIsoDate(now))
   const dotIndex = fileName.lastIndexOf('.')
   const ext = dotIndex >= 0 ? fileName.slice(dotIndex + 1) : ''
   const random = Math.random().toString(36).slice(2, 6)
-  return `${namHoc}/${Date.now()}_${random}${ext ? `.${ext}` : ''}`
+  return `${namHoc}/${now.getTime()}_${random}${ext ? `.${ext}` : ''}`
 }
 
 function schoolYearFromIsoDate(isoDate: string): string {
