@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react'
 import { dataSource } from '../../data/client'
 
-/** Anh/PDF trong bucket private nen luon phai xin signed URL truoc khi hien thi. */
+/**
+ * Anh/PDF trong bucket private nen luon phai xin signed URL truoc khi hien thi.
+ * Neu co onClick thi render button (dung khi muon mo lightbox nhieu trang thay vi
+ * mo tab moi); khong truyen onClick thi giu hanh vi cu — mo signed URL o tab moi.
+ */
 export function TaiLieuThumbnail({
   duongDanLuuTru,
   loaiTep,
   className,
+  onClick,
 }: {
   duongDanLuuTru: string
   loaiTep: string | null
   className?: string
+  onClick?: () => void
 }) {
   const [state, setState] = useState<{ status: 'loading' | 'ready' | 'error'; url: string | null }>({
     status: 'loading',
@@ -48,18 +54,34 @@ export function TaiLieuThumbnail({
   }
 
   if (isPdf) {
-    return (
-      <a
-        href={state.url}
-        target="_blank"
-        rel="noreferrer"
-        className={`${baseClass} flex flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100`}
-      >
+    const pdfClassName = `${baseClass} flex flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100`
+    const pdfContent = (
+      <>
         <span className="text-2xl" aria-hidden="true">
           📄
         </span>
         <span className="text-xs font-semibold">Xem PDF</span>
+      </>
+    )
+    if (onClick) {
+      return (
+        <button type="button" onClick={onClick} className={pdfClassName}>
+          {pdfContent}
+        </button>
+      )
+    }
+    return (
+      <a href={state.url} target="_blank" rel="noreferrer" className={pdfClassName}>
+        {pdfContent}
       </a>
+    )
+  }
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={`${baseClass} block overflow-hidden rounded-md`}>
+        <img src={state.url} alt="" className="h-full w-full object-cover" />
+      </button>
     )
   }
 

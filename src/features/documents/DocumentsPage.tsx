@@ -7,6 +7,7 @@ import { StudentMultiSelect } from './StudentMultiSelect'
 import { DanhMucTaiLieuSelect } from './DanhMucTaiLieuSelect'
 import { TaiLieuThumbnail } from './TaiLieuThumbnail'
 import { TaiLieuPagesPreview } from './TaiLieuPagesPreview'
+import { TaiLieuLightbox } from './TaiLieuLightbox'
 
 type PageTab = 'tai-len' | 'thu-vien'
 
@@ -722,6 +723,7 @@ function TaiLieuEditCard({
   const [busy, setBusy] = useState(false)
   const [pageBusy, setPageBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   async function save() {
     setBusy(true)
@@ -777,7 +779,12 @@ function TaiLieuEditCard({
       <div className="flex flex-wrap gap-2">
         {trang.map((page, pageIndex) => (
           <div key={page.id} className="relative w-20 shrink-0">
-            <TaiLieuThumbnail duongDanLuuTru={page.duong_dan_luu_tru} loaiTep={page.loai_tep} className="h-20 w-20" />
+            <TaiLieuThumbnail
+              duongDanLuuTru={page.duong_dan_luu_tru}
+              loaiTep={page.loai_tep}
+              className="h-20 w-20"
+              onClick={() => setLightboxIndex(pageIndex)}
+            />
             <span className="absolute left-1 top-1 rounded bg-black/70 px-1 text-[10px] font-semibold text-white">
               {pageIndex + 1}
             </span>
@@ -858,6 +865,10 @@ function TaiLieuEditCard({
           Huỷ
         </button>
       </div>
+
+      {lightboxIndex !== null ? (
+        <TaiLieuLightbox trang={trang} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+      ) : null}
     </div>
   )
 }
