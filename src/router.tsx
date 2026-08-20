@@ -6,6 +6,7 @@ import { CatalogPage } from './features/catalog/CatalogPage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { DocumentsPage } from './features/documents/DocumentsPage'
 import { ImportPage } from './features/import/ImportPage'
+import { MessageBatchesPage } from './features/students/MessageBatchesPage'
 import { ParentContactHistoryPage } from './features/attendance/ParentContactHistoryPage'
 import { RecordEntryPage } from './features/records/RecordEntryPage'
 import { RuleManagerPage } from './features/companion/RuleManagerPage'
@@ -25,6 +26,7 @@ export const router = createHashRouter([
       { path: 'ghi-nhan', element: <RecordEntryPage /> },
       { path: 'diem-danh', element: <AttendanceManagementPage /> },
       { path: 'lien-lac-phu-huynh', element: <ParentContactHistoryPage /> },
+      { path: 'tin-nhan-phu-huynh', element: <MessageBatchesPage /> },
       { path: 'bao-cao-si-so', element: <AttendanceReportPage /> },
       { path: 'bao-cao', element: <ReportsPage /> },
       { path: 'danh-muc', element: <CatalogPage /> },

@@ -1096,7 +1096,7 @@ function TextField({
   )
 }
 
-function StudentPhonePill({ label, phone, smsBody }: { label: string; phone: string; smsBody: string }) {
+export function StudentPhonePill({ label, phone, smsBody }: { label: string; phone: string; smsBody: string }) {
   return (
     <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
       <span className="text-xs font-semibold text-slate-500">{label}</span>
