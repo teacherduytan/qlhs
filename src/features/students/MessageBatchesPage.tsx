@@ -146,13 +146,13 @@ export function MessageBatchesPage() {
               <button
                 type="button"
                 onClick={() => toggleBatch(batch.key)}
-                className="flex w-full items-center justify-between gap-3 bg-slate-700 px-4 py-3 text-left text-white"
+                className="flex w-full items-start justify-between gap-3 bg-slate-700 px-4 py-3 text-left text-white"
               >
-                <div>
-                  <p className="font-bold">{batchLabel}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="wrap-break-word font-bold">{batchLabel}</p>
                   <p className="text-xs text-slate-200">{batch.messages.length} học sinh</p>
                 </div>
-                <span className="text-lg">{isCollapsed ? '▸' : '▾'}</span>
+                <span className="shrink-0 text-lg">{isCollapsed ? '▸' : '▾'}</span>
               </button>
 
               {!isCollapsed ? (
@@ -160,7 +160,7 @@ export function MessageBatchesPage() {
                   {batch.messages.map((message) => {
                     const student = studentByMaHs.get(message.ma_hs)
                     return (
-                      <div key={message.id} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div key={message.id} className="flex flex-col gap-2 p-3 md:flex-row md:items-start md:justify-between">
                         <div className="min-w-0 flex-1">
                           {student ? (
                             <Link
@@ -174,7 +174,7 @@ export function MessageBatchesPage() {
                           )}
                           <p className="wrap-break-word text-sm text-slate-700">{message.noi_dung}</p>
                         </div>
-                        <div className="flex shrink-0 flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 md:shrink-0">
                           {student?.sdt_1 ? (
                             <StudentPhonePill label="SĐT 1" phone={student.sdt_1} smsBody={message.noi_dung} />
                           ) : null}
