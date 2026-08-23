@@ -6,6 +6,9 @@ import type {
   BanCanSu,
   CauHinhTuan,
   DanhMucDiem,
+  DiemCauHinhHeSoDieuKien,
+  DiemCauHinhThanhPhan,
+  DiemNguongXepLoai,
   GhiNhan,
   HocSinh,
   TrangThaiXuLyTapThe,
@@ -13,6 +16,7 @@ import type {
 import {
   calculateClassCollectiveScore,
   calculateClassWeeklyScores,
+  DEFAULT_SO_THAP_PHAN_LAM_TRON,
   type ScoreComponent,
   type WeeklyClassScore,
   type WeeklyStudentScore,
@@ -48,6 +52,10 @@ type DashboardState =
       students: HocSinh[]
       tuanSo: number
       weekConfig: CauHinhTuan[]
+      diemThanhPhan: DiemCauHinhThanhPhan[]
+      diemHeSoDieuKien: DiemCauHinhHeSoDieuKien[]
+      diemNguongXepLoai: DiemNguongXepLoai[]
+      diemCauHinhChung: Record<string, string>
     }
 
 type OverviewStat = {
@@ -204,23 +212,43 @@ export function DashboardPage() {
       dataSource.getPointCatalog(),
       dataSource.getWeekConfig(),
       dataSource.getBanCanSu(),
+      dataSource.getDiemCauHinhThanhPhan(),
+      dataSource.getDiemCauHinhHeSoDieuKien(),
+      dataSource.getDiemNguongXepLoai(),
+      dataSource.getDiemCauHinhChung(),
     ])
-      .then(([students, records, catalog, weekConfig, banCanSu]) => {
-        if (!active) {
-          return
-        }
-
-        const tuanSo = selectDefaultWeek(weekConfig, records)
-        setState({
-          status: 'success',
-          banCanSu,
-          catalog,
-          records,
+      .then(
+        ([
           students,
-          tuanSo,
+          records,
+          catalog,
           weekConfig,
-        })
-      })
+          banCanSu,
+          diemThanhPhan,
+          diemHeSoDieuKien,
+          diemNguongXepLoai,
+          diemCauHinhChung,
+        ]) => {
+          if (!active) {
+            return
+          }
+
+          const tuanSo = selectDefaultWeek(weekConfig, records)
+          setState({
+            status: 'success',
+            banCanSu,
+            catalog,
+            records,
+            students,
+            tuanSo,
+            weekConfig,
+            diemThanhPhan,
+            diemHeSoDieuKien,
+            diemNguongXepLoai,
+            diemCauHinhChung,
+          })
+        },
+      )
       .catch((error: unknown) => {
         if (active) {
           setState({
@@ -250,11 +278,17 @@ export function DashboardPage() {
 
     const studentById = new Map(state.students.map((student) => [student.ma_hs, student]))
     const catalogByCode = new Map(state.catalog.map((item) => [item.ma_danh_muc, item]))
+    const soThapPhanLamTron =
+      Number(state.diemCauHinhChung.lam_tron_so_thap_phan) || DEFAULT_SO_THAP_PHAN_LAM_TRON
     const currentScores = calculateClassWeeklyScores({
       catalog: state.catalog,
       records: state.records,
       students: state.students,
       tuanSo: state.tuanSo,
+      thanhPhanCauHinh: state.diemThanhPhan,
+      heSoDieuKienCauHinh: state.diemHeSoDieuKien,
+      nguongXepLoai: state.diemNguongXepLoai,
+      soThapPhanLamTron,
     })
     const sortedScores = filterAndSortScores(
       currentScores,
@@ -270,6 +304,10 @@ export function DashboardPage() {
         records: state.records,
         students: state.students,
         tuanSo: Math.max(1, state.tuanSo - 1),
+        thanhPhanCauHinh: state.diemThanhPhan,
+        heSoDieuKienCauHinh: state.diemHeSoDieuKien,
+        nguongXepLoai: state.diemNguongXepLoai,
+        soThapPhanLamTron,
       }).map((score) => [score.ma_hs, score]),
     )
     const collectiveEvents = getCollectiveEvents(state.records, state.catalog, state.tuanSo)
@@ -301,6 +339,8 @@ export function DashboardPage() {
       records: state.records,
       students: state.students,
       tuanSo: state.tuanSo,
+      nguongXepLoai: state.diemNguongXepLoai,
+      soThapPhanLamTron,
     })
 
     // "Si so" o khoi Tom tat nhanh phai dem dong theo dung tuan dang xem

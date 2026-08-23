@@ -10,6 +10,9 @@ import type {
   CauHinhTuan,
   DanhMucDiem,
   DeXuatGhiNhan,
+  DiemCauHinhHeSoDieuKien,
+  DiemCauHinhThanhPhan,
+  DiemNguongXepLoai,
   DienHocSinh,
   DongHanhDiemDanh,
   DongHanhDuyet,
@@ -32,7 +35,7 @@ import { apDungHuyHieu, apDungLuat, chonCauDinhHuong } from '../companion/applyR
 import { tinhChiSoTuan } from '../companion/computeMetrics'
 import { DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH, tinhRankTuan } from '../companion/rankTinhTu'
 import { TheNhanVatTuan } from '../companion/TheNhanVatTuan'
-import { calculateWeeklyStudentScore } from '../scoring/scoring'
+import { calculateWeeklyStudentScore, DEFAULT_SO_THAP_PHAN_LAM_TRON } from '../scoring/scoring'
 import { findWeek, formatDisplayWeekLabel, selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
 import { StudentDocumentsTab } from '../documents/StudentDocumentsTab'
 
@@ -91,6 +94,10 @@ type DetailState =
       rankBac: BacTinhTu[]
       rankLichSu: RankLichSuTuan[]
       dongHanhCauHinh: Record<string, string>
+      diemThanhPhan: DiemCauHinhThanhPhan[]
+      diemHeSoDieuKien: DiemCauHinhHeSoDieuKien[]
+      diemNguongXepLoai: DiemNguongXepLoai[]
+      diemCauHinhChung: Record<string, string>
     }
 
 type StudentForm = {
@@ -171,6 +178,10 @@ export function TeacherStudentDetailPage() {
       dataSource.getRankBacTinhTu(),
       dataSource.getRankLichSuTuan(maHs),
       dataSource.getDongHanhCauHinh(),
+      dataSource.getDiemCauHinhThanhPhan(),
+      dataSource.getDiemCauHinhHeSoDieuKien(),
+      dataSource.getDiemNguongXepLoai(),
+      dataSource.getDiemCauHinhChung(),
     ])
       .then(
         ([
@@ -191,6 +202,10 @@ export function TeacherStudentDetailPage() {
           rankBac,
           rankLichSu,
           dongHanhCauHinh,
+          diemThanhPhan,
+          diemHeSoDieuKien,
+          diemNguongXepLoai,
+          diemCauHinhChung,
         ]) => {
           if (!active) return
           const student = students.find((item) => item.ma_hs === maHs)
@@ -217,6 +232,10 @@ export function TeacherStudentDetailPage() {
             rankBac,
             rankLichSu,
             dongHanhCauHinh,
+            diemThanhPhan,
+            diemHeSoDieuKien,
+            diemNguongXepLoai,
+            diemCauHinhChung,
           })
           setForm(formFromStudent(student))
           setRoleForm(roleFormFromBanCanSu(maHs, banCanSu))
@@ -1041,6 +1060,10 @@ function CompanionSection({
     records: state.records,
     student: state.student,
     tuanSo,
+    thanhPhanCauHinh: state.diemThanhPhan,
+    heSoDieuKienCauHinh: state.diemHeSoDieuKien,
+    nguongXepLoai: state.diemNguongXepLoai,
+    soThapPhanLamTron: Number(state.diemCauHinhChung.lam_tron_so_thap_phan) || DEFAULT_SO_THAP_PHAN_LAM_TRON,
   })
   const diemThuongMoiHuyHieu =
     Number(state.dongHanhCauHinh.diem_thuong_moi_huy_hieu) || DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH

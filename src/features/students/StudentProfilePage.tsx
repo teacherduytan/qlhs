@@ -7,6 +7,9 @@ import type {
   CauHinhTuan,
   DanhMucDiem,
   DeXuatGhiNhan,
+  DiemCauHinhHeSoDieuKien,
+  DiemCauHinhThanhPhan,
+  DiemNguongXepLoai,
   DongHanhDiemDanh,
   DongHanhDuyet,
   GhiNhan,
@@ -22,7 +25,7 @@ import { DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH, tinhRankTuan } from '../companion/ra
 import { TheNhanVatTuan } from '../companion/TheNhanVatTuan'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
 import { formatTietLabel, getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
-import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
+import { calculateWeeklyStudentScore, DEFAULT_SO_THAP_PHAN_LAM_TRON, type WeeklyStudentScore } from '../scoring/scoring'
 import { getBadgeClassForRecord } from '../scoring/scoreStyles'
 import { findWeek, formatDisplayWeekLabel, selectDefaultWeek, sortWeeks, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
 import { getStudentGroup } from './studentGroups'
@@ -49,6 +52,10 @@ type ProfileState =
       rankBac: BacTinhTu[]
       rankLichSu: RankLichSuTuan[]
       dongHanhCauHinh: Record<string, string>
+      diemThanhPhan?: DiemCauHinhThanhPhan[]
+      diemHeSoDieuKien?: DiemCauHinhHeSoDieuKien[]
+      diemNguongXepLoai?: DiemNguongXepLoai[]
+      diemCauHinhChung?: Record<string, string>
     }
 
 export function loginStorageKey(token: string): string {
@@ -155,6 +162,10 @@ export function StudentProfilePage() {
       records: state.records,
       student: state.student,
       tuanSo: state.tuanSo,
+      thanhPhanCauHinh: state.diemThanhPhan,
+      heSoDieuKienCauHinh: state.diemHeSoDieuKien,
+      nguongXepLoai: state.diemNguongXepLoai,
+      soThapPhanLamTron: Number(state.diemCauHinhChung?.lam_tron_so_thap_phan) || DEFAULT_SO_THAP_PHAN_LAM_TRON,
     })
   }, [state])
 
@@ -177,9 +188,16 @@ export function StudentProfilePage() {
       setLoginError(null)
     }
 
-    dataSource
-      .getPublicStudentProfile(token, sdtValue, matKhauValue)
-      .then((profile) => {
+    Promise.all([
+      dataSource.getPublicStudentProfile(token, sdtValue, matKhauValue),
+      // Cau hinh cong thuc diem that tren Supabase - khong de 1 loi mang o day
+      // lam hong ca dang nhap, cu roi ve fallback mac dinh trong scoring.ts.
+      dataSource.getDiemCauHinhThanhPhan().catch(() => undefined),
+      dataSource.getDiemCauHinhHeSoDieuKien().catch(() => undefined),
+      dataSource.getDiemNguongXepLoai().catch(() => undefined),
+      dataSource.getDiemCauHinhChung().catch(() => undefined),
+    ])
+      .then(([profile, diemThanhPhan, diemHeSoDieuKien, diemNguongXepLoai, diemCauHinhChung]) => {
         if (!mountedRef.current) return
 
         if (!profile) {
@@ -209,6 +227,10 @@ export function StudentProfilePage() {
           rankBac: profile.rankBac,
           rankLichSu: profile.rankLichSu,
           dongHanhCauHinh: profile.dongHanhCauHinh,
+          diemThanhPhan,
+          diemHeSoDieuKien,
+          diemNguongXepLoai,
+          diemCauHinhChung,
         })
       })
       .catch((error: unknown) => {
@@ -415,6 +437,10 @@ export function StudentProfilePage() {
             <RankTuanSection
               attendance={state.attendance}
               catalog={state.catalog}
+              diemCauHinhChung={state.diemCauHinhChung}
+              diemHeSoDieuKien={state.diemHeSoDieuKien}
+              diemNguongXepLoai={state.diemNguongXepLoai}
+              diemThanhPhan={state.diemThanhPhan}
               dongHanhCauHinh={state.dongHanhCauHinh}
               huyHieu={state.huyHieu}
               matKhau={matKhau}
@@ -615,6 +641,10 @@ function StudentProfileHeader({
 function RankTuanSection({
   attendance,
   catalog,
+  diemCauHinhChung,
+  diemHeSoDieuKien,
+  diemNguongXepLoai,
+  diemThanhPhan,
   dongHanhCauHinh,
   huyHieu,
   matKhau,
@@ -630,6 +660,10 @@ function RankTuanSection({
 }: {
   attendance: DongHanhDiemDanh[]
   catalog: DanhMucDiem[]
+  diemCauHinhChung?: Record<string, string>
+  diemHeSoDieuKien?: DiemCauHinhHeSoDieuKien[]
+  diemNguongXepLoai?: DiemNguongXepLoai[]
+  diemThanhPhan?: DiemCauHinhThanhPhan[]
   dongHanhCauHinh: Record<string, string>
   huyHieu: HuyHieuDongHanh[]
   matKhau: string
@@ -649,8 +683,18 @@ function RankTuanSection({
   const tuanSoTruoc = weekIndex > 0 ? weeks[weekIndex - 1].tuan_so : null
 
   const score = useMemo(
-    () => calculateWeeklyStudentScore({ catalog, records, student, tuanSo }),
-    [catalog, records, student, tuanSo],
+    () =>
+      calculateWeeklyStudentScore({
+        catalog,
+        records,
+        student,
+        tuanSo,
+        thanhPhanCauHinh: diemThanhPhan,
+        heSoDieuKienCauHinh: diemHeSoDieuKien,
+        nguongXepLoai: diemNguongXepLoai,
+        soThapPhanLamTron: Number(diemCauHinhChung?.lam_tron_so_thap_phan) || DEFAULT_SO_THAP_PHAN_LAM_TRON,
+      }),
+    [catalog, records, student, tuanSo, diemThanhPhan, diemHeSoDieuKien, diemNguongXepLoai, diemCauHinhChung],
   )
   const chiSo = useMemo(
     () => tinhChiSoTuan({ attendance, catalog, maHs: student.ma_hs, records, tuanSo, tuanSoTruoc: null }),

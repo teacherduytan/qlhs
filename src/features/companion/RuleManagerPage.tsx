@@ -1893,7 +1893,16 @@ function PreviewPanel({ state }: { state: SuccessState }) {
 
   const diemThuongMoiHuyHieu = Number(state.cauHinh.diem_thuong_moi_huy_hieu) || DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH
   const score = student
-    ? calculateWeeklyStudentScore({ catalog: state.catalog, records: state.records, student, tuanSo })
+    ? calculateWeeklyStudentScore({
+        catalog: state.catalog,
+        records: state.records,
+        student,
+        tuanSo,
+        thanhPhanCauHinh: state.diemThanhPhan,
+        heSoDieuKienCauHinh: state.diemHeSoDieuKien,
+        nguongXepLoai: state.diemNguongXepLoai,
+        soThapPhanLamTron: Number(state.diemCauHinhChung.lam_tron_so_thap_phan) || DEFAULT_SO_THAP_PHAN_LAM_TRON,
+      })
     : null
   const rank = score
     ? tinhRankTuan(score.diem_xep_loai_thi_dua, huyHieuKhop.length, state.rankBac, diemThuongMoiHuyHieu)
@@ -1905,6 +1914,10 @@ function PreviewPanel({ state }: { state: SuccessState }) {
       records: state.records,
       student,
       tuanSo: tuanSoTruoc,
+      thanhPhanCauHinh: state.diemThanhPhan,
+      heSoDieuKienCauHinh: state.diemHeSoDieuKien,
+      nguongXepLoai: state.diemNguongXepLoai,
+      soThapPhanLamTron: Number(state.diemCauHinhChung.lam_tron_so_thap_phan) || DEFAULT_SO_THAP_PHAN_LAM_TRON,
     })
     const chiSoTruoc = tinhChiSoTuan({
       attendance: state.attendance,

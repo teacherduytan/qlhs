@@ -5,13 +5,16 @@ import type {
   BanCanSu,
   CauHinhTuan,
   DanhMucDiem,
+  DiemCauHinhHeSoDieuKien,
+  DiemCauHinhThanhPhan,
+  DiemNguongXepLoai,
   DienHocSinh,
   GhiNhan,
   HocSinh,
   NoiDungTinNhan,
 } from '../../data/types'
 import { summarizeRecordImpacts } from '../records/recordInsights'
-import { calculateWeeklyStudentScore } from '../scoring/scoring'
+import { calculateWeeklyStudentScore, DEFAULT_SO_THAP_PHAN_LAM_TRON } from '../scoring/scoring'
 import { getBadgeClassForGroup } from '../scoring/scoreStyles'
 import { Pagination, usePagination } from '../../components/Pagination'
 import { PhoneActionMenu } from '../../components/PhoneActionMenu'
@@ -73,6 +76,10 @@ export function StudentsPage() {
   const [weekConfig, setWeekConfig] = useState<CauHinhTuan[]>([])
   const [banCanSu, setBanCanSu] = useState<BanCanSu[]>([])
   const [messages, setMessages] = useState<NoiDungTinNhan[]>([])
+  const [diemThanhPhan, setDiemThanhPhan] = useState<DiemCauHinhThanhPhan[]>([])
+  const [diemHeSoDieuKien, setDiemHeSoDieuKien] = useState<DiemCauHinhHeSoDieuKien[]>([])
+  const [diemNguongXepLoai, setDiemNguongXepLoai] = useState<DiemNguongXepLoai[]>([])
+  const [diemCauHinhChung, setDiemCauHinhChung] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -106,18 +113,39 @@ export function StudentsPage() {
       dataSource.getWeekConfig(),
       dataSource.getBanCanSu(),
       dataSource.getMessageContents(),
+      dataSource.getDiemCauHinhThanhPhan(),
+      dataSource.getDiemCauHinhHeSoDieuKien(),
+      dataSource.getDiemNguongXepLoai(),
+      dataSource.getDiemCauHinhChung(),
     ])
-      .then(([studentRows, recordRows, catalogRows, weekRows, banCanSuRows, messageRows]) => {
-        if (active) {
-          setStudents(studentRows)
-          setRecords(recordRows)
-          setCatalog(catalogRows)
-          setWeekConfig(weekRows)
-          setBanCanSu(banCanSuRows)
-          setMessages(messageRows)
-          setLoadError(null)
-        }
-      })
+      .then(
+        ([
+          studentRows,
+          recordRows,
+          catalogRows,
+          weekRows,
+          banCanSuRows,
+          messageRows,
+          diemThanhPhanRows,
+          diemHeSoDieuKienRows,
+          diemNguongXepLoaiRows,
+          diemCauHinhChungRows,
+        ]) => {
+          if (active) {
+            setStudents(studentRows)
+            setRecords(recordRows)
+            setCatalog(catalogRows)
+            setWeekConfig(weekRows)
+            setBanCanSu(banCanSuRows)
+            setMessages(messageRows)
+            setDiemThanhPhan(diemThanhPhanRows)
+            setDiemHeSoDieuKien(diemHeSoDieuKienRows)
+            setDiemNguongXepLoai(diemNguongXepLoaiRows)
+            setDiemCauHinhChung(diemCauHinhChungRows)
+            setLoadError(null)
+          }
+        },
+      )
       .catch((error: unknown) => {
         if (active) {
           setLoadError(error instanceof Error ? error.message : 'Không đọc được danh sách học sinh.')
@@ -897,6 +925,10 @@ export function StudentsPage() {
                       records,
                       student,
                       tuanSo: currentWeek,
+                      thanhPhanCauHinh: diemThanhPhan,
+                      heSoDieuKienCauHinh: diemHeSoDieuKien,
+                      nguongXepLoai: diemNguongXepLoai,
+                      soThapPhanLamTron: Number(diemCauHinhChung.lam_tron_so_thap_phan) || DEFAULT_SO_THAP_PHAN_LAM_TRON,
                     })
                     const weekRecords = records.filter(
                       (record) => record.ma_hs === student.ma_hs && record.tuan_so === currentWeek,
