@@ -31,7 +31,7 @@ function buildPrintableFormHtml(): string {
 </head>
 <body>
   <h1>Phiếu ghi nhận học sinh - Lớp 11C5</h1>
-  <p><strong>Năm học 2025-2026</strong></p>
+  <p><strong>Năm học 2026-2027</strong></p>
   <div class="meta">
     <p><strong>Ngày ghi nhận:</strong> ____ / ____ / 2026</p>
     <p><strong>Người ghi nhận (chức vụ):</strong> ______________________</p>

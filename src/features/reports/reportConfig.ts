@@ -3,7 +3,7 @@
 export const REPORT_CONFIG = {
   tenTruong: 'TRƯỜNG THCS VÀ THPT LẠC HỒNG',
   tenLop: '11C5',
-  namHoc: '2025 - 2026',
+  namHoc: '2026 - 2027',
   tenGvcn: 'Nguyễn Duy Tân',
   diaDiemKy: 'TP. Hồ Chí Minh', // dùng ở dòng ngày ký cuối báo cáo
 }
