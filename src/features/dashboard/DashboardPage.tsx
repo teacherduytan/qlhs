@@ -1828,7 +1828,7 @@ function GroupViolationView({
             const isExpanded = expandedStudents.has(row.maHs)
 
             return (
-              <div key={row.maHs} className="p-3">
+              <div key={row.maHs} className={`p-3 ${index % 2 === 0 ? 'bg-white' : 'bg-violet-50'}`}>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold text-slate-400">#{visibleRowsPage.startIndex + index + 1}</p>
@@ -1917,6 +1917,25 @@ function GroupViolationView({
                               </div>
                               <RecordPolarityBadge record={record} catalogByCode={catalogByCode} />
                             </div>
+                            {record.tiet || record.mon_hoc ? (
+                              <p className="mt-1 text-xs text-slate-600">
+                                {record.tiet ? `Tiết ${record.tiet}` : null}
+                                {record.tiet && record.mon_hoc ? ' · ' : null}
+                                {record.mon_hoc ? `Môn ${record.mon_hoc}` : null}
+                              </p>
+                            ) : null}
+                            {record.noi_dung && record.noi_dung !== getGroupRecordDescription(record, catalogByCode) ? (
+                              <p className="mt-1 text-xs text-slate-700">
+                                <span className="font-semibold text-slate-600">Nội dung: </span>
+                                {record.noi_dung}
+                              </p>
+                            ) : null}
+                            {record.ly_do ? (
+                              <p className="mt-1 text-xs text-slate-700">
+                                <span className="font-semibold text-slate-600">Lý do: </span>
+                                {record.ly_do}
+                              </p>
+                            ) : null}
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                               <CatalogCodeBadge
                                 catalogItem={catalogItem}
