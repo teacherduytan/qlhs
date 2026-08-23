@@ -6,7 +6,7 @@ export interface HuyHieuTuan {
   icon?: string
 }
 
-const MAU_THEO_BAC: Record<number, { vien: string; nen: string; chu: string; thanh: string }> = {
+export const MAU_THEO_BAC: Record<number, { vien: string; nen: string; chu: string; thanh: string }> = {
   1: { vien: 'border-slate-300', nen: 'bg-slate-100', chu: 'text-slate-700', thanh: 'bg-slate-400' },
   2: { vien: 'border-sky-300', nen: 'bg-sky-100', chu: 'text-sky-700', thanh: 'bg-sky-400' },
   3: { vien: 'border-teal-300', nen: 'bg-teal-100', chu: 'text-teal-700', thanh: 'bg-teal-400' },

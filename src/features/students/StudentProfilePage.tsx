@@ -22,7 +22,7 @@ import type {
 import { apDungHuyHieu } from '../companion/applyRules'
 import { tinhChiSoTuan } from '../companion/computeMetrics'
 import { DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH, tinhRankTuan } from '../companion/rankTinhTu'
-import { TheNhanVatTuan } from '../companion/TheNhanVatTuan'
+import { MAU_THEO_BAC } from '../companion/TheNhanVatTuan'
 import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
 import { formatTietLabel, getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore, DEFAULT_SO_THAP_PHAN_LAM_TRON, type WeeklyStudentScore } from '../scoring/scoring'
@@ -447,6 +447,8 @@ export function StudentProfilePage() {
               rankBac={state.rankBac}
               rankLichSu={state.rankLichSu}
               records={state.records}
+              recordCount={state.records.length}
+              role={state.role}
               sdt={sdt}
               student={state.student}
               token={token || ''}
@@ -465,12 +467,6 @@ export function StudentProfilePage() {
                     : current,
                 )
               }
-            />
-
-            <StudentProfileHeader
-              recordCount={state.records.length}
-              role={state.role}
-              student={state.student}
             />
 
             <CompanionSummary
@@ -567,72 +563,6 @@ export function StudentProfilePage() {
   )
 }
 
-function StudentProfileHeader({
-  recordCount,
-  role,
-  student,
-}: {
-  recordCount: number
-  role: string
-  student: HocSinh
-}) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-indigo-300 bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 p-5 text-white shadow-lg">
-      <div className="pointer-events-none absolute -right-8 -top-8 text-9xl opacity-15" aria-hidden="true">
-        🎓
-      </div>
-      <div className="pointer-events-none absolute -bottom-10 -left-6 text-8xl opacity-10" aria-hidden="true">
-        ✨
-      </div>
-
-      <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/20 text-2xl font-extrabold text-white shadow-md ring-4 ring-white/40 backdrop-blur">
-            {student.anh_dai_dien ? (
-              <img src={student.anh_dai_dien} alt="" className="h-full w-full object-cover" />
-            ) : (
-              student.ten.slice(0, 1).toUpperCase()
-            )}
-          </div>
-          <div className="min-w-0">
-            <span className="inline-block rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide backdrop-blur">
-              {role}
-            </span>
-            <h2 className="wrap-break-word mt-1 text-xl font-extrabold drop-shadow-sm md:text-2xl">
-              {student.ho} {student.ten}
-            </h2>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {student.to ? (
-                <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold backdrop-blur">
-                  👥 Tổ {student.to}
-                </span>
-              ) : null}
-              <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold backdrop-blur">
-                {student.nu ? '💁‍♀️ Nữ' : '🙋‍♂️ Nam'}
-              </span>
-              {student.la_co_do ? (
-                <span className="rounded-full bg-red-500/80 px-2.5 py-1 text-xs font-bold backdrop-blur">
-                  🚩 Cờ đỏ
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-3 rounded-xl bg-white/95 px-4 py-3 text-center shadow-md">
-          <span className="text-2xl" aria-hidden="true">
-            📋
-          </span>
-          <div>
-            <p className="text-2xl font-extrabold leading-none text-indigo-700">{recordCount}</p>
-            <p className="text-xs font-semibold text-slate-500">ghi nhận</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // The nhan vat phong cach game (docs/thethanghang/12-dac-ta-rank-tinh-tu.md),
 // dat tren cung trang ho so - day la thu hoc sinh muon thay dau tien. Tu tinh
 // bac + "chot" (upsert) ket qua qua RPC chot_rank_tuan_cong_khai moi khi tuan
@@ -652,6 +582,8 @@ function RankTuanSection({
   rankBac,
   rankLichSu,
   records,
+  recordCount,
+  role,
   sdt,
   student,
   token,
@@ -671,6 +603,8 @@ function RankTuanSection({
   rankBac: BacTinhTu[]
   rankLichSu: RankLichSuTuan[]
   records: GhiNhan[]
+  recordCount: number
+  role: string
   sdt: string
   student: HocSinh
   token: string
@@ -743,18 +677,149 @@ function RankTuanSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, sdt, matKhau, tuanSo, rank.diemTuan, rank.bacHienTai.bac])
 
-  if (rankBac.length === 0) return null
+  const hasRank = rankBac.length > 0
+  const mau = hasRank ? MAU_THEO_BAC[rank.bacHienTai.bac] ?? MAU_THEO_BAC[1] : null
+  const huyHieuTuanNay = huyHieuKhop.map((item) => ({
+    ma: item.ma_huy_hieu,
+    ten: item.ten_huy_hieu,
+    icon: item.icon || undefined,
+  }))
 
   return (
-    <TheNhanVatTuan
-      bacTuanTruoc={bacTuanTruoc}
-      hoTen={`${student.ho} ${student.ten}`}
-      huyHieu={huyHieuKhop.map((item) => ({ ma: item.ma_huy_hieu, ten: item.ten_huy_hieu, icon: item.icon || undefined }))}
-      rank={rank}
-      thangBac={rankBac}
-      tuanLabel={formatDisplayWeekLabel(weeks, tuanSo)}
-      vietTat={student.ten.slice(0, 1).toUpperCase()}
-    />
+    <div className="relative overflow-hidden rounded-2xl border border-indigo-300 bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg">
+      <div className="pointer-events-none absolute -right-8 -top-8 text-9xl opacity-15" aria-hidden="true">
+        🎓
+      </div>
+      <div className="pointer-events-none absolute -bottom-10 -left-6 text-8xl opacity-10" aria-hidden="true">
+        ✨
+      </div>
+
+      <div className="relative flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/20 text-2xl font-extrabold text-white shadow-md ring-4 ring-white/40 backdrop-blur">
+            {student.anh_dai_dien ? (
+              <img src={student.anh_dai_dien} alt="" className="h-full w-full object-cover" />
+            ) : (
+              student.ten.slice(0, 1).toUpperCase()
+            )}
+            {hasRank ? (
+              <span
+                className="absolute -bottom-1.5 -right-1.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-white text-sm"
+                aria-hidden="true"
+              >
+                {rank.bacHienTai.icon}
+              </span>
+            ) : null}
+          </div>
+          <div className="min-w-0">
+            <span className="inline-block rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide backdrop-blur">
+              {role}
+              {hasRank ? ` · Bậc ${rank.bacHienTai.bac} · ${rank.bacHienTai.ten}` : ''}
+            </span>
+            <h2 className="wrap-break-word mt-1 text-xl font-extrabold drop-shadow-sm md:text-2xl">
+              {student.ho} {student.ten}
+            </h2>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {student.to ? (
+                <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold backdrop-blur">
+                  👥 Tổ {student.to}
+                </span>
+              ) : null}
+              <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold backdrop-blur">
+                {student.nu ? '💁‍♀️ Nữ' : '🙋‍♂️ Nam'}
+              </span>
+              {student.la_co_do ? (
+                <span className="rounded-full bg-red-500/80 px-2.5 py-1 text-xs font-bold backdrop-blur">
+                  🚩 Cờ đỏ
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          {hasRank ? (
+            <div className="rounded-xl bg-white/95 px-4 py-2 text-center shadow-md">
+              <p className="text-2xl font-extrabold leading-none text-indigo-700">{rank.diemTuan}</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-slate-500">{formatDisplayWeekLabel(weeks, tuanSo)}</p>
+            </div>
+          ) : null}
+          <div className="flex items-center gap-3 rounded-xl bg-white/95 px-4 py-3 text-center shadow-md">
+            <span className="text-2xl" aria-hidden="true">
+              📋
+            </span>
+            <div>
+              <p className="text-2xl font-extrabold leading-none text-indigo-700">{recordCount}</p>
+              <p className="text-xs font-semibold text-slate-500">ghi nhận</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {hasRank && mau ? (
+        <div className="relative bg-white/95 p-4 text-slate-800 backdrop-blur">
+          {rank.bacKeTiep ? (
+            <>
+              <div className="mb-1.5 flex items-center justify-between text-xs text-slate-500">
+                <span>Tiến độ lên bậc kế tiếp</span>
+                <span>
+                  còn <b className="text-slate-700">{rank.conThieu}</b> điểm → {rank.bacKeTiep.icon}{' '}
+                  <b className="text-slate-700">{rank.bacKeTiep.ten}</b>
+                </span>
+              </div>
+              <div className="mb-4 h-3 overflow-hidden rounded-full bg-slate-100">
+                <div className={`h-full rounded-full ${mau.thanh}`} style={{ width: `${rank.phanTramToiKeTiep}%` }} />
+              </div>
+            </>
+          ) : (
+            <div className="mb-4 rounded-lg bg-slate-50 px-3 py-2 text-center text-sm font-semibold text-slate-600">
+              🌌 Đã đạt bậc cao nhất tuần này — tuyệt vời!
+            </div>
+          )}
+
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Huy hiệu tuần này</p>
+          {huyHieuTuanNay.length > 0 ? (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {huyHieuTuanNay.map((h) => (
+                <span
+                  key={h.ma}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700"
+                >
+                  <span aria-hidden="true">{h.icon ?? '🏅'}</span>
+                  {h.ten}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mb-4 text-sm text-slate-400">Chưa có huy hiệu nào tuần này — tuần tới cố lên nhé!</p>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs">
+            <span className="text-slate-400">
+              Bậc reset mỗi tuần · {huyHieuTuanNay.length} huy hiệu × {huyHieuTuanNay.length > 0 ? rank.diemThuong / huyHieuTuanNay.length : 0}đ = +
+              {rank.diemThuong}đ thưởng
+            </span>
+            {bacTuanTruoc ? (
+              <span className="text-slate-500">
+                Tuần trước: {bacTuanTruoc.icon} {bacTuanTruoc.ten}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 border-t border-slate-100 pt-3 text-xs text-slate-500">
+            <span className="text-slate-400">Thang bậc:</span>
+            {rankBac.map((b, i) => (
+              <span key={b.ma} className="flex items-center gap-1.5">
+                <span className={b.bac === rank.bacHienTai.bac ? `font-bold ${mau.chu}` : ''}>
+                  {b.icon} {b.ten}
+                </span>
+                {i < rankBac.length - 1 ? <span className="text-slate-300">›</span> : null}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
   )
 }
 
