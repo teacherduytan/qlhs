@@ -77,6 +77,7 @@ export function Layout() {
   const navRef = useRef<HTMLDivElement | null>(null)
   const notifPage = usePagination(pendingProposals)
   const [bottomBarVisible, setBottomBarVisible] = useState(true)
+  const [showScrollTop, setShowScrollTop] = useState(false)
   const lastScrollY = useRef(0)
 
   useEffect(() => {
@@ -94,6 +95,7 @@ export function Layout() {
         setBottomBarVisible(true)
       }
 
+      setShowScrollTop(currentY > 400)
       lastScrollY.current = currentY
     }
 
@@ -428,6 +430,18 @@ export function Layout() {
           })}
         </div>
       </nav>
+
+      {showScrollTop ? (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Lên đầu trang"
+          title="Lên đầu trang"
+          className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-lg text-white shadow-lg hover:bg-blue-700 md:bottom-6"
+        >
+          <span aria-hidden="true">↑</span>
+        </button>
+      ) : null}
     </div>
   )
 }
