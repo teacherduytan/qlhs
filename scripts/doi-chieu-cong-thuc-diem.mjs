@@ -158,7 +158,9 @@ const DEFAULT_THANH_PHAN = [
   { ma_thanh_phan: 'VS', loai_tinh: 'tich_luy_danh_muc', nhom_diem_lien_ket: 'VS', thang_goc_min: 0, thang_goc_max: 100, he_so_chuan_hoa: 1, trong_so: 1, bat_buoc: true, dang_bat: true, thu_tu: 2 },
   { ma_thanh_phan: 'NN', loai_tinh: 'tich_luy_danh_muc', nhom_diem_lien_ket: 'NN', thang_goc_min: 0, thang_goc_max: 100, he_so_chuan_hoa: 1, trong_so: 1, bat_buoc: true, dang_bat: true, thu_tu: 3 },
   { ma_thanh_phan: 'KL', loai_tinh: 'tich_luy_danh_muc', nhom_diem_lien_ket: 'KL', thang_goc_min: 0, thang_goc_max: 100, he_so_chuan_hoa: 1, trong_so: 1, bat_buoc: true, dang_bat: true, thu_tu: 4 },
-  { ma_thanh_phan: 'HT', loai_tinh: 'trung_binh_diem_so', nhom_diem_lien_ket: null, thang_goc_min: 0, thang_goc_max: 10, he_so_chuan_hoa: 10, trong_so: 2, bat_buoc: false, dang_bat: true, thu_tu: 5 },
+  // thang_goc_max=100, he_so_chuan_hoa=1, bat_buoc=true - sua 23/08/2026 sau khi doi
+  // chieu Excel that (diem_so_mon da la thang 0-100, khong phai 0-10), xem docs/03.
+  { ma_thanh_phan: 'HT', loai_tinh: 'trung_binh_diem_so', nhom_diem_lien_ket: null, thang_goc_min: 0, thang_goc_max: 100, he_so_chuan_hoa: 1, trong_so: 2, bat_buoc: true, dang_bat: true, thu_tu: 5 },
 ]
 
 const DEFAULT_HE_SO_DIEU_KIEN = [
@@ -200,7 +202,7 @@ function tinhGiaTriTho(t, records, catalogByCode, student, heSoCfg) {
   if (t.loai_tinh === 'tich_luy_danh_muc') {
     const delta = records.reduce((sum, record) => {
       const item = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : null
-      if (!item || item.nhom !== t.nhom_diem_lien_ket || item.pham_vi !== 'ca_nhan') return sum
+      if (!item || item.nhom !== t.nhom_diem_lien_ket) return sum
       const baseScore = typeof record.diem_cong_tru === 'number' ? record.diem_cong_tru : item.diem
       const occurrenceCount = Math.max(1, record.so_lan || 1)
       const multiplier = heSoCfg.reduce((m, dk) => {
@@ -219,7 +221,7 @@ function tinhGiaTriTho(t, records, catalogByCode, student, heSoCfg) {
     .filter((r) => r.loai === 'hoc_tap')
     .map((r) => r.diem_so_mon)
     .filter((v) => typeof v === 'number')
-  if (studyScores.length === 0) return { raw: null, coDuLieu: false }
+  if (studyScores.length === 0) return { raw: t.thang_goc_max, coDuLieu: false }
   const trungBinh = studyScores.reduce((a, b) => a + b, 0) / studyScores.length
   return { raw: clamp(trungBinh, t.thang_goc_min, t.thang_goc_max), coDuLieu: true }
 }

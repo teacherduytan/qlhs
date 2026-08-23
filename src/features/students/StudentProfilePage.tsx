@@ -1057,10 +1057,11 @@ function ScoreSummary({ score }: { score: WeeklyStudentScore }) {
         <div className="min-w-0">
           <h2 className="wrap-break-word text-lg font-bold text-slate-900">Điểm thi đua tuần {score.tuan_so}</h2>
           <p className="text-sm text-slate-600">Tính theo quy chế thi đua của trường</p>
-          <p className="mt-1 text-xs text-slate-500">
-            Điểm xếp loại chỉ so sánh được giữa các học sinh có cùng trạng thái đã/chưa có điểm học
-            tập trong tuần.
-          </p>
+          {score.diem_hoc_tap === null ? (
+            <p className="mt-1 text-xs text-slate-500">
+              Chưa có điểm học tập tuần này — điểm xếp loại đang tính với giá trị mặc định 100 cho mục này.
+            </p>
+          ) : null}
         </div>
         <div className="shrink-0 rounded-md bg-blue-600 px-4 py-3 text-white">
           <p className="text-xs font-semibold uppercase">Xếp loại</p>

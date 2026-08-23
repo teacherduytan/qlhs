@@ -1849,7 +1849,7 @@ function DiemPreviewPanel({ state }: { state: SuccessState }) {
             ))}
           </div>
           <p className="text-xs text-slate-600">
-            Học tập (hiển thị, thang 0–20): {score.diem_hoc_tap ?? 'Chưa có dữ liệu tuần này'}
+            Học tập (hiển thị, thang 0–100): {score.diem_hoc_tap ?? 'Chưa có dữ liệu tuần này (đang tính mặc định 100 trong điểm xếp loại)'}
           </p>
           <p className="text-base font-bold text-slate-900">
             Điểm xếp loại thi đua: {score.diem_xep_loai_thi_dua} · {score.xep_loai}

@@ -63,20 +63,20 @@ const CATALOG: DanhMucDiem[] = [
 ]
 
 describe('calculateWeeklyStudentScore', () => {
-  it('học sinh hoàn hảo, có điểm học tập trung bình 10 → 100 điểm (không còn trần ~70)', () => {
+  it('học sinh hoàn hảo, có điểm học tập trung bình 100 (thang 0-100) → 100 điểm', () => {
     const student = makeStudent()
     const records: GhiNhan[] = [
-      makeRecord({ ma_ghi_nhan: 'GN-HT', loai: 'hoc_tap', ma_danh_muc: null, diem_so_mon: 10 }),
+      makeRecord({ ma_ghi_nhan: 'GN-HT', loai: 'hoc_tap', ma_danh_muc: null, diem_so_mon: 100 }),
     ]
 
     const score = calculateWeeklyStudentScore({ catalog: CATALOG, records, student, tuanSo: 1 })
 
     expect(score.diem_xep_loai_thi_dua).toBe(100)
     expect(score.xep_loai).toBe('Tốt')
-    expect(score.diem_hoc_tap).toBe(20)
+    expect(score.diem_hoc_tap).toBe(100)
   })
 
-  it('học sinh hoàn hảo, KHÔNG có điểm học tập → vẫn 100 điểm (mẫu số tự rơi về 4)', () => {
+  it('học sinh hoàn hảo, KHÔNG có điểm học tập → vẫn 100 điểm (mặc định HT=100, mẫu số luôn là 6)', () => {
     const student = makeStudent()
     const score = calculateWeeklyStudentScore({ catalog: CATALOG, records: [], student, tuanSo: 1 })
 
@@ -85,12 +85,12 @@ describe('calculateWeeklyStudentScore', () => {
     expect(score.diem_hoc_tap).toBeNull()
   })
 
-  it('ví dụ minh hoạ ở đặc tả §5: CC=90,VS=100,NN=85,KL=100, HT tb=8 → 89.17, Khá', () => {
+  it('CC=90,VS=100,NN=85,KL=100, HT tb=80 (thang 0-100) → 89.17, Khá', () => {
     const student = makeStudent()
     const records: GhiNhan[] = [
       makeRecord({ ma_ghi_nhan: 'GN-CC', loai: 'chuyen_can', ma_danh_muc: 'CC01', diem_cong_tru: -10 }),
       makeRecord({ ma_ghi_nhan: 'GN-NN', loai: 'ne_nep', ma_danh_muc: 'NN01', diem_cong_tru: -15 }),
-      makeRecord({ ma_ghi_nhan: 'GN-HT', loai: 'hoc_tap', ma_danh_muc: null, diem_so_mon: 8 }),
+      makeRecord({ ma_ghi_nhan: 'GN-HT', loai: 'hoc_tap', ma_danh_muc: null, diem_so_mon: 80 }),
     ]
 
     const score = calculateWeeklyStudentScore({ catalog: CATALOG, records, student, tuanSo: 1 })
@@ -99,8 +99,27 @@ describe('calculateWeeklyStudentScore', () => {
     expect(score.diem_ve_sinh).toBe(100)
     expect(score.diem_ne_nep).toBe(85)
     expect(score.diem_ky_luat).toBe(100)
+    expect(score.diem_hoc_tap).toBe(80)
     expect(score.diem_xep_loai_thi_dua).toBe(89.17)
     expect(score.xep_loai).toBe('Khá')
+  })
+
+  it('sự kiện tập thể đã "Gán cho 1 học sinh cụ thể" (có ma_hs, danh mục vẫn pham_vi=tap_the) vẫn trừ điểm cá nhân em đó', () => {
+    const student = makeStudent()
+    const records: GhiNhan[] = [
+      makeRecord({
+        ma_ghi_nhan: 'GN-TT-GAN',
+        ma_hs: student.ma_hs,
+        loai: 'trat_tu_ky_luat',
+        ma_danh_muc: 'KL_TT',
+        diem_cong_tru: -5,
+        su_kien_goc: 'GN-TT-GOC',
+      }),
+    ]
+
+    const score = calculateWeeklyStudentScore({ catalog: CATALOG, records, student, tuanSo: 1 })
+
+    expect(score.diem_ky_luat).toBe(95)
   })
 
   it('cờ đỏ vi phạm bị trừ điểm gấp đôi, nhưng điểm thưởng thì không', () => {

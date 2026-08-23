@@ -2,11 +2,13 @@
 
 > **Cập nhật quan trọng**: Bản này thay thế hoàn toàn bản đề xuất tự do trước đó. Toàn bộ nội dung dưới đây được lấy trực tiếp từ file **"NỘI DUNG ĐÁNH GIÁ, XẾP LOẠI THI ĐUA (HÀNG TUẦN)"** do **Ban Thi đua Khen thưởng — Trường THCS và THPT Lạc Hồng** ban hành, anh cung cấp ngày 11/07/2026. Đây là quy chế thật, có hiệu lực, nên được dùng làm chuẩn duy nhất cho việc trừ/tính điểm — không dùng bảng điểm tự đề xuất trước đây nữa.
 
+> **Sửa lại ngày 23/08/2026**: Đã đối chiếu với file Excel thật trường đang dùng (`THI_ĐUA_CS2_NH_26-27.xlsx`, tuần 01 năm học 2026-2027) và phát hiện công thức mục 3-5 trong bản trước **sai thang điểm của Điểm học tập** (giả định thang 0-20, thực tế trường dùng thang 0-100). Đã sửa lại theo đúng công thức thật lấy từ file Excel (xem ghi chú trong từng mục bên dưới). Điểm khởi đầu/mặc định của Điểm học tập khi chưa có dữ liệu = **100** (khớp cách trường điền, không phải 20).
+
 ## 1. Cấu trúc điểm tổng quát
 
 > **Đã xác nhận với giáo viên (11/07/2026)**: hệ thống điểm này tính **theo tuần**, đúng nguyên văn quy chế thi đua thật của trường — không đổi sang điểm luỹ kế cả năm. Mỗi tuần các thành phần đều reset về 100. Nếu sau này cần thêm 1 lớp điểm luỹ kế cả năm cho mục đích cảnh báo riêng của giáo viên, đây sẽ là 1 hệ thống **bổ sung tách biệt**, không thay thế hệ thống theo tuần này.
 
-Khác với bản đề xuất ban đầu (1 cột điểm rèn luyện duy nhất), quy chế thật của trường có **5 thành phần điểm riêng biệt mỗi tuần**:
+Khác với bản đề xuất ban đầu (1 cột điểm rèn luyện duy nhất), quy chế thật của trường có **5 thành phần điểm riêng biệt mỗi tuần**, cả 5 đều trên **thang 0–100**:
 
 | Thành phần | Điểm khởi đầu | Cách tính |
 |---|---|---|
@@ -14,11 +16,11 @@ Khác với bản đề xuất ban đầu (1 cột điểm rèn luyện duy nh�
 | 2. Vệ sinh | 100 | 100 − tổng điểm trừ trong tuần |
 | 3. Nề nếp, tác phong | 100 | 100 − tổng điểm trừ trong tuần |
 | 4. Trật tự, kỷ luật | 100 | 100 − tổng điểm trừ trong tuần |
-| 5. Học tập | tính riêng | `(Tổng điểm số các môn trong tuần ÷ Tổng số tiết trong tuần) × 2` |
+| 5. Học tập | 100 (mặc định khi chưa có dữ liệu) | `Tổng điểm số các môn trong tuần ÷ Tổng số tiết trong tuần` — **thang 0–100**, không nhân 2 ở bước này (xem mục 3) |
 
-Sau đó tổng hợp thành **Điểm xếp loại thi đua** (công thức ở mục 4).
+Sau đó tổng hợp thành **Điểm xếp loại thi đua** (công thức ở mục 4), trong đó Điểm học tập được nhân đôi trọng số **ở bước tổng hợp**, không phải ở bước tính riêng.
 
-Mỗi học sinh vẫn "bắt đầu tuần với 100 điểm" đúng như anh mô tả — nhưng áp dụng **riêng cho từng thành phần 1–4**, không phải một con số 100 duy nhất.
+Mỗi học sinh vẫn "bắt đầu tuần với 100 điểm" đúng như anh mô tả — áp dụng cho **cả 5 thành phần**, không chỉ 4.
 
 ## 2. Danh mục chi tiết trừ điểm (nội dung `DanhMucDiem` — cập nhật theo quy chế trường)
 
@@ -113,44 +115,136 @@ Cách này giữ được cả 2 lợi ích: **không trừ điểm oan tự đ�
 
 Không có "danh mục vi phạm" cho học tập. Thay vào đó, điểm học tập được **tính từ điểm số thực tế** (`diem_so_mon`) ghi nhận mỗi tiết trong bảng `GhiNhan`, theo công thức ở mục 3.
 
+## 2c. Quy trình ghi nhận vi phạm cá nhân và tự động trừ điểm
+
+> **Bổ sung ngày 23/08/2026**: làm rõ luồng ghi nhận thực tế cho từng học sinh — áp dụng đúng cách tính điểm của nhà trường ở mục 1-2 (100 điểm khởi đầu, trừ theo danh mục), không tính tay.
+
+Đây là luồng chính khi giáo viên/cờ đỏ/cán bộ lớp ghi nhận 1 học sinh vi phạm (vd đi học trễ, nghỉ học, sai đồng phục...) — chỉ áp dụng cho các mã có `pham_vi = ca_nhan` ở mục 2b; các mã `tap_the`/`to_truc` đi theo luồng riêng (xem lại mục 2b).
+
+1. **Chọn học sinh + chọn mã vi phạm**: người ghi nhận chọn 1 học sinh cụ thể trong lớp, chọn 1 (hoặc nhiều) mã trong danh mục mục 2 (vd `CC01` – Đi học trễ, `CC02` – Nghỉ học, `NN02` – Không bảng tên, `KL09` – Vô lễ với giáo viên...).
+2. **Hệ thống tự tra và trừ điểm**: dựa vào mã đã chọn, hệ thống tự lấy `nhom_danh_muc` (CC/VS/NN/KL) và `diem_tru` tương ứng từ `DanhMucDiem`, tạo 1 dòng mới trong `GhiNhan`: `ma_hs, ma_danh_muc, nhom_danh_muc, diem_cong_tru (âm), tuan, ngay_ghi_nhan, nguoi_ghi_nhan, ghi_chu (tuỳ chọn)`. Người ghi nhận **không tự gõ số điểm trừ** — luôn lấy từ danh mục để tránh sai lệch với quy chế trường.
+3. **Cờ đỏ bị trừ gấp đôi tự động**: nếu học sinh có `la_co_do = true`, điểm trừ nhân đôi trước khi lưu, đúng lưu ý ở mục 2 (*"Đối với cờ đỏ khi vi phạm... sẽ bị trừ điểm gấp đôi"*).
+4. **Không giới hạn số lần/tuần**: 1 học sinh đi trễ 3 lần trong tuần → 3 dòng `GhiNhan` mã `CC01` riêng biệt, điểm trừ cộng dồn. Đây cũng là dữ liệu nguồn cho cảnh báo "vi phạm lặp lại ≥ 3 lần" ở mục 8 và cho báo cáo lịch sử vi phạm (tài liệu 12).
+5. **Cập nhật điểm ngay lập tức**: điểm thành phần (Chuyên cần/Vệ sinh/Nề nếp/Trật tự kỷ luật) của học sinh đó tính lại ngay theo công thức `diem_thanh_phan` ở mục 7 — không cần đợi cuối tuần, không tính tay.
+6. **Ghi nhận nhiều mã cùng lúc**: nếu 1 lượt kiểm tra phát hiện học sinh vi phạm nhiều mã (vd vừa sai đồng phục vừa không bảng tên), giao diện cho chọn nhiều mã trong 1 thao tác, hệ thống tách thành nhiều dòng `GhiNhan` riêng (không gộp), để giữ vết từng mã.
+
+**Ví dụ minh hoạ**: học sinh Nguyễn Văn A, tuần 03, bị ghi nhận đi học trễ 2 lần (`CC01`, −2/lần) và nghỉ học không phép 1 lần (`CC02`, −3). Hệ thống tạo 3 dòng `GhiNhan`. Tính điểm Chuyên cần: `100 + (−2) + (−2) + (−3) = 93`. Nếu A là cờ đỏ, mỗi mức trừ nhân đôi trước khi cộng: `100 + (−4) + (−4) + (−6) = 86`.
+
+Nguyên tắc trừ điểm này áp dụng cho cả 4 nhóm CC/VS/NN/KL theo đúng mục 1 (100 điểm − tổng điểm trừ). Riêng nhóm HT (Học tập) **không** đi theo luồng ghi nhận vi phạm này — tính theo công thức riêng ở mục 3.
+
+> **Quan trọng**: mỗi dòng `GhiNhan` tạo ở bước 2 **không chỉ trừ điểm cá nhân** — nó còn tự động trừ vào **điểm tập thể của lớp** (điểm thi đua của lớp 11C5 so với các lớp khác toàn trường), xem công thức ở mục 2d ngay bên dưới. 1 học sinh đi trễ vẫn là chuyện của em đó, nhưng đồng thời cũng làm lớp bị trừ đúng số điểm đó trong bảng xếp hạng thi đua tuần — giống hệt cách trường tính (đối chiếu với file Excel `THI_ĐUA_CS2_NH_26-27.xlsx`: mỗi vi phạm dù của 1 học sinh hay cả lớp đều gộp chung vào 1 điểm trừ duy nhất cho lớp).
+
+## 2d. Điểm tập thể của lớp (khớp cách trường xếp hạng thi đua giữa các lớp)
+
+> **Bổ sung ngày 23/08/2026**: theo yêu cầu của anh — vi phạm cá nhân phải trừ **cả điểm cá nhân lẫn điểm tập thể của lớp**, vì trường tính điểm thi đua giữa các lớp bằng cách cộng dồn TOÀN BỘ vi phạm xảy ra trong lớp đó (không phân biệt vi phạm của ai), đúng như cách file Excel thật của trường vận hành (mỗi lớp 1 dòng, 1 điểm tổng/nội dung).
+
+**Nguyên tắc**: điểm tập thể của lớp cho mỗi nhóm (CC/VS/NN/KL) = 100 − tổng điểm trừ của **mọi** `GhiNhan` phát sinh trong lớp tuần đó ở nhóm đó — bất kể dòng đó là vi phạm cá nhân (`ca_nhan`) hay sự kiện tập thể/tổ trực (`tap_the`/`to_truc`).
+
+**Tránh trừ 2 lần khi 1 sự kiện tập thể được "Áp dụng cho tất cả"** (mục 2b): khi 1 sự kiện `tap_the` được gán thành nhiều dòng cá nhân, các dòng cá nhân mới sinh ra đó có `su_kien_goc` trỏ về dòng gốc — chỉ dòng **gốc** (`su_kien_goc IS NULL`) mới được cộng vào điểm tập thể; các dòng cá nhân phái sinh (`su_kien_goc IS NOT NULL`) chỉ tính vào điểm cá nhân, không cộng thêm lần nữa vào điểm tập thể (nếu không sẽ bị trừ trùng: 1 sự kiện -10 gán cho 5 học sinh sẽ biến thành lớp bị trừ -50 thay vì đúng -10).
+
+```
+diem_tap_the(lop, nhom, tuan) =
+    clamp( 100 + SUM(GhiNhan.diem_cong_tru
+                      WHERE lop = lop_dang_xet
+                      AND nhom_danh_muc = nhom        // CC | VS | NN | KL
+                      AND tuan = tuan_dang_xet
+                      AND su_kien_goc IS NULL          // chỉ tính sự kiện gốc, bỏ các dòng phái sinh từ mục 2b
+                     ),
+           min = 0, max = 100 )
+```
+
+Ví dụ tiếp nối phần trên: học sinh A (không cờ đỏ) đi trễ 2 lần (`CC01` × 2) + nghỉ 1 lần (`CC02`) trong tuần → điểm CC **cá nhân** của A = 93 (như mục 2c). Đồng thời, 3 dòng `GhiNhan` đó (đều là sự kiện gốc, `su_kien_goc IS NULL`) cũng cộng vào điểm CC **tập thể của lớp**: nếu không còn vi phạm CC nào khác trong lớp tuần đó, điểm CC của lớp = 100 − 2 − 2 − 3 = 93 (cộng thêm mọi vi phạm CC khác của các bạn cùng lớp nếu có).
+
+**Phân biệt 2 trường hợp dễ nhầm — quan trọng khi code:**
+
+| Trường hợp | Số dòng `GhiNhan` | Điểm cá nhân | Điểm tập thể lớp |
+|---|---|---|---|
+| **2 học sinh khác nhau, mỗi em tự đi trễ riêng** (2 sự kiện gốc độc lập, mỗi em 1 dòng `CC01`, `su_kien_goc IS NULL` cả 2) | 2 dòng | Mỗi em: 100 − 2 = **98** | Lớp: 100 − 2 − 2 = **96** (cộng dồn cả 2 sự kiện, không dedup vì đây là 2 sự kiện gốc khác nhau) |
+| **1 sự kiện tập thể** (vd "cả lớp ồn giờ chào cờ", −10) **được "Áp dụng cho tất cả" cho 5 học sinh** (mục 2b) | 1 dòng gốc + 5 dòng phái sinh (`su_kien_goc` trỏ về dòng gốc) | Mỗi em trong 5 em: 100 − 10 = **90** | Lớp: 100 − 10 = **90** (chỉ trừ 1 lần theo dòng gốc, KHÔNG nhân theo 5 em, vì 5 dòng phái sinh có `su_kien_goc IS NOT NULL` nên bị loại khỏi tổng ở `diem_tap_the`) |
+
+Quy tắc gốc: **mỗi sự kiện thật sự xảy ra chỉ trừ điểm lớp đúng 1 lần** — 2 học sinh đi trễ riêng biệt = 2 sự kiện thật = trừ lớp 2 lần (cộng dồn bình thường); còn 1 sự kiện tập thể dù sau đó gán cho bao nhiêu em vẫn chỉ là **1 sự kiện thật duy nhất** = trừ lớp đúng 1 lần.
+
+### Xem chi tiết: điểm tập thể bị trừ là do vi phạm của những em nào
+
+> **Bổ sung ngày 23/08/2026**: điểm tập thể không được hiển thị như 1 con số trơ — phải bấm vào xem được **ngay danh sách học sinh cụ thể** đứng sau con số đó, để giáo viên biết chính xác "lớp mất điểm tuần này là vì ai, vi phạm gì".
+
+```
+chi_tiet_diem_tap_the(lop, nhom, tuan) =
+    LIST( GhiNhan.ma_hs, GhiNhan.ma_danh_muc, GhiNhan.diem_cong_tru, GhiNhan.ngay_ghi_nhan, GhiNhan.ghi_chu
+          WHERE lop = lop_dang_xet
+          AND nhom_danh_muc = nhom
+          AND tuan = tuan_dang_xet
+          AND su_kien_goc IS NULL )       // đúng tập hợp dòng đã cộng vào diem_tap_the ở trên
+    // ma_hs có giá trị → JOIN HocSinh, hiển thị tên học sinh cụ thể
+    // ma_hs = NULL → dòng này là sự kiện tap_the/to_truc còn "chờ xử lý" (mục 2b), hiển thị "Sự kiện tập thể — chưa gán học sinh" thay vì để trống
+```
+
+Ví dụ giao diện khi giáo viên bấm vào điểm CC của lớp (96/100 — trừ 4 điểm từ 2 sự kiện, đúng ví dụ 2 học sinh đi trễ riêng ở trên):
+
+| Học sinh | Mã | Nội dung | Điểm trừ | Ngày |
+|---|---|---|---|---|
+| Nguyễn Văn A | CC01 | Đi học trễ | −2 | 25/08 |
+| Trần Thị B | CC01 | Đi học trễ | −2 | 26/08 |
+
+Nếu trong tuần còn có sự kiện tập thể chưa được gán cho ai, hiển thị riêng dòng đó, không để trống tên hoặc gán nhầm cho 1 em:
+
+| Học sinh | Mã | Nội dung | Điểm trừ | Ngày |
+|---|---|---|---|---|
+| *(Sự kiện tập thể — chưa gán học sinh)* | KL01 | Tập trung giờ chào cờ lộn xộn | −10 | 24/08 |
+
+Danh sách này chính là dữ liệu hiển thị khi giáo viên bấm vào từng thành phần điểm tập thể trên tổng quan lớp — trả lời trực tiếp "vì sao lớp mất điểm tuần này", không cần lục lại phiếu giấy.
+
+
+
+> **Đã chốt ngày 23/08/2026**: Điểm học tập cấp lớp tạm để **mặc định = 100** (giống cách xử lý Điểm học tập cấp học sinh ở mục 3), cho đến khi có nguồn dữ liệu thật. Nhờ vậy có thể ráp ngay `diem_tap_the` vào công thức mục 4 để ra **Điểm xếp loại thi đua của lớp 11C5**, so sánh được với các lớp khác trong file Excel trường:
+
+```
+diem_hoc_tap_lop(lop, tuan) = 100   // mặc định, chưa có nguồn dữ liệu thật cho cấp lớp
+
+diem_xep_loai_tap_the(lop, tuan) =
+    ( diem_tap_the(CC) + diem_tap_the(VS) + diem_tap_the(NN)
+      + diem_tap_the(KL) + diem_hoc_tap_lop × 2 ) ÷ 6
+```
+
+> Vì mặc định luôn là 100, con số này **chưa phản ánh đúng thực lực học tập của lớp** — chỉ dùng để lớp tự theo dõi tương đối tốt/xấu tuần này so với tuần khác về mặt nề nếp/kỷ luật, chưa nên dùng để so sánh tuyệt đối với điểm chính thức của trường (vì trường có dữ liệu Điểm học tập thật, còn app đang mặc định 100). Khi có nguồn dữ liệu thật cho Điểm học tập cấp lớp, chỉ cần sửa `diem_hoc_tap_lop` — không cần đổi công thức `diem_xep_loai_tap_the`.
+
 ## 3. Công thức tính Điểm học tập
 
+> **Sửa ngày 23/08/2026**: bản trước nhân sẵn ×2 ở bước này, giả định thang 0–10 → 0–20. Đối chiếu với file Excel thật của trường (cột "ĐIỂM HỌC TẬP" luôn được điền giá trị **100** khi chưa có dữ liệu, không phải 20) cho thấy trường coi Điểm học tập là **thang 0–100 ngang hàng với 4 thành phần kia**. Bỏ phép nhân 2 ở bước này, dời sang mục 4 (đúng vị trí nhân 2 trong công thức Excel thật: `D6*2`).
+
 ```
-Điểm học tập = ( Tổng điểm số các môn trong tuần ÷ Tổng số tiết trong tuần ) × 2
+Điểm học tập = Tổng điểm số các môn trong tuần ÷ Tổng số tiết trong tuần
 ```
+(thang 0–100, mặc định = **100** khi tuần đó chưa có dữ liệu điểm số nào được ghi nhận)
 
 > ⚠️ **Cần anh xác nhận với nhà trường**: "Tổng số tiết trong tuần" là **tổng số tiết theo thời khoá biểu cả tuần** (kể cả tiết không có điểm), hay chỉ tính **số tiết có ghi điểm số** trong tuần đó? Hai cách hiểu cho ra kết quả khác nhau. Em tạm triển khai theo cách 2 (chỉ tính tiết có điểm số ghi nhận) vì phù hợp với dữ liệu thực tế thu thập được qua phiếu giấy — nhưng đánh dấu `TODO` trong code để dễ sửa khi có xác nhận chính thức.
+>
+> ⚠️ **Vẫn chưa chắc chắn**: "điểm số các môn" ở đây là điểm học lực từng môn (thang 10, giống sổ điểm) hay điểm hạnh kiểm/thái độ mỗi tiết do GV bộ môn chấm qua sổ đầu bài (thang 100, giống cách chấm của 4 nội dung kia)? Theo quyết định tạm thời của anh (23/08/2026), code sẽ coi giá trị này nằm trên **thang 0–100** và mặc định = 100 khi chưa có dữ liệu — khớp với cách trường điền trong Excel thật. Nếu sau này trường xác nhận đây thực ra là điểm học lực thang 10, chỉ cần nhân giá trị `diem_so_mon` lên ×10 khi ghi vào `GhiNhan`, không cần sửa công thức tổng hợp.
 
 ## 4. Công thức tính Điểm xếp loại thi đua (tổng hợp)
 
+> **Sửa ngày 23/08/2026**: khớp đúng công thức Excel thật của trường: `=ROUND((D×2+F+H+J+R)/6,2)` với D = Điểm học tập. Phép nhân 2 nằm ở bước này, không phải ở mục 3.
+
 ```
-Điểm xếp loại thi đua = ( Điểm Chuyên cần + Điểm Vệ sinh + Điểm Nề nếp + Điểm Trật tự kỷ luật + Điểm học tập ) ÷ 6
+Điểm xếp loại thi đua = ( Điểm Chuyên cần + Điểm Vệ sinh + Điểm Nề nếp + Điểm Trật tự kỷ luật + Điểm học tập × 2 ) ÷ 6
 ```
 
-**Ngoại lệ (sửa sau khi chạy thật)**: nếu tuần đó **chưa có điểm số môn nào được ghi** (chưa có dữ liệu Điểm học tập), công thức trên sẽ tự động cộng "0" vào, khiến điểm bị kéo xuống giả tạo (400÷6 = 66,67 cho học sinh chưa hề vi phạm gì). Khi đó chỉ tính trung bình 4 nội dung đầu: `(CC+VS+NN+KL) ÷ 4`, và hiển thị "Điểm học tập: chưa có dữ liệu" thay vì 0.
+Ghi chú cách hiểu công thức: 4 nội dung đầu (Chuyên cần, Vệ sinh, Nề nếp, Trật tự kỷ luật) mỗi nội dung có **trọng số 1**, riêng **Điểm học tập có trọng số 2** → tổng trọng số = 1+1+1+1+2 = **6**, khớp mẫu số. Vì cả 5 thành phần đều trên thang 0–100, một học sinh hoàn hảo tuyệt đối (không vi phạm gì + điểm học tập tối đa) đạt đúng **100/100** — đã verify bằng dữ liệu thật (lớp 9A21 tuần 01: (100×2+100+95+100+100)/6 = 99.17, rất gần trần 100 vì chỉ thiếu 5 điểm ở 1 mục).
 
-Ghi chú cách hiểu công thức (suy ra từ văn bản gốc, vì văn bản ghi "chia 6" nhưng tiêu đề nói "bình quân của 5 nội dung"): 4 nội dung đầu (Chuyên cần, Vệ sinh, Nề nếp, Trật tự kỷ luật) mỗi nội dung có **trọng số 1**, riêng **Điểm học tập có trọng số 2** (vì đã được nhân 2 sẵn trong công thức ở mục 3) → tổng trọng số = 1+1+1+1+2 = **6**, khớp với mẫu số trong công thức xếp loại. Đây là cách hiểu hợp lý nhất để code đúng; nếu nhà trường xác nhận khác, chỉ cần sửa hằng số `6` này ở một chỗ duy nhất trong code.
+**Ngoại lệ (giữ nguyên từ bản trước)**: nếu tuần đó **chưa có điểm số môn nào được ghi** (chưa có dữ liệu Điểm học tập), công thức trên sẽ tự động cộng Điểm học tập = 100 mặc định (theo quyết định 23/08/2026), nên **không** còn bị kéo điểm xuống giả tạo như cách hiểu cũ (0×2 → 66,67). Với mặc định 100, học sinh chưa có dữ liệu học tập tuần đó vẫn tính đủ `(CC+VS+NN+KL+100×2)/6` bình thường — không cần nhánh xử lý riêng cho trường hợp thiếu dữ liệu nữa. Vẫn nên hiển thị chú thích nhỏ trên giao diện: *"Điểm học tập: chưa có dữ liệu tuần này, đang tính mặc định 100"* để giáo viên biết đây là điểm mặc định chứ không phải điểm thật.
 
 ## 5. Ngưỡng xếp loại
 
-> ⚠️ **Phát hiện quan trọng khi kiểm thử bằng dữ liệu thật (11/07/2026)**: theo đúng công thức gốc ở mục 4, **điểm xếp loại thi đua tối đa mà một học sinh hoàn hảo tuyệt đối (không vi phạm gì + điểm 10 tất cả các môn) có thể đạt được chỉ là 70/100**, không phải 100 — vì "Điểm học tập" trong công thức nằm trên thang 0–20 (điểm trung bình thang 10 × 2), trong khi 4 thành phần còn lại trên thang 0–100, rồi cộng chung chia 6. Ngưỡng bên dưới ban đầu giả định thang điểm 0–100 đạt được trong thực tế — **điều này sai**, cần điều chỉnh lại. Bảng dưới đã được tính lại theo tỷ lệ so với mức tối đa thực tế ~70, nhưng vẫn là **ước lượng tạm**, cần xác nhận chính thức với Ban Thi đua Khen thưởng của trường trước khi dùng để đánh giá học sinh nghiêm túc.
+> **Sửa ngày 23/08/2026**: bản trước tính theo trần 70 (sai, xem lịch sử ở mục 3-4). Trần thật là **100**, quay lại thang ngưỡng nguyên bản.
 
-| Điểm xếp loại thi đua | Xếp loại (tạm điều chỉnh theo mức tối đa thực tế ~70) | Hành động đề xuất |
+| Điểm xếp loại thi đua | Xếp loại | Hành động đề xuất |
 |---|---|---|
-| 60 – 70 | Tốt | Không cần can thiệp, có thể tuyên dương |
-| 45 – 59 | Khá | Theo dõi bình thường |
-| 30 – 44 | Trung bình | Giáo viên trao đổi riêng, nhắc nhở |
-| Dưới 30 | Yếu | Cảnh báo trên giao diện, đề xuất mời phụ huynh |
+| 90 – 100 | Tốt | Không cần can thiệp, có thể tuyên dương |
+| 70 – 89 | Khá | Theo dõi bình thường |
+| 50 – 69 | Trung bình | Giáo viên trao đổi riêng, nhắc nhở |
+| Dưới 50 | Yếu | Cảnh báo trên giao diện, đề xuất mời phụ huynh |
 
-> **Lưu ý riêng cho trường hợp chưa có dữ liệu học tập** (theo C031): khi đó công thức chỉ chia 4 thành phần (không có "trần 70"), nên 1 học sinh không vi phạm gì nhưng CHƯA CÓ điểm học tập sẽ hiện đúng **100**, cao hơn hẳn 1 học sinh cũng không vi phạm gì nhưng ĐÃ có điểm học tập đầy đủ (tối đa ~70). Đây là hệ quả trực tiếp của công thức gốc, không phải lỗi — nhưng dễ gây hiểu lầm khi so sánh 2 học sinh với nhau. Nên hiển thị rõ trên giao diện: *"Điểm xếp loại chỉ so sánh được giữa các học sinh có cùng trạng thái đã/chưa có điểm học tập trong tuần."*
-
-### Vì sao trường lại thiết kế công thức như vậy? (không chắc chắn, chỉ là suy luận hợp lý)
-
-Tên gọi chính xác trong văn bản gốc là **"XẾP THI ĐUA theo điểm bình quân"** — chữ "xếp" gợi ý đây là điểm dùng để **xếp hạng tương đối** (so lớp/tuần này với lớp/tuần khác), không phải điểm chất lượng tuyệt đối kiểu "học lực/hạnh kiểm" cần đạt mốc cố định. Với mục đích xếp hạng tương đối, mức trần thực tế không cần chạm 100 — chỉ cần nhất quán cho mọi người là đủ để so sánh công bằng.
-
-Cách chia trọng số (4 mảng Chuyên cần/Vệ sinh/Nề nếp/Kỷ luật chiếm 4/6 ≈ 67%, Học tập chỉ 2/6 ≈ 33%) cũng khá khớp với việc hệ "thi đua tuần" này thường do **đội cờ đỏ** (đội giám sát nề nếp) chấm, nên thiên về đánh giá kỷ luật/nề nếp là chính, điểm học tập chỉ mang tính khích lệ thêm, không phải trọng tâm.
-
-**Tuy nhiên không loại trừ khả năng đây là sơ suất khi soạn thảo** (nhân đôi cho "có trọng số hơn" mà không tính kỹ hệ quả nén thang điểm) — không có cách nào khẳng định chắc chắn ý đồ thật từ 1 văn bản hành chính. **Cách xử lý đúng đắn nhất: hỏi thẳng Ban Thi đua Khen thưởng của trường** câu hỏi cụ thể ở mục README "việc cần làm ngay", thay vì tự suy đoán mãi.
+> Bảng ngưỡng này vẫn là **ước lượng tạm** dựa trên thang điểm đã xác nhận đúng (0–100), nhưng các mốc cụ thể (90/70/50) chưa được Ban Thi đua Khen thưởng xác nhận chính thức — cần trao đổi thêm nếu muốn dùng để đánh giá học sinh nghiêm túc. (Lưu ý: đây trùng với ngưỡng phân loại 90/70/50 đã dùng ở tài liệu 13 — nên giữ nhất quán giữa 2 tài liệu nếu không có lý do khác biệt.)
 
 ## 6. Nhóm điểm cộng khích lệ
 
@@ -171,31 +265,47 @@ Cách chia trọng số (4 mảng Chuyên cần/Vệ sinh/Nề nếp/Kỷ luật
 ```
 diem_thanh_phan(hoc_sinh, nhom, tuan) =
     clamp( 100 + SUM(GhiNhan.diem_cong_tru
-                      WHERE ma_hs = hoc_sinh
-                      AND nhom_danh_muc = nhom   // CC | VS | NN | KL
-                      AND DanhMucDiem.pham_vi = 'ca_nhan'   // bỏ qua tap_the/to_truc, xem mục 2b
+                      WHERE ma_hs = hoc_sinh          // có gán cụ thể cho học sinh này
+                      AND nhom_danh_muc = nhom         // CC | VS | NN | KL
                       AND tuan = tuan_dang_xet),
+           min = 0, max = 100 )
+
+diem_tap_the(lop, nhom, tuan) =
+    clamp( 100 + SUM(GhiNhan.diem_cong_tru
+                      WHERE lop = lop_dang_xet
+                      AND nhom_danh_muc = nhom         // CC | VS | NN | KL
+                      AND tuan = tuan_dang_xet
+                      AND su_kien_goc IS NULL),         // chỉ tính sự kiện gốc — xem mục 2d
            min = 0, max = 100 )
 ```
 
-> Các dòng `pham_vi = tap_the` hoặc `to_truc` **không tham gia** công thức trên (mặc định) — chúng vẫn được lưu đầy đủ trong `GhiNhan` và hiển thị trên tổng quan giáo viên như "Sự kiện của lớp/tổ", nhưng không cộng dồn vào điểm cá nhân của học sinh nào, đúng quy tắc ở mục 2b.
+> **Sửa ngày 23/08/2026**: bản trước lọc theo `DanhMucDiem.pham_vi = 'ca_nhan'` — sai, vì khi 1 sự kiện `tap_the`/`to_truc` được "Gán cho 1 học sinh cụ thể" (mục 2b), dòng phái sinh đó **có `ma_hs`** dù mã danh mục gốc vẫn là `tap_the`/`to_truc`. Lọc theo `pham_vi` sẽ bỏ sót những dòng này. Cách đúng: chỉ cần lọc `WHERE ma_hs = hoc_sinh` — dòng nào chưa được gán cho ai thì `ma_hs` là `NULL` nên tự động không lọt vào, không cần điều kiện `pham_vi` nữa.
+>
+> Các dòng `tap_the`/`to_truc` **đang chờ xử lý** (chưa gán `ma_hs`) không tham gia `diem_thanh_phan` của bất kỳ học sinh nào, nhưng **vẫn tham gia `diem_tap_the`** ngay khi ghi nhận (xem mục 2d) — điểm cá nhân và điểm tập thể cập nhật độc lập nhau, đúng quy tắc ở mục 2b/2d.
 
-```diem_hoc_tap(hoc_sinh, tuan) =
-    ( SUM(GhiNhan.diem_so_mon WHERE ma_hs = hoc_sinh AND tuan = tuan_dang_xet)
-      ÷ COUNT(GhiNhan.diem_so_mon WHERE ma_hs = hoc_sinh AND tuan = tuan_dang_xet) )
-    × 2
+```
+diem_hoc_tap(hoc_sinh, tuan) =
+    NEU co_du_lieu_hoc_tap(hoc_sinh, tuan):     // có ít nhất 1 dòng diem_so_mon trong tuần
+        SUM(GhiNhan.diem_so_mon WHERE ma_hs = hoc_sinh AND tuan = tuan_dang_xet)
+        ÷ COUNT(GhiNhan.diem_so_mon WHERE ma_hs = hoc_sinh AND tuan = tuan_dang_xet)
+        // thang 0-100, KHÔNG nhân 2 ở đây (xem mục 3)
+    NGUOC LAI:
+        100   // mặc định khi chưa có dữ liệu tuần đó (quyết định 23/08/2026)
 
 diem_xep_loai_thi_dua(hoc_sinh, tuan) =
-    NEU co_du_lieu_hoc_tap(hoc_sinh, tuan):     // có ít nhất 1 dòng diem_so_mon trong tuần
-        ( diem_thanh_phan(CC) + diem_thanh_phan(VS) + diem_thanh_phan(NN)
-          + diem_thanh_phan(KL) + diem_hoc_tap ) ÷ 6
-    NGUOC LAI (chưa có tiết nào ghi điểm số trong tuần):
-        ( diem_thanh_phan(CC) + diem_thanh_phan(VS) + diem_thanh_phan(NN)
-          + diem_thanh_phan(KL) ) ÷ 4
-        // hiển thị "Điểm học tập: chưa có dữ liệu" thay vì số 0
+    ( diem_thanh_phan(CC) + diem_thanh_phan(VS) + diem_thanh_phan(NN)
+      + diem_thanh_phan(KL) + diem_hoc_tap × 2 ) ÷ 6
+    // nhân 2 ở đây, khớp công thức Excel thật: (D×2+F+H+J+R)/6
+
+diem_hoc_tap_lop(lop, tuan) =
+    100   // mặc định — xem mục 2d, chưa có nguồn dữ liệu Điểm học tập cấp lớp
+
+diem_xep_loai_tap_the(lop, tuan) =
+    ( diem_tap_the(CC) + diem_tap_the(VS) + diem_tap_the(NN)
+      + diem_tap_the(KL) + diem_hoc_tap_lop × 2 ) ÷ 6
 ```
 
-> **Sửa lỗi quan trọng (phát hiện khi chạy thật)**: bản công thức trước luôn chia cho 6 kể cả khi `diem_hoc_tap = 0` do chưa có điểm số nào được ghi — khiến MỌI học sinh mặc định hiện **66,67 điểm** dù chưa hề có vi phạm gì (100+100+100+100+0=400, 400÷6=66,67), gây hiểu lầm nghiêm trọng. Bản sửa: khi tuần đó chưa có dữ liệu điểm học tập, chỉ tính trung bình 4 thành phần còn lại (chia 4), và hiển thị rõ "chưa có dữ liệu" thay vì coi là 0. Xem commit sửa ở tài liệu 06, mục C031.
+> **Sửa ngày 23/08/2026 (thay thế bản sửa lỗi cũ ở đây)**: bản trước có nhánh riêng "chia 4 nếu chưa có dữ liệu học tập" để tránh điểm 0 kéo tổng xuống giả tạo. Với việc chốt mặc định Điểm học tập = 100 khi thiếu dữ liệu, nhánh riêng này **không còn cần thiết** — công thức `/6` chạy bình thường cho mọi trường hợp, không cần rẽ nhánh chia 4/chia 6 nữa. Đơn giản hoá code, giảm rủi ro bug loại "quên nhánh nào đó" như từng gặp ở C031.
 
 Vi phạm nhóm KL nghiêm trọng (KL06, KL09, KL11, KL12, KL13 — mức trừ 20 điểm) luôn kèm cờ `can_canh_bao_ngay = true`, hiển thị cảnh báo ngay trên giao diện giáo viên bất kể tổng điểm tuần còn cao, đúng tinh thần "không chờ tổng kết tuần mới xử lý".
 
@@ -208,3 +318,10 @@ Vi phạm nhóm KL nghiêm trọng (KL06, KL09, KL11, KL12, KL13 — mức trừ
 | Có bản ghi mức trừ 20 điểm (KL06/KL09/KL11/KL12/KL13) | "Vi phạm nghiêm trọng — xử lý ngay theo quy chế nhà trường." |
 | Điểm xếp loại thi đua tuần này thấp hơn tuần trước ≥ 15 điểm | "Học sinh có dấu hiệu đi xuống rõ rệt — nên tìm hiểu sớm." |
 | Không có vi phạm nào 2 tuần liên tiếp | "Có thể tuyên dương làm gương." |
+
+## Việc cần làm ngay (cập nhật 23/08/2026)
+
+1. Trao đổi với Ban Thi đua Khen thưởng: "Tổng số tiết trong tuần" ở mục 3 tính cả tiết không điểm hay chỉ tiết có điểm? (chưa xác nhận, đang tạm code theo cách 2)
+2. Trao đổi với Ban Thi đua Khen thưởng: "điểm số các môn" là điểm học lực (thang 10) hay điểm hạnh kiểm/thái độ mỗi tiết (thang 100)? (đang tạm coi thang 100, mặc định 100 khi thiếu dữ liệu, theo quyết định của anh)
+3. Khi trường có dữ liệu Điểm học tập thật (không còn toàn 100) ở các tuần sau, đối chiếu lại công thức mục 3 một lần nữa để chắc chắn không còn hiểu sai thang điểm.
+4. Điểm học tập cấp lớp (`diem_hoc_tap_lop`, mục 2d/7) hiện mặc định cố định 100, chưa có nguồn dữ liệu thật — cần quyết định sau: lấy trung bình cộng Điểm học tập của 36 học sinh, hay 1 nguồn riêng do GV bộ môn chấm chung cho cả lớp.

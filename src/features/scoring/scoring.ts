@@ -24,7 +24,11 @@ export const DEFAULT_THANH_PHAN_CONFIG: DiemCauHinhThanhPhan[] = [
   { ma_thanh_phan: 'VS', ten_hien_thi: 'Vệ sinh', loai_tinh: 'tich_luy_danh_muc', nhom_diem_lien_ket: 'VS', thang_goc_min: 0, thang_goc_max: 100, he_so_chuan_hoa: 1, trong_so: 1, bat_buoc: true, dang_bat: true, thu_tu: 2 },
   { ma_thanh_phan: 'NN', ten_hien_thi: 'Nề nếp, tác phong', loai_tinh: 'tich_luy_danh_muc', nhom_diem_lien_ket: 'NN', thang_goc_min: 0, thang_goc_max: 100, he_so_chuan_hoa: 1, trong_so: 1, bat_buoc: true, dang_bat: true, thu_tu: 3 },
   { ma_thanh_phan: 'KL', ten_hien_thi: 'Trật tự, kỷ luật', loai_tinh: 'tich_luy_danh_muc', nhom_diem_lien_ket: 'KL', thang_goc_min: 0, thang_goc_max: 100, he_so_chuan_hoa: 1, trong_so: 1, bat_buoc: true, dang_bat: true, thu_tu: 4 },
-  { ma_thanh_phan: 'HT', ten_hien_thi: 'Học tập', loai_tinh: 'trung_binh_diem_so', nhom_diem_lien_ket: null, thang_goc_min: 0, thang_goc_max: 10, he_so_chuan_hoa: 10, trong_so: 2, bat_buoc: false, dang_bat: true, thu_tu: 5 },
+  // thang_goc_max=100 (khong phai 10), he_so_chuan_hoa=1 (khong nhan 10) - diem_so_mon
+  // da o thang 0-100 san (doi chieu file Excel that ngay 23/08/2026, xem docs/03).
+  // bat_buoc=true (khong phai false) - khi khong co du lieu tuan do, van tinh vao
+  // mau so 6 voi gia tri mac dinh = thang_goc_max (100), khong con roi mau so ve 4 nua.
+  { ma_thanh_phan: 'HT', ten_hien_thi: 'Học tập', loai_tinh: 'trung_binh_diem_so', nhom_diem_lien_ket: null, thang_goc_min: 0, thang_goc_max: 100, he_so_chuan_hoa: 1, trong_so: 2, bat_buoc: true, dang_bat: true, thu_tu: 5 },
 ]
 
 export const DEFAULT_HE_SO_DIEU_KIEN_CONFIG: DiemCauHinhHeSoDieuKien[] = [
@@ -159,9 +163,16 @@ function tinhGiaTriTho(
   heSoDieuKienCauHinh: DiemCauHinhHeSoDieuKien[],
 ): { raw: number | null; coDuLieu: boolean } {
   if (t.loai_tinh === 'tich_luy_danh_muc') {
+    // Khong loc theo catalogItem.pham_vi nua (bug da sua 23/08/2026, xem docs/03 muc 7):
+    // 1 su kien tap_the/to_truc duoc "Gan cho 1 hoc sinh cu the" (muc 2b) tao ra dong
+    // GhiNhan CO ma_hs nhung ma_danh_muc goc van pham_vi='tap_the'/'to_truc' - loc theo
+    // pham_vi se bo sot dong nay. `records` truyen vao day da duoc loc theo dung
+    // ma_hs = student.ma_hs tu calculateWeeklyStudentScore() nen khong can dieu kien
+    // pham_vi nua - dong nao chua duoc gan cho ai thi ma_hs la NULL nen tu dong khong
+    // lot vao (calculateWeeklyStudentScore chi truyen records co ma_hs khop).
     const delta = records.reduce((sum, record) => {
       const catalogItem = getCatalogItem(record, catalogByCode)
-      if (!catalogItem || catalogItem.nhom !== t.nhom_diem_lien_ket || catalogItem.pham_vi !== 'ca_nhan') {
+      if (!catalogItem || catalogItem.nhom !== t.nhom_diem_lien_ket) {
         return sum
       }
 
@@ -177,14 +188,22 @@ function tinhGiaTriTho(
     .filter((score): score is number => typeof score === 'number')
 
   if (studyScores.length === 0) {
-    return { raw: null, coDuLieu: false }
+    // Mac dinh = thang_goc_max (100) khi chua co diem so nao trong tuan (quyet dinh
+    // 23/08/2026, xem docs/03 muc 3/4) - coDuLieu=false van duoc tra ve de giao dien
+    // hien chu thich "chua co du lieu, dang tinh mac dinh 100" (xem calculateStudyScoreDisplay).
+    return { raw: t.thang_goc_max, coDuLieu: false }
   }
 
   const trungBinh = studyScores.reduce((sum, score) => sum + score, 0) / studyScores.length
   return { raw: clamp(trungBinh, t.thang_goc_min, t.thang_goc_max), coDuLieu: true }
 }
 
-/** Điểm học tập hiển thị cho giáo viên: trung bình môn × 2 (thang 0-20, quen thuộc, tách khỏi giá trị chuẩn hoá dùng nội bộ công thức). */
+// Diem hoc tap hien thi cho giao vien: trung binh mon, thang 0-100 (khop dung thang
+// da luu trong diem_so_mon - khong con nhan 2 nhu ban cu gia dinh sai thang 0-10, xem
+// docs/03 muc 3 sua 23/08/2026). Tra ve null khi tuan chua co du lieu diem so nao -
+// giao dien dung tin hieu nay de hien chu thich "dang tinh mac dinh 100" (gia tri
+// mac dinh that su chi ap dung trong cong thuc tong hop qua tinhGiaTriTho(), khong
+// hien o day de khong nham lan voi "diem that").
 function calculateStudyScoreDisplay(records: GhiNhan[]): number | null {
   const studyScores = records
     .filter((record) => record.loai === 'hoc_tap')
@@ -196,7 +215,7 @@ function calculateStudyScoreDisplay(records: GhiNhan[]): number | null {
   }
 
   const total = studyScores.reduce((sum, score) => sum + score, 0)
-  return roundScore((total / studyScores.length) * 2)
+  return roundScore(total / studyScores.length)
 }
 
 function hasSeverePersonalRecord(

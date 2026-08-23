@@ -1,5 +1,7 @@
 # 13 — Cấu hình hoá công thức tính điểm rèn luyện tuần (portable, không hardcode)
 
+> **Sửa ngày 23/08/2026**: tài liệu này (viết 08–09/08/2026) giả định `diem_so_mon` (Điểm học tập) nằm trên thang 0–10 nên seed `he_so_chuan_hoa = 10` cho thành phần HT ở §2a bên dưới. Sau khi đối chiếu file Excel thật của trường (`THI_ĐUA_CS2_NH_26-27.xlsx`), `03-he-thong-diem-ren-luyen.md` đã xác nhận `diem_so_mon` thực ra nằm sẵn trên thang 0–100 — seed đúng phải là `thang_goc_max = 100, he_so_chuan_hoa = 1, bat_buoc = true` (không phải `10, 10, false` như viết dưới đây). Đã sửa lại seed thật trong migration `20260823000200_sua_thang_diem_hoc_tap_cau_hinh_diem.sql` — phần §2a bên dưới giữ nguyên văn làm lịch sử quyết định, không đại diện giá trị đang chạy thật nữa.
+
 > Nối tiếp `03-he-thong-diem-ren-luyen.md` và bám sát nguyên tắc kiến trúc đã dùng cho Đồng Hành/Tinh Tú ("luật là dữ liệu"). Tài liệu này áp dụng đúng nguyên tắc đó cho **chính công thức điểm gốc** — thứ hiện đang hardcode trong `src/features/scoring/scoring.ts`.
 >
 > **Quyết định đã chốt với kiến trúc sư (08–09/08/2026)**:
