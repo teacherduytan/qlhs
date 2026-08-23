@@ -10,7 +10,13 @@ import type {
   HocSinh,
   TrangThaiXuLyTapThe,
 } from '../../data/types'
-import { calculateClassWeeklyScores, type WeeklyStudentScore } from '../scoring/scoring'
+import {
+  calculateClassCollectiveScore,
+  calculateClassWeeklyScores,
+  type ScoreComponent,
+  type WeeklyClassScore,
+  type WeeklyStudentScore,
+} from '../scoring/scoring'
 import { getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
 import {
   getBadgeClassForCatalog,
@@ -117,12 +123,21 @@ type ScoreSortKey = 'score_asc' | 'score_desc' | 'name_asc' | 'name_desc' | 'rec
 
 type GroupSortKey = 'score_asc' | 'score_desc' | 'name_asc' | 'records_desc'
 
-type DashboardSectionKey = 'summary' | 'filters' | 'overview' | 'groups' | 'scores' | 'events' | 'daily'
+type DashboardSectionKey =
+  | 'summary'
+  | 'filters'
+  | 'overview'
+  | 'classCollective'
+  | 'groups'
+  | 'scores'
+  | 'events'
+  | 'daily'
 
 const DASHBOARD_SECTIONS: Array<{ id: DashboardSectionKey; label: string }> = [
   { id: 'summary', label: 'Tóm tắt' },
   { id: 'filters', label: 'Bộ lọc' },
   { id: 'overview', label: 'Thống kê' },
+  { id: 'classCollective', label: 'Điểm tập thể lớp' },
   { id: 'groups', label: 'Theo nhóm' },
   { id: 'scores', label: 'Điểm thi đua' },
   { id: 'events', label: 'Sự kiện' },
@@ -142,6 +157,7 @@ const SECTION_TONE_BAR: Record<SectionTone, string> = {
 }
 
 const INITIAL_DASHBOARD_COLLAPSED: Record<DashboardSectionKey, boolean> = {
+  classCollective: false,
   daily: false,
   events: false,
   filters: false,
@@ -280,6 +296,12 @@ export function DashboardPage() {
       students: state.students,
       tuanSo: state.tuanSo,
     })
+    const classCollectiveScore = calculateClassCollectiveScore({
+      catalog: state.catalog,
+      records: state.records,
+      students: state.students,
+      tuanSo: state.tuanSo,
+    })
 
     // "Si so" o khoi Tom tat nhanh phai dem dong theo dung tuan dang xem
     // (dang_hoc), khong duoc lay thang state.students.length - neu khong 1
@@ -292,6 +314,7 @@ export function DashboardPage() {
 
     return {
       catalogByCode,
+      classCollectiveScore,
       collectiveEvents,
       dailyLogs,
       banCanSu: state.banCanSu,
@@ -570,6 +593,19 @@ export function DashboardPage() {
                 onSelectGroup={openGroupView}
                 stats={body.overviewStats}
               />
+            ) : null}
+          </section>
+
+          <section id="dashboard-class-collective" className="scroll-mt-4 space-y-3 rounded-lg border border-indigo-200 bg-indigo-100 p-4 shadow-sm">
+            <SectionHeader
+              collapsed={collapsedSections.classCollective}
+              description="Điểm thi đua CẤP LỚP (so với các lớp khác toàn trường) — cộng dồn mọi vi phạm xảy ra trong lớp tuần này."
+              title="Điểm tập thể của lớp"
+              tone="indigo"
+              onToggle={() => toggleSection('classCollective')}
+            />
+            {!collapsedSections.classCollective ? (
+              <ClassCollectiveScoreCard classScore={body.classCollectiveScore} />
             ) : null}
           </section>
 
@@ -1969,6 +2005,82 @@ function GroupViolationView({
         </>
       )}
     </section>
+  )
+}
+
+const CLASS_COMPONENT_LABELS: Record<ScoreComponent, string> = {
+  CC: 'Chuyên cần',
+  VS: 'Vệ sinh',
+  NN: 'Nề nếp',
+  KL: 'Trật tự, kỷ luật',
+}
+
+function ClassCollectiveScoreCard({ classScore }: { classScore: WeeklyClassScore }) {
+  const [expanded, setExpanded] = useState<ScoreComponent | null>(null)
+  const components: ScoreComponent[] = ['CC', 'VS', 'NN', 'KL']
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+        {components.map((component) => (
+          <button
+            key={component}
+            type="button"
+            onClick={() => setExpanded((current) => (current === component ? null : component))}
+            className={`rounded-md border p-3 text-left shadow-sm transition ${getBadgeClassForGroup(component)} ${
+              expanded === component ? 'ring-2 ring-indigo-400' : ''
+            }`}
+          >
+            <p className="text-xs font-semibold uppercase opacity-70">{CLASS_COMPONENT_LABELS[component]}</p>
+            <p className="mt-1 text-xl font-bold">{classScore.diem_tap_the[component]}</p>
+            <p className="mt-0.5 text-xs opacity-70">{classScore.chi_tiet[component].length} lượt trừ</p>
+          </button>
+        ))}
+        <div className="rounded-md border border-indigo-300 bg-indigo-600 p-3 text-white shadow-sm">
+          <p className="text-xs font-semibold uppercase opacity-80">Xếp loại tập thể</p>
+          <p className="mt-1 text-xl font-bold">{classScore.diem_xep_loai_tap_the}</p>
+          <p className="mt-0.5 text-xs opacity-80">{classScore.xep_loai_tap_the}</p>
+        </div>
+      </div>
+
+      <p className="text-xs text-slate-500">
+        Điểm học tập cấp lớp đang tạm mặc định {classScore.diem_hoc_tap_lop} (chưa có nguồn dữ liệu thật cấp lớp — xem
+        docs/03 mục 2d).
+      </p>
+
+      {expanded ? (
+        <div className="rounded-md border border-indigo-200 bg-white p-3">
+          <p className="text-sm font-semibold text-slate-900">
+            Chi tiết {CLASS_COMPONENT_LABELS[expanded]} — vì sao lớp mất điểm tuần này
+          </p>
+          {classScore.chi_tiet[expanded].length === 0 ? (
+            <p className="mt-2 text-sm text-slate-500">Không có lượt trừ nào trong tuần này.</p>
+          ) : (
+            <div className="mt-2 space-y-1.5">
+              {classScore.chi_tiet[expanded].map((item, index) => (
+                <div
+                  key={`${item.ma_hs || 'tap-the'}-${item.ma_danh_muc}-${item.ngay}-${index}`}
+                  className="flex flex-col gap-1 rounded-md bg-slate-100 px-2.5 py-1.5 text-xs sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="wrap-break-word font-semibold text-slate-800">
+                      {item.ten || 'Sự kiện tập thể — chưa gán học sinh'}
+                    </p>
+                    <p className="wrap-break-word text-slate-600">
+                      {item.ma_danh_muc} · {item.mo_ta}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="font-semibold text-red-700">{item.diem_cong_tru}</span>
+                    <span className="text-slate-500">{formatDateCompact(item.ngay)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+    </div>
   )
 }
 

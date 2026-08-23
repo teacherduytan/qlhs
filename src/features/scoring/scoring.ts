@@ -121,6 +121,107 @@ export function calculateWeeklyStudentScore({
   }
 }
 
+export interface ClassComponentBreakdownItem {
+  ma_hs: string | null
+  ten: string | null
+  ma_danh_muc: string
+  mo_ta: string
+  diem_cong_tru: number
+  ngay: string
+  ghi_chu: string | null
+}
+
+export interface WeeklyClassScore {
+  tuan_so: number
+  diem_tap_the: Record<ScoreComponent, number>
+  chi_tiet: Record<ScoreComponent, ClassComponentBreakdownItem[]>
+  diem_hoc_tap_lop: number
+  diem_xep_loai_tap_the: number
+  xep_loai_tap_the: XepLoai
+}
+
+// Diem tap the cua lop (docs/03-he-thong-diem-ren-luyen.md muc 2d/7) - khac han
+// calculateClassWeeklyScores() ben duoi (danh sach diem CA NHAN cua tung hoc sinh).
+// Day la 1 CON SO DUY NHAT moi nhom CC/VS/NN/KL cho CA LOP, dung de so sanh voi
+// cac lop khac toan truong - cong don MOI GhiNhan trong tuan (khong phan biet ca
+// nhan hay tap_the/to_truc), CHI loc theo su_kien_goc IS NULL de tranh tru trung
+// khi 1 su kien tap the duoc "Ap dung cho tat ca" sinh ra nhieu dong ca nhan phai
+// sinh (cac dong phai sinh co su_kien_goc tro ve dong goc nen bi loai o day).
+//
+// KHONG nhan he so dieu kien (co do x2) - dung nguyen diem_cong_tru da luu, vi
+// "gap doi" la trach nhiem CA NHAN cua hoc sinh co do, khong lam su kien do "nang"
+// hon doi voi diem chung ca lop (dung 1 su kien = tru diem lop dung 1 lan).
+export function calculateClassCollectiveScore({
+  catalog,
+  records,
+  students,
+  tuanSo,
+  diemHocTapLop = 100,
+  nguongXepLoai = DEFAULT_NGUONG_XEP_LOAI_CONFIG,
+  soThapPhanLamTron = DEFAULT_SO_THAP_PHAN_LAM_TRON,
+}: {
+  catalog: DanhMucDiem[]
+  records: GhiNhan[]
+  students: HocSinh[]
+  tuanSo: number
+  diemHocTapLop?: number
+  nguongXepLoai?: DiemNguongXepLoai[]
+  soThapPhanLamTron?: number
+}): WeeklyClassScore {
+  const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
+  const studentByMaHs = new Map(students.map((student) => [student.ma_hs, student]))
+
+  const weekRecords = records.filter(
+    (record) => record.tuan_so === tuanSo && record.su_kien_goc === null,
+  )
+
+  const diemTapThe = {} as Record<ScoreComponent, number>
+  const chiTiet = {} as Record<ScoreComponent, ClassComponentBreakdownItem[]>
+
+  for (const component of SCORE_COMPONENTS) {
+    let tongDiemTru = 0
+    const items: ClassComponentBreakdownItem[] = []
+
+    for (const record of weekRecords) {
+      const catalogItem = getCatalogItem(record, catalogByCode)
+      if (!catalogItem || catalogItem.nhom !== component) continue
+
+      const baseScore = typeof record.diem_cong_tru === 'number' ? record.diem_cong_tru : catalogItem.diem
+      const occurrenceCount = Math.max(1, record.so_lan || 1)
+      const diemTru = baseScore * occurrenceCount
+      tongDiemTru += diemTru
+
+      const student = record.ma_hs ? studentByMaHs.get(record.ma_hs) : undefined
+
+      items.push({
+        ma_hs: record.ma_hs,
+        ten: student ? `${student.ho} ${student.ten}` : null,
+        ma_danh_muc: catalogItem.ma_danh_muc,
+        mo_ta: catalogItem.ten_muc,
+        diem_cong_tru: diemTru,
+        ngay: record.ngay,
+        ghi_chu: record.noi_dung,
+      })
+    }
+
+    diemTapThe[component] = clamp(100 + tongDiemTru, 0, 100)
+    chiTiet[component] = items
+  }
+
+  const tuSo =
+    diemTapThe.CC + diemTapThe.VS + diemTapThe.NN + diemTapThe.KL + diemHocTapLop * 2
+  const diemXepLoaiTapThe = roundScore(tuSo / 6, soThapPhanLamTron)
+
+  return {
+    tuan_so: tuanSo,
+    diem_tap_the: diemTapThe,
+    chi_tiet: chiTiet,
+    diem_hoc_tap_lop: diemHocTapLop,
+    diem_xep_loai_tap_the: diemXepLoaiTapThe,
+    xep_loai_tap_the: classifyScore(diemXepLoaiTapThe, nguongXepLoai),
+  }
+}
+
 export function calculateClassWeeklyScores({
   catalog,
   records,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DanhMucDiem, GhiNhan, HocSinh } from '../../data/types'
-import { calculateWeeklyStudentScore } from './scoring'
+import { calculateClassCollectiveScore, calculateWeeklyStudentScore } from './scoring'
 
 function makeStudent(overrides: Partial<HocSinh> = {}): HocSinh {
   return {
@@ -161,5 +161,58 @@ describe('calculateWeeklyStudentScore', () => {
     const score = calculateWeeklyStudentScore({ catalog: CATALOG, records, student, tuanSo: 1 })
 
     expect(score.can_canh_bao_ngay).toBe(true)
+  })
+})
+
+describe('calculateClassCollectiveScore', () => {
+  it('2 học sinh khác nhau, mỗi em tự đi trễ riêng (2 sự kiện gốc độc lập) → lớp trừ 2 lần, cộng dồn', () => {
+    const students = [makeStudent({ ma_hs: 'HS01' }), makeStudent({ ma_hs: 'HS02' })]
+    const records: GhiNhan[] = [
+      makeRecord({ ma_ghi_nhan: 'GN-A', ma_hs: 'HS01', ma_danh_muc: 'CC01', diem_cong_tru: -2, loai: 'chuyen_can' }),
+      makeRecord({ ma_ghi_nhan: 'GN-B', ma_hs: 'HS02', ma_danh_muc: 'CC01', diem_cong_tru: -2, loai: 'chuyen_can' }),
+    ]
+
+    const classScore = calculateClassCollectiveScore({ catalog: CATALOG, records, students, tuanSo: 1 })
+
+    expect(classScore.diem_tap_the.CC).toBe(96)
+    expect(classScore.chi_tiet.CC).toHaveLength(2)
+  })
+
+  it('1 sự kiện tập thể được "Áp dụng cho tất cả" cho 5 học sinh → lớp chỉ trừ 1 lần theo dòng gốc, không nhân theo 5 em', () => {
+    const students = Array.from({ length: 5 }, (_, i) => makeStudent({ ma_hs: `HS0${i + 1}` }))
+    const records: GhiNhan[] = [
+      makeRecord({
+        ma_ghi_nhan: 'GN-GOC',
+        ma_hs: null,
+        ma_danh_muc: 'KL_TT',
+        diem_cong_tru: -10,
+        loai: 'trat_tu_ky_luat',
+        su_kien_goc: null,
+      }),
+      ...students.map((student, index) =>
+        makeRecord({
+          ma_ghi_nhan: `GN-PS-${index}`,
+          ma_hs: student.ma_hs,
+          ma_danh_muc: 'KL_TT',
+          diem_cong_tru: -10,
+          loai: 'trat_tu_ky_luat',
+          su_kien_goc: 'GN-GOC',
+        }),
+      ),
+    ]
+
+    const classScore = calculateClassCollectiveScore({ catalog: CATALOG, records, students, tuanSo: 1 })
+
+    expect(classScore.diem_tap_the.KL).toBe(90)
+    expect(classScore.chi_tiet.KL).toHaveLength(1)
+    expect(classScore.chi_tiet.KL[0].ten).toBeNull()
+  })
+
+  it('điểm xếp loại tập thể = (CC+VS+NN+KL+diem_hoc_tap_lop×2)/6, mặc định diem_hoc_tap_lop=100', () => {
+    const students = [makeStudent()]
+    const classScore = calculateClassCollectiveScore({ catalog: CATALOG, records: [], students, tuanSo: 1 })
+
+    expect(classScore.diem_xep_loai_tap_the).toBe(100)
+    expect(classScore.xep_loai_tap_the).toBe('Tốt')
   })
 })
