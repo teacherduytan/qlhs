@@ -64,9 +64,9 @@ export function calculateWeeklyStudentScore({
   records,
   student,
   tuanSo,
-  thanhPhanCauHinh = DEFAULT_THANH_PHAN_CONFIG,
-  heSoDieuKienCauHinh = DEFAULT_HE_SO_DIEU_KIEN_CONFIG,
-  nguongXepLoai = DEFAULT_NGUONG_XEP_LOAI_CONFIG,
+  thanhPhanCauHinh,
+  heSoDieuKienCauHinh,
+  nguongXepLoai,
   soThapPhanLamTron = DEFAULT_SO_THAP_PHAN_LAM_TRON,
 }: {
   catalog: DanhMucDiem[]
@@ -78,6 +78,16 @@ export function calculateWeeklyStudentScore({
   nguongXepLoai?: DiemNguongXepLoai[]
   soThapPhanLamTron?: number
 }): WeeklyStudentScore {
+  // Mac dinh khong dung tham so default cua destructuring (chi kich hoat khi gia
+  // tri la undefined) vi cac trang goi ham nay deu truyen thang ket qua tra ve tu
+  // dataSource.getDiemCauHinh...() - neu bang cau hinh chua duoc seed tren Supabase
+  // (con rong), ket qua la MANG RONG [] (khong phai undefined), se lam mau so
+  // cong thuc = 0 va diem xep loai tinh ra 0 cho MOI hoc sinh thay vi dung fallback.
+  // dungHoacDefault() coi mang rong tuong duong "chua co cau hinh" de rot ve default.
+  const thanhPhanEffective = dungHoacDefault(thanhPhanCauHinh, DEFAULT_THANH_PHAN_CONFIG)
+  const heSoDieuKienEffective = dungHoacDefault(heSoDieuKienCauHinh, DEFAULT_HE_SO_DIEU_KIEN_CONFIG)
+  const nguongXepLoaiEffective = dungHoacDefault(nguongXepLoai, DEFAULT_NGUONG_XEP_LOAI_CONFIG)
+
   const studentRecords = records.filter(
     (record) => record.ma_hs === student.ma_hs && record.tuan_so === tuanSo,
   )
@@ -87,12 +97,12 @@ export function calculateWeeklyStudentScore({
   let tuSo = 0
   let mauSo = 0
 
-  const thanhPhanSapXep = [...thanhPhanCauHinh]
+  const thanhPhanSapXep = [...thanhPhanEffective]
     .filter((t) => t.dang_bat)
     .sort((a, b) => a.thu_tu - b.thu_tu)
 
   for (const t of thanhPhanSapXep) {
-    const { raw, coDuLieu } = tinhGiaTriTho(t, studentRecords, catalogByCode, student, heSoDieuKienCauHinh)
+    const { raw, coDuLieu } = tinhGiaTriTho(t, studentRecords, catalogByCode, student, heSoDieuKienEffective)
     if (!t.bat_buoc && !coDuLieu) {
       continue
     }
@@ -115,10 +125,14 @@ export function calculateWeeklyStudentScore({
     diem_ky_luat: thanhPhan.KL ?? 0,
     diem_hoc_tap: diemHocTap,
     diem_xep_loai_thi_dua: roundScore(diemTongHop, soThapPhanLamTron),
-    xep_loai: classifyScore(diemTongHop, nguongXepLoai),
+    xep_loai: classifyScore(diemTongHop, nguongXepLoaiEffective),
     can_canh_bao_ngay: hasSeverePersonalRecord(studentRecords, catalogByCode),
     thanh_phan: thanhPhan,
   }
+}
+
+function dungHoacDefault<T>(value: T[] | undefined, fallback: T[]): T[] {
+  return value && value.length > 0 ? value : fallback
 }
 
 export interface ClassComponentBreakdownItem {
@@ -157,7 +171,7 @@ export function calculateClassCollectiveScore({
   students,
   tuanSo,
   diemHocTapLop = 100,
-  nguongXepLoai = DEFAULT_NGUONG_XEP_LOAI_CONFIG,
+  nguongXepLoai,
   soThapPhanLamTron = DEFAULT_SO_THAP_PHAN_LAM_TRON,
 }: {
   catalog: DanhMucDiem[]
@@ -168,6 +182,7 @@ export function calculateClassCollectiveScore({
   nguongXepLoai?: DiemNguongXepLoai[]
   soThapPhanLamTron?: number
 }): WeeklyClassScore {
+  const nguongXepLoaiEffective = dungHoacDefault(nguongXepLoai, DEFAULT_NGUONG_XEP_LOAI_CONFIG)
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
   const studentByMaHs = new Map(students.map((student) => [student.ma_hs, student]))
 
@@ -218,7 +233,7 @@ export function calculateClassCollectiveScore({
     chi_tiet: chiTiet,
     diem_hoc_tap_lop: diemHocTapLop,
     diem_xep_loai_tap_the: diemXepLoaiTapThe,
-    xep_loai_tap_the: classifyScore(diemXepLoaiTapThe, nguongXepLoai),
+    xep_loai_tap_the: classifyScore(diemXepLoaiTapThe, nguongXepLoaiEffective),
   }
 }
 

@@ -85,6 +85,26 @@ describe('calculateWeeklyStudentScore', () => {
     expect(score.diem_hoc_tap).toBeNull()
   })
 
+  it('truyen mang cau hinh RONG (bang Supabase chua seed) → van dung fallback mac dinh, khong tinh ra 0', () => {
+    // Bug thuc te: cac trang goi ham nay truyen thang ket qua dataSource.getDiemCauHinh...()
+    // - neu bang do con rong tren Supabase, ket qua la [] (khong phai undefined), nen
+    // default parameter cua destructuring KHONG kich hoat. Neu khong xu ly rieng, hoc
+    // sinh hoan hao se ra diem 0 thay vi 100.
+    const student = makeStudent()
+    const score = calculateWeeklyStudentScore({
+      catalog: CATALOG,
+      records: [],
+      student,
+      tuanSo: 1,
+      thanhPhanCauHinh: [],
+      heSoDieuKienCauHinh: [],
+      nguongXepLoai: [],
+    })
+
+    expect(score.diem_xep_loai_thi_dua).toBe(100)
+    expect(score.xep_loai).toBe('Tốt')
+  })
+
   it('CC=90,VS=100,NN=85,KL=100, HT tb=80 (thang 0-100) → 89.17, Khá', () => {
     const student = makeStudent()
     const records: GhiNhan[] = [
