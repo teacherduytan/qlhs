@@ -254,8 +254,22 @@ export class SupabaseDataSource implements DataSource {
   }
 
   async deleteRecord(maGhiNhan: string): Promise<void> {
-    const { error } = await getSupabaseClient().from('ghi_nhan').delete().eq('ma_ghi_nhan', maGhiNhan)
+    // .select() sau delete() de biet CHAC co dong nao thuc su bi xoa khong -
+    // Postgres/PostgREST khong bao loi khi RLS/dieu kien WHERE khong khop dong
+    // nao (delete "thanh cong" 0 dong, tra ve mang rong, khong phai error) -
+    // neu khong kiem tra, UI se tuong da xoa (cap nhat lac quan phia client)
+    // trong khi dong do van con nguyen trong CSDL.
+    const { data, error } = await getSupabaseClient()
+      .from('ghi_nhan')
+      .delete()
+      .eq('ma_ghi_nhan', maGhiNhan)
+      .select('ma_ghi_nhan')
     assertNoError(error, 'Khong xoa duoc GhiNhan tren Supabase')
+    if (!data || data.length === 0) {
+      throw new Error(
+        `Khong tim thay ghi nhan ${maGhiNhan} de xoa (co the da bi xoa tu noi khac, hoac khong co quyen xoa).`,
+      )
+    }
   }
 
   async processCollectiveEvent(
