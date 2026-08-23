@@ -1297,6 +1297,13 @@ function RecordPolarityBadge({
   )
 }
 
+function recordPolarityDotClass(record: GhiNhan, catalogByCode: Map<string, DanhMucDiem>): string {
+  const polarity = getRecordPolarity(record, catalogByCode)
+  if (polarity === 'positive') return 'text-emerald-600'
+  if (polarity === 'negative') return 'text-red-600'
+  return 'text-slate-400'
+}
+
 function OverviewStats({
   onSelectDate,
   onSelectGroup,
@@ -1704,13 +1711,24 @@ function GroupViolationView({
 }) {
   const selectedLabel = group ? GROUP_OPTIONS.find((item) => item.group === group)?.label || group : 'tất cả nhóm'
   const isStudyGroup = group === 'HT'
+  const scoreColumnLabel = group === null ? 'Điểm tổng hợp' : isStudyGroup ? 'Điểm học tập' : `Điểm ${selectedLabel}`
   const [query, setQuery] = useState('')
   const [sortKey, setSortKey] = useState<GroupSortKey>('score_asc')
+  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set())
   const visibleRows = useMemo(
     () => filterAndSortGroupRows(rows, query, sortKey),
     [query, rows, sortKey],
   )
   const visibleRowsPage = usePagination(visibleRows)
+
+  function toggleStudentExpanded(maHs: string) {
+    setExpandedStudents((current) => {
+      const next = new Set(current)
+      if (next.has(maHs)) next.delete(maHs)
+      else next.add(maHs)
+      return next
+    })
+  }
 
   return (
     <section
@@ -1805,45 +1823,74 @@ function GroupViolationView({
       </div>
 
       <div className="mt-4 overflow-hidden rounded-md border border-violet-200 bg-white">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-violet-100 text-left text-xs font-semibold uppercase text-violet-900">
-              <tr>
-                <th className="px-3 py-3">STT</th>
-                <th className="px-3 py-3">Học sinh</th>
-                <th className="px-3 py-3">
-                  {group === null ? 'Điểm tổng hợp' : isStudyGroup ? 'Điểm học tập' : `Điểm ${selectedLabel}`}
-                </th>
-                <th className="px-3 py-3">Số ghi nhận</th>
-                <th className="px-3 py-3">Nội dung vi phạm/ghi nhận</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {visibleRowsPage.pageItems.map((row, index) => (
-                <tr key={row.maHs} className="hover:bg-slate-100">
-                  <td className="whitespace-nowrap px-3 py-3 text-slate-600">
-                    {visibleRowsPage.startIndex + index + 1}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-3">
-                    <Link to={`/hs/${row.token}`} className="font-semibold text-blue-700 hover:text-blue-800">
+        <div className="divide-y divide-slate-100">
+          {visibleRowsPage.pageItems.map((row, index) => {
+            const isExpanded = expandedStudents.has(row.maHs)
+
+            return (
+              <div key={row.maHs} className="p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-slate-400">#{visibleRowsPage.startIndex + index + 1}</p>
+                    <Link
+                      to={`/hs/${row.token}`}
+                      className="wrap-break-word font-semibold text-blue-700 hover:text-blue-800"
+                    >
                       {row.name}
                     </Link>
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-3 font-bold text-slate-900">
-                    {row.score === null ? 'Chưa có dữ liệu' : row.score}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-3 text-slate-700">{row.recordCount}</td>
-                  <td className="min-w-72 px-3 py-3">
-                    {row.records.length ? (
-                      <div className="space-y-2">
-                        {row.records.map((record, index) => {
+                  </div>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-bold text-violet-900">
+                      {scoreColumnLabel}: {row.score === null ? '—' : row.score}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                      {row.recordCount} ghi nhận
+                    </span>
+                  </div>
+                </div>
+
+                {row.records.length === 0 ? (
+                  <p className="mt-2 text-xs text-slate-400">Không có ghi nhận</p>
+                ) : (
+                  <>
+                    <div className="mt-2 space-y-1.5">
+                      {row.records.map((record, recordIndex) => (
+                        <div
+                          key={`compact-${record.ma_ghi_nhan || `${row.maHs}-${record.ngay}-${recordIndex}`}`}
+                          className="flex items-center gap-2 rounded-md bg-slate-100 px-2.5 py-1.5 text-xs"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className={`shrink-0 text-base leading-none ${recordPolarityDotClass(record, catalogByCode)}`}
+                          >
+                            ●
+                          </span>
+                          <span className="min-w-0 flex-1 wrap-break-word font-medium text-slate-800">
+                            {getGroupRecordDescription(record, catalogByCode)}
+                          </span>
+                          <span className="shrink-0 text-slate-500">{formatDateCompact(record.ngay)}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleStudentExpanded(row.maHs)}
+                      className="mt-2 text-xs font-semibold text-violet-700 hover:underline"
+                    >
+                      {isExpanded ? '▾ Thu gọn chi tiết' : `▸ Xem chi tiết ${row.records.length} vi phạm/ghi nhận`}
+                    </button>
+
+                    {isExpanded ? (
+                      <div className="mt-2 space-y-2">
+                        {row.records.map((record, recordIndex) => {
                           const catalogItem = record.ma_danh_muc
                             ? catalogByCode.get(record.ma_danh_muc)
                             : undefined
 
                           return (
                           <div
-                            key={record.ma_ghi_nhan || `${row.maHs}-${record.ngay}-${index}`}
+                            key={record.ma_ghi_nhan || `${row.maHs}-${record.ngay}-${recordIndex}`}
                             className="rounded-md border border-slate-200 bg-slate-100 px-3 py-2"
                           >
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -1907,14 +1954,12 @@ function GroupViolationView({
                           )
                         })}
                       </div>
-                    ) : (
-                      <span className="text-slate-400">Không có ghi nhận</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            )
+          })}
         </div>
         {visibleRows.length === 0 ? (
           <div className="border-t border-slate-100 p-4 text-sm text-slate-600">
