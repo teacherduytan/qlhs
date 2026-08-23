@@ -631,8 +631,8 @@ function RankTuanSection({
     [catalog, records, student, tuanSo, diemThanhPhan, diemHeSoDieuKien, diemNguongXepLoai, diemCauHinhChung],
   )
   const chiSo = useMemo(
-    () => tinhChiSoTuan({ attendance, catalog, maHs: student.ma_hs, records, tuanSo, tuanSoTruoc: null }),
-    [attendance, catalog, records, student.ma_hs, tuanSo],
+    () => tinhChiSoTuan({ attendance, catalog, maHs: student.ma_hs, records, tuanSo, tuanSoTruoc }),
+    [attendance, catalog, records, student.ma_hs, tuanSo, tuanSoTruoc],
   )
   const huyHieuKhop = apDungHuyHieu(chiSo, huyHieu)
   const diemThuongMoiHuyHieu = Number(dongHanhCauHinh.diem_thuong_moi_huy_hieu) || DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH
