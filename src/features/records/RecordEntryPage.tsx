@@ -5,7 +5,7 @@ import type { CauHinhTuan, DanhMucDiem, DeXuatGhiNhan, GhiNhan, HocSinh, LoaiGhi
 import { getRecordInsight } from './recordInsights'
 import { isActiveStudent } from '../dashboard/DashboardPage'
 import { getBadgeClassForCatalog } from '../scoring/scoreStyles'
-import { selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
+import { formatDisplayWeekLabel, selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
 import { Pagination, usePagination } from '../../components/Pagination'
 import { nextCodeForGroup } from '../catalog/catalogCode'
 
@@ -556,7 +556,7 @@ export function RecordEntryPage() {
             >
               {sortedWeeks.map((week) => (
                 <option key={week.tuan_so} value={week.tuan_so}>
-                  Tuần {week.tuan_so} ({formatShortDate(week.tu_ngay)} - {formatShortDate(week.den_ngay)})
+                  {formatDisplayWeekLabel(sortedWeeks, week.tuan_so)} ({formatShortDate(week.tu_ngay)} - {formatShortDate(week.den_ngay)})
                 </option>
               ))}
             </select>

@@ -33,7 +33,7 @@ import { tinhChiSoTuan } from '../companion/computeMetrics'
 import { DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH, tinhRankTuan } from '../companion/rankTinhTu'
 import { TheNhanVatTuan } from '../companion/TheNhanVatTuan'
 import { calculateWeeklyStudentScore } from '../scoring/scoring'
-import { findWeek, selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
+import { findWeek, formatDisplayWeekLabel, selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
 import { StudentDocumentsTab } from '../documents/StudentDocumentsTab'
 
 const CONTACT_LABELS: Record<HinhThucLienLacPhuHuynh, string> = {
@@ -1133,7 +1133,7 @@ function CompanionSection({
           >
             {weeks.map((week) => (
               <option key={week.tuan_so} value={week.tuan_so}>
-                Tuần {week.tuan_so}
+                {formatDisplayWeekLabel(weeks, week.tuan_so)}
               </option>
             ))}
           </select>
@@ -1152,7 +1152,7 @@ function CompanionSection({
             huyHieu={huyHieuKhop.map((item) => ({ ma: item.ma_huy_hieu, ten: item.ten_huy_hieu, icon: item.icon || undefined }))}
             rank={rank}
             thangBac={state.rankBac}
-            tuanLabel={`Tuần ${tuanSo}`}
+            tuanLabel={formatDisplayWeekLabel(weeks, tuanSo)}
             vietTat={state.student.ten.slice(0, 1).toUpperCase()}
           />
         ) : null}

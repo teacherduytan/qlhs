@@ -4,6 +4,7 @@ import { dataSource } from '../../data/client'
 import { Pagination, usePagination } from '../../components/Pagination'
 import { CopyIcon } from '../../components/CopyIcon'
 import { isActiveStudent } from '../dashboard/DashboardPage'
+import { formatDisplayWeekLabel } from '../time/WeekSelector'
 import type {
   BuoiDiemDanh,
   CauHinhTuan,
@@ -429,7 +430,7 @@ export function AttendanceManagementPage() {
             </label>
             <div className="rounded-md border border-indigo-200 bg-white px-3 py-2 text-sm text-slate-700">
               <p className="font-semibold text-slate-900">
-                {activeWeek ? `Tuần ${activeWeek.tuan_so}` : 'Chưa có cấu hình tuần'}
+                {activeWeek ? formatDisplayWeekLabel(weeks, activeWeek.tuan_so) : 'Chưa có cấu hình tuần'}
               </p>
               <p>
                 {formatWeekday(selectedDate)} · {formatShortDate(selectedDate)} ·{' '}

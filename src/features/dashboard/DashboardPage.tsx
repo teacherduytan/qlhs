@@ -22,6 +22,7 @@ import { getStudentGroup } from '../students/studentGroups'
 import {
   findWeek,
   findWeekByDate,
+  formatDisplayWeekLabel,
   getTodayIsoDate,
   selectDefaultWeek,
   WeekDatePicker,
@@ -1103,7 +1104,7 @@ function DashboardTimeFilter({
         </button>
         <span className="text-xs text-slate-400">
           Hôm nay {formatDate(todayIso)}
-          {actualWeek ? ` · thuộc Tuần ${actualWeek.tuan_so}` : ' · chưa nằm trong tuần nào đã cấu hình'}
+          {actualWeek ? ` · thuộc ${formatDisplayWeekLabel(weeks, actualWeek.tuan_so)}` : ' · chưa nằm trong tuần nào đã cấu hình'}
         </span>
       </div>
 

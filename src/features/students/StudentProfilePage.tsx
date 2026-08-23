@@ -24,7 +24,7 @@ import { CatalogCodeBadge } from '../scoring/CatalogCodeBadge'
 import { formatTietLabel, getRecordInsight, getRecordPolarity, summarizeRecordImpacts } from '../records/recordInsights'
 import { calculateWeeklyStudentScore, type WeeklyStudentScore } from '../scoring/scoring'
 import { getBadgeClassForRecord } from '../scoring/scoreStyles'
-import { findWeek, selectDefaultWeek, sortWeeks, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
+import { findWeek, formatDisplayWeekLabel, selectDefaultWeek, sortWeeks, WeekDatePicker, WeekSelector } from '../time/WeekSelector'
 import { getStudentGroup } from './studentGroups'
 import { Pagination, usePagination } from '../../components/Pagination'
 import { PullToRefresh } from '../../components/PullToRefresh'
@@ -471,6 +471,7 @@ export function StudentProfilePage() {
                   records={state.records}
                   selectedWeek={findWeek(state.weekConfig, state.tuanSo)}
                   tuanSo={state.tuanSo}
+                  weeks={state.weekConfig}
                 />
               ) : null}
 
@@ -707,7 +708,7 @@ function RankTuanSection({
       huyHieu={huyHieuKhop.map((item) => ({ ma: item.ma_huy_hieu, ten: item.ten_huy_hieu, icon: item.icon || undefined }))}
       rank={rank}
       thangBac={rankBac}
-      tuanLabel={weeks[weekIndex] ? `Tuần ${tuanSo}` : `Tuần ${tuanSo}`}
+      tuanLabel={formatDisplayWeekLabel(weeks, tuanSo)}
       vietTat={student.ten.slice(0, 1).toUpperCase()}
     />
   )
@@ -1094,11 +1095,13 @@ function RecordHistory({
   records,
   selectedWeek,
   tuanSo,
+  weeks,
 }: {
   catalog: DanhMucDiem[]
   records: GhiNhan[]
   selectedWeek?: CauHinhTuan
   tuanSo: number
+  weeks: CauHinhTuan[]
 }) {
   const [filterMode, setFilterMode] = useState<'all' | 'week'>('all')
   const [selectedDate, setSelectedDate] = useState('')
@@ -1156,7 +1159,7 @@ function RecordHistory({
         <div className="divide-y divide-emerald-200 bg-white/70">
           {groupedRecordsPage.pageItems.map(({ records: weekRecords, tuanSo }) => (
             <section key={tuanSo} className="p-4">
-              <h3 className="text-sm font-bold text-blue-700">Tuần {tuanSo}</h3>
+              <h3 className="text-sm font-bold text-blue-700">{formatDisplayWeekLabel(weeks, tuanSo)}</h3>
               <div className="mt-3 space-y-3">
                 {weekRecords.map((record, index) => (
                   <article

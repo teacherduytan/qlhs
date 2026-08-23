@@ -1,5 +1,17 @@
 import type { CauHinhTuan, GhiNhan } from '../../data/types'
 
+// Ngay bat dau nam hoc hien tai - CAN CAP NHAT TAY MOI NAM HOC MOI (giong
+// REPORT_CONFIG.namHoc o reportConfig.ts). tuan_so trong bang cau_hinh_tuan
+// la khoa chinh dem LIEN TUC qua nhieu nam hoc lien tiep (khong reset ve 1
+// dau nam hoc moi) vi nhieu bang khac (ghi_nhan, diem_danh, he thong Dong
+// hanh, rank_lich_su_tuan) tham chieu no lam khoa ngoai gan voi du lieu that
+// - doi thang tuan_so trong CSDL de "Tuan 1" dung nghia se lam mat lien ket
+// hoac vo tinh xoa nham du lieu that cua "tuan he" (xem C247, migration
+// dieu chinh tuan_so da bi Postgres tu chan vi con diem_danh that gan voi
+// tuan_so=1). Vi vay chi tinh lai SO HIEN THI o day, khong dong gi vao
+// tuan_so that trong CSDL.
+export const NAM_HOC_TU_NGAY = '2026-08-17'
+
 type WeekSelectorProps = {
   label?: string
   value: number
@@ -51,7 +63,7 @@ export function WeekSelector({ label = 'Tuần', onChange, value, weeks }: WeekS
             }`}
           >
             <span className={`truncate text-sm font-bold ${isCurrentWeek ? 'text-blue-900' : 'text-amber-900'}`}>
-              {selectedWeek ? `Tuần ${selectedWeek.tuan_so}` : `Tuần ${value}`}
+              {selectedWeek ? formatDisplayWeekLabel(weeks, selectedWeek.tuan_so) : formatDisplayWeekLabel(weeks, value)}
               <span aria-hidden="true" className="ml-1 inline-block text-[10px] align-middle opacity-60">▾</span>
             </span>
             <span className={`truncate text-[11px] font-medium ${isCurrentWeek ? 'text-blue-600' : 'text-amber-600'}`}>
@@ -71,13 +83,13 @@ export function WeekSelector({ label = 'Tuần', onChange, value, weeks }: WeekS
                   <optgroup key={group.label} label={group.label}>
                     {group.weeks.map((week) => (
                       <option key={week.tuan_so} value={week.tuan_so}>
-                        {formatWeekLabel(week)}
+                        {formatDisplayWeekLabel(weeks, week.tuan_so)} ({formatShortDate(week.tu_ngay)} - {formatShortDate(week.den_ngay)})
                       </option>
                     ))}
                   </optgroup>
                 ))
               ) : (
-                <option value={value}>Tuần {value}</option>
+                <option value={value}>{formatDisplayWeekLabel(weeks, value)}</option>
               )}
             </select>
           </div>
@@ -206,8 +218,23 @@ export function getTodayIsoDate(): string {
   return toIsoDate(startOfDay(new Date()))
 }
 
-export function formatWeekLabel(week: CauHinhTuan): string {
-  return `Tuần ${week.tuan_so} (${formatShortDate(week.tu_ngay)} - ${formatShortDate(week.den_ngay)})`
+// tuan_so that trong CSDL dem lien tuc qua nhieu nam hoc - ham nay tinh lai
+// "tuan thu may cua nam hoc hien tai" chi DE HIEN THI cho giao vien de doc
+// (vi du "Tuan 1" dung nghia thay vi "Tuan 7" dem tu dau), khong dung de
+// luu/so sanh/truy van du lieu (moi cho khac trong app van dung tuan_so that).
+// Tra ve null cho cac tuan TRUOC ngay khai giang (NAM_HOC_TU_NGAY, vi du con
+// "tuan he") de noi goi tu quyet dinh hien gi thay vi ep hien so am/0 vo nghia.
+export function getDisplayWeekNumber(weeks: CauHinhTuan[], tuanSo: number): number | null {
+  const anchor = weeks.find((week) => week.tu_ngay === NAM_HOC_TU_NGAY)
+  if (!anchor) return tuanSo
+
+  const displayNumber = tuanSo - anchor.tuan_so + 1
+  return displayNumber >= 1 ? displayNumber : null
+}
+
+export function formatDisplayWeekLabel(weeks: CauHinhTuan[], tuanSo: number): string {
+  const displayNumber = getDisplayWeekNumber(weeks, tuanSo)
+  return displayNumber === null ? 'Tuần hè' : `Tuần ${displayNumber}`
 }
 
 function isDateInWeek(date: Date, week: CauHinhTuan): boolean {

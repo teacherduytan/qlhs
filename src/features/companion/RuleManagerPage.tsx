@@ -28,7 +28,7 @@ import {
   DEFAULT_SO_THAP_PHAN_LAM_TRON,
   calculateWeeklyStudentScore,
 } from '../scoring/scoring'
-import { findWeek, selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
+import { findWeek, formatDisplayWeekLabel, selectDefaultWeek, sortWeeks } from '../time/WeekSelector'
 
 type Tab = 'canh_bao' | 'huy_hieu' | 'cau_dinh_huong' | 'chi_so' | 'rank' | 'diem'
 
@@ -1833,7 +1833,7 @@ function DiemPreviewPanel({ state }: { state: SuccessState }) {
         >
           {weeks.map((week) => (
             <option key={week.tuan_so} value={week.tuan_so}>
-              Tuần {week.tuan_so}
+              {formatDisplayWeekLabel(weeks, week.tuan_so)}
             </option>
           ))}
         </select>
@@ -1943,7 +1943,7 @@ function PreviewPanel({ state }: { state: SuccessState }) {
         >
           {weeks.map((week) => (
             <option key={week.tuan_so} value={week.tuan_so}>
-              Tuần {week.tuan_so}
+              {formatDisplayWeekLabel(weeks, week.tuan_so)}
             </option>
           ))}
         </select>
@@ -1963,7 +1963,7 @@ function PreviewPanel({ state }: { state: SuccessState }) {
             huyHieu={huyHieuKhop.map((item) => ({ ma: item.ma_huy_hieu, ten: item.ten_huy_hieu, icon: item.icon || undefined }))}
             rank={rank}
             thangBac={state.rankBac}
-            tuanLabel={`Tuần ${tuanSo}`}
+            tuanLabel={formatDisplayWeekLabel(weeks, tuanSo)}
             vietTat={student.ten.slice(0, 1).toUpperCase()}
           />
 

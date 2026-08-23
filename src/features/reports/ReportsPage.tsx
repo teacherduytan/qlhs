@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { dataSource } from '../../data/client'
 import type { BanCanSu, CauHinhTuan, DanhMucDiem, DiemDanh, GhiNhan, HocSinh, LienLacPhuHuynh } from '../../data/types'
 import { formatDate, formatDateCompact, isActiveStudent } from '../dashboard/DashboardPage'
-import { findWeek, getTodayIsoDate, selectDefaultWeek, WeekSelector } from '../time/WeekSelector'
+import {
+  findWeek,
+  formatDisplayWeekLabel,
+  getDisplayWeekNumber,
+  getTodayIsoDate,
+  selectDefaultWeek,
+  WeekSelector,
+} from '../time/WeekSelector'
 import { buildReportData, type ReportData } from './reportData'
 import { BAN_CAN_SU_SIGNATURE_ROLES, type ReportPresentationMeta } from './reportConfig'
 
@@ -126,20 +133,20 @@ export function ReportsPage() {
   const title = useMemo(() => {
     if (tab === 'tuan') {
       if (customRange && range) return `Báo cáo giai đoạn ${formatDateCompact(range.tuNgay)} – ${formatDateCompact(range.denNgay)}`
-      return `Báo cáo Tuần ${tuanSo}`
+      return `Báo cáo ${formatDisplayWeekLabel(weeks, tuanSo)}`
     }
     const [year, month] = thang.split('-')
     return `Báo cáo Tháng ${month}/${year}`
-  }, [tab, customRange, range, tuanSo, thang])
+  }, [tab, customRange, range, tuanSo, thang, weeks])
 
   const fileBaseName = useMemo(() => {
     if (tab === 'tuan') {
       if (customRange && range) return `BaoCao-GiaiDoan-${range.tuNgay}_${range.denNgay}-11C5`
-      return `BaoCao-Tuan${tuanSo}-11C5`
+      return `BaoCao-Tuan${getDisplayWeekNumber(weeks, tuanSo) ?? tuanSo}-11C5`
     }
     const [year, month] = thang.split('-')
     return `BaoCao-Thang${month}-${year}-11C5`
-  }, [tab, customRange, range, tuanSo, thang])
+  }, [tab, customRange, range, tuanSo, thang, weeks])
 
   const meta: ReportPresentationMeta | null = useMemo(() => {
     if (!range || state.status !== 'success') return null
