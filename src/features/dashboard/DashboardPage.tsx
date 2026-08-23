@@ -1304,6 +1304,28 @@ function recordPolarityDotClass(record: GhiNhan, catalogByCode: Map<string, Danh
   return 'text-slate-400'
 }
 
+// Mau nen co dinh theo tung hoc sinh (hash tu ma_hs, khong doi giua cac lan
+// render/loc/sap xep) - giup nhan ra dung 1 hoc sinh xuyen suot danh sach,
+// khac voi mau soc so le theo vi tri cua the (chi phan biet the ke nhau).
+const STUDENT_NAME_COLOR_PALETTE = [
+  'bg-blue-100 text-blue-800',
+  'bg-emerald-100 text-emerald-800',
+  'bg-amber-100 text-amber-800',
+  'bg-rose-100 text-rose-800',
+  'bg-cyan-100 text-cyan-800',
+  'bg-fuchsia-100 text-fuchsia-800',
+  'bg-lime-100 text-lime-800',
+  'bg-orange-100 text-orange-800',
+]
+
+function studentNameColorClass(maHs: string): string {
+  let hash = 0
+  for (let index = 0; index < maHs.length; index += 1) {
+    hash = (hash * 31 + maHs.charCodeAt(index)) >>> 0
+  }
+  return STUDENT_NAME_COLOR_PALETTE[hash % STUDENT_NAME_COLOR_PALETTE.length]
+}
+
 function OverviewStats({
   onSelectDate,
   onSelectGroup,
@@ -1834,7 +1856,7 @@ function GroupViolationView({
                     <p className="text-xs font-semibold text-slate-400">#{visibleRowsPage.startIndex + index + 1}</p>
                     <Link
                       to={`/hs/${row.token}`}
-                      className="wrap-break-word font-semibold text-blue-700 hover:text-blue-800"
+                      className={`wrap-break-word inline-block rounded-md px-2 py-0.5 font-semibold hover:underline ${studentNameColorClass(row.maHs)}`}
                     >
                       {row.name}
                     </Link>
