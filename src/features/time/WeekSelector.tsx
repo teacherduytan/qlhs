@@ -21,11 +21,13 @@ export function WeekSelector({ label = 'Tuần', onChange, value, weeks }: WeekS
   const selectedWeek = selectableWeeks[selectedIndex]
   const quickGroups = groupWeeksByMonth(selectableWeeks)
   const currentWeekValue = selectDefaultWeek(weeks)
+  const isCurrentWeek = value === currentWeekValue
 
   return (
-    <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-      <span>{label}</span>
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+      <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</span>
+
+      <div className="flex items-stretch gap-1.5">
         <button
           type="button"
           onClick={() => {
@@ -33,41 +35,32 @@ export function WeekSelector({ label = 'Tuần', onChange, value, weeks }: WeekS
             if (previousWeek) onChange(previousWeek.tuan_so)
           }}
           disabled={selectedIndex <= 0}
-          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+          aria-label="Tuần trước"
+          title="Tuần trước"
+          className="flex h-12 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-lg font-bold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          ← Tuần trước
+          ‹
         </button>
 
-        <div className="min-w-[220px] rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900">
-          {selectedWeek ? formatWeekLabel(selectedWeek) : `Tuần ${value}`}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            const nextWeek = selectableWeeks[selectedIndex + 1]
-            if (nextWeek) onChange(nextWeek.tuan_so)
-          }}
-          disabled={selectedIndex < 0 || selectedIndex >= selectableWeeks.length - 1}
-          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
-        >
-          Tuần sau →
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onChange(currentWeekValue)}
-          disabled={value === currentWeekValue || selectableWeeks.length === 0}
-          className="h-10 rounded-md border border-blue-200 bg-blue-100 px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-        >
-          Về tuần hiện tại
-        </button>
-
-        <details className="relative">
-          <summary className="flex h-10 cursor-pointer list-none items-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
-            Chọn nhanh
+        <details className="group relative min-w-0 flex-1">
+          <summary
+            className={`flex h-12 min-w-0 cursor-pointer list-none flex-col items-center justify-center rounded-lg border px-2 text-center transition-colors ${
+              isCurrentWeek
+                ? 'border-blue-300 bg-blue-50 hover:bg-blue-100'
+                : 'border-amber-300 bg-amber-50 hover:bg-amber-100'
+            }`}
+          >
+            <span className={`truncate text-sm font-bold ${isCurrentWeek ? 'text-blue-900' : 'text-amber-900'}`}>
+              {selectedWeek ? `Tuần ${selectedWeek.tuan_so}` : `Tuần ${value}`}
+              <span aria-hidden="true" className="ml-1 inline-block text-[10px] align-middle opacity-60">▾</span>
+            </span>
+            <span className={`truncate text-[11px] font-medium ${isCurrentWeek ? 'text-blue-600' : 'text-amber-600'}`}>
+              {selectedWeek
+                ? `${formatShortDate(selectedWeek.tu_ngay)} - ${formatShortDate(selectedWeek.den_ngay)}`
+                : 'Chưa có cấu hình'}
+            </span>
           </summary>
-          <div className="absolute left-0 z-20 mt-2 w-72 rounded-md border border-slate-200 bg-white p-3 shadow-lg">
+          <div className="absolute left-0 z-20 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg">
             <select
               value={selectedWeek?.tuan_so ?? ''}
               onChange={(event) => onChange(Number(event.target.value))}
@@ -89,7 +82,32 @@ export function WeekSelector({ label = 'Tuần', onChange, value, weeks }: WeekS
             </select>
           </div>
         </details>
+
+        <button
+          type="button"
+          onClick={() => {
+            const nextWeek = selectableWeeks[selectedIndex + 1]
+            if (nextWeek) onChange(nextWeek.tuan_so)
+          }}
+          disabled={selectedIndex < 0 || selectedIndex >= selectableWeeks.length - 1}
+          aria-label="Tuần sau"
+          title="Tuần sau"
+          className="flex h-12 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-lg font-bold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          ›
+        </button>
       </div>
+
+      {!isCurrentWeek ? (
+        <button
+          type="button"
+          onClick={() => onChange(currentWeekValue)}
+          disabled={selectableWeeks.length === 0}
+          className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-blue-700 hover:underline disabled:cursor-not-allowed disabled:text-slate-400"
+        >
+          ↺ Về tuần hiện tại
+        </button>
+      ) : null}
     </div>
   )
 }

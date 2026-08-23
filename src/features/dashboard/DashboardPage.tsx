@@ -22,7 +22,6 @@ import { getStudentGroup } from '../students/studentGroups'
 import {
   findWeek,
   findWeekByDate,
-  formatWeekLabel,
   getTodayIsoDate,
   selectDefaultWeek,
   WeekDatePicker,
@@ -1064,40 +1063,48 @@ function DashboardTimeFilter({
     Boolean(selectedDate && selectedWeek && (selectedDate < selectedWeek.tu_ngay || selectedDate > selectedWeek.den_ngay))
 
   return (
-    <div className="mt-4 space-y-4">
-      <div className="grid gap-3 lg:grid-cols-3">
-        <TimeInfoTile
-          label="Hôm nay"
-          tone="today"
-          value={formatDate(todayIso)}
-          detail={
-            actualWeek
-              ? `Thuộc ${formatWeekLabel(actualWeek)}`
-              : 'Chưa có dòng CauHinhTuan khớp ngày hôm nay.'
-          }
-        />
-        <TimeInfoTile
-          label="Đang xem"
-          tone={isActualWeek ? 'current' : 'manual'}
-          value={selectedWeek ? `Tuần ${selectedWeek.tuan_so}` : `Tuần ${tuanSo}`}
-          detail={
-            selectedWeek
-              ? `${formatDateCompact(selectedWeek.tu_ngay)} - ${formatDateCompact(selectedWeek.den_ngay)}`
-              : 'Tuần này chưa có cấu hình ngày bắt đầu/kết thúc.'
-          }
-        />
-        <TimeInfoTile
-          label="Ngày cụ thể"
-          tone={selectedDate ? 'date' : 'all'}
-          value={selectedDate ? formatDate(selectedDate) : 'Cả tuần'}
-          detail={
-            selectedDate
+    <div className="mt-4 space-y-3">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] md:items-start">
+        <WeekSelector value={tuanSo} weeks={weeks} onChange={onWeekChange} />
+
+        <div className="flex flex-col gap-1.5">
+          <WeekDatePicker selectedWeek={selectedWeek} value={selectedDate} onChange={onDateChange} />
+          <p className="text-xs text-slate-500">
+            {selectedDate
               ? isTodaySelected
-                ? 'Đang lọc đúng ngày hôm nay.'
-                : 'Đang lọc một ngày riêng trong tuần.'
-              : 'Nhật ký hiển thị toàn bộ ngày của tuần đang xem.'
-          }
-        />
+                ? `Đang lọc đúng hôm nay, ${formatDate(todayIso)}.`
+                : `Đang lọc riêng ngày ${formatDate(selectedDate)}.`
+              : 'Đang hiện cả tuần — bấm 1 ngày ở trên để lọc riêng.'}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={onSelectActualWeek}
+          disabled={isActualWeek && !selectedDate}
+          className="h-9 rounded-md border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+        >
+          Về tuần thực tế
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (actualWeek) {
+              onWeekChange(actualWeek.tuan_so)
+            }
+            onDateChange(todayIso)
+          }}
+          disabled={!actualWeek || (isActualWeek && isTodaySelected)}
+          className="h-9 rounded-md border border-emerald-200 bg-white px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+        >
+          Xem hôm nay
+        </button>
+        <span className="text-xs text-slate-400">
+          Hôm nay {formatDate(todayIso)}
+          {actualWeek ? ` · thuộc Tuần ${actualWeek.tuan_so}` : ' · chưa nằm trong tuần nào đã cấu hình'}
+        </span>
       </div>
 
       {!actualWeek ? (
@@ -1112,64 +1119,6 @@ function DashboardTimeFilter({
           Ngày đang lọc nằm ngoài tuần đang xem. Hãy chọn lại ngày hoặc bấm “Cả tuần”.
         </div>
       ) : null}
-
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <WeekSelector value={tuanSo} weeks={weeks} onChange={onWeekChange} />
-        <div className="space-y-3">
-          <WeekDatePicker selectedWeek={selectedWeek} value={selectedDate} onChange={onDateChange} />
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={onSelectActualWeek}
-              disabled={isActualWeek && !selectedDate}
-              className="h-10 rounded-md border border-blue-200 bg-white px-3 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-            >
-              Về tuần thực tế
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (actualWeek) {
-                  onWeekChange(actualWeek.tuan_so)
-                }
-                onDateChange(todayIso)
-              }}
-              disabled={!actualWeek || (isActualWeek && isTodaySelected)}
-              className="h-10 rounded-md border border-emerald-200 bg-white px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-            >
-              Xem hôm nay
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function TimeInfoTile({
-  detail,
-  label,
-  tone,
-  value,
-}: {
-  detail: string
-  label: string
-  tone: 'all' | 'current' | 'date' | 'manual' | 'today'
-  value: string
-}) {
-  const toneClass: Record<typeof tone, string> = {
-    all: 'border-slate-200 bg-white text-slate-900',
-    current: 'border-emerald-200 bg-emerald-100 text-emerald-950',
-    date: 'border-violet-200 bg-violet-100 text-violet-950',
-    manual: 'border-amber-200 bg-amber-100 text-amber-950',
-    today: 'border-sky-200 bg-sky-100 text-sky-950',
-  }
-
-  return (
-    <div className={`rounded-lg border p-3 shadow-sm ${toneClass[tone]}`}>
-      <p className="text-xs font-semibold uppercase opacity-70">{label}</p>
-      <p className="mt-1 text-base font-bold">{value}</p>
-      <p className="mt-1 text-xs leading-5 opacity-75">{detail}</p>
     </div>
   )
 }
