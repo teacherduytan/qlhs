@@ -1,5 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router-dom'
 import { dataSource } from '../data/client'
 import {
   getTeacherAuthSession,
@@ -397,6 +397,11 @@ export function Layout() {
           <Outlet />
         </PullToRefresh>
       </main>
+
+      {/* Tu dong luu/khoi phuc vi tri cuon theo tung route (sessionStorage) khi
+          dieu huong qua lai (bam vao 1 hoc sinh roi bam Back...) - chi hoat dong
+          voi data router (createHashRouter dang dung o router.tsx). */}
+      <ScrollRestoration />
 
       <footer className="border-t border-slate-300 bg-slate-100 py-4 text-center text-xs text-slate-500">
         Thầy Nguyễn Duy Tân chuyên dạy lập trình ứng dụng cho học sinh học tư duy logic và người cần bổ sung kinh nghiệm cấp tốc đi làm

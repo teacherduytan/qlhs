@@ -10,14 +10,56 @@ type Batch = {
   messages: NoiDungTinNhan[]
 }
 
+// Luu tam trang thai dang xem (o tim + danh sach dot dang gap/mo) vao
+// sessionStorage - trang nay khong dieu khien vi tri cuon (ScrollRestoration
+// cua react-router da lo phan do o Layout.tsx), nhung vi tri cuon chi khoi
+// phuc DUNG neu chieu cao trang khop lai nhu luc roi di - can gap/mo dung
+// nhu cu truoc, khong the chi dua vao mac dinh "chi dot dau tien mo san".
+const SESSION_KEY_SEARCH = 'qlhs_tin_nhan_ph_search'
+const SESSION_KEY_COLLAPSED = 'qlhs_tin_nhan_ph_collapsed'
+
+function docSearchDaLuu(): string {
+  try {
+    return window.sessionStorage.getItem(SESSION_KEY_SEARCH) || ''
+  } catch {
+    return ''
+  }
+}
+
+function docCollapsedDaLuu(): Set<string> {
+  try {
+    const raw = window.sessionStorage.getItem(SESSION_KEY_COLLAPSED)
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
 export function MessageBatchesPage() {
   const [students, setStudents] = useState<HocSinh[]>([])
   const [messages, setMessages] = useState<NoiDungTinNhan[]>([])
   const [logs, setLogs] = useState<NhatKyImport[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
-  const [collapsedBatches, setCollapsedBatches] = useState<Set<string>>(new Set())
+  const [search, setSearch] = useState(docSearchDaLuu)
+  const [collapsedBatches, setCollapsedBatches] = useState<Set<string>>(docCollapsedDaLuu)
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(SESSION_KEY_SEARCH, search)
+    } catch {
+      // Bo qua neu trinh duyet chan sessionStorage (che do rieng tu...) - chi
+      // mat tien ich nho ghi nho vi tri, khong anh huong chuc nang chinh.
+    }
+  }, [search])
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(SESSION_KEY_COLLAPSED, JSON.stringify([...collapsedBatches]))
+    } catch {
+      // Nhu tren.
+    }
+  }, [collapsedBatches])
 
   useEffect(() => {
     let active = true
