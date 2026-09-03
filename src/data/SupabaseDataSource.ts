@@ -26,6 +26,7 @@ import type {
   NhatKyImport,
   NoiDungTinNhan,
   PhuHuynh,
+  PublicParentProfile,
   PublicStudentProfile,
   SuaDeXuatGhiNhanInput,
   SuaLienLacPhuHuynhInput,
@@ -70,6 +71,12 @@ interface PublicProfileRpcRow {
   rank_bac: BacTinhTu[] | null
   rank_lich_su: RankLichSuTuan[] | null
   dong_hanh_cau_hinh: Record<string, string> | null
+}
+
+interface ParentThongBaoRpcRow {
+  student: PublicParentProfile['student'] | null
+  thong_bao: PublicParentProfile['thongBao'] | null
+  co_mat_khau_rieng: boolean | null
 }
 
 const GHI_NHAN_COLUMNS = [
@@ -122,7 +129,7 @@ const TABLE_COLUMNS: Record<LoaiDuLieuImport, readonly string[]> = {
   ghi_nhan: GHI_NHAN_COLUMNS,
   phu_huynh: ['ma_hs', 'ho_ten_ph', 'quan_he', 'sdt', 'uu_tien_lien_he'],
   ban_can_su: ['ma_hs', 'chuc_vu', 'to', 'ngay_bat_dau'],
-  tin_nhan_phu_huynh: ['ma_hs', 'noi_dung', 'ghi_chu', 'nguon', 'da_duyet', 'nguon_import', 'created_by'],
+  tin_nhan_phu_huynh: ['id', 'ma_hs', 'noi_dung', 'ghi_chu', 'nguon', 'da_duyet', 'nguon_import', 'created_by', 'loai_thong_bao'],
 }
 
 const RECORD_TYPE_BY_GROUP: Record<DanhMucDiem['nhom'], LoaiGhiNhan> = {
@@ -134,6 +141,14 @@ const RECORD_TYPE_BY_GROUP: Record<DanhMucDiem['nhom'], LoaiGhiNhan> = {
 }
 
 export class SupabaseDataSource implements DataSource {
+  // Cac dong phieu_thu_hoc_phi duoc tach ra khi chuan bi 1 dong tin_nhan_phu_huynh
+  // loai hoc_phi trong luc import JSON (xem prepareTinNhanImportRow()) - importJson()
+  // insert xong bang chinh (noi_dung_tin_nhan) thi doc lai mang nay de insert tiep
+  // bang phieu_thu_hoc_phi, roi don dep. Dung field tren instance (khong phai bien
+  // cuc bo trong importJson) vi prepareImportRow() la 1 ham rieng duoc goi trong
+  // vong lap, khong co kenh tra ve nao khac ngoai 1 dong AnyRow cho moi lan goi.
+  private pendingPhieuThuRows: AnyRow[] = []
+
   async getStudents(): Promise<HocSinh[]> {
     const { data, error } = await getSupabaseClient().from('hoc_sinh').select('*').order('tt')
     assertNoError(error, 'Khong doc duoc HocSinh tu Supabase')
@@ -161,6 +176,40 @@ export class SupabaseDataSource implements DataSource {
     })
     assertNoError(error, 'Khong doc duoc ho so cong khai theo SDT tu Supabase')
     return mapPublicProfileRpcRow(data)
+  }
+
+  async getParentThongBao(token: string, sdt: string, matKhau: string): Promise<PublicParentProfile | null> {
+    const { data, error } = await getSupabaseClient().rpc('lay_thong_bao_phu_huynh', {
+      p_token: token,
+      p_sdt: sdt,
+      p_mat_khau: matKhau,
+    })
+    assertNoError(error, 'Khong doc duoc thong bao phu huynh tu Supabase')
+
+    const row = Array.isArray(data) && data.length > 0 ? (data[0] as ParentThongBaoRpcRow) : null
+    if (!row?.student) return null
+
+    return {
+      student: row.student,
+      thongBao: row.thong_bao || [],
+      coMatKhauRieng: Boolean(row.co_mat_khau_rieng),
+    }
+  }
+
+  async changeParentPassword(
+    token: string,
+    sdt: string,
+    matKhauCu: string,
+    matKhauMoi: string,
+  ): Promise<boolean> {
+    const { data, error } = await getSupabaseClient().rpc('doi_mat_khau_phu_huynh', {
+      p_token: token,
+      p_sdt: sdt,
+      p_mat_khau_cu: matKhauCu,
+      p_mat_khau_moi: matKhauMoi,
+    })
+    assertNoError(error, 'Khong doi duoc mat khau phu huynh tren Supabase')
+    return Boolean(data)
   }
 
   async addStudent(student: HocSinh): Promise<HocSinh> {
@@ -456,6 +505,7 @@ export class SupabaseDataSource implements DataSource {
 
     const errors: string[] = []
     const rows: AnyRow[] = []
+    this.pendingPhieuThuRows = []
     const generatedRecordIds =
       loai === 'ghi_nhan'
         ? await this.nextPrefixedIds('ghi_nhan', 'ma_ghi_nhan', 'GN', 6, jsonData.length)
@@ -474,6 +524,14 @@ export class SupabaseDataSource implements DataSource {
         const tableName = tableNameForImport(loai)
         const { error } = await getSupabaseClient().from(tableName).insert(rows)
         assertNoError(error, `Khong ghi duoc ${tableName} tren Supabase`)
+
+        if (loai === 'tin_nhan_phu_huynh' && this.pendingPhieuThuRows.length > 0) {
+          const { error: phieuThuError } = await getSupabaseClient()
+            .from('phieu_thu_hoc_phi')
+            .insert(this.pendingPhieuThuRows)
+          this.pendingPhieuThuRows = []
+          assertNoError(phieuThuError, 'Khong ghi duoc phieu_thu_hoc_phi tren Supabase')
+        }
 
         if (loai === 'hoc_sinh') {
           const groupRows = rows.flatMap((row) => {
@@ -935,12 +993,42 @@ export class SupabaseDataSource implements DataSource {
     const noiDung = stringOrNull(row.noi_dung)
     if (!noiDung) throw new Error('noi_dung khong duoc de trong.')
 
+    const loaiThongBao = stringOrNull(row.loai_thong_bao) || 'chung'
+    if (loaiThongBao !== 'chung' && loaiThongBao !== 'hoc_phi') {
+      throw new Error(`loai_thong_bao khong hop le: ${loaiThongBao} (chi nhan 'chung' hoac 'hoc_phi').`)
+    }
+
     const {
       data: { user },
     } = await getSupabaseClient().auth.getUser()
 
+    // Tu sinh id o day (thay vi de Postgres tu sinh mac dinh) vi importJson()
+    // insert theo lo (khong .select()) nen khong co cach nao biet lai id vua
+    // tao de gan cho cac dong phieu_thu_hoc_phi ben duoi neu chi de CSDL tu sinh.
+    const id = crypto.randomUUID()
+
+    if (loaiThongBao === 'hoc_phi' && Array.isArray(row.phieu_thu)) {
+      row.phieu_thu.forEach((item, index) => {
+        const khoanThu = asRecord(item)
+        const tenKhoanThu = stringOrNull(khoanThu.ten_khoan_thu)
+        const soTien = numberOrNull(khoanThu.so_tien)
+        if (!tenKhoanThu) throw new Error(`phieu_thu[${index}].ten_khoan_thu khong duoc de trong.`)
+        if (soTien === null) throw new Error(`phieu_thu[${index}].so_tien phai la so.`)
+
+        this.pendingPhieuThuRows.push({
+          thong_bao_id: id,
+          ma_hs: maHs,
+          ten_khoan_thu: tenKhoanThu,
+          so_tien: soTien,
+          ghi_chu: stringOrNull(khoanThu.ghi_chu),
+          thu_tu: index,
+        })
+      })
+    }
+
     return pickColumns(
       stripUndefined({
+        id,
         ma_hs: maHs,
         noi_dung: noiDung,
         ghi_chu: stringOrNull(row.ghi_chu),
@@ -948,6 +1036,7 @@ export class SupabaseDataSource implements DataSource {
         da_duyet: true,
         nguon_import: maLog,
         created_by: user?.id || null,
+        loai_thong_bao: loaiThongBao,
       }),
       TABLE_COLUMNS.tin_nhan_phu_huynh,
     )

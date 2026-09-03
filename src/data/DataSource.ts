@@ -20,6 +20,7 @@ import type {
   LoaiDuLieuImport,
   NhatKyImport,
   PhuHuynh,
+  PublicParentProfile,
   PublicStudentProfile,
   DiemDanh,
   DiemDanhCanLienLac,
@@ -51,6 +52,8 @@ export interface DataSource {
   getStudents(): Promise<HocSinh[]>
   getPublicStudentProfile(token: string, sdt: string, matKhau: string): Promise<PublicStudentProfile | null>
   getPublicStudentProfileByPhone(sdt: string, matKhau: string): Promise<PublicStudentProfile | null>
+  getParentThongBao(token: string, sdt: string, matKhau: string): Promise<PublicParentProfile | null>
+  changeParentPassword(token: string, sdt: string, matKhauCu: string, matKhauMoi: string): Promise<boolean>
   addStudent(student: HocSinh): Promise<HocSinh>
   updateStudent(maHs: string, student: Partial<HocSinh>): Promise<HocSinh>
   deleteStudent(maHs: string): Promise<void>

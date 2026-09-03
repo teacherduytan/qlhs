@@ -258,6 +258,8 @@ export interface LienLacPhuHuynh {
 
 export type NguonTinNhan = 'nhap_tay' | 'tu_dong'
 
+export type LoaiThongBao = 'chung' | 'hoc_phi'
+
 export interface NoiDungTinNhan {
   id: string
   ma_hs: string
@@ -268,6 +270,41 @@ export interface NoiDungTinNhan {
   nguon_import: string | null
   created_by: string | null
   created_at: string
+  loai_thong_bao: LoaiThongBao
+}
+
+export interface PhieuThuHocPhi {
+  id: string
+  thong_bao_id: string
+  ma_hs: string
+  ten_khoan_thu: string
+  so_tien: number
+  ghi_chu: string | null
+  thu_tu: number
+  created_at: string
+}
+
+// Ket qua RPC lay_thong_bao_phu_huynh - trang rieng cho phu huynh xem, tach
+// khoi PublicStudentProfile (trang hoc sinh /hs/:token) vi pham vi du lieu
+// hep hon nhieu (chi ho so co ban + dong thoi gian thong bao, khong lo diem
+// so/ghi nhan/dong hanh... - cho "cho san" mo rong sau, xem docs neu co).
+export interface PublicParentProfile {
+  student: {
+    ma_hs: string
+    ho: string
+    ten: string
+    to: number | null
+    token_ho_so: string
+  }
+  thongBao: Array<{
+    id: string
+    noi_dung: string
+    ghi_chu: string | null
+    loai_thong_bao: LoaiThongBao
+    created_at: string
+    phieu_thu: Array<{ id: string; ten_khoan_thu: string; so_tien: number; ghi_chu: string | null }>
+  }>
+  coMatKhauRieng: boolean
 }
 
 export interface CapNhatDiemDanhInput {

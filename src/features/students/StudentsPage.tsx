@@ -298,6 +298,13 @@ export function StudentsPage() {
     window.setTimeout(() => setCopyMessage(null), 2500)
   }
 
+  async function copyParentLink(student: HocSinh) {
+    const url = `${window.location.origin}${window.location.pathname}#/ph/${student.token_ho_so}`
+    await window.navigator.clipboard.writeText(url)
+    setCopyMessage(`Đã copy link phụ huynh của ${student.ho} ${student.ten} (SĐT 1/2, mật khẩu mặc định 123).`)
+    window.setTimeout(() => setCopyMessage(null), 2500)
+  }
+
   function toggleExportColumn(key: StudentExportColumnKey) {
     setExportColumns((current) =>
       current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
@@ -1071,6 +1078,13 @@ export function StudentsPage() {
                                   className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                                 >
                                   Copy link hồ sơ
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void copyParentLink(student)}
+                                  className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                                >
+                                  Copy link phụ huynh
                                 </button>
                               </div>
                             </td>

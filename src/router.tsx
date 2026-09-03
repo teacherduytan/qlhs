@@ -8,6 +8,7 @@ import { DocumentsPage } from './features/documents/DocumentsPage'
 import { ImportPage } from './features/import/ImportPage'
 import { MessageBatchesPage } from './features/students/MessageBatchesPage'
 import { ParentContactHistoryPage } from './features/attendance/ParentContactHistoryPage'
+import { ParentProfilePage } from './features/students/ParentProfilePage'
 import { RecordEntryPage } from './features/records/RecordEntryPage'
 import { RuleManagerPage } from './features/companion/RuleManagerPage'
 import { ReportsPage } from './features/reports/ReportsPage'
@@ -38,5 +39,9 @@ export const router = createHashRouter([
   {
     path: '/hs/:token',
     element: <StudentProfilePage />,
+  },
+  {
+    path: '/ph/:token',
+    element: <ParentProfilePage />,
   },
 ])
