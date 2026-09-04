@@ -7,12 +7,15 @@ type ParseState =
   | { status: 'valid'; payload: HocPhiImportPayload }
   | { status: 'invalid'; message: string }
 
-// Trang rieng danh cho GVCN de dan/tai JSON hoc phi (dinh dang cot dong -
-// xem docs/hocphiPHxem/15-chi-tiet-hoc-phi-dong-cot.md) va nhap vao 4 bang
-// moi (hoc_phi_ky, hoc_phi_cot_cau_hinh, hoc_phi_tong, hoc_phi_chi_tiet).
-// File nguon (Excel xuat ra) khong co ma_hs, chi co ho_ten - server se tu
-// khop theo ten (khong dau, khong phan biet hoa/thuong) va tra ve danh
-// sach "can ra soat" cho cac dong khong khop duoc, KHONG chan ca lan nhap.
+// Khoi nhap hoc phi (dinh dang cot dong - xem
+// docs/hocphiPHxem/15-chi-tiet-hoc-phi-dong-cot.md), nhung vao 4 bang moi
+// (hoc_phi_ky, hoc_phi_cot_cau_hinh, hoc_phi_tong, hoc_phi_chi_tiet).
+// Duoc nhung vao ImportPage.tsx nhu 1 che do rieng (khong con la route/trang
+// doc lap) de gop chung 1 luong "Import" duy nhat trong app, chon qua nut
+// gat che do o dau trang. File nguon (Excel xuat ra) khong co ma_hs, chi co
+// ho_ten - server se tu khop theo ten (khong dau, khong phan biet hoa/
+// thuong) va tra ve danh sach "can ra soat" cho cac dong khong khop duoc,
+// KHONG chan ca lan nhap.
 export function HocPhiImportPage() {
   const [jsonText, setJsonText] = useState('')
   const [fileName, setFileName] = useState<string | null>(null)
@@ -55,9 +58,9 @@ export function HocPhiImportPage() {
   }
 
   return (
-    <section className="space-y-4">
+    <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-slate-900">Nhập học phí (cột động)</h2>
+        <h3 className="text-base font-bold text-slate-900">Nhập học phí (cột động)</h3>
         <p className="text-sm text-slate-600">
           Dán JSON hoặc tải file theo định dạng ở{' '}
           <code className="rounded bg-slate-100 px-1 py-0.5">docs/hocphiPHxem/15-chi-tiet-hoc-phi-dong-cot.md</code>{' '}
@@ -167,7 +170,7 @@ export function HocPhiImportPage() {
           ) : null}
         </div>
       ) : null}
-    </section>
+    </div>
   )
 }
 

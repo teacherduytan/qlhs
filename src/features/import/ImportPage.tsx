@@ -1,6 +1,6 @@
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
+import { HocPhiImportPage } from './HocPhiImportPage'
 import type {
   DanhMucDiem,
   DanhMucXuLy,
@@ -122,6 +122,7 @@ const STATUS_LABELS: Record<TrangThaiImport, string> = {
 }
 
 export function ImportPage() {
+  const [importMode, setImportMode] = useState<'du_lieu' | 'hoc_phi'>('du_lieu')
   const [loai, setLoai] = useState<LoaiDuLieuImport>('ghi_nhan')
   const [nguoiThucHien, setNguoiThucHien] = useState('GVCN')
   const [jsonText, setJsonText] = useState('')
@@ -972,21 +973,38 @@ export function ImportPage() {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Import JSON</h2>
-          <p className="text-sm text-slate-600">
-            Dán JSON hoặc tải file để ghi dữ liệu vào Sheet và lưu nhật ký import.
-          </p>
-        </div>
-        <Link
-          to="/import/hoc-phi"
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md border border-amber-300 bg-amber-100 px-3 text-sm font-semibold text-amber-800 hover:bg-amber-200"
-        >
-          💰 Nhập học phí (cột động)
-        </Link>
+      <div>
+        <h2 className="text-xl font-bold text-slate-900">Import JSON</h2>
+        <p className="text-sm text-slate-600">
+          Dán JSON hoặc tải file để ghi dữ liệu vào Sheet và lưu nhật ký import.
+        </p>
       </div>
 
+      <div className="inline-flex rounded-md border border-slate-300 bg-white p-1 text-sm font-semibold">
+        <button
+          type="button"
+          onClick={() => setImportMode('du_lieu')}
+          className={`rounded px-3 py-1.5 ${
+            importMode === 'du_lieu' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          📥 Dữ liệu (ghi nhận, tin nhắn PH...)
+        </button>
+        <button
+          type="button"
+          onClick={() => setImportMode('hoc_phi')}
+          className={`rounded px-3 py-1.5 ${
+            importMode === 'hoc_phi' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          💰 Học phí (cột động)
+        </button>
+      </div>
+
+      {importMode === 'hoc_phi' ? (
+        <HocPhiImportPage />
+      ) : (
+        <>
       <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-3">
         <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
           Loại dữ liệu
@@ -2197,6 +2215,8 @@ export function ImportPage() {
           </div>
         )}
       </div>
+        </>
+      )}
     </section>
   )
 }
