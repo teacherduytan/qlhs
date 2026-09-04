@@ -271,8 +271,14 @@ export interface NoiDungTinNhan {
   created_by: string | null
   created_at: string
   loai_thong_bao: LoaiThongBao
+  ma_ky: string | null
 }
 
+// Da thay bang he thong "hoc phi cot dong" (hoc_phi_ky/hoc_phi_cot_cau_hinh/
+// hoc_phi_tong/hoc_phi_chi_tiet + RPC lay_chi_tiet_hoc_phi, xem
+// docs/hocphiPHxem/15-chi-tiet-hoc-phi-dong-cot.md) - giu lai type nay chi de
+// tuong thich nguoc voi du lieu cu (neu co) tren Supabase, KHONG con noi nao
+// trong code ghi/doc bang phieu_thu_hoc_phi nua.
 export interface PhieuThuHocPhi {
   id: string
   thong_bao_id: string
@@ -282,6 +288,54 @@ export interface PhieuThuHocPhi {
   ghi_chu: string | null
   thu_tu: number
   created_at: string
+}
+
+export type LoaiCotHocPhi = 'thu' | 'giam_tru' | 'no'
+
+export interface HocPhiCotDinhNghia {
+  ma_cot: string
+  ten_cot: string
+  loai: LoaiCotHocPhi
+  thu_tu: number
+  an_neu_bang_khong?: boolean
+}
+
+// JSON dau vao khi giao vien import 1 ky hoc phi (dung dinh dang trong
+// docs/hocphiPHxem/15-chi-tiet-hoc-phi-dong-cot.md muc 3).
+export interface HocPhiImportPayload {
+  lop?: string
+  ma_ky: string
+  ten_ky: string
+  ngay_cap_nhat?: string
+  cot_hoc_phi: HocPhiCotDinhNghia[]
+  hoc_sinh: Array<{
+    ma_hs?: string | null
+    stt?: number
+    ho_ten: string
+    tong_thu: number
+    chi_tiet: Record<string, number>
+  }>
+}
+
+// Ket qua RPC lay_chi_tiet_hoc_phi - phu huynh bam vao 1 thong bao "Học phí"
+// tren dong thoi gian se goi RPC nay (kem ma_ky cua chinh thong bao do) de mo
+// chi tiet bieu phi. cot_hoc_phi da sort san theo thu_tu, chi_tiet la object
+// key-value tra theo ma_cot - component render PHAI lap qua cot_hoc_phi roi
+// tra chi_tiet[ma_cot], KHONG duoc doan/hardcode ten cot (dac ta muc 2).
+export interface HocPhiImportResult {
+  maKy: string
+  tongSoDong: number
+  daKhopMaHs: number
+  canRaSoat: Array<{ stt?: number; ho_ten: string }>
+}
+
+export interface ChiTietHocPhi {
+  ma_ky: string
+  ten_ky: string
+  ngay_cap_nhat: string | null
+  tong_thu: number
+  cot_hoc_phi: HocPhiCotDinhNghia[]
+  chi_tiet: Record<string, number>
 }
 
 // Ket qua RPC lay_thong_bao_phu_huynh - trang rieng cho phu huynh xem, tach
@@ -302,7 +356,7 @@ export interface PublicParentProfile {
     ghi_chu: string | null
     loai_thong_bao: LoaiThongBao
     created_at: string
-    phieu_thu: Array<{ id: string; ten_khoan_thu: string; so_tien: number; ghi_chu: string | null }>
+    ma_ky: string | null
   }>
   coMatKhauRieng: boolean
 }

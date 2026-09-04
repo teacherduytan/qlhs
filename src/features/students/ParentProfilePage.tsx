@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { dataSource } from '../../data/client'
-import type { PublicParentProfile } from '../../data/types'
+import type { ChiTietHocPhi, PublicParentProfile } from '../../data/types'
 
 export function parentLoginStorageKey(token: string): string {
   return `qlhs_ph_login_${token}`
@@ -38,6 +38,7 @@ export function ParentProfilePage() {
   const [doiMatKhauLoi, setDoiMatKhauLoi] = useState<string | null>(null)
   const [doiMatKhauThanhCong, setDoiMatKhauThanhCong] = useState(false)
   const [doiMatKhauDangLuu, setDoiMatKhauDangLuu] = useState(false)
+  const [openMaKy, setOpenMaKy] = useState<string | null>(null)
 
   const mountedRef = useRef(true)
   useEffect(() => {
@@ -359,7 +360,7 @@ export function ParentProfilePage() {
               ) : (
                 <div className="divide-y divide-slate-100">
                   {state.profile.thongBao.map((thongBao) => (
-                    <ThongBaoItem key={thongBao.id} thongBao={thongBao} />
+                    <ThongBaoItem key={thongBao.id} thongBao={thongBao} onOpenChiTiet={setOpenMaKy} />
                   ))}
                 </div>
               )}
@@ -375,6 +376,16 @@ export function ParentProfilePage() {
               title="Báo cáo tuần / tháng"
               description="Sắp tới sẽ hiện được báo cáo điểm rèn luyện, chuyên cần của con theo tuần/tháng — tính năng đang xây dựng."
             />
+
+            {openMaKy && token ? (
+              <ChiTietHocPhiModal
+                token={token}
+                sdt={sdt}
+                matKhau={matKhau}
+                maKy={openMaKy}
+                onClose={() => setOpenMaKy(null)}
+              />
+            ) : null}
           </>
         ) : null}
       </section>
@@ -382,9 +393,15 @@ export function ParentProfilePage() {
   )
 }
 
-function ThongBaoItem({ thongBao }: { thongBao: PublicParentProfile['thongBao'][number] }) {
+function ThongBaoItem({
+  thongBao,
+  onOpenChiTiet,
+}: {
+  thongBao: PublicParentProfile['thongBao'][number]
+  onOpenChiTiet: (maKy: string) => void
+}) {
   const isHocPhi = thongBao.loai_thong_bao === 'hoc_phi'
-  const tongTien = thongBao.phieu_thu.reduce((sum, item) => sum + item.so_tien, 0)
+  const coTheXemChiTiet = isHocPhi && Boolean(thongBao.ma_ky)
 
   return (
     <div className="p-4">
@@ -401,23 +418,145 @@ function ThongBaoItem({ thongBao }: { thongBao: PublicParentProfile['thongBao'][
       {thongBao.ghi_chu ? <p className="mt-1.5 text-xs font-semibold text-slate-500">{thongBao.ghi_chu}</p> : null}
       <p className="mt-1 wrap-break-word text-sm text-slate-800">{thongBao.noi_dung}</p>
 
-      {isHocPhi && thongBao.phieu_thu.length > 0 ? (
-        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3">
-          <p className="text-xs font-semibold uppercase text-amber-700">Chi tiết phiếu thu</p>
-          <div className="mt-2 space-y-1">
-            {thongBao.phieu_thu.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-2 text-sm">
-                <span className="min-w-0 flex-1 wrap-break-word text-slate-700">{item.ten_khoan_thu}</span>
-                <span className="shrink-0 font-semibold text-slate-900">{formatTien(item.so_tien)}</span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-2 flex items-center justify-between border-t border-amber-200 pt-2 text-sm font-bold text-amber-900">
-            <span>Tổng cộng</span>
-            <span>{formatTien(tongTien)}</span>
-          </div>
-        </div>
+      {coTheXemChiTiet ? (
+        <button
+          type="button"
+          onClick={() => onOpenChiTiet(thongBao.ma_ky as string)}
+          className="mt-2 text-xs font-semibold text-amber-700 hover:underline"
+        >
+          ▸ Xem chi tiết học phí
+        </button>
       ) : null}
+    </div>
+  )
+}
+
+function ChiTietHocPhiModal({
+  token,
+  sdt,
+  matKhau,
+  maKy,
+  onClose,
+}: {
+  token: string
+  sdt: string
+  matKhau: string
+  maKy: string
+  onClose: () => void
+}) {
+  const [chiTiet, setChiTiet] = useState<ChiTietHocPhi | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    setError(null)
+
+    dataSource
+      .getChiTietHocPhi(token, sdt, matKhau, maKy)
+      .then((data) => {
+        if (!active) return
+        if (!data) {
+          setError('Không tìm thấy chi tiết học phí cho kỳ này.')
+          return
+        }
+        setChiTiet(data)
+      })
+      .catch((loadError: unknown) => {
+        if (active) setError(loadError instanceof Error ? loadError.message : 'Không tải được chi tiết học phí.')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [token, sdt, matKhau, maKy])
+
+  const dongHienThi = chiTiet
+    ? chiTiet.cot_hoc_phi
+        .slice()
+        .sort((left, right) => left.thu_tu - right.thu_tu)
+        .map((cot) => ({ cot, giaTri: chiTiet.chi_tiet[cot.ma_cot] ?? 0 }))
+        .filter(({ cot, giaTri }) => giaTri !== 0 || cot.an_neu_bang_khong === false)
+    : []
+
+  const coDongNo = dongHienThi.some(({ cot, giaTri }) => cot.loai === 'no' && giaTri !== 0)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 p-0 sm:items-center sm:p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3">
+          <div>
+            <p className="text-xs font-semibold uppercase text-amber-700">Chi tiết học phí</p>
+            <h3 className="text-lg font-bold text-slate-900">{chiTiet?.ten_ky || '...'}</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md px-2 py-1 text-sm font-semibold text-slate-500 hover:bg-slate-100"
+          >
+            Đóng
+          </button>
+        </div>
+
+        <div className="p-4">
+          {loading ? <p className="text-sm text-slate-500">Đang tải...</p> : null}
+          {error ? <p className="text-sm font-semibold text-red-700">{error}</p> : null}
+
+          {chiTiet && !loading ? (
+            <>
+              {dongHienThi.length === 0 ? (
+                <p className="text-sm text-slate-500">Không có khoản thu nào phát sinh trong kỳ này.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {dongHienThi.map(({ cot, giaTri }) => (
+                    <div key={cot.ma_cot} className="flex items-center justify-between gap-2 text-sm">
+                      <span className="min-w-0 flex-1 wrap-break-word text-slate-700">
+                        {cot.loai === 'no'
+                          ? giaTri > 0
+                            ? `${cot.ten_cot} (Nợ kỳ trước)`
+                            : giaTri < 0
+                              ? `${cot.ten_cot} (Dư kỳ trước)`
+                              : cot.ten_cot
+                          : cot.ten_cot}
+                      </span>
+                      <span
+                        className={`shrink-0 font-semibold ${
+                          (cot.loai === 'giam_tru' || cot.loai === 'no') && giaTri < 0
+                            ? 'text-emerald-700'
+                            : cot.loai === 'no' && giaTri > 0
+                              ? 'text-red-700'
+                              : cot.loai === 'giam_tru'
+                                ? 'text-red-700'
+                                : 'text-slate-900'
+                        }`}
+                      >
+                        {cot.loai === 'giam_tru' && giaTri > 0 ? `-${formatTien(giaTri)}` : formatTien(giaTri)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-base font-bold text-slate-900">
+                <span>Tổng cộng</span>
+                <span>{formatTien(chiTiet.tong_thu)}</span>
+              </div>
+
+              {coDongNo ? (
+                <p className="mt-2 text-xs italic text-slate-500">Đã bao gồm nợ/dư kỳ trước.</p>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }
@@ -442,7 +581,7 @@ function PlaceholderCard({
 }
 
 function formatTien(value: number): string {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
+  return `${new Intl.NumberFormat('vi-VN').format(value)} đ`
 }
 
 function formatThoiGian(value: string): string {

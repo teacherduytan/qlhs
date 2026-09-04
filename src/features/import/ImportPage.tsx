@@ -1,4 +1,5 @@
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type {
   DanhMucDiem,
@@ -971,11 +972,19 @@ export function ImportPage() {
 
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">Import JSON</h2>
-        <p className="text-sm text-slate-600">
-          Dán JSON hoặc tải file để ghi dữ liệu vào Sheet và lưu nhật ký import.
-        </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Import JSON</h2>
+          <p className="text-sm text-slate-600">
+            Dán JSON hoặc tải file để ghi dữ liệu vào Sheet và lưu nhật ký import.
+          </p>
+        </div>
+        <Link
+          to="/import/hoc-phi"
+          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md border border-amber-300 bg-amber-100 px-3 text-sm font-semibold text-amber-800 hover:bg-amber-200"
+        >
+          💰 Nhập học phí (cột động)
+        </Link>
       </div>
 
       <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-3">

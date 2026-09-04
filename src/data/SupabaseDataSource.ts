@@ -26,6 +26,9 @@ import type {
   NhatKyImport,
   NoiDungTinNhan,
   PhuHuynh,
+  ChiTietHocPhi,
+  HocPhiImportPayload,
+  HocPhiImportResult,
   PublicParentProfile,
   PublicStudentProfile,
   SuaDeXuatGhiNhanInput,
@@ -129,7 +132,7 @@ const TABLE_COLUMNS: Record<LoaiDuLieuImport, readonly string[]> = {
   ghi_nhan: GHI_NHAN_COLUMNS,
   phu_huynh: ['ma_hs', 'ho_ten_ph', 'quan_he', 'sdt', 'uu_tien_lien_he'],
   ban_can_su: ['ma_hs', 'chuc_vu', 'to', 'ngay_bat_dau'],
-  tin_nhan_phu_huynh: ['id', 'ma_hs', 'noi_dung', 'ghi_chu', 'nguon', 'da_duyet', 'nguon_import', 'created_by', 'loai_thong_bao'],
+  tin_nhan_phu_huynh: ['ma_hs', 'noi_dung', 'ghi_chu', 'nguon', 'da_duyet', 'nguon_import', 'created_by', 'loai_thong_bao'],
 }
 
 const RECORD_TYPE_BY_GROUP: Record<DanhMucDiem['nhom'], LoaiGhiNhan> = {
@@ -141,14 +144,6 @@ const RECORD_TYPE_BY_GROUP: Record<DanhMucDiem['nhom'], LoaiGhiNhan> = {
 }
 
 export class SupabaseDataSource implements DataSource {
-  // Cac dong phieu_thu_hoc_phi duoc tach ra khi chuan bi 1 dong tin_nhan_phu_huynh
-  // loai hoc_phi trong luc import JSON (xem prepareTinNhanImportRow()) - importJson()
-  // insert xong bang chinh (noi_dung_tin_nhan) thi doc lai mang nay de insert tiep
-  // bang phieu_thu_hoc_phi, roi don dep. Dung field tren instance (khong phai bien
-  // cuc bo trong importJson) vi prepareImportRow() la 1 ham rieng duoc goi trong
-  // vong lap, khong co kenh tra ve nao khac ngoai 1 dong AnyRow cho moi lan goi.
-  private pendingPhieuThuRows: AnyRow[] = []
-
   async getStudents(): Promise<HocSinh[]> {
     const { data, error } = await getSupabaseClient().from('hoc_sinh').select('*').order('tt')
     assertNoError(error, 'Khong doc duoc HocSinh tu Supabase')
@@ -210,6 +205,161 @@ export class SupabaseDataSource implements DataSource {
     })
     assertNoError(error, 'Khong doi duoc mat khau phu huynh tren Supabase')
     return Boolean(data)
+  }
+
+  async getChiTietHocPhi(
+    token: string,
+    sdt: string,
+    matKhau: string,
+    maKy: string,
+  ): Promise<ChiTietHocPhi | null> {
+    const { data, error } = await getSupabaseClient().rpc('lay_chi_tiet_hoc_phi', {
+      p_token: token,
+      p_sdt: sdt,
+      p_mat_khau: matKhau,
+      p_ma_ky: maKy,
+    })
+    assertNoError(error, 'Khong doc duoc chi tiet hoc phi tu Supabase')
+    return (data as ChiTietHocPhi | null) || null
+  }
+
+  // Import 1 ky hoc phi (xem docs/hocphiPHxem/15-chi-tiet-hoc-phi-dong-cot.md).
+  // File Excel goc khong co ma_hs, chi co ho_ten - tu doi chieu theo ten (bo
+  // dau, hạ chu thuong) voi danh sach lop hien co; khop duoc thi upsert, KHONG
+  // khop thi gom vao "canRaSoat" tra ve cho giao vien tu xu ly tay thay vi
+  // chan toan bo lan import (dung nguyen tac da ap dung cho ma_danh_muc=NULL
+  // o luong import ghi_nhan).
+  async upsertHocPhiKy(payload: HocPhiImportPayload, taoThongBao = true): Promise<HocPhiImportResult> {
+    const students = await this.getStudents()
+    const maHsHopLe = new Set(students.map((student) => student.ma_hs))
+    const byTenChuan = new Map(students.map((student) => [chuanHoaTen(`${student.ho} ${student.ten}`), student.ma_hs]))
+
+    const { data: kyRow, error: kyError } = await getSupabaseClient()
+      .from('hoc_phi_ky')
+      .upsert(
+        {
+          ma_ky: payload.ma_ky,
+          ten_ky: payload.ten_ky,
+          lop: payload.lop || null,
+          ngay_cap_nhat: payload.ngay_cap_nhat || null,
+        },
+        { onConflict: 'ma_ky' },
+      )
+      .select()
+      .single()
+    assertNoError(kyError, 'Khong tao/cap nhat duoc hoc_phi_ky tren Supabase')
+    const kyId = (kyRow as { id: string }).id
+
+    const { error: xoaCotError } = await getSupabaseClient()
+      .from('hoc_phi_cot_cau_hinh')
+      .delete()
+      .eq('ky_id', kyId)
+    assertNoError(xoaCotError, 'Khong xoa duoc cau hinh cot cu tren Supabase')
+
+    const validMaCot = new Set(payload.cot_hoc_phi.map((cot) => cot.ma_cot))
+    if (payload.cot_hoc_phi.length > 0) {
+      const { error: cotError } = await getSupabaseClient()
+        .from('hoc_phi_cot_cau_hinh')
+        .insert(
+          payload.cot_hoc_phi.map((cot, index) => ({
+            ky_id: kyId,
+            ma_cot: cot.ma_cot,
+            ten_cot: cot.ten_cot,
+            loai: cot.loai,
+            thu_tu: cot.thu_tu ?? index,
+            an_neu_bang_khong: cot.an_neu_bang_khong ?? true,
+          })),
+        )
+      assertNoError(cotError, 'Khong ghi duoc cau hinh cot hoc phi tren Supabase')
+    }
+
+    const canRaSoat: HocPhiImportResult['canRaSoat'] = []
+    const tongRows: AnyRow[] = []
+    const chiTietRows: AnyRow[] = []
+    const maHsDaKhop: string[] = []
+
+    for (const hocSinh of payload.hoc_sinh) {
+      const maHsGoi = stringOrNull(hocSinh.ma_hs)
+      const maHs = maHsGoi && maHsHopLe.has(maHsGoi) ? maHsGoi : byTenChuan.get(chuanHoaTen(hocSinh.ho_ten))
+
+      if (!maHs) {
+        canRaSoat.push({ stt: hocSinh.stt, ho_ten: hocSinh.ho_ten })
+        continue
+      }
+
+      maHsDaKhop.push(maHs)
+      tongRows.push({ ky_id: kyId, ma_hs: maHs, tong_thu: hocSinh.tong_thu })
+      for (const [maCot, giaTri] of Object.entries(hocSinh.chi_tiet || {})) {
+        if (!validMaCot.has(maCot)) continue
+        chiTietRows.push({ ky_id: kyId, ma_hs: maHs, ma_cot: maCot, gia_tri: giaTri })
+      }
+    }
+
+    if (tongRows.length > 0) {
+      const { error: tongError } = await getSupabaseClient()
+        .from('hoc_phi_tong')
+        .upsert(tongRows, { onConflict: 'ky_id,ma_hs' })
+      assertNoError(tongError, 'Khong ghi duoc tong thu hoc phi tren Supabase')
+    }
+
+    if (chiTietRows.length > 0) {
+      const { error: chiTietError } = await getSupabaseClient()
+        .from('hoc_phi_chi_tiet')
+        .upsert(chiTietRows, { onConflict: 'ky_id,ma_hs,ma_cot' })
+      assertNoError(chiTietError, 'Khong ghi duoc chi tiet hoc phi tren Supabase')
+    }
+
+    if (taoThongBao && maHsDaKhop.length > 0) {
+      await this.taoThongBaoHocPhi(payload.ma_ky, payload.ten_ky, maHsDaKhop)
+    }
+
+    return {
+      maKy: payload.ma_ky,
+      tongSoDong: payload.hoc_sinh.length,
+      daKhopMaHs: maHsDaKhop.length,
+      canRaSoat,
+    }
+  }
+
+  // 1 thong bao "hoc_phi" moi hoc sinh moi ky - upsert bang tay (chon truoc,
+  // co thi update, khong thi insert) vi noi_dung_tin_nhan khong co unique
+  // constraint tren (ma_hs, ma_ky) de dung .upsert() thang - tranh tao thong
+  // bao trung moi lan import lai cung 1 ky.
+  private async taoThongBaoHocPhi(maKy: string, tenKy: string, dsMaHs: string[]): Promise<void> {
+    const { data: daCo, error: daCoError } = await getSupabaseClient()
+      .from('noi_dung_tin_nhan')
+      .select('id, ma_hs')
+      .eq('ma_ky', maKy)
+      .in('ma_hs', dsMaHs)
+    assertNoError(daCoError, 'Khong doc duoc thong bao hoc phi da co tren Supabase')
+
+    const noiDung = `Thông báo học phí — ${tenKy}. Bấm vào xem chi tiết các khoản thu.`
+    const maHsDaCo = new Set((daCo || []).map((row) => (row as { ma_hs: string }).ma_hs))
+    const dsMoi = dsMaHs.filter((maHs) => !maHsDaCo.has(maHs))
+
+    if (dsMoi.length > 0) {
+      const { error: insertError } = await getSupabaseClient().from('noi_dung_tin_nhan').insert(
+        dsMoi.map((maHs) => ({
+          ma_hs: maHs,
+          noi_dung: noiDung,
+          ghi_chu: tenKy,
+          nguon: 'nhap_tay',
+          da_duyet: true,
+          loai_thong_bao: 'hoc_phi',
+          ma_ky: maKy,
+        })),
+      )
+      assertNoError(insertError, 'Khong tao duoc thong bao hoc phi tren Supabase')
+    }
+
+    if (daCo && daCo.length > 0) {
+      const { error: updateError } = await getSupabaseClient()
+        .from('noi_dung_tin_nhan')
+        .update({ noi_dung: noiDung, ghi_chu: tenKy })
+        .eq('ma_ky', maKy)
+        .in('ma_hs', dsMaHs)
+      assertNoError(updateError, 'Khong cap nhat duoc thong bao hoc phi tren Supabase')
+    }
   }
 
   async addStudent(student: HocSinh): Promise<HocSinh> {
@@ -505,7 +655,6 @@ export class SupabaseDataSource implements DataSource {
 
     const errors: string[] = []
     const rows: AnyRow[] = []
-    this.pendingPhieuThuRows = []
     const generatedRecordIds =
       loai === 'ghi_nhan'
         ? await this.nextPrefixedIds('ghi_nhan', 'ma_ghi_nhan', 'GN', 6, jsonData.length)
@@ -524,14 +673,6 @@ export class SupabaseDataSource implements DataSource {
         const tableName = tableNameForImport(loai)
         const { error } = await getSupabaseClient().from(tableName).insert(rows)
         assertNoError(error, `Khong ghi duoc ${tableName} tren Supabase`)
-
-        if (loai === 'tin_nhan_phu_huynh' && this.pendingPhieuThuRows.length > 0) {
-          const { error: phieuThuError } = await getSupabaseClient()
-            .from('phieu_thu_hoc_phi')
-            .insert(this.pendingPhieuThuRows)
-          this.pendingPhieuThuRows = []
-          assertNoError(phieuThuError, 'Khong ghi duoc phieu_thu_hoc_phi tren Supabase')
-        }
 
         if (loai === 'hoc_sinh') {
           const groupRows = rows.flatMap((row) => {
@@ -1002,33 +1143,8 @@ export class SupabaseDataSource implements DataSource {
       data: { user },
     } = await getSupabaseClient().auth.getUser()
 
-    // Tu sinh id o day (thay vi de Postgres tu sinh mac dinh) vi importJson()
-    // insert theo lo (khong .select()) nen khong co cach nao biet lai id vua
-    // tao de gan cho cac dong phieu_thu_hoc_phi ben duoi neu chi de CSDL tu sinh.
-    const id = crypto.randomUUID()
-
-    if (loaiThongBao === 'hoc_phi' && Array.isArray(row.phieu_thu)) {
-      row.phieu_thu.forEach((item, index) => {
-        const khoanThu = asRecord(item)
-        const tenKhoanThu = stringOrNull(khoanThu.ten_khoan_thu)
-        const soTien = numberOrNull(khoanThu.so_tien)
-        if (!tenKhoanThu) throw new Error(`phieu_thu[${index}].ten_khoan_thu khong duoc de trong.`)
-        if (soTien === null) throw new Error(`phieu_thu[${index}].so_tien phai la so.`)
-
-        this.pendingPhieuThuRows.push({
-          thong_bao_id: id,
-          ma_hs: maHs,
-          ten_khoan_thu: tenKhoanThu,
-          so_tien: soTien,
-          ghi_chu: stringOrNull(khoanThu.ghi_chu),
-          thu_tu: index,
-        })
-      })
-    }
-
     return pickColumns(
       stripUndefined({
-        id,
         ma_hs: maHs,
         noi_dung: noiDung,
         ghi_chu: stringOrNull(row.ghi_chu),
@@ -1918,6 +2034,19 @@ function numberOrNull(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null
   const number = Number(value)
   return Number.isFinite(number) ? number : null
+}
+
+// Chuan hoa ten de doi chieu "ho_ten" tu file Excel hoc phi (khong co ma_hs)
+// voi danh sach lop hien co - bo dau, ha chu thuong, gop khoang trang thua,
+// dung khuon mau normalize() da dung o nhieu noi khac trong du an (StudentsPage.tsx...).
+function chuanHoaTen(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function booleanOrFalse(value: unknown): boolean {
