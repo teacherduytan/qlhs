@@ -360,7 +360,17 @@ export function ParentProfilePage() {
               ) : (
                 <div className="divide-y divide-slate-100">
                   {state.profile.thongBao.map((thongBao) => (
-                    <ThongBaoItem key={thongBao.id} thongBao={thongBao} onOpenChiTiet={setOpenMaKy} />
+                    <ThongBaoItem
+                      key={thongBao.id}
+                      thongBao={thongBao}
+                      token={token}
+                      sdt={sdt}
+                      matKhau={matKhau}
+                      isOpen={Boolean(thongBao.ma_ky) && thongBao.ma_ky === openMaKy}
+                      onToggle={() =>
+                        setOpenMaKy((current) => (thongBao.ma_ky && current === thongBao.ma_ky ? null : thongBao.ma_ky))
+                      }
+                    />
                   ))}
                 </div>
               )}
@@ -376,16 +386,6 @@ export function ParentProfilePage() {
               title="Báo cáo tuần / tháng"
               description="Sắp tới sẽ hiện được báo cáo điểm rèn luyện, chuyên cần của con theo tuần/tháng — tính năng đang xây dựng."
             />
-
-            {openMaKy && token ? (
-              <ChiTietHocPhiModal
-                token={token}
-                sdt={sdt}
-                matKhau={matKhau}
-                maKy={openMaKy}
-                onClose={() => setOpenMaKy(null)}
-              />
-            ) : null}
           </>
         ) : null}
       </section>
@@ -395,13 +395,21 @@ export function ParentProfilePage() {
 
 function ThongBaoItem({
   thongBao,
-  onOpenChiTiet,
+  token,
+  sdt,
+  matKhau,
+  isOpen,
+  onToggle,
 }: {
   thongBao: PublicParentProfile['thongBao'][number]
-  onOpenChiTiet: (maKy: string) => void
+  token?: string
+  sdt: string
+  matKhau: string
+  isOpen: boolean
+  onToggle: () => void
 }) {
   const isHocPhi = thongBao.loai_thong_bao === 'hoc_phi'
-  const coTheXemChiTiet = isHocPhi && Boolean(thongBao.ma_ky)
+  const coTheXemChiTiet = isHocPhi && Boolean(thongBao.ma_ky) && Boolean(token)
 
   return (
     <div className="p-4">
@@ -419,30 +427,34 @@ function ThongBaoItem({
       <p className="mt-1 wrap-break-word text-sm text-slate-800">{thongBao.noi_dung}</p>
 
       {coTheXemChiTiet ? (
-        <button
-          type="button"
-          onClick={() => onOpenChiTiet(thongBao.ma_ky as string)}
-          className="mt-2 text-xs font-semibold text-amber-700 hover:underline"
-        >
-          ▸ Xem chi tiết học phí
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={onToggle}
+            className="mt-2 text-xs font-semibold text-amber-700 hover:underline"
+          >
+            {isOpen ? '▾ Ẩn chi tiết học phí' : '▸ Bấm vào xem chi tiết học phí'}
+          </button>
+
+          {isOpen && token ? (
+            <ChiTietHocPhiInline token={token} sdt={sdt} matKhau={matKhau} maKy={thongBao.ma_ky as string} />
+          ) : null}
+        </>
       ) : null}
     </div>
   )
 }
 
-function ChiTietHocPhiModal({
+function ChiTietHocPhiInline({
   token,
   sdt,
   matKhau,
   maKy,
-  onClose,
 }: {
   token: string
   sdt: string
   matKhau: string
   maKy: string
-  onClose: () => void
 }) {
   const [chiTiet, setChiTiet] = useState<ChiTietHocPhi | null>(null)
   const [loading, setLoading] = useState(true)
@@ -486,77 +498,55 @@ function ChiTietHocPhiModal({
   const coDongNo = dongHienThi.some(({ cot, giaTri }) => cot.loai === 'no' && giaTri !== 0)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 p-0 sm:items-center sm:p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl"
-      >
-        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3">
-          <div>
-            <p className="text-xs font-semibold uppercase text-amber-700">Chi tiết học phí</p>
-            <h3 className="text-lg font-bold text-slate-900">{chiTiet?.ten_ky || '...'}</h3>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md px-2 py-1 text-sm font-semibold text-slate-500 hover:bg-slate-100"
-          >
-            Đóng
-          </button>
-        </div>
+    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+      <p className="text-xs font-semibold uppercase text-amber-700">Chi tiết học phí — {chiTiet?.ten_ky || '...'}</p>
 
-        <div className="p-4">
-          {loading ? <p className="text-sm text-slate-500">Đang tải...</p> : null}
-          {error ? <p className="text-sm font-semibold text-red-700">{error}</p> : null}
+      {loading ? <p className="mt-2 text-sm text-slate-500">Đang tải...</p> : null}
+      {error ? <p className="mt-2 text-sm font-semibold text-red-700">{error}</p> : null}
 
-          {chiTiet && !loading ? (
-            <>
-              {dongHienThi.length === 0 ? (
-                <p className="text-sm text-slate-500">Không có khoản thu nào phát sinh trong kỳ này.</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {dongHienThi.map(({ cot, giaTri }) => (
-                    <div key={cot.ma_cot} className="flex items-center justify-between gap-2 text-sm">
-                      <span className="min-w-0 flex-1 wrap-break-word text-slate-700">
-                        {cot.loai === 'no'
-                          ? giaTri > 0
-                            ? `${cot.ten_cot} (Nợ kỳ trước)`
-                            : giaTri < 0
-                              ? `${cot.ten_cot} (Dư kỳ trước)`
-                              : cot.ten_cot
-                          : cot.ten_cot}
-                      </span>
-                      <span
-                        className={`shrink-0 font-semibold ${
-                          (cot.loai === 'giam_tru' || cot.loai === 'no') && giaTri < 0
-                            ? 'text-emerald-700'
-                            : cot.loai === 'no' && giaTri > 0
-                              ? 'text-red-700'
-                              : cot.loai === 'giam_tru'
-                                ? 'text-red-700'
-                                : 'text-slate-900'
-                        }`}
-                      >
-                        {cot.loai === 'giam_tru' && giaTri > 0 ? `-${formatTien(giaTri)}` : formatTien(giaTri)}
-                      </span>
-                    </div>
-                  ))}
+      {chiTiet && !loading ? (
+        <>
+          {dongHienThi.length === 0 ? (
+            <p className="mt-2 text-sm text-slate-500">Không có khoản thu nào phát sinh trong kỳ này.</p>
+          ) : (
+            <div className="mt-2 space-y-1.5">
+              {dongHienThi.map(({ cot, giaTri }) => (
+                <div key={cot.ma_cot} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="min-w-0 flex-1 wrap-break-word text-slate-700">
+                    {cot.loai === 'no'
+                      ? giaTri > 0
+                        ? `${cot.ten_cot} (Nợ kỳ trước)`
+                        : giaTri < 0
+                          ? `${cot.ten_cot} (Dư kỳ trước)`
+                          : cot.ten_cot
+                      : cot.ten_cot}
+                  </span>
+                  <span
+                    className={`shrink-0 font-semibold ${
+                      (cot.loai === 'giam_tru' || cot.loai === 'no') && giaTri < 0
+                        ? 'text-emerald-700'
+                        : cot.loai === 'no' && giaTri > 0
+                          ? 'text-red-700'
+                          : cot.loai === 'giam_tru'
+                            ? 'text-red-700'
+                            : 'text-slate-900'
+                    }`}
+                  >
+                    {cot.loai === 'giam_tru' && giaTri > 0 ? `-${formatTien(giaTri)}` : formatTien(giaTri)}
+                  </span>
                 </div>
-              )}
+              ))}
+            </div>
+          )}
 
-              <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-base font-bold text-slate-900">
-                <span>Tổng cộng</span>
-                <span>{formatTien(chiTiet.tong_thu)}</span>
-              </div>
+          <div className="mt-2 flex items-center justify-between border-t border-amber-200 pt-2 text-sm font-bold text-amber-900">
+            <span>Tổng cộng</span>
+            <span>{formatTien(chiTiet.tong_thu)}</span>
+          </div>
 
-              {coDongNo ? (
-                <p className="mt-2 text-xs italic text-slate-500">Đã bao gồm nợ/dư kỳ trước.</p>
-              ) : null}
-            </>
-          ) : null}
-        </div>
-      </div>
+          {coDongNo ? <p className="mt-2 text-xs italic text-slate-600">Đã bao gồm nợ/dư kỳ trước.</p> : null}
+        </>
+      ) : null}
     </div>
   )
 }
