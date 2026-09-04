@@ -301,7 +301,11 @@ export interface HocPhiCotDinhNghia {
 }
 
 // JSON dau vao khi giao vien import 1 ky hoc phi (dung dinh dang trong
-// docs/hocphiPHxem/15-chi-tiet-hoc-phi-dong-cot.md muc 3).
+// docs/hocphiPHxem/15-chi-tiet-hoc-phi-dong-cot.md muc 3). noi_dung_thong_bao/
+// ghi_chu_thong_bao la tuy chon (C261) - cho phep gop luon noi dung nhan tin
+// rieng cho tung hoc sinh (vd van ban SMS da soan san, kem so tien/han dong)
+// vao chung 1 lan import voi chi tiet cot dong, thay vi phai import 2 lan o
+// 2 luong khac nhau. Khong truyen thi dung cau thong bao chung mac dinh.
 export interface HocPhiImportPayload {
   lop?: string
   ma_ky: string
@@ -314,6 +318,8 @@ export interface HocPhiImportPayload {
     ho_ten: string
     tong_thu: number
     chi_tiet: Record<string, number>
+    noi_dung_thong_bao?: string
+    ghi_chu_thong_bao?: string
   }>
 }
 

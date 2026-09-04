@@ -1,0 +1,855 @@
+{
+  "lop": "11C5",
+  "ma_ky": "2026-09",
+  "ten_ky": "Học phí tháng 9/2026",
+  "ngay_cap_nhat": "2026-09-04",
+  "cot_hoc_phi": [
+    {
+      "ma_cot": "hoc_phi",
+      "ten_cot": "Học phí",
+      "loai": "thu",
+      "thu_tu": 1
+    },
+    {
+      "ma_cot": "hoc_phi_bt",
+      "ten_cot": "Học phí BT",
+      "loai": "thu",
+      "thu_tu": 2
+    },
+    {
+      "ma_cot": "dua_ruoc_1",
+      "ten_cot": "Đưa rước 1",
+      "loai": "thu",
+      "thu_tu": 3
+    },
+    {
+      "ma_cot": "tang_tiet",
+      "ten_cot": "Tăng tiết",
+      "loai": "thu",
+      "thu_tu": 4
+    },
+    {
+      "ma_cot": "tieng_anh_tang_cuong_gvnn",
+      "ten_cot": "Tiếng Anh tăng cường (GVNN)",
+      "loai": "thu",
+      "thu_tu": 5
+    },
+    {
+      "ma_cot": "giam_anh_em",
+      "ten_cot": "Giảm anh em",
+      "loai": "giam_tru",
+      "thu_tu": 6
+    },
+    {
+      "ma_cot": "no_thang_truoc",
+      "ten_cot": "Nợ tháng trước",
+      "loai": "no",
+      "thu_tu": 7,
+      "an_neu_bang_khong": true
+    },
+    {
+      "ma_cot": "tieng_anh_gt_cap_do_1_2",
+      "ten_cot": "Tiếng Anh GT cấp độ 1,2 / Tiếng Anh căn bản cấp độ 1,2",
+      "loai": "thu",
+      "thu_tu": 8
+    },
+    {
+      "ma_cot": "tieng_anh_gt_cap_do_3_4",
+      "ten_cot": "Tiếng Anh GT cấp độ 3,4 / Tiếng Anh căn bản cấp độ 3,4",
+      "loai": "thu",
+      "thu_tu": 9
+    },
+    {
+      "ma_cot": "tieng_anh_lt_thpt_ielts_dgnl",
+      "ten_cot": "Tiếng Anh LTTHPT / Định hướng và LT IELTS 5.5 / LT ĐGNL",
+      "loai": "thu",
+      "thu_tu": 10
+    },
+    {
+      "ma_cot": "tieng_anh_tu_chon",
+      "ten_cot": "Tiếng Anh tự chọn",
+      "loai": "thu",
+      "thu_tu": 11,
+      "an_neu_bang_khong": true
+    }
+  ],
+  "hoc_sinh": [
+    {
+      "ma_hs": "HS001",
+      "stt": 1,
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Bui Van Anh",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Bui Van Anh - Lop 11C5 la 3.120.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS002",
+      "stt": 2,
+      "tong_thu": 4920000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 1000000,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Vu Tran Khanh Bang",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Vu Tran Khanh Bang - Lop 11C5 la 4.920.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS003",
+      "stt": 3,
+      "tong_thu": 4120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 1000000,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Van Chinh",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Nguyen Van Chinh - Lop 11C5 la 4.120.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS004",
+      "stt": 4,
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Ngo Van Tuan Dat",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Ngo Van Tuan Dat - Lop 11C5 la 4.380.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS005",
+      "stt": 5,
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Mai Van Dung",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Mai Van Dung - Lop 11C5 la 4.380.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS006",
+      "stt": 6,
+      "tong_thu": 2820000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 300000,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Le Huynh Quoc Giang",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Le Huynh Quoc Giang - Lop 11C5 la 2.820.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS007",
+      "stt": 7,
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Tran Huynh Nha Han",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Tran Huynh Nha Han - Lop 11C5 la 4.380.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS008",
+      "stt": 8,
+      "tong_thu": 5180000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Trong Hoa",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Nguyen Trong Hoa - Lop 11C5 la 5.180.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS009",
+      "stt": 9,
+      "tong_thu": 5880000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 1500000,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Phan Nguyen Gia Huy",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Phan Nguyen Gia Huy - Lop 11C5 la 5.880.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS010",
+      "stt": 10,
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Lai Gia Huy",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Lai Gia Huy - Lop 11C5 la 3.120.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS011",
+      "stt": 11,
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Dang Tan Khang",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Dang Tan Khang - Lop 11C5 la 4.380.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS012",
+      "stt": 12,
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Dang Khoa",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Nguyen Dang Khoa - Lop 11C5 la 3.120.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS013",
+      "stt": 13,
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Vo Hoang Gia Kiet",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Vo Hoang Gia Kiet - Lop 11C5 la 3.120.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS014",
+      "stt": 14,
+      "tong_thu": 5180000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Ngoc Tran Kim Ngan",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Nguyen Ngoc Tran Kim Ngan - Lop 11C5 la 5.180.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS015",
+      "stt": 15,
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Huynh Gia Nghi",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Nguyen Huynh Gia Nghi - Lop 11C5 la 4.380.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS036",
+      "stt": 16,
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Do Tam Nhi",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Do Tam Nhi - Lop 11C5 la 4.380.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS016",
+      "stt": 17,
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Vu Thi Hoai Nhu",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Vu Thi Hoai Nhu - Lop 11C5 la 3.120.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS017",
+      "stt": 18,
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Le Nguyen Vy Oanh",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Le Nguyen Vy Oanh - Lop 11C5 la 4.380.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS018",
+      "stt": 19,
+      "tong_thu": 3920000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Le Bao Phuc",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Le Bao Phuc - Lop 11C5 la 3.920.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS035",
+      "stt": 20,
+      "tong_thu": 5540000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 2420000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Tran Huy Phuc",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: em Tran Huy Phuc - Lop 11C5 chua dong hoc phi thang 8 la 2.420.000d, hoc phi thang 9 la 3.120.000d. Tong can dong: 5.540.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9 - con no thang 8"
+    },
+    {
+      "ma_hs": "HS019",
+      "stt": 21,
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Manh Quan",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Nguyen Manh Quan - Lop 11C5 la 4.380.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS020",
+      "stt": 22,
+      "tong_thu": 5540000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 2420000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Nhu Quynh",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: em Nguyen Nhu Quynh - Lop 11C5 chua dong hoc phi thang 8 la 2.420.000d, hoc phi thang 9 la 3.120.000d. Tong can dong: 5.540.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9 - con no thang 8"
+    },
+    {
+      "ma_hs": "HS021",
+      "stt": 23,
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Thi Diem Quynh",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Nguyen Thi Diem Quynh - Lop 11C5 la 3.120.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS022",
+      "stt": 24,
+      "tong_thu": 5540000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 2420000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Tran Thanh Thao",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: em Tran Thanh Thao - Lop 11C5 chua dong hoc phi thang 8 la 2.420.000d, hoc phi thang 9 la 3.120.000d. Tong can dong: 5.540.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9 - con no thang 8"
+    },
+    {
+      "ma_hs": "HS023",
+      "stt": 25,
+      "tong_thu": 5540000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 2420000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Pham Phuoc Thinh",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: em Pham Phuoc Thinh - Lop 11C5 chua dong hoc phi thang 8 la 2.420.000d, hoc phi thang 9 la 3.120.000d. Tong can dong: 5.540.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9 - con no thang 8"
+    },
+    {
+      "ma_hs": "HS024",
+      "stt": 26,
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Tran Pham Anh Thu",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Tran Pham Anh Thu - Lop 11C5 la 3.120.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS025",
+      "stt": 27,
+      "tong_thu": 10060000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 1000000,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 4680000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Huynh Mai Thy",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: em Nguyen Huynh Mai Thy - Lop 11C5 chua dong hoc phi thang 8 la 4.680.000d, hoc phi thang 9 la 5.380.000d. Tong can dong: 10.060.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9 - con no thang 8"
+    },
+    {
+      "ma_hs": "HS026",
+      "stt": 28,
+      "tong_thu": 3920000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 800000
+      },
+      "ho_ten": "Hoang Thi Ngoc Tram",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Hoang Thi Ngoc Tram - Lop 11C5 la 3.920.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9 (co dang ky Tieng Anh tu chon)"
+    },
+    {
+      "ma_hs": "HS027",
+      "stt": 29,
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Pham Mai Trang",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Pham Mai Trang - Lop 11C5 la 4.380.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS028",
+      "stt": 30,
+      "tong_thu": 2820000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 300000,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Vu Quang Tung",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Vu Quang Tung - Lop 11C5 la 2.820.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS029",
+      "stt": 31,
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Thanh Nha Uyen",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Nguyen Thanh Nha Uyen - Lop 11C5 la 4.380.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS031",
+      "stt": 32,
+      "tong_thu": 5540000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 2420000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Luu Hien Vinh",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: em Luu Hien Vinh - Lop 11C5 chua dong hoc phi thang 8 la 2.420.000d, hoc phi thang 9 la 3.120.000d. Tong can dong: 5.540.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9 - con no thang 8"
+    },
+    {
+      "ma_hs": "HS032",
+      "stt": 33,
+      "tong_thu": 5180000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Thi Thao Vy",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Nguyen Thi Thao Vy - Lop 11C5 la 5.180.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS033",
+      "stt": 34,
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Hoang Tam Vy",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Nguyen Hoang Tam Vy - Lop 11C5 la 3.120.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS034",
+      "stt": 35,
+      "tong_thu": 5180000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Nguyen Ngoc Nhu Y",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Nguyen Ngoc Nhu Y - Lop 11C5 la 5.180.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS037",
+      "stt": 36,
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Le Phuoc Khang",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Le Phuoc Khang - Lop 11C5 la 4.380.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    },
+    {
+      "ma_hs": "HS038",
+      "stt": 37,
+      "tong_thu": 200000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": -4180000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      },
+      "ho_ten": "Tran Huu Quoc",
+      "noi_dung_thong_bao": "Truong THCS va THPT Lac Hong xin thong bao: hoc phi thang 9/2026 cua em Tran Huu Quoc - Lop 11C5 la 200.000d. Han dong tu 01-10/9: CK STK 54612348 (ACB - Truong THCS va THPT Lac Hong, ghi ro ten HS-lop) hoac tien mat tai VP. Sau ngay 10 chi nhan tien mat tai VP. GVCN Duy Tan - SDT 0862068123.",
+      "ghi_chu_thong_bao": "Hoc phi thang 9"
+    }
+  ]
+}

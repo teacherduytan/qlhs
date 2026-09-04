@@ -66,7 +66,10 @@ export function HocPhiImportPage() {
           <code className="rounded bg-slate-100 px-1 py-0.5">docs/hocphiPHxem/15-chi-tiet-hoc-phi-dong-cot.md</code>{' '}
           để cập nhật chi tiết học phí cho một kỳ (theo <code className="rounded bg-slate-100 px-1 py-0.5">ma_ky</code>). File
           nguồn không có mã học sinh — hệ thống sẽ tự khớp theo họ tên, dòng nào không khớp được sẽ liệt kê để rà soát
-          thủ công, không chặn phần còn lại.
+          thủ công, không chặn phần còn lại. Mỗi học sinh có thể kèm thêm{' '}
+          <code className="rounded bg-slate-100 px-1 py-0.5">noi_dung_thong_bao</code>/
+          <code className="rounded bg-slate-100 px-1 py-0.5">ghi_chu_thong_bao</code> (tuỳ chọn) — nếu có, đây là nội
+          dung thông báo hiển thị riêng cho học sinh đó thay vì câu mặc định chung.
         </p>
       </div>
 
@@ -230,6 +233,14 @@ function parseHocPhiPayload(text: string): ParseState {
     }
     if (typeof (hs as Record<string, unknown>).chi_tiet !== 'object' || (hs as Record<string, unknown>).chi_tiet === null) {
       return { status: 'invalid', message: 'Mỗi phần tử "hoc_sinh" cần có "chi_tiet" (object key-value theo ma_cot).' }
+    }
+    const noiDungRieng = (hs as Record<string, unknown>).noi_dung_thong_bao
+    const ghiChuRieng = (hs as Record<string, unknown>).ghi_chu_thong_bao
+    if (noiDungRieng !== undefined && typeof noiDungRieng !== 'string') {
+      return { status: 'invalid', message: '"noi_dung_thong_bao" (nếu có) phải là chuỗi.' }
+    }
+    if (ghiChuRieng !== undefined && typeof ghiChuRieng !== 'string') {
+      return { status: 'invalid', message: '"ghi_chu_thong_bao" (nếu có) phải là chuỗi.' }
     }
   }
 

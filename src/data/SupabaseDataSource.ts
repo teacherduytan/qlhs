@@ -277,6 +277,11 @@ export class SupabaseDataSource implements DataSource {
     const tongRows: AnyRow[] = []
     const chiTietRows: AnyRow[] = []
     const maHsDaKhop: string[] = []
+    // Noi dung/ghi chu thong bao rieng cho tung hoc sinh (C261 - gop luon
+    // van ban SMS da soan san vao chung JSON hoc phi thay vi phai import 2
+    // lan). Chi ghi khi JSON co truyen, khong thi taoThongBaoHocPhi tu dung
+    // cau mac dinh.
+    const thongBaoRieng = new Map<string, { noiDung?: string; ghiChu?: string }>()
 
     for (const hocSinh of payload.hoc_sinh) {
       const maHsGoi = stringOrNull(hocSinh.ma_hs)
@@ -292,6 +297,9 @@ export class SupabaseDataSource implements DataSource {
       for (const [maCot, giaTri] of Object.entries(hocSinh.chi_tiet || {})) {
         if (!validMaCot.has(maCot)) continue
         chiTietRows.push({ ky_id: kyId, ma_hs: maHs, ma_cot: maCot, gia_tri: giaTri })
+      }
+      if (hocSinh.noi_dung_thong_bao || hocSinh.ghi_chu_thong_bao) {
+        thongBaoRieng.set(maHs, { noiDung: hocSinh.noi_dung_thong_bao, ghiChu: hocSinh.ghi_chu_thong_bao })
       }
     }
 
@@ -310,7 +318,7 @@ export class SupabaseDataSource implements DataSource {
     }
 
     if (taoThongBao && maHsDaKhop.length > 0) {
-      await this.taoThongBaoHocPhi(payload.ma_ky, payload.ten_ky, maHsDaKhop)
+      await this.taoThongBaoHocPhi(payload.ma_ky, payload.ten_ky, maHsDaKhop, thongBaoRieng)
     }
 
     return {
@@ -324,8 +332,16 @@ export class SupabaseDataSource implements DataSource {
   // 1 thong bao "hoc_phi" moi hoc sinh moi ky - upsert bang tay (chon truoc,
   // co thi update, khong thi insert) vi noi_dung_tin_nhan khong co unique
   // constraint tren (ma_hs, ma_ky) de dung .upsert() thang - tranh tao thong
-  // bao trung moi lan import lai cung 1 ky.
-  private async taoThongBaoHocPhi(maKy: string, tenKy: string, dsMaHs: string[]): Promise<void> {
+  // bao trung moi lan import lai cung 1 ky. `override` (C261) cho phep JSON
+  // truyen san noi_dung/ghi_chu rieng cho tung hoc sinh (vd van ban SMS da
+  // soan tay kem so tien/han dong) - hoc sinh nao khong co trong `override`
+  // van dung cau mac dinh chung nhu truoc.
+  private async taoThongBaoHocPhi(
+    maKy: string,
+    tenKy: string,
+    dsMaHs: string[],
+    override?: Map<string, { noiDung?: string; ghiChu?: string }>,
+  ): Promise<void> {
     const { data: daCo, error: daCoError } = await getSupabaseClient()
       .from('noi_dung_tin_nhan')
       .select('id, ma_hs')
@@ -333,16 +349,20 @@ export class SupabaseDataSource implements DataSource {
       .in('ma_hs', dsMaHs)
     assertNoError(daCoError, 'Khong doc duoc thong bao hoc phi da co tren Supabase')
 
-    const noiDung = `Thông báo học phí — ${tenKy}. Bấm vào xem chi tiết các khoản thu.`
-    const maHsDaCo = new Set((daCo || []).map((row) => (row as { ma_hs: string }).ma_hs))
+    const noiDungMacDinh = `Thông báo học phí — ${tenKy}. Bấm vào xem chi tiết các khoản thu.`
+    const noiDungCho = (maHs: string) => override?.get(maHs)?.noiDung || noiDungMacDinh
+    const ghiChuCho = (maHs: string) => override?.get(maHs)?.ghiChu || tenKy
+
+    const daCoRows = (daCo || []) as Array<{ id: string; ma_hs: string }>
+    const maHsDaCo = new Set(daCoRows.map((row) => row.ma_hs))
     const dsMoi = dsMaHs.filter((maHs) => !maHsDaCo.has(maHs))
 
     if (dsMoi.length > 0) {
       const { error: insertError } = await getSupabaseClient().from('noi_dung_tin_nhan').insert(
         dsMoi.map((maHs) => ({
           ma_hs: maHs,
-          noi_dung: noiDung,
-          ghi_chu: tenKy,
+          noi_dung: noiDungCho(maHs),
+          ghi_chu: ghiChuCho(maHs),
           nguon: 'nhap_tay',
           da_duyet: true,
           loai_thong_bao: 'hoc_phi',
@@ -352,12 +372,19 @@ export class SupabaseDataSource implements DataSource {
       assertNoError(insertError, 'Khong tao duoc thong bao hoc phi tren Supabase')
     }
 
-    if (daCo && daCo.length > 0) {
-      const { error: updateError } = await getSupabaseClient()
-        .from('noi_dung_tin_nhan')
-        .update({ noi_dung: noiDung, ghi_chu: tenKy })
-        .eq('ma_ky', maKy)
-        .in('ma_hs', dsMaHs)
+    if (daCoRows.length > 0) {
+      // Noi dung khac nhau tung dong (vi override khac nhau tung hoc sinh)
+      // nen phai update tung dong theo id, khong the update hang loat bang
+      // 1 gia tri chung nhu truoc C261.
+      const ketQua = await Promise.all(
+        daCoRows.map((row) =>
+          getSupabaseClient()
+            .from('noi_dung_tin_nhan')
+            .update({ noi_dung: noiDungCho(row.ma_hs), ghi_chu: ghiChuCho(row.ma_hs) })
+            .eq('id', row.id),
+        ),
+      )
+      const updateError = ketQua.find((item) => item.error)?.error || null
       assertNoError(updateError, 'Khong cap nhat duoc thong bao hoc phi tren Supabase')
     }
   }
