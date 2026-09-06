@@ -64,7 +64,7 @@ export async function exportReportToWord(
       {
         children: [
           ...buildLetterhead(meta),
-          ...buildAttendanceSection(data),
+          ...buildAttendanceSection(data, Boolean(meta.hocSinh)),
           ...(meta.hocSinh ? buildStudentViolationSection(data) : buildViolationSection(data)),
           ...(meta.hocSinh ? buildStudentPositiveSection(data) : buildPositiveSection(data)),
           ...buildBanCanSuSignatures(meta),
@@ -216,11 +216,17 @@ function summaryParagraph(items: Array<{ label: string; value: string | number; 
   return new Paragraph({ children })
 }
 
-function buildAttendanceSection(data: ReportData) {
+// isStudentReport = true (bao cao rieng 1 hoc sinh gui phu huynh) thi bo cot
+// "Da lien lac PH?" - thong tin noi bo giua GVCN va phu huynh, khong can
+// nhac lai trong chinh van ban gui cho ho.
+function buildAttendanceSection(data: ReportData, isStudentReport: boolean) {
   const { attendance } = data
-  const centerCols = [0, 2, 3, 5]
+  const headers = isStudentReport
+    ? ['STT', 'Họ tên', 'Ngày', 'Trạng thái', 'Chi tiết buổi']
+    : ['STT', 'Họ tên', 'Ngày', 'Trạng thái', 'Chi tiết buổi', 'Đã liên lạc PH?']
+  const centerCols = [0, 2, 3]
   const rows = [
-    headerRow(['STT', 'Họ tên', 'Ngày', 'Trạng thái', 'Chi tiết buổi', 'Đã liên lạc PH?'], centerCols),
+    headerRow(headers, centerCols),
     ...attendance.rows.map((row, index) =>
       dataRow(
         [
@@ -229,7 +235,7 @@ function buildAttendanceSection(data: ReportData) {
           formatDate(row.ngay),
           ATTENDANCE_STATUS_LABELS[row.trangThai] || row.trangThai,
           row.chiTietBuoi || '—',
-          row.daLienLac ? 'Đã liên lạc' : 'Chưa liên lạc',
+          ...(isStudentReport ? [] : [row.daLienLac ? 'Đã liên lạc' : 'Chưa liên lạc']),
         ],
         centerCols,
       ),

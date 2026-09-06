@@ -98,7 +98,7 @@ function buildReportContainer(
 
   container.innerHTML = `
     ${renderLetterhead(meta)}
-    ${renderAttendanceSection(data)}
+    ${renderAttendanceSection(data, Boolean(meta.hocSinh))}
     ${meta.hocSinh ? renderStudentViolationSection(data) : renderViolationSection(data)}
     ${meta.hocSinh ? renderStudentPositiveSection(data) : renderPositiveSection(data)}
     ${renderBanCanSuSignatures(meta)}
@@ -171,7 +171,10 @@ function renderSignatureBlock(): string {
   `
 }
 
-function renderAttendanceSection(data: ReportData): string {
+// isStudentReport = true (bao cao rieng 1 hoc sinh gui phu huynh) thi bo cot
+// "Da lien lac PH?" - thong tin noi bo giua GVCN va phu huynh, khong can
+// nhac lai trong chinh van ban gui cho ho.
+function renderAttendanceSection(data: ReportData, isStudentReport: boolean): string {
   const { attendance } = data
   const rowsHtml = attendance.rows
     .map(
@@ -182,7 +185,7 @@ function renderAttendanceSection(data: ReportData): string {
           <td style="${td} text-align:center;">${formatDate(row.ngay)}</td>
           <td style="${td} text-align:center;">${ATTENDANCE_STATUS_LABELS[row.trangThai] || row.trangThai}</td>
           <td style="${td}">${escapeHtml(row.chiTietBuoi || '—')}</td>
-          <td style="${td} text-align:center;">${row.daLienLac ? 'Đã liên lạc' : 'Chưa liên lạc'}</td>
+          ${isStudentReport ? '' : `<td style="${td} text-align:center;">${row.daLienLac ? 'Đã liên lạc' : 'Chưa liên lạc'}</td>`}
         </tr>`,
     )
     .join('')
@@ -201,7 +204,8 @@ function renderAttendanceSection(data: ReportData): string {
         : `<table style="${table}">
             <thead><tr>
               <th style="${th} text-align:center;">STT</th><th style="${th}">Họ tên</th><th style="${th} text-align:center;">Ngày</th>
-              <th style="${th} text-align:center;">Trạng thái</th><th style="${th}">Chi tiết buổi</th><th style="${th} text-align:center;">Đã liên lạc PH?</th>
+              <th style="${th} text-align:center;">Trạng thái</th><th style="${th}">Chi tiết buổi</th>
+              ${isStudentReport ? '' : `<th style="${th} text-align:center;">Đã liên lạc PH?</th>`}
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>`

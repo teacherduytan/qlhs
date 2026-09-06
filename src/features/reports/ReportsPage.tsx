@@ -449,7 +449,7 @@ function ReportPreview({
         <div className="rounded-lg border border-red-200 bg-red-100 p-4 text-sm font-medium text-red-700">{exportError}</div>
       ) : null}
 
-      <AttendanceSection data={data} />
+      <AttendanceSection data={data} isStudentReport={isStudentReport} />
       {isStudentReport ? (
         <>
           <StudentViolationSection data={data} />
@@ -480,7 +480,7 @@ function StatBox({ label, value, tone }: { label: string; value: number; tone: '
   )
 }
 
-function AttendanceSection({ data }: { data: ReportData }) {
+function AttendanceSection({ data, isStudentReport }: { data: ReportData; isStudentReport: boolean }) {
   const { attendance } = data
   return (
     <section className="rounded-lg border border-sky-200 bg-white">
@@ -509,7 +509,7 @@ function AttendanceSection({ data }: { data: ReportData }) {
                   <th className="px-3 py-2">Ngày</th>
                   <th className="px-3 py-2">Trạng thái</th>
                   <th className="px-3 py-2">Chi tiết buổi</th>
-                  <th className="px-3 py-2">Đã liên lạc PH?</th>
+                  {isStudentReport ? null : <th className="px-3 py-2">Đã liên lạc PH?</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -520,13 +520,15 @@ function AttendanceSection({ data }: { data: ReportData }) {
                     <td className="px-3 py-2 text-slate-700">{formatDateCompact(row.ngay)}</td>
                     <td className="px-3 py-2 text-slate-700">{ATTENDANCE_STATUS_LABELS[row.trangThai]}</td>
                     <td className="px-3 py-2 text-slate-600">{row.chiTietBuoi || '—'}</td>
-                    <td className="px-3 py-2">
-                      {row.daLienLac ? (
-                        <span className="font-semibold text-emerald-700">Đã liên lạc</span>
-                      ) : (
-                        <span className="font-semibold text-rose-700">Chưa liên lạc</span>
-                      )}
-                    </td>
+                    {isStudentReport ? null : (
+                      <td className="px-3 py-2">
+                        {row.daLienLac ? (
+                          <span className="font-semibold text-emerald-700">Đã liên lạc</span>
+                        ) : (
+                          <span className="font-semibold text-rose-700">Chưa liên lạc</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
