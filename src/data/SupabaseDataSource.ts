@@ -383,6 +383,16 @@ export class SupabaseDataSource implements DataSource {
   // ket qua la SMS gui that gan nhu khong bao gio co link xem chi tiet, trai
   // muc dich chinh cua docs/hocphiPHxem/17-gop-thongbao-hocphi-sms-canhan.md.
   // Sua bang cach dung CHUNG 1 ham dung cau (kem link) cho ca 2 noi.
+  //
+  // Tao them 1 dong nhat_ky_import + gan nguon_import cho moi dong thong bao
+  // (C266) - thieu buoc nay thi cac thong bao "hoc_phi" khong co nguon_import
+  // nen `MessageBatchesPage.tsx` (tab "Nhan tin PH") khong gom duoc thanh 1
+  // dot rieng co nhan/thoi gian ro rang - tat ca roi chung vao 1 nhom
+  // "Dot khong ro nguon" (key mac dinh khi thieu nguon_import), giao vien
+  // tuong nham la import hoc phi "chua qua" tab Nhan tin PH. Dung dung quy
+  // uoc da co o `importJson()` (tao 1 `nhat_ky_import` loai 'tin_nhan_phu_huynh'
+  // moi lan, gan `nguon_import` = ma_log do vao tung dong `noi_dung_tin_nhan`)
+  // de tab Nhan tin PH nhan dien dung nhu 1 dot import binh thuong.
   private async taoThongBaoHocPhi(
     maKy: string,
     tenKy: string,
@@ -396,6 +406,19 @@ export class SupabaseDataSource implements DataSource {
       .eq('ma_ky', maKy)
       .in('ma_hs', dsMaHs)
     assertNoError(daCoError, 'Khong doc duoc thong bao hoc phi da co tren Supabase')
+
+    const maLog = (await this.nextPrefixedIds('nhat_ky_import', 'ma_log', 'LOG', 6, 1))[0]
+    const { error: logError } = await getSupabaseClient().from('nhat_ky_import').insert({
+      ma_log: maLog,
+      thoi_gian: new Date().toISOString(),
+      loai_du_lieu: 'tin_nhan_phu_huynh',
+      so_dong: dsMaHs.length,
+      nguoi_thuc_hien: null,
+      trang_thai: 'thanh_cong',
+      duong_dan_file_goc: null,
+      ghi_chu: `Thông báo học phí — ${tenKy}`,
+    })
+    assertNoError(logError, 'Khong tao duoc log import cho thong bao hoc phi tren Supabase')
 
     const noiDungCho = (maHs: string) => {
       const token = tokenByMaHs?.get(maHs) || ''
@@ -422,6 +445,7 @@ export class SupabaseDataSource implements DataSource {
           da_duyet: true,
           loai_thong_bao: 'hoc_phi',
           ma_ky: maKy,
+          nguon_import: maLog,
         })),
       )
       assertNoError(insertError, 'Khong tao duoc thong bao hoc phi tren Supabase')
@@ -430,12 +454,14 @@ export class SupabaseDataSource implements DataSource {
     if (daCoRows.length > 0) {
       // Noi dung khac nhau tung dong (vi override khac nhau tung hoc sinh)
       // nen phai update tung dong theo id, khong the update hang loat bang
-      // 1 gia tri chung nhu truoc C261.
+      // 1 gia tri chung nhu truoc C261. Gan lai nguon_import = lan import
+      // MOI NHAT nay - dong thong bao "chuyen" sang dot moi vi noi dung vua
+      // duoc cap nhat lai theo du lieu moi.
       const ketQua = await Promise.all(
         daCoRows.map((row) =>
           getSupabaseClient()
             .from('noi_dung_tin_nhan')
-            .update({ noi_dung: noiDungCho(row.ma_hs), ghi_chu: ghiChuCho(row.ma_hs) })
+            .update({ noi_dung: noiDungCho(row.ma_hs), ghi_chu: ghiChuCho(row.ma_hs), nguon_import: maLog })
             .eq('id', row.id),
         ),
       )
