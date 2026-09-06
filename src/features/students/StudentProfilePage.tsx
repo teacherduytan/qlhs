@@ -101,6 +101,11 @@ const MON_LABELS: Record<string, string> = {
   SHDC: 'Sinh hoạt dưới cờ (SHDC)',
   SHCN: 'Sinh hoạt chủ nhiệm (SHCN)',
 }
+// Cho phep lop truong tu go them mon chua co san trong MON_OPTIONS (vd tiet
+// tu chon/CLB khong nam trong danh sach co dinh) thay vi bi ket vi khong co
+// lua chon phu hop - dung mau "gia tri dac biet trong droplist" giong
+// NEW_CATEGORY_VALUE da dung cho danh muc o Buoc 2.
+const MON_KHAC_VALUE = '__mon_khac__'
 
 export function StudentProfilePage() {
   const { token } = useParams()
@@ -1461,6 +1466,7 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
   const [ngay, setNgay] = useState(todayIso())
   const [tiet, setTiet] = useState('')
   const [monHoc, setMonHoc] = useState('')
+  const [monHocKhac, setMonHocKhac] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
@@ -1471,6 +1477,10 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
   const historyPage = usePagination(history)
 
   const totalCombos = selectedStudents.length * (selectedCatalogCodes.length + (includeNewCategory ? 1 : 0))
+  // Gia tri MON_KHAC_VALUE la sentinel noi bo cua droplist, khong phai ten
+  // mon that - phai quy doi ve dung ten lop truong tu go truoc khi dung de
+  // kiem tra dieu kien hop le hay gui len server.
+  const effectiveMonHoc = monHoc === MON_KHAC_VALUE ? monHocKhac.trim() : monHoc.trim()
 
   async function loadHistory(pinValue: string) {
     setHistoryLoading(true)
@@ -1532,8 +1542,28 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
       }
       setStep('details')
     } else if (step === 'details') {
-      if (includeNewCategory && !noiDung.trim()) {
-        setSubmitError('Cần mô tả nội dung cho danh mục đề xuất mới.')
+      // Bat buoc du 4 muc (C276, theo yeu cau nguoi dung: tranh giao vien
+      // nhan duoc de xuat thieu thong tin/mo ta chung chung, kho doi chieu
+      // that sau nay). Kiem tra tuan tu tung muc de thong bao loi ro rang
+      // dung cho tung truong hop, khong gop chung 1 cau chung.
+      if (!ngay) {
+        setSubmitError('Vui lòng chọn ngày xảy ra.')
+        return
+      }
+      if (!tiet.trim()) {
+        setSubmitError('Vui lòng chọn tiết xảy ra.')
+        return
+      }
+      if (!monHoc.trim()) {
+        setSubmitError('Vui lòng chọn môn học.')
+        return
+      }
+      if (monHoc === MON_KHAC_VALUE && !monHocKhac.trim()) {
+        setSubmitError('Vui lòng nhập tên môn học (mục "Môn khác").')
+        return
+      }
+      if (!noiDung.trim()) {
+        setSubmitError('Vui lòng mô tả chi tiết nội dung — không được bỏ trống.')
         return
       }
       setStep('review')
@@ -1576,7 +1606,7 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
           de_xuat_nhom: combo.de_xuat_nhom,
           ngay,
           tiet: tiet.trim() || null,
-          mon_hoc: monHoc.trim() || null,
+          mon_hoc: effectiveMonHoc || null,
         })
       } catch {
         failCount += 1
@@ -1600,6 +1630,7 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
     setNgay(todayIso())
     setTiet('')
     setMonHoc('')
+    setMonHocKhac('')
     setStep('students')
     void loadHistory(verifiedPin)
   }
@@ -1772,7 +1803,7 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
 
               <div className="grid grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-                  Tiết (không bắt buộc)
+                  Tiết xảy ra *
                   <select
                     value={tiet}
                     onChange={(event) => setTiet(event.target.value)}
@@ -1787,7 +1818,7 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
                   </select>
                 </label>
                 <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-                  Môn (không bắt buộc)
+                  Môn học *
                   <select
                     value={monHoc}
                     onChange={(event) => setMonHoc(event.target.value)}
@@ -1799,24 +1830,37 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
                         {MON_LABELS[option] || option}
                       </option>
                     ))}
+                    <option value={MON_KHAC_VALUE}>➕ Môn khác (nhập tay)...</option>
                   </select>
                 </label>
               </div>
+
+              {monHoc === MON_KHAC_VALUE ? (
+                <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+                  Tên môn khác *
+                  <input
+                    type="text"
+                    value={monHocKhac}
+                    onChange={(event) => setMonHocKhac(event.target.value)}
+                    placeholder="Nhập tên môn/tiết chưa có trong danh sách"
+                    className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+              ) : null}
 
               <p className="text-xs text-slate-500">
                 Người ghi sẽ tự động ghi theo chức vụ của bạn ({role}), không cần chọn.
               </p>
 
-              <textarea
-                value={noiDung}
-                onChange={(event) => setNoiDung(event.target.value)}
-                placeholder={
-                  includeNewCategory
-                    ? 'Mô tả nội dung đề xuất (bắt buộc, vd: nói chuyện riêng nhiều lần trong giờ Sinh)'
-                    : 'Nội dung cụ thể (không bắt buộc, ví dụ: không mang tập Toán tiết 3) — áp dụng chung cho tất cả đề xuất'
-                }
-                className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
+              <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+                Mô tả chi tiết *
+                <textarea
+                  value={noiDung}
+                  onChange={(event) => setNoiDung(event.target.value)}
+                  placeholder="Bắt buộc — mô tả cụ thể chuyện gì đã xảy ra, ví dụ: không mang tập Toán tiết 3, bị nhắc 2 lần vẫn không lấy tập ra"
+                  className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
             </div>
           ) : null}
 
@@ -1863,10 +1907,10 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
                       · tiết <strong>{tiet.trim()}</strong>
                     </>
                   ) : null}
-                  {monHoc.trim() ? (
+                  {effectiveMonHoc ? (
                     <>
                       {' '}
-                      · môn <strong>{monHoc.trim()}</strong>
+                      · môn <strong>{MON_LABELS[effectiveMonHoc] || effectiveMonHoc}</strong>
                     </>
                   ) : null}
                 </p>
@@ -1978,13 +2022,22 @@ function ProposalHistoryItem({
   const [noiDung, setNoiDung] = useState(item.noi_dung || '')
   const [ngay, setNgay] = useState(item.ngay)
   const [tiet, setTiet] = useState(item.tiet || '')
-  const [monHoc, setMonHoc] = useState(item.mon_hoc || '')
+  // Neu mon dang luu KHONG nam trong danh sach co dinh (da duoc go tay tu
+  // truoc khi co tinh nang "Mon khac" nay, hoac tao qua duong khac) thi mo
+  // san che do "Mon khac" voi dung gia tri cu, tranh lam mat du lieu da co.
+  const [monHoc, setMonHoc] = useState(
+    item.mon_hoc && MON_OPTIONS.includes(item.mon_hoc) ? item.mon_hoc : item.mon_hoc ? MON_KHAC_VALUE : '',
+  )
+  const [monHocKhac, setMonHocKhac] = useState(
+    item.mon_hoc && !MON_OPTIONS.includes(item.mon_hoc) ? item.mon_hoc : '',
+  )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const student = roster.students.find((entry) => entry.ma_hs === item.ma_hs)
   const isNewCategory = selectedCatalog === NEW_CATEGORY_VALUE
   const canEdit = item.trang_thai === 'cho_duyet'
+  const effectiveMonHoc = monHoc === MON_KHAC_VALUE ? monHocKhac.trim() : monHoc.trim()
 
   const statusLabel =
     item.trang_thai === 'da_duyet' ? 'Đã duyệt' : item.trang_thai === 'tu_choi' ? 'Bị từ chối' : 'Chờ duyệt'
@@ -1997,8 +2050,27 @@ function ProposalHistoryItem({
 
   async function saveEdit() {
     if (!selectedMaHs || !selectedCatalog) return
-    if (isNewCategory && !noiDung.trim()) {
-      setError('Cần mô tả nội dung cho đề xuất danh mục mới.')
+    // Ap dung dung nguyen tac bat buoc nhu form nhap moi (C276) - sua lai 1
+    // de xuat cu cung phai du thong tin, khong duoc ha thap chuan so voi
+    // luc tao moi.
+    if (!ngay) {
+      setError('Vui lòng chọn ngày xảy ra.')
+      return
+    }
+    if (!tiet.trim()) {
+      setError('Vui lòng chọn tiết xảy ra.')
+      return
+    }
+    if (!monHoc.trim()) {
+      setError('Vui lòng chọn môn học.')
+      return
+    }
+    if (monHoc === MON_KHAC_VALUE && !monHocKhac.trim()) {
+      setError('Vui lòng nhập tên môn học (mục "Môn khác").')
+      return
+    }
+    if (!noiDung.trim()) {
+      setError('Vui lòng mô tả chi tiết nội dung — không được bỏ trống.')
       return
     }
 
@@ -2015,7 +2087,7 @@ function ProposalHistoryItem({
         de_xuat_nhom: isNewCategory ? deXuatNhom : null,
         ngay,
         tiet: tiet.trim() || null,
-        mon_hoc: monHoc.trim() || null,
+        mon_hoc: effectiveMonHoc || null,
       })
       setEditing(false)
       onChanged()
@@ -2130,11 +2202,22 @@ function ProposalHistoryItem({
                     {MON_LABELS[option] || option}
                   </option>
                 ))}
+                <option value={MON_KHAC_VALUE}>➕ Môn khác (nhập tay)...</option>
               </select>
             </div>
+            {monHoc === MON_KHAC_VALUE ? (
+              <input
+                type="text"
+                value={monHocKhac}
+                onChange={(event) => setMonHocKhac(event.target.value)}
+                placeholder="Nhập tên môn/tiết chưa có trong danh sách"
+                className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            ) : null}
             <textarea
               value={noiDung}
               onChange={(event) => setNoiDung(event.target.value)}
+              placeholder="Mô tả chi tiết (bắt buộc)"
               className="min-h-14 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
             {error ? <p className="text-xs font-semibold text-red-700">{error}</p> : null}
