@@ -81,7 +81,11 @@ export function AttendanceReportPage() {
 
     try {
       const result = await dataSource.calculateAttendanceReport(form.ngay, form.buoi, form.treTinhCoMat)
-      setReport(result)
+      // result.tre co the undefined neu migration 20260823000700 chua duoc
+      // dan len Supabase (RPC cu chua tra ve field nay) - chuan hoa ve mang
+      // rong ngay tai day de moi noi doc report.tre ve sau khong can tu lo
+      // kiem tra undefined rieng, tranh crash trang.
+      setReport({ ...result, tre: result.tre || [] })
       setPresentCounts(result.co_mat)
       setAbsentText(result.vang.join('\n'))
       setMessage(`Đã tính từ ${result.sheet_name}, tuần ${result.tuan_so}.`)
