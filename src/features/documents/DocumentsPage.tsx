@@ -5,9 +5,7 @@ import type { DanhMucTaiLieu, GhiNhan, HocSinh, TaiLieuChiTiet } from '../../dat
 import { chuanBiFileTaiLen } from './imageCompression'
 import { StudentMultiSelect } from './StudentMultiSelect'
 import { DanhMucTaiLieuSelect } from './DanhMucTaiLieuSelect'
-import { TaiLieuThumbnail } from './TaiLieuThumbnail'
-import { TaiLieuPagesPreview } from './TaiLieuPagesPreview'
-import { TaiLieuLightbox } from './TaiLieuLightbox'
+import { TaiLieuPageButtons } from './TaiLieuPageButtons'
 
 type PageTab = 'tai-len' | 'thu-vien'
 
@@ -684,7 +682,7 @@ function LibraryPanel({ students, danhMuc }: { students: HocSinh[]; danhMuc: Dan
               />
             ) : (
               <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-                <TaiLieuPagesPreview trang={item.trang} className="h-36 w-full" />
+                <TaiLieuPageButtons trang={item.trang} />
                 <p className="text-sm font-semibold text-slate-900">{item.tieu_de || item.danh_muc?.ten || 'Không rõ loại'}</p>
                 <p className="text-xs text-slate-500">
                   {item.tieu_de && item.danh_muc?.ten ? `${item.danh_muc.ten} · ` : ''}
@@ -742,7 +740,6 @@ function TaiLieuEditCard({
   const [busy, setBusy] = useState(false)
   const [pageBusy, setPageBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   async function save() {
     setBusy(true)
@@ -796,34 +793,11 @@ function TaiLieuEditCard({
     <div className="flex flex-col gap-2 rounded-lg border border-blue-300 bg-blue-50 p-3 shadow-sm md:col-span-2 lg:col-span-3">
       <p className="text-xs font-semibold uppercase text-blue-700">Sửa tài liệu</p>
 
-      <div className="flex flex-wrap gap-2">
-        {trang.map((page, pageIndex) => (
-          <div key={page.id} className="relative w-20 shrink-0">
-            <TaiLieuThumbnail
-              duongDanLuuTru={page.duong_dan_luu_tru}
-              loaiTep={page.loai_tep}
-              className="h-20 w-20"
-              onClick={() => setLightboxIndex(pageIndex)}
-            />
-            <span className="absolute left-1 top-1 rounded bg-black/70 px-1 text-[10px] font-semibold text-white">
-              {pageIndex + 1}
-            </span>
-            <button
-              type="button"
-              disabled={pageBusy}
-              onClick={() => void removePage(page.id)}
-              title="Xoá trang này"
-              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white shadow disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              ×
-            </button>
-          </div>
-        ))}
-        <label className="flex h-20 w-20 shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md border-2 border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-600">
-          <span className="text-lg" aria-hidden="true">
-            +
-          </span>
-          <span className="text-[10px] font-semibold">Thêm trang</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <TaiLieuPageButtons trang={trang} onRemovePage={(pageId) => void removePage(pageId)} removeBusy={pageBusy} />
+        <label className="flex h-8 shrink-0 cursor-pointer items-center gap-1 rounded-md border-2 border-dashed border-slate-300 px-2.5 text-xs font-semibold text-slate-500 hover:border-blue-400 hover:text-blue-600">
+          <span aria-hidden="true">+</span>
+          Thêm trang
           <input
             type="file"
             accept="image/*,application/pdf"
@@ -896,10 +870,6 @@ function TaiLieuEditCard({
           Huỷ
         </button>
       </div>
-
-      {lightboxIndex !== null ? (
-        <TaiLieuLightbox trang={trang} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
-      ) : null}
     </div>
   )
 }

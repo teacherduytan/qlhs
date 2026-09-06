@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { dataSource } from '../../data/client'
 import type { TaiLieuChiTiet } from '../../data/types'
-import { TaiLieuPagesPreview } from './TaiLieuPagesPreview'
+import { TaiLieuPageButtons } from './TaiLieuPageButtons'
 
 /** Tab "Tai lieu dinh kem" trong trang chi tiet hoc sinh — chi liet ke, sua/xoa thuc hien o thu vien chung /tai-lieu. */
 export function StudentDocumentsTab({ maHs }: { maHs: string }) {
@@ -61,7 +61,7 @@ export function StudentDocumentsTab({ maHs }: { maHs: string }) {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
               <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3 shadow-sm">
-                <TaiLieuPagesPreview trang={item.trang} className="h-32 w-full" />
+                <TaiLieuPageButtons trang={item.trang} />
                 <p className="text-sm font-semibold text-slate-900">{item.tieu_de || item.danh_muc?.ten || 'Không rõ loại'}</p>
                 <p className="text-xs text-slate-500">
                   {item.tieu_de && item.danh_muc?.ten ? `${item.danh_muc.ten} · ` : ''}
