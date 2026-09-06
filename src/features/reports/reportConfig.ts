@@ -13,6 +13,11 @@ export interface ReportPresentationMeta {
   subtitle: string
   soHocSinh: number
   banCanSuSignatures: BanCanSuSignature[]
+  // Chi co gia tri khi xuat bao cao RIENG cho 1 hoc sinh (gui phu huynh) -
+  // co thi phan dau bao cao (letterhead) doi dong "Si so: N hoc sinh" thanh
+  // dung ten/ma/to cua em do, kem loi chao rieng - xem exportWord.ts/
+  // exportPdf.ts.
+  hocSinh?: { hoTen: string; maHs: string; to: number | null }
 }
 
 export interface BanCanSuSignature {

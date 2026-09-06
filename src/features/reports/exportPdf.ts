@@ -116,10 +116,19 @@ function renderLetterhead(meta: ReportPresentationMeta): string {
     <p style="margin:2px 0 12px;text-align:center;">──────────</p>
     <p style="margin:0;font-weight:bold;">${escapeHtml(REPORT_CONFIG.tenTruong)}</p>
     <p style="margin:0;">
-      Lớp: ${escapeHtml(REPORT_CONFIG.tenLop)} &nbsp;&nbsp;&nbsp; Sĩ số: ${meta.soHocSinh} học sinh &nbsp;&nbsp;&nbsp;
-      Năm học: ${escapeHtml(REPORT_CONFIG.namHoc)}
+      ${
+        meta.hocSinh
+          ? `Lớp: ${escapeHtml(REPORT_CONFIG.tenLop)} &nbsp;&nbsp;&nbsp; Học sinh: ${escapeHtml(meta.hocSinh.hoTen)} (${escapeHtml(
+              meta.hocSinh.maHs,
+            )})${meta.hocSinh.to ? ` &nbsp;&nbsp;&nbsp; Tổ: ${meta.hocSinh.to}` : ''} &nbsp;&nbsp;&nbsp; Năm học: ${escapeHtml(
+              REPORT_CONFIG.namHoc,
+            )}`
+          : `Lớp: ${escapeHtml(REPORT_CONFIG.tenLop)} &nbsp;&nbsp;&nbsp; Sĩ số: ${meta.soHocSinh} học sinh &nbsp;&nbsp;&nbsp;
+      Năm học: ${escapeHtml(REPORT_CONFIG.namHoc)}`
+      }
     </p>
     <p style="margin:0 0 12px;">GVCN: ${escapeHtml(REPORT_CONFIG.tenGvcn)}</p>
+    ${meta.hocSinh ? `<p style="margin:0 0 12px;font-weight:bold;">Kính gửi: Quý phụ huynh em ${escapeHtml(meta.hocSinh.hoTen)}</p>` : ''}
     <h1 style="font-size:19px;margin:0 0 4px;text-align:center;text-transform:uppercase;">${escapeHtml(meta.title)}</h1>
     <p style="margin:0 0 16px;text-align:center;font-style:italic;font-size:12px;">${escapeHtml(meta.subtitle)}</p>
   `

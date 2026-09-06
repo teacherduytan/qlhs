@@ -36,6 +36,10 @@ export function ReportsPage() {
   const [customRange, setCustomRange] = useState(false)
   const [customTuNgay, setCustomTuNgay] = useState('')
   const [customDenNgay, setCustomDenNgay] = useState('')
+  // '' = bao cao ca lop (mac dinh, giu nguyen hanh vi cu); khac '' = loc
+  // rieng 1 hoc sinh de gui phu huynh - xem cach dung lai buildReportData()
+  // ben duoi (chi loc INPUT truoc khi tinh, khong doi logic tinh toan).
+  const [selectedMaHs, setSelectedMaHs] = useState('')
 
   const [thang, setThang] = useState(() => getTodayIsoDate().slice(0, 7))
 
@@ -117,36 +121,76 @@ export function ReportsPage() {
     }
   }, [range?.tuNgay, range?.denNgay])
 
+  const selectedStudent = useMemo(
+    () => (state.status === 'success' ? state.students.find((student) => student.ma_hs === selectedMaHs) || null : null),
+    [state, selectedMaHs],
+  )
+
+  // Danh sach chon o droplist "Doi tuong bao cao" - chi hoc sinh dang hoc
+  // (dung isActiveStudent() da co, tranh liet ke ca hoc sinh da roi lop),
+  // sap theo tt cho dung thu tu so danh sach lop.
+  const studentOptions = useMemo(() => {
+    if (state.status !== 'success') return []
+    return [...state.students].filter((student) => isActiveStudent(student)).sort((left, right) => left.tt - right.tt)
+  }, [state])
+
   const reportData: ReportData | null = useMemo(() => {
     if (state.status !== 'success' || !range) return null
+    // Loc DUNG 1 hoc sinh truoc khi dua vao buildReportData() - ham nay von
+    // da tinh tu 3 mang input doc lap (khong tu fetch gi them), nen "bao cao
+    // ca lop" voi "students" chi con 1 phan tu se tu nhien tro thanh "bao
+    // cao rieng cho 1 em" ma khong can viet lai logic tinh toan/bang bieu
+    // rieng - tai su dung dung 100% cau truc 3 phan (Chuyen can/Vi pham/
+    // Tich cuc) da co. Loc theo ma_hs nen cac dong Ghi nhan phai sinh tu su
+    // kien tap the (da gan ma_hs rieng cho tung em) van duoc giu dung, chi
+    // dong su kien goc (ma_hs = null) bi loai - dung y muon "chi rieng em
+    // do", khong lo chuyen chung ca lop vao thu gui phu huynh 1 em.
+    const students = selectedStudent ? [selectedStudent] : state.students
+    const filteredAttendance = selectedStudent
+      ? attendanceEntries.filter((entry) => entry.ma_hs === selectedStudent.ma_hs)
+      : attendanceEntries
+    const filteredRecords = selectedStudent
+      ? state.records.filter((record) => record.ma_hs === selectedStudent.ma_hs)
+      : state.records
+
     return buildReportData({
       tuNgay: range.tuNgay,
       denNgay: range.denNgay,
-      students: state.students,
-      attendanceEntries,
-      records: state.records,
+      students,
+      attendanceEntries: filteredAttendance,
+      records: filteredRecords,
       catalog: state.catalog,
       contactHistory: state.contactHistory,
     })
-  }, [state, range, attendanceEntries])
+  }, [state, range, attendanceEntries, selectedStudent])
 
   const title = useMemo(() => {
-    if (tab === 'tuan') {
-      if (customRange && range) return `Báo cáo giai đoạn ${formatDateCompact(range.tuNgay)} – ${formatDateCompact(range.denNgay)}`
-      return `Báo cáo ${formatDisplayWeekLabel(weeks, tuanSo)}`
-    }
-    const [year, month] = thang.split('-')
-    return `Báo cáo Tháng ${month}/${year}`
-  }, [tab, customRange, range, tuanSo, thang, weeks])
+    const base = (() => {
+      if (tab === 'tuan') {
+        if (customRange && range) return `Báo cáo giai đoạn ${formatDateCompact(range.tuNgay)} – ${formatDateCompact(range.denNgay)}`
+        return `Báo cáo ${formatDisplayWeekLabel(weeks, tuanSo)}`
+      }
+      const [year, month] = thang.split('-')
+      return `Báo cáo Tháng ${month}/${year}`
+    })()
+
+    if (!selectedStudent) return base
+    return `${base} — ${selectedStudent.ho} ${selectedStudent.ten}`
+  }, [tab, customRange, range, tuanSo, thang, weeks, selectedStudent])
 
   const fileBaseName = useMemo(() => {
-    if (tab === 'tuan') {
-      if (customRange && range) return `BaoCao-GiaiDoan-${range.tuNgay}_${range.denNgay}-11C5`
-      return `BaoCao-Tuan${getDisplayWeekNumber(weeks, tuanSo) ?? tuanSo}-11C5`
-    }
-    const [year, month] = thang.split('-')
-    return `BaoCao-Thang${month}-${year}-11C5`
-  }, [tab, customRange, range, tuanSo, thang, weeks])
+    const base = (() => {
+      if (tab === 'tuan') {
+        if (customRange && range) return `BaoCao-GiaiDoan-${range.tuNgay}_${range.denNgay}-11C5`
+        return `BaoCao-Tuan${getDisplayWeekNumber(weeks, tuanSo) ?? tuanSo}-11C5`
+      }
+      const [year, month] = thang.split('-')
+      return `BaoCao-Thang${month}-${year}-11C5`
+    })()
+
+    if (!selectedStudent) return base
+    return `${base}-${slugifyName(`${selectedStudent.ho} ${selectedStudent.ten}`)}`
+  }, [tab, customRange, range, tuanSo, thang, weeks, selectedStudent])
 
   const meta: ReportPresentationMeta | null = useMemo(() => {
     if (!range || state.status !== 'success') return null
@@ -155,22 +199,30 @@ export function ReportsPage() {
       isActiveStudent(student, new Date(year, month - 1, day)),
     ).length
 
+    // Bao cao rieng gui 1 phu huynh thi bo qua ky ban can su - khong lien
+    // quan, chi ky rieng GVCN o cuoi (buildSignatureBlock() da co san, khong
+    // doi).
     const studentByMaHs = new Map(state.students.map((student) => [student.ma_hs, student]))
-    const banCanSuSignatures = BAN_CAN_SU_SIGNATURE_ROLES.map((chucVu) => {
-      const entry = state.banCanSu.find((item) => item.chuc_vu === chucVu)
-      if (!entry) return null
-      const student = studentByMaHs.get(entry.ma_hs)
-      if (!student) return null
-      return { chucVu, hoTen: `${student.ho} ${student.ten}` }
-    }).filter((item): item is { chucVu: string; hoTen: string } => item !== null)
+    const banCanSuSignatures = selectedStudent
+      ? []
+      : BAN_CAN_SU_SIGNATURE_ROLES.map((chucVu) => {
+          const entry = state.banCanSu.find((item) => item.chuc_vu === chucVu)
+          if (!entry) return null
+          const student = studentByMaHs.get(entry.ma_hs)
+          if (!student) return null
+          return { chucVu, hoTen: `${student.ho} ${student.ten}` }
+        }).filter((item): item is { chucVu: string; hoTen: string } => item !== null)
 
     return {
       title,
       subtitle: `Từ ${formatDate(range.tuNgay)} đến ${formatDate(range.denNgay)}`,
       soHocSinh,
       banCanSuSignatures,
+      hocSinh: selectedStudent
+        ? { hoTen: `${selectedStudent.ho} ${selectedStudent.ten}`, maHs: selectedStudent.ma_hs, to: selectedStudent.to }
+        : undefined,
     }
-  }, [range, state, title])
+  }, [range, state, title, selectedStudent])
 
   async function handleExportWord() {
     if (!reportData || !meta) return
@@ -290,6 +342,29 @@ export function ReportsPage() {
             />
           </label>
         )}
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 sm:max-w-sm">
+          Đối tượng báo cáo
+          <select
+            value={selectedMaHs}
+            onChange={(event) => setSelectedMaHs(event.target.value)}
+            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="">Cả lớp (báo cáo tổng hợp)</option>
+            {studentOptions.map((student) => (
+              <option key={student.ma_hs} value={student.ma_hs}>
+                {student.ho} {student.ten} ({student.ma_hs})
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="mt-2 text-xs text-slate-500">
+          {selectedStudent
+            ? `Chỉ tổng hợp vắng/trễ, vi phạm và ghi nhận tích cực của riêng ${selectedStudent.ho} ${selectedStudent.ten} — dùng để gửi cho phụ huynh xem.`
+            : 'Chọn 1 học sinh để xuất báo cáo riêng gửi phụ huynh, thay vì báo cáo tổng hợp cả lớp.'}
+        </p>
       </div>
 
       {attendanceError ? (
@@ -594,4 +669,13 @@ function PositiveSection({ data }: { data: ReportData }) {
       </div>
     </section>
   )
+}
+
+function slugifyName(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]+/g, '')
 }

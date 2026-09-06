@@ -94,12 +94,24 @@ function buildLetterhead(meta: ReportPresentationMeta): Paragraph[] {
     new Paragraph({
       children: [
         new TextRun(
-          `Lớp: ${REPORT_CONFIG.tenLop}          Sĩ số: ${meta.soHocSinh} học sinh          Năm học: ${REPORT_CONFIG.namHoc}`,
+          meta.hocSinh
+            ? `Lớp: ${REPORT_CONFIG.tenLop}          Học sinh: ${meta.hocSinh.hoTen} (${meta.hocSinh.maHs})${
+                meta.hocSinh.to ? `          Tổ: ${meta.hocSinh.to}` : ''
+              }          Năm học: ${REPORT_CONFIG.namHoc}`
+            : `Lớp: ${REPORT_CONFIG.tenLop}          Sĩ số: ${meta.soHocSinh} học sinh          Năm học: ${REPORT_CONFIG.namHoc}`,
         ),
       ],
     }),
     new Paragraph({ children: [new TextRun(`GVCN: ${REPORT_CONFIG.tenGvcn}`)] }),
     new Paragraph({ children: [] }),
+    ...(meta.hocSinh
+      ? [
+          new Paragraph({
+            children: [new TextRun({ text: `Kính gửi: Quý phụ huynh em ${meta.hocSinh.hoTen}`, bold: true })],
+          }),
+          new Paragraph({ children: [] }),
+        ]
+      : []),
     new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [new TextRun({ text: meta.title.toUpperCase(), bold: true, size: 32 })],
