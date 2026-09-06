@@ -1,0 +1,781 @@
+{
+  "lop": "11C5",
+  "ma_ky": "2026-09",
+  "ten_ky": "Học phí tháng 9/2026",
+  "ngay_cap_nhat": "2026-09-04",
+  "cot_hoc_phi": [
+    {
+      "ma_cot": "hoc_phi",
+      "ten_cot": "Học phí",
+      "loai": "thu",
+      "thu_tu": 1
+    },
+    {
+      "ma_cot": "hoc_phi_bt",
+      "ten_cot": "Học phí BT",
+      "loai": "thu",
+      "thu_tu": 2
+    },
+    {
+      "ma_cot": "dua_ruoc_1",
+      "ten_cot": "Đưa rước 1",
+      "loai": "thu",
+      "thu_tu": 3
+    },
+    {
+      "ma_cot": "tang_tiet",
+      "ten_cot": "Tăng tiết",
+      "loai": "thu",
+      "thu_tu": 4
+    },
+    {
+      "ma_cot": "tieng_anh_tang_cuong_gvnn",
+      "ten_cot": "Tiếng Anh tăng cường (GVNN)",
+      "loai": "thu",
+      "thu_tu": 5
+    },
+    {
+      "ma_cot": "giam_anh_em",
+      "ten_cot": "Giảm anh em",
+      "loai": "giam_tru",
+      "thu_tu": 6
+    },
+    {
+      "ma_cot": "no_thang_truoc",
+      "ten_cot": "Nợ tháng trước",
+      "loai": "no",
+      "thu_tu": 7,
+      "an_neu_bang_khong": true
+    },
+    {
+      "ma_cot": "tieng_anh_gt_cap_do_1_2",
+      "ten_cot": "Tiếng Anh GT cấp độ 1,2 / Tiếng Anh căn bản cấp độ 1,2",
+      "loai": "thu",
+      "thu_tu": 8
+    },
+    {
+      "ma_cot": "tieng_anh_gt_cap_do_3_4",
+      "ten_cot": "Tiếng Anh GT cấp độ 3,4 / Tiếng Anh căn bản cấp độ 3,4",
+      "loai": "thu",
+      "thu_tu": 9
+    },
+    {
+      "ma_cot": "tieng_anh_lt_thpt_ielts_dgnl",
+      "ten_cot": "Tiếng Anh LTTHPT / Định hướng và LT IELTS 5.5 / LT ĐGNL",
+      "loai": "thu",
+      "thu_tu": 10
+    },
+    {
+      "ma_cot": "tieng_anh_tu_chon",
+      "ten_cot": "Tiếng Anh tự chọn",
+      "loai": "thu",
+      "thu_tu": 11,
+      "an_neu_bang_khong": true
+    }
+  ],
+  "hoc_sinh": [
+    {
+      "ma_hs": "HS001",
+      "stt": 1,
+      "ho_ten": "Bùi Vân Anh",
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS002",
+      "stt": 2,
+      "ho_ten": "Vũ Trần Khánh Băng",
+      "tong_thu": 4920000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 1000000,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS003",
+      "stt": 3,
+      "ho_ten": "Nguyễn Văn Chính",
+      "tong_thu": 4120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 1000000,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS004",
+      "stt": 4,
+      "ho_ten": "Ngô Văn Tuấn Đạt",
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS005",
+      "stt": 5,
+      "ho_ten": "Mai Văn Dũng",
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS006",
+      "stt": 6,
+      "ho_ten": "Lê Huỳnh Quốc Giang",
+      "tong_thu": 2820000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 300000,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS007",
+      "stt": 7,
+      "ho_ten": "Trần Huỳnh Nhã Hân",
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS008",
+      "stt": 8,
+      "ho_ten": "Nguyễn Trọng Hòa",
+      "tong_thu": 5180000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS009",
+      "stt": 9,
+      "ho_ten": "Phan Nguyễn Gia Huy",
+      "tong_thu": 5880000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 1500000,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS010",
+      "stt": 10,
+      "ho_ten": "Lại Gia Huy",
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS011",
+      "stt": 11,
+      "ho_ten": "Đặng Tấn Khang",
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS012",
+      "stt": 12,
+      "ho_ten": "Nguyễn Đăng Khoa",
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS013",
+      "stt": 13,
+      "ho_ten": "Võ Hoàng Gia Kiệt",
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS014",
+      "stt": 14,
+      "ho_ten": "Nguyễn Ngọc Trần Kim Ngân",
+      "tong_thu": 5180000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS015",
+      "stt": 15,
+      "ho_ten": "Nguyễn Huỳnh Gia Nghi",
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS036",
+      "stt": 16,
+      "ho_ten": "Đỗ Tâm Nhi",
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS016",
+      "stt": 17,
+      "ho_ten": "Vũ Thị Hoài Như",
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS017",
+      "stt": 18,
+      "ho_ten": "Lê Nguyễn Vy Oanh",
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS018",
+      "stt": 19,
+      "ho_ten": "Lê Bảo Phúc",
+      "tong_thu": 3920000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS035",
+      "stt": 20,
+      "ho_ten": "Trần Huy Phúc",
+      "tong_thu": 5540000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 2420000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS019",
+      "stt": 21,
+      "ho_ten": "Nguyễn Mạnh Quân",
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS020",
+      "stt": 22,
+      "ho_ten": "Nguyễn Như Quỳnh",
+      "tong_thu": 5540000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 2420000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS021",
+      "stt": 23,
+      "ho_ten": "Nguyễn Thị Diễm Quỳnh",
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS022",
+      "stt": 24,
+      "ho_ten": "Trần Thanh Thảo",
+      "tong_thu": 5540000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 2420000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS023",
+      "stt": 25,
+      "ho_ten": "Phạm Phước Thịnh",
+      "tong_thu": 5540000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 2420000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS024",
+      "stt": 26,
+      "ho_ten": "Trần Phạm Anh Thư",
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS025",
+      "stt": 27,
+      "ho_ten": "Nguyễn Huỳnh Mai Thy",
+      "tong_thu": 10060000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 1000000,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 4680000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS026",
+      "stt": 28,
+      "ho_ten": "Hoàng Thị Ngọc Trâm",
+      "tong_thu": 3920000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 800000
+      }
+    },
+    {
+      "ma_hs": "HS027",
+      "stt": 29,
+      "ho_ten": "Phạm Mai Trang",
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS028",
+      "stt": 30,
+      "ho_ten": "Vũ Quang Tùng",
+      "tong_thu": 2820000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 300000,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS029",
+      "stt": 31,
+      "ho_ten": "Nguyễn Thanh Nhã Uyên",
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS031",
+      "stt": 32,
+      "ho_ten": "Lưu Hiển Vinh",
+      "tong_thu": 5540000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 2420000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS032",
+      "stt": 33,
+      "ho_ten": "Nguyễn Thị Thảo Vy",
+      "tong_thu": 5180000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS033",
+      "stt": 34,
+      "ho_ten": "Nguyễn Hoàng Tâm Vy",
+      "tong_thu": 3120000,
+      "chi_tiet": {
+        "hoc_phi": 2420000,
+        "hoc_phi_bt": 0,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS034",
+      "stt": 35,
+      "ho_ten": "Nguyễn Ngọc Như Ý",
+      "tong_thu": 5180000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 800000,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS037",
+      "stt": 36,
+      "ho_ten": "Lê Phước Khang",
+      "tong_thu": 4380000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": 0,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    },
+    {
+      "ma_hs": "HS038",
+      "stt": 37,
+      "ho_ten": "Trần Hữu Quốc",
+      "tong_thu": 200000,
+      "chi_tiet": {
+        "hoc_phi": 0,
+        "hoc_phi_bt": 3680000,
+        "dua_ruoc_1": 0,
+        "tang_tiet": 500000,
+        "tieng_anh_tang_cuong_gvnn": 200000,
+        "giam_anh_em": 0,
+        "no_thang_truoc": -4180000,
+        "tieng_anh_gt_cap_do_1_2": 0,
+        "tieng_anh_gt_cap_do_3_4": 0,
+        "tieng_anh_lt_thpt_ielts_dgnl": 0,
+        "tieng_anh_tu_chon": 0
+      }
+    }
+  ]
+}
