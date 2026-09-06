@@ -131,7 +131,14 @@ export function buildReportData(input: BuildReportDataInput): ReportData {
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
 
   const inRange = (ngay: string) => ngay >= tuNgay && ngay <= denNgay
-  const recordsInRange = records.filter((record) => inRange(record.ngay))
+  // Loai bo cac ghi nhan tu dong sinh ra tu diem danh "Tre" (nguon =
+  // 'diem_danh_tu_dong', xem upsert_diem_danh() trong Supabase): thong tin
+  // di tre da hien thi day du o Phan 1 - Chuyen can (doc thang tu
+  // attendanceEntries), neu giu lai o day se bi trung lap voi Phan 2 - Vi
+  // pham ne nep trong cung 1 bao cao.
+  const recordsInRange = records.filter(
+    (record) => inRange(record.ngay) && record.nguon !== 'diem_danh_tu_dong',
+  )
 
   return {
     tuNgay,
