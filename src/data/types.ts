@@ -292,6 +292,20 @@ export interface PhieuThuHocPhi {
 
 export type LoaiCotHocPhi = 'thu' | 'giam_tru' | 'no'
 
+// 1 dong lich su trong bang "hoc_phi_ky" - dung de hien "Lich su nhap hoc
+// phi" tren man hinh import (che do "Hoc phi (cot dong)" khong dung chung
+// bang "Lich su import" cua che do "Du lieu" vi khong di qua nhat_ky_import
+// - xem docs/06-cai-tien-sau-trien-khai.md C267). `created_at` la thoi diem
+// THAT SU bam import (khong doi khi nhap de lai cung ma_ky - xem C263), con
+// `ngay_cap_nhat` la ngay du lieu hieu luc theo GVCN tu khai bao trong JSON.
+export interface HocPhiKyDaNhap {
+  ma_ky: string
+  ten_ky: string
+  lop: string | null
+  ngay_cap_nhat: string | null
+  created_at: string
+}
+
 export interface HocPhiCotDinhNghia {
   ma_cot: string
   ten_cot: string

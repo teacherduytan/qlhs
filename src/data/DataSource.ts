@@ -23,6 +23,7 @@ import type {
   ChiTietHocPhi,
   HocPhiImportPayload,
   HocPhiImportResult,
+  HocPhiKyDaNhap,
   HocPhiKyThamChieu,
   PublicParentProfile,
   PublicStudentProfile,
@@ -61,6 +62,7 @@ export interface DataSource {
   getChiTietHocPhi(token: string, sdt: string, matKhau: string, maKy: string): Promise<ChiTietHocPhi | null>
   upsertHocPhiKy(payload: HocPhiImportPayload, taoThongBao?: boolean): Promise<HocPhiImportResult>
   getHocPhiKyThamChieu(maHs?: string): Promise<HocPhiKyThamChieu[]>
+  getHocPhiKyList(): Promise<HocPhiKyDaNhap[]>
   addStudent(student: HocSinh): Promise<HocSinh>
   updateStudent(maHs: string, student: Partial<HocSinh>): Promise<HocSinh>
   deleteStudent(maHs: string): Promise<void>

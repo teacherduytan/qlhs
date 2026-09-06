@@ -30,6 +30,7 @@ import type {
   ChiTietHocPhi,
   HocPhiImportPayload,
   HocPhiImportResult,
+  HocPhiKyDaNhap,
   HocPhiKyThamChieu,
   PublicParentProfile,
   PublicStudentProfile,
@@ -245,6 +246,11 @@ export class SupabaseDataSource implements DataSource {
           ten_ky: payload.ten_ky,
           lop: payload.lop || null,
           ngay_cap_nhat: payload.ngay_cap_nhat || null,
+          // Ghi de created_at moi lan import (ke ca nhap de lai cung ma_ky) -
+          // dung y "lan nhap gan nhat", KHONG phai "lan tao dau tien", de
+          // "Lich su nhap hoc phi" (HocPhiImportPage.tsx) hien dung thoi
+          // diem bam import that su - xem docs/06 C267.
+          created_at: new Date().toISOString(),
         },
         { onConflict: 'ma_ky' },
       )
@@ -330,6 +336,21 @@ export class SupabaseDataSource implements DataSource {
       daKhopMaHs: maHsDaKhop.length,
       canRaSoat,
     }
+  }
+
+  // "Lich su nhap hoc phi" cho man hinh HocPhiImportPage.tsx (che do "Hoc
+  // phi cot dong" khong di qua nhat_ky_import nen khong dung chung bang
+  // "Lich su import" cua che do "Du lieu" - xem docs/06 C267). Sap moi nhat
+  // len dau (created_at desc) - created_at duoc GHI DE moi lan import lai
+  // cung ma_ky (xem comment o upsertHocPhiKy) nen phan anh dung lan bam
+  // import GAN NHAT, khong phai lan tao dau tien.
+  async getHocPhiKyList(): Promise<HocPhiKyDaNhap[]> {
+    const { data, error } = await getSupabaseClient()
+      .from('hoc_phi_ky')
+      .select('ma_ky, ten_ky, lop, ngay_cap_nhat, created_at')
+      .order('created_at', { ascending: false })
+    assertNoError(error, 'Khong doc duoc danh sach ky hoc phi da nhap tu Supabase')
+    return (data || []) as HocPhiKyDaNhap[]
   }
 
   // Danh sach (hoc_sinh, ky_hoc_phi) tung cap - dung de biet 1 hoc sinh

@@ -1,6 +1,6 @@
-import { type ChangeEvent, useMemo, useState } from 'react'
+import { type ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { dataSource } from '../../data/client'
-import type { HocPhiImportPayload, HocPhiImportResult } from '../../data/types'
+import type { HocPhiImportPayload, HocPhiImportResult, HocPhiKyDaNhap } from '../../data/types'
 
 type ParseState =
   | { status: 'empty' }
@@ -23,8 +23,27 @@ export function HocPhiImportPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [result, setResult] = useState<HocPhiImportResult | null>(null)
+  const [lichSu, setLichSu] = useState<HocPhiKyDaNhap[]>([])
+  const [lichSuLoading, setLichSuLoading] = useState(true)
+  const [lichSuError, setLichSuError] = useState<string | null>(null)
 
   const parseState = useMemo<ParseState>(() => parseHocPhiPayload(jsonText), [jsonText])
+
+  useEffect(() => {
+    void taiLichSu()
+  }, [])
+
+  async function taiLichSu() {
+    setLichSuLoading(true)
+    setLichSuError(null)
+    try {
+      setLichSu(await dataSource.getHocPhiKyList())
+    } catch (error) {
+      setLichSuError(error instanceof Error ? error.message : 'Không tải được lịch sử nhập học phí.')
+    } finally {
+      setLichSuLoading(false)
+    }
+  }
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -50,6 +69,7 @@ export function HocPhiImportPage() {
     try {
       const importResult = await dataSource.upsertHocPhiKy(parseState.payload, taoThongBao)
       setResult(importResult)
+      await taiLichSu()
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Nhập học phí không thành công.')
     } finally {
@@ -173,8 +193,71 @@ export function HocPhiImportPage() {
           ) : null}
         </div>
       ) : null}
+
+      <div className="rounded-lg border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-4">
+          <h3 className="text-base font-bold text-slate-900">Lịch sử nhập học phí</h3>
+          <p className="text-sm text-slate-600">Các kỳ đã nhập, mới nhất trước — nhập đè cùng mã kỳ sẽ cập nhật lại đúng dòng đó.</p>
+        </div>
+
+        {lichSuLoading ? <p className="p-4 text-sm text-slate-500">Đang tải...</p> : null}
+        {lichSuError ? <p className="p-4 text-sm font-semibold text-red-700">{lichSuError}</p> : null}
+
+        {!lichSuLoading && !lichSuError ? (
+          lichSu.length === 0 ? (
+            <p className="p-4 text-sm text-slate-500">Chưa nhập kỳ học phí nào.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-500">
+                  <tr>
+                    <th className="px-3 py-3">Mã kỳ</th>
+                    <th className="px-3 py-3">Tên kỳ</th>
+                    <th className="px-3 py-3">Lớp</th>
+                    <th className="px-3 py-3">Ngày cập nhật (trong JSON)</th>
+                    <th className="px-3 py-3">Nhập lúc</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {lichSu.map((ky) => (
+                    <tr key={ky.ma_ky}>
+                      <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-slate-600">{ky.ma_ky}</td>
+                      <td className="px-3 py-3 font-semibold text-slate-900">{ky.ten_ky}</td>
+                      <td className="px-3 py-3 text-slate-600">{ky.lop || '-'}</td>
+                      <td className="whitespace-nowrap px-3 py-3 text-slate-600">{formatNgay(ky.ngay_cap_nhat)}</td>
+                      <td className="whitespace-nowrap px-3 py-3 text-slate-600">{formatNgayGio(ky.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        ) : null}
+      </div>
     </div>
   )
+}
+
+function formatNgay(value: string | null): string {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+
+  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date)
+}
+
+function formatNgayGio(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(date)
 }
 
 function parseHocPhiPayload(text: string): ParseState {

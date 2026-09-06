@@ -182,6 +182,11 @@ export function MessageBatchesPage() {
         {visibleBatches.map((batch, index) => {
           const isCollapsed = collapsedBatches.has(batch.key) && index !== 0
           const batchLabel = batch.log?.ghi_chu || (batch.log ? formatDateTime(batch.log.thoi_gian) : 'Đợt không rõ nguồn')
+          // Truoc day khi co ghi_chu (vd cac dot hoc phi tu C266, ghi_chu =
+          // "Thong bao hoc phi - {ten_ky}") thi ngay gio bi an hoan toan vi
+          // batchLabel chi hien 1 trong 2 - nay luon hien ca 2, ngay gio o
+          // dong phu ben duoi.
+          const batchTime = batch.log ? formatDateTime(batch.log.thoi_gian) : 'Không rõ thời gian'
 
           return (
             <div key={batch.key} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -192,7 +197,9 @@ export function MessageBatchesPage() {
               >
                 <div className="min-w-0 flex-1">
                   <p className="wrap-break-word font-bold">{batchLabel}</p>
-                  <p className="text-xs text-slate-200">{batch.messages.length} học sinh</p>
+                  <p className="text-xs text-slate-200">
+                    {batchTime} · {batch.messages.length} học sinh
+                  </p>
                 </div>
                 <span className="shrink-0 text-lg">{isCollapsed ? '▸' : '▾'}</span>
               </button>
