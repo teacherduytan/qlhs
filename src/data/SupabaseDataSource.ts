@@ -1924,6 +1924,7 @@ export class SupabaseDataSource implements DataSource {
         danh_muc_tai_lieu_id: input.danhMucTaiLieuId,
         ghi_nhan_id: input.ghiNhanId || null,
         ngay_viet: input.ngayViet,
+        tieu_de: input.tieuDe?.trim() || null,
         ghi_chu: input.ghiChu?.trim() || null,
         nguoi_tai_len: user?.id || null,
       })
@@ -2031,6 +2032,7 @@ export class SupabaseDataSource implements DataSource {
     if (patch.danhMucTaiLieuId !== undefined) fields.danh_muc_tai_lieu_id = patch.danhMucTaiLieuId
     if (patch.ngayViet !== undefined) fields.ngay_viet = patch.ngayViet
     if (patch.ghiNhanId !== undefined) fields.ghi_nhan_id = patch.ghiNhanId
+    if (patch.tieuDe !== undefined) fields.tieu_de = patch.tieuDe?.trim() || null
     if (patch.ghiChu !== undefined) fields.ghi_chu = patch.ghiChu?.trim() || null
 
     if (Object.keys(fields).length > 0) {
@@ -2249,6 +2251,7 @@ function mapTaiLieuRow(row: AnyRow): TaiLieuChiTiet {
     danh_muc_tai_lieu_id: row.danh_muc_tai_lieu_id as string,
     ghi_nhan_id: (row.ghi_nhan_id as string) || null,
     ngay_viet: (row.ngay_viet as string) || null,
+    tieu_de: (row.tieu_de as string) || null,
     ghi_chu: (row.ghi_chu as string) || null,
     nguoi_tai_len: (row.nguoi_tai_len as string) || null,
     thoi_gian_tai_len: row.thoi_gian_tai_len as string,

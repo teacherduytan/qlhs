@@ -28,6 +28,7 @@ interface UploadEntry {
   ngayViet: string
   maHsList: string[]
   ghiNhanId: string
+  tieuDe: string
   ghiChu: string
   status: 'pending' | 'uploading' | 'done' | 'error'
   error: string | null
@@ -170,6 +171,7 @@ function UploadPanel({
       ngayViet: todayIso(),
       maHsList: preselectMaHs ? [preselectMaHs] : [],
       ghiNhanId: '',
+      tieuDe: '',
       ghiChu: '',
       status: 'pending',
       error: null,
@@ -270,6 +272,7 @@ function UploadPanel({
           ngayViet: entry.ngayViet,
           maHsList: entry.maHsList,
           ghiNhanId: entry.ghiNhanId || null,
+          tieuDe: entry.tieuDe || null,
           ghiChu: entry.ghiChu || null,
         })
         updateEntry(entry.key, { status: 'done' })
@@ -536,10 +539,22 @@ function UploadEntryCard({
         ) : null}
 
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-          Ghi chú (tuỳ chọn)
+          Tiêu đề tài liệu (tuỳ chọn)
+          <input
+            type="text"
+            value={entry.tieuDe}
+            onChange={(event) => onChange({ tieuDe: event.target.value })}
+            placeholder="VD: Tường trình về việc sử dụng điện thoại trong giờ học"
+            className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+          Mô tả nội dung (tuỳ chọn)
           <textarea
             value={entry.ghiChu}
             onChange={(event) => onChange({ ghiChu: event.target.value })}
+            placeholder="Mô tả thêm nội dung, bối cảnh sự việc..."
             className="min-h-16 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
         </label>
@@ -670,8 +685,11 @@ function LibraryPanel({ students, danhMuc }: { students: HocSinh[]; danhMuc: Dan
             ) : (
               <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
                 <TaiLieuPagesPreview trang={item.trang} className="h-36 w-full" />
-                <p className="text-sm font-semibold text-slate-900">{item.danh_muc?.ten || 'Không rõ loại'}</p>
-                <p className="text-xs text-slate-500">{item.ngay_viet || 'Chưa rõ ngày viết'}</p>
+                <p className="text-sm font-semibold text-slate-900">{item.tieu_de || item.danh_muc?.ten || 'Không rõ loại'}</p>
+                <p className="text-xs text-slate-500">
+                  {item.tieu_de && item.danh_muc?.ten ? `${item.danh_muc.ten} · ` : ''}
+                  {item.ngay_viet || 'Chưa rõ ngày viết'}
+                </p>
                 <p className="text-xs text-slate-600">
                   {item.hoc_sinh.length > 0 ? item.hoc_sinh.map((hs) => `${hs.ho} ${hs.ten}`).join(', ') : 'Chưa gắn học sinh'}
                 </p>
@@ -717,6 +735,7 @@ function TaiLieuEditCard({
   const [danhMucId, setDanhMucId] = useState(item.danh_muc_tai_lieu_id)
   const [ngayViet, setNgayViet] = useState(item.ngay_viet || '')
   const [maHsList, setMaHsList] = useState(item.hoc_sinh.map((hs) => hs.ma_hs))
+  const [tieuDe, setTieuDe] = useState(item.tieu_de || '')
   const [ghiChu, setGhiChu] = useState(item.ghi_chu || '')
   const [danhMucList, setDanhMucList] = useState(danhMuc)
   const [trang, setTrang] = useState(item.trang)
@@ -732,6 +751,7 @@ function TaiLieuEditCard({
       const updated = await dataSource.updateTaiLieu(item.id, {
         danhMucTaiLieuId: danhMucId,
         ngayViet: ngayViet || null,
+        tieuDe,
         ghiChu,
         maHsList,
       })
@@ -844,10 +864,21 @@ function TaiLieuEditCard({
         <StudentMultiSelect students={students} selected={maHsList} onChange={setMaHsList} />
       </label>
       <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-        Ghi chú
+        Tiêu đề tài liệu
+        <input
+          type="text"
+          value={tieuDe}
+          onChange={(event) => setTieuDe(event.target.value)}
+          placeholder="VD: Tường trình về việc sử dụng điện thoại trong giờ học"
+          className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+        Mô tả nội dung
         <textarea
           value={ghiChu}
           onChange={(event) => setGhiChu(event.target.value)}
+          placeholder="Mô tả thêm nội dung, bối cảnh sự việc..."
           className="min-h-16 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
       </label>

@@ -62,8 +62,11 @@ export function StudentDocumentsTab({ maHs }: { maHs: string }) {
             {items.map((item) => (
               <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3 shadow-sm">
                 <TaiLieuPagesPreview trang={item.trang} className="h-32 w-full" />
-                <p className="text-sm font-semibold text-slate-900">{item.danh_muc?.ten || 'Không rõ loại'}</p>
-                <p className="text-xs text-slate-500">{item.ngay_viet || 'Chưa rõ ngày viết'}</p>
+                <p className="text-sm font-semibold text-slate-900">{item.tieu_de || item.danh_muc?.ten || 'Không rõ loại'}</p>
+                <p className="text-xs text-slate-500">
+                  {item.tieu_de && item.danh_muc?.ten ? `${item.danh_muc.ten} · ` : ''}
+                  {item.ngay_viet || 'Chưa rõ ngày viết'}
+                </p>
                 {item.ghi_chu ? <p className="text-xs italic text-slate-500">{item.ghi_chu}</p> : null}
                 <div className="mt-1 flex gap-2">
                   <Link

@@ -657,6 +657,7 @@ export interface TaiLieu {
   danh_muc_tai_lieu_id: string
   ghi_nhan_id: string | null
   ngay_viet: string | null
+  tieu_de: string | null
   ghi_chu: string | null
   nguoi_tai_len: string | null
   thoi_gian_tai_len: string
@@ -691,6 +692,7 @@ export interface TaiLieuUploadInput {
   ngayViet: string
   maHsList: string[]
   ghiNhanId?: string | null
+  tieuDe?: string | null
   ghiChu?: string | null
 }
 
@@ -698,6 +700,7 @@ export interface TaiLieuCapNhatInput {
   danhMucTaiLieuId?: string
   ngayViet?: string | null
   ghiNhanId?: string | null
+  tieuDe?: string | null
   ghiChu?: string | null
   maHsList?: string[]
 }
