@@ -1463,7 +1463,11 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
   const [includeNewCategory, setIncludeNewCategory] = useState(false)
   const [deXuatNhom, setDeXuatNhom] = useState<NhomDiem>('NN')
   const [noiDung, setNoiDung] = useState('')
-  const [ngay, setNgay] = useState(todayIso())
+  // Co tinh de RONG (khong tu dien ngay hom nay) - de mac dinh la ngay hien
+  // tai de de nham lan khi nhap bu vi pham cua ngay truoc (lop truong de
+  // quen doi lai, vo tinh ghi sai ngay xay ra that). Bat buoc tu chon moi
+  // lan, dung voi validate o goNext() da them o C276.
+  const [ngay, setNgay] = useState('')
   const [tiet, setTiet] = useState('')
   const [monHoc, setMonHoc] = useState('')
   const [monHocKhac, setMonHocKhac] = useState('')
@@ -1627,7 +1631,7 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
     setSelectedCatalogCodes([])
     setIncludeNewCategory(false)
     setNoiDung('')
-    setNgay(todayIso())
+    setNgay('')
     setTiet('')
     setMonHoc('')
     setMonHocKhac('')
@@ -1791,7 +1795,7 @@ function LopTruongPanel({ token, role }: { token: string; role: string }) {
           {step === 'details' ? (
             <div className="space-y-2">
               <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-                Ngày xảy ra (có thể chọn Thứ Bảy/Chủ Nhật nếu gửi bù)
+                Ngày xảy ra * (không tự điền sẵn — tự chọn đúng ngày, kể cả khi nhập bù ngày trước)
                 <input
                   type="date"
                   value={ngay}
