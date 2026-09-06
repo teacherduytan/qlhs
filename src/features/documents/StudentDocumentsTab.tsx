@@ -59,10 +59,12 @@ export function StudentDocumentsTab({ maHs }: { maHs: string }) {
           <p className="text-sm text-slate-500">Chưa có tài liệu nào đính kèm cho học sinh này.</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => (
+            {items.map((item, index) => (
               <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3 shadow-sm">
                 <TaiLieuPageButtons trang={item.trang} />
-                <p className="text-sm font-semibold text-slate-900">{item.tieu_de || item.danh_muc?.ten || 'Không rõ loại'}</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  <span className="text-slate-400">{index + 1}.</span> {item.tieu_de || item.danh_muc?.ten || 'Không rõ loại'}
+                </p>
                 <p className="text-xs text-slate-500">
                   {item.tieu_de && item.danh_muc?.ten ? `${item.danh_muc.ten} · ` : ''}
                   {item.ngay_viet || 'Chưa rõ ngày viết'}
