@@ -817,8 +817,24 @@ function QuickMarkForm({
     setStep('assign')
   }
 
+  // Chi bo DUNG 1 hoc sinh (maHs) khoi danh sach dang xac nhan - khong dung
+  // toi assignments/contacts cua NHUNG hoc sinh khac. Don them assignments/
+  // contacts cua chinh em vua bo (don rac, tranh giu state mo coi neu sau do
+  // em do duoc chon lai va thay lai gia tri cu chua kip xoa).
   function removeFromAssign(maHs: string) {
     setSelectedCodes((current) => current.filter((code) => code !== maHs))
+    setAssignments((current) => {
+      if (!(maHs in current)) return current
+      const next = { ...current }
+      delete next[maHs]
+      return next
+    })
+    setContacts((current) => {
+      if (!(maHs in current)) return current
+      const next = { ...current }
+      delete next[maHs]
+      return next
+    })
   }
 
   function resetAll() {
