@@ -21,11 +21,31 @@ export function boDauTiengViet(value: string): string {
     .replace(/Đ/g, 'D')
 }
 
+function buildHocPhiLink(tokenHoSo: string): string {
+  return `${window.location.origin}${window.location.pathname}#/ph/${tokenHoSo}`
+}
+
 // Cau chung dung o CA 2 noi: noi_dung mac dinh cua thong bao "hoc_phi" (tao
 // luc import) VA noi dung SMS tu sinh (dien san luc bam "Nhan tin" neu chua
 // co gi moi hon). token la token_ho_so cua dung hoc sinh do (dinh danh doc
 // duoc trang /ph/:token cua rieng em do).
 export function buildHocPhiThongBaoText(tenKy: string, tokenHoSo: string): string {
-  const link = `${window.location.origin}${window.location.pathname}#/ph/${tokenHoSo}`
-  return boDauTiengViet(`${tenKy}. Xem chi tiet va so tien cu the tai: ${link}`)
+  return boDauTiengViet(`${tenKy}. Xem chi tiet va so tien cu the tai: ${buildHocPhiLink(tokenHoSo)}`)
+}
+
+// Noi them link ca nhan hoa vao CUOI 1 doan van ban da soan san (vd noi_dung
+// SMS chi tiet giao vien tu viet tay kem so tai khoan/han dong, truyen qua
+// field "noi_dung_thong_bao" trong JSON import hoc phi - xem
+// docs/hocphiPHxem/16-nguyen-tac-de-ai-tao-json-hoc-phi.md). Khong ghi de
+// toan bo cau nhu truoc (C258/C261) - giu nguyen van ban giao vien da soan,
+// chi noi them link o cuoi de phu huynh van bam vao xem duoc chi tiet dong
+// (yeu cau nguoi dung: "nội dung như trong json này và + link xem chi tiết
+// của mỗi phụ huynh"). Neu van ban da co san 1 link "/ph/" roi (vd giao vien
+// tu dien tay tu file mau hocphi_thang9_import_v2_link.json) thi KHONG noi
+// them nua, tranh 2 link trung nhau trong cung 1 tin.
+export function appendHocPhiLink(text: string, tokenHoSo: string): string {
+  const trimmed = text.trim()
+  if (trimmed.includes('/ph/')) return boDauTiengViet(trimmed)
+
+  return boDauTiengViet(`${trimmed} Xem chi tiet tai: ${buildHocPhiLink(tokenHoSo)}`)
 }

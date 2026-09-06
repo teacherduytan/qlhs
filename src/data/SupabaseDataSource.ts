@@ -1,6 +1,6 @@
 import type { DataSource } from './DataSource'
 import { getSupabaseClient } from '../lib/supabaseClient'
-import { buildHocPhiThongBaoText } from '../lib/hocPhiSms'
+import { appendHocPhiLink, buildHocPhiThongBaoText } from '../lib/hocPhiSms'
 import type {
   ApproveDeXuatGhiNhanOverrides,
   AttendanceFormPayload,
@@ -397,8 +397,15 @@ export class SupabaseDataSource implements DataSource {
       .in('ma_hs', dsMaHs)
     assertNoError(daCoError, 'Khong doc duoc thong bao hoc phi da co tren Supabase')
 
-    const noiDungCho = (maHs: string) =>
-      override?.get(maHs)?.noiDung || buildHocPhiThongBaoText(tenKy, tokenByMaHs?.get(maHs) || '')
+    const noiDungCho = (maHs: string) => {
+      const token = tokenByMaHs?.get(maHs) || ''
+      const rieng = override?.get(maHs)?.noiDung
+      // Van ban rieng (giao vien tu soan, kem so tai khoan/han dong...) van
+      // duoc GIU NGUYEN, chi NOI THEM link ca nhan o cuoi - khong con GHI DE
+      // toan bo cau nhu truoc C264 (yeu cau nguoi dung: giu dung noi dung da
+      // soan + them link xem chi tiet).
+      return rieng ? appendHocPhiLink(rieng, token) : buildHocPhiThongBaoText(tenKy, token)
+    }
     const ghiChuCho = (maHs: string) => override?.get(maHs)?.ghiChu || tenKy
 
     const daCoRows = (daCo || []) as Array<{ id: string; ma_hs: string }>
