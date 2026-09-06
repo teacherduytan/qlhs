@@ -18,6 +18,7 @@ import type {
   DongHanhDuyet,
   GhiNhan,
   HinhThucLienLacPhuHuynh,
+  HocPhiKyThamChieu,
   HocSinh,
   HuyHieuDongHanh,
   LienLacPhuHuynh,
@@ -30,7 +31,7 @@ import type {
 import { formatTietLabel, getRecordPolarity } from '../records/recordInsights'
 import { Pagination, usePagination } from '../../components/Pagination'
 import { PhoneActionMenu, buildSmsHref } from '../../components/PhoneActionMenu'
-import { findCurrentMessage, formatMessageTimestamp } from './messageContents'
+import { findCurrentMessage, formatMessageTimestamp, resolveSmsBody } from './messageContents'
 import { apDungHuyHieu, apDungLuat, chonCauDinhHuong } from '../companion/applyRules'
 import { tinhChiSoTuan } from '../companion/computeMetrics'
 import { DIEM_THUONG_MOI_HUY_HIEU_MAC_DINH, tinhRankTuan } from '../companion/rankTinhTu'
@@ -81,6 +82,7 @@ type DetailState =
       catalog: DanhMucDiem[]
       contacts: LienLacPhuHuynh[]
       messages: NoiDungTinNhan[]
+      hocPhiKyList: HocPhiKyThamChieu[]
       parents: PhuHuynh[]
       proposals: DeXuatGhiNhan[]
       records: GhiNhan[]
@@ -169,6 +171,7 @@ export function TeacherStudentDetailPage() {
       dataSource.getParentContactHistory({ maHs }),
       dataSource.getDeXuatGhiNhan({ maHs }),
       dataSource.getMessageContents(maHs),
+      dataSource.getHocPhiKyThamChieu(maHs),
       dataSource.getAttendanceEntries(),
       dataSource.getWeekConfig(),
       dataSource.getDongHanhLuat(),
@@ -193,6 +196,7 @@ export function TeacherStudentDetailPage() {
           contacts,
           proposals,
           messages,
+          hocPhiKyList,
           attendance,
           weekConfig,
           luat,
@@ -219,6 +223,7 @@ export function TeacherStudentDetailPage() {
             catalog,
             contacts,
             messages,
+            hocPhiKyList,
             parents,
             proposals,
             records,
@@ -422,6 +427,14 @@ export function TeacherStudentDetailPage() {
     if (state.status !== 'success') return null
     return findCurrentMessage(state.messages)
   }, [state])
+  // Uu tien noi_dung_tin_nhan tu soan neu moi hon, fallback dung cau tu sinh
+  // tu ky hoc phi gan nhat kem link /ph/:token (docs/hocphiPHxem/17-...md) -
+  // KHAC voi currentMessage o tren (chi dung de highlight dong "hien tai"
+  // trong lich su tin nhan, khong phai noi dung SMS thuc te dien san).
+  const smsBody = useMemo(() => {
+    if (state.status !== 'success') return ''
+    return resolveSmsBody(state.messages, state.hocPhiKyList, state.student.ma_hs, state.student.token_ho_so)
+  }, [state])
   const messagesPage = usePagination(state.status === 'success' ? state.messages : [])
 
   return (
@@ -518,15 +531,15 @@ export function TeacherStudentDetailPage() {
                 </span>
               </div>
               <div className="grid gap-2 text-sm">
-                <PhoneRow label="SĐT 1" value={state.student.sdt_1} smsBody={currentMessage?.noi_dung || ''} />
-                <PhoneRow label="SĐT 2" value={state.student.sdt_2} smsBody={currentMessage?.noi_dung || ''} />
+                <PhoneRow label="SĐT 1" value={state.student.sdt_1} smsBody={smsBody} />
+                <PhoneRow label="SĐT 2" value={state.student.sdt_2} smsBody={smsBody} />
                 {state.parents.map((parent) => (
                   <PhoneRow
                     key={`${parent.ma_hs}-${parent.quan_he}-${parent.sdt}`}
                     label={`${parent.quan_he || 'Phụ huynh'}${parent.uu_tien_lien_he ? ' ưu tiên' : ''}`}
                     name={parent.ho_ten_ph}
                     value={parent.sdt}
-                    smsBody={currentMessage?.noi_dung || ''}
+                    smsBody={smsBody}
                   />
                 ))}
               </div>

@@ -10,6 +10,7 @@ import type {
   DiemNguongXepLoai,
   DienHocSinh,
   GhiNhan,
+  HocPhiKyThamChieu,
   HocSinh,
   NoiDungTinNhan,
 } from '../../data/types'
@@ -18,7 +19,7 @@ import { calculateWeeklyStudentScore, DEFAULT_SO_THAP_PHAN_LAM_TRON } from '../s
 import { getBadgeClassForGroup } from '../scoring/scoreStyles'
 import { Pagination, usePagination } from '../../components/Pagination'
 import { PhoneActionMenu } from '../../components/PhoneActionMenu'
-import { findCurrentMessage } from './messageContents'
+import { resolveSmsBody } from './messageContents'
 import { isActiveStudent } from '../dashboard/DashboardPage'
 import { REPORT_CONFIG } from '../reports/reportConfig'
 import { STUDENT_EXPORT_COLUMNS, type StudentExportColumnKey } from './studentExportColumns'
@@ -76,6 +77,7 @@ export function StudentsPage() {
   const [weekConfig, setWeekConfig] = useState<CauHinhTuan[]>([])
   const [banCanSu, setBanCanSu] = useState<BanCanSu[]>([])
   const [messages, setMessages] = useState<NoiDungTinNhan[]>([])
+  const [hocPhiKyList, setHocPhiKyList] = useState<HocPhiKyThamChieu[]>([])
   const [diemThanhPhan, setDiemThanhPhan] = useState<DiemCauHinhThanhPhan[]>([])
   const [diemHeSoDieuKien, setDiemHeSoDieuKien] = useState<DiemCauHinhHeSoDieuKien[]>([])
   const [diemNguongXepLoai, setDiemNguongXepLoai] = useState<DiemNguongXepLoai[]>([])
@@ -113,6 +115,7 @@ export function StudentsPage() {
       dataSource.getWeekConfig(),
       dataSource.getBanCanSu(),
       dataSource.getMessageContents(),
+      dataSource.getHocPhiKyThamChieu(),
       dataSource.getDiemCauHinhThanhPhan(),
       dataSource.getDiemCauHinhHeSoDieuKien(),
       dataSource.getDiemNguongXepLoai(),
@@ -126,6 +129,7 @@ export function StudentsPage() {
           weekRows,
           banCanSuRows,
           messageRows,
+          hocPhiKyRows,
           diemThanhPhanRows,
           diemHeSoDieuKienRows,
           diemNguongXepLoaiRows,
@@ -138,6 +142,7 @@ export function StudentsPage() {
             setWeekConfig(weekRows)
             setBanCanSu(banCanSuRows)
             setMessages(messageRows)
+            setHocPhiKyList(hocPhiKyRows)
             setDiemThanhPhan(diemThanhPhanRows)
             setDiemHeSoDieuKien(diemHeSoDieuKienRows)
             setDiemNguongXepLoai(diemNguongXepLoaiRows)
@@ -1045,22 +1050,24 @@ export function StudentsPage() {
                                     <StudentPhonePill
                                       label="SĐT 1"
                                       phone={student.sdt_1}
-                                      smsBody={
-                                        findCurrentMessage(
-                                          messages.filter((message) => message.ma_hs === student.ma_hs),
-                                        )?.noi_dung || ''
-                                      }
+                                      smsBody={resolveSmsBody(
+                                        messages.filter((message) => message.ma_hs === student.ma_hs),
+                                        hocPhiKyList,
+                                        student.ma_hs,
+                                        student.token_ho_so,
+                                      )}
                                     />
                                   ) : null}
                                   {student.sdt_2 ? (
                                     <StudentPhonePill
                                       label="SĐT 2"
                                       phone={student.sdt_2}
-                                      smsBody={
-                                        findCurrentMessage(
-                                          messages.filter((message) => message.ma_hs === student.ma_hs),
-                                        )?.noi_dung || ''
-                                      }
+                                      smsBody={resolveSmsBody(
+                                        messages.filter((message) => message.ma_hs === student.ma_hs),
+                                        hocPhiKyList,
+                                        student.ma_hs,
+                                        student.token_ho_so,
+                                      )}
                                     />
                                   ) : null}
                                 </div>

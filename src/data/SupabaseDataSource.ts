@@ -29,6 +29,7 @@ import type {
   ChiTietHocPhi,
   HocPhiImportPayload,
   HocPhiImportResult,
+  HocPhiKyThamChieu,
   PublicParentProfile,
   PublicStudentProfile,
   SuaDeXuatGhiNhanInput,
@@ -327,6 +328,40 @@ export class SupabaseDataSource implements DataSource {
       daKhopMaHs: maHsDaKhop.length,
       canRaSoat,
     }
+  }
+
+  // Danh sach (hoc_sinh, ky_hoc_phi) tung cap - dung de biet 1 hoc sinh
+  // thuoc nhung ky nao (qua hoc_phi_tong) va lay ten_ky/created_at cua ky do
+  // (qua hoc_phi_ky) - phuc vu sinh SMS tu dong kem link /ph/:token khi
+  // chua co noi_dung_tin_nhan nao moi hon (docs/hocphiPHxem/17-...md). 2
+  // truy van rieng roi noi thu cong o JS (khong dung nested select) - dung
+  // quy uoc code hien co trong file nay, chua tung dung join long trong 1
+  // cau query Supabase truoc gio.
+  async getHocPhiKyThamChieu(maHs?: string): Promise<HocPhiKyThamChieu[]> {
+    const { data: kyRows, error: kyError } = await getSupabaseClient()
+      .from('hoc_phi_ky')
+      .select('id, ma_ky, ten_ky, created_at')
+    assertNoError(kyError, 'Khong doc duoc danh sach ky hoc phi tu Supabase')
+
+    const kyById = new Map(
+      (kyRows || []).map((row) => [
+        (row as { id: string }).id,
+        row as { id: string; ma_ky: string; ten_ky: string; created_at: string },
+      ]),
+    )
+
+    let tongQuery = getSupabaseClient().from('hoc_phi_tong').select('ma_hs, ky_id')
+    if (maHs) tongQuery = tongQuery.eq('ma_hs', maHs)
+    const { data: tongRows, error: tongError } = await tongQuery
+    assertNoError(tongError, 'Khong doc duoc danh sach hoc sinh theo ky hoc phi tu Supabase')
+
+    const result: HocPhiKyThamChieu[] = []
+    for (const row of (tongRows || []) as Array<{ ma_hs: string; ky_id: string }>) {
+      const ky = kyById.get(row.ky_id)
+      if (!ky) continue
+      result.push({ ma_hs: row.ma_hs, ma_ky: ky.ma_ky, ten_ky: ky.ten_ky, created_at: ky.created_at })
+    }
+    return result
   }
 
   // 1 thong bao "hoc_phi" moi hoc sinh moi ky - upsert bang tay (chon truoc,

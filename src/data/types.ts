@@ -344,6 +344,18 @@ export interface ChiTietHocPhi {
   chi_tiet: Record<string, number>
 }
 
+// Tham chieu gon (khong kem chi_tiet/cot_hoc_phi) cho 1 hoc sinh trong 1 ky
+// hoc phi da import - dung de: (1) biet hoc sinh do co thuoc ky nao gan
+// nhat (cho SMS tu sinh kem link /ph/:token - docs/hocphiPHxem/17-...md),
+// (2) so sanh created_at voi noi_dung_tin_nhan tu soan tay de quyet dinh
+// noi dung nao "moi hon" khi dien san SMS.
+export interface HocPhiKyThamChieu {
+  ma_hs: string
+  ma_ky: string
+  ten_ky: string
+  created_at: string
+}
+
 // Ket qua RPC lay_thong_bao_phu_huynh - trang rieng cho phu huynh xem, tach
 // khoi PublicStudentProfile (trang hoc sinh /hs/:token) vi pham vi du lieu
 // hep hon nhieu (chi ho so co ban + dong thoi gian thong bao, khong lo diem
