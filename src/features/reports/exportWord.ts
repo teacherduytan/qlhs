@@ -65,8 +65,8 @@ export async function exportReportToWord(
         children: [
           ...buildLetterhead(meta),
           ...buildAttendanceSection(data),
-          ...buildViolationSection(data),
-          ...buildPositiveSection(data),
+          ...(meta.hocSinh ? buildStudentViolationSection(data) : buildViolationSection(data)),
+          ...(meta.hocSinh ? buildStudentPositiveSection(data) : buildPositiveSection(data)),
           ...buildBanCanSuSignatures(meta),
           ...buildSignatureBlock(),
         ],
@@ -247,6 +247,60 @@ function buildAttendanceSection(data: ReportData) {
     attendance.rows.length === 0
       ? new Paragraph({ children: [new TextRun('Không có học sinh vắng/trễ trong kỳ báo cáo này.')] })
       : new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: TABLE_BORDERS, rows }),
+  ]
+}
+
+// Ban de doc gui phu huynh (khong ma vi pham, ro ngay/tiet/noi dung + so lan
+// lap lai) - xem giai thich day du o ReportsPage.tsx (StudentViolationSection).
+function buildStudentViolationSection(data: ReportData) {
+  const { violation, studentTimeline } = data
+  const rows = studentTimeline.violations
+  const centerCols = [0, 1, 2, 4]
+  const tableRows = [
+    headerRow(['STT', 'Ngày', 'Tiết', 'Nội dung vi phạm', 'Số lần lặp lại'], centerCols),
+    ...rows.map((row, index) =>
+      dataRow(
+        [
+          String(index + 1),
+          formatDate(row.ngay),
+          row.tiet || '—',
+          row.nghiemTrong ? `${row.noiDung} (nghiêm trọng)` : row.noiDung,
+          `Lần thứ ${row.soLanLuyKe}`,
+        ],
+        centerCols,
+      ),
+    ),
+  ]
+
+  return [
+    sectionHeading('Phần 2 — Vi phạm nề nếp'),
+    summaryParagraph([
+      { label: 'Tổng lượt vi phạm', value: violation.tongSoLuot },
+      { label: 'Vi phạm nghiêm trọng', value: violation.soViPhamNghiemTrong, color: 'C00000' },
+    ]),
+    rows.length === 0
+      ? new Paragraph({ children: [new TextRun('Không có vi phạm nào trong kỳ báo cáo này.')] })
+      : new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: TABLE_BORDERS, rows: tableRows }),
+  ]
+}
+
+function buildStudentPositiveSection(data: ReportData) {
+  const { positive, studentTimeline } = data
+  const rows = studentTimeline.positives
+  const centerCols = [0, 1, 2, 4]
+  const tableRows = [
+    headerRow(['STT', 'Ngày', 'Tiết', 'Nội dung', 'Số lần'], centerCols),
+    ...rows.map((row, index) =>
+      dataRow([String(index + 1), formatDate(row.ngay), row.tiet || '—', row.noiDung, `Lần thứ ${row.soLanLuyKe}`], centerCols),
+    ),
+  ]
+
+  return [
+    sectionHeading('Phần 3 — Ghi nhận tích cực'),
+    summaryParagraph([{ label: 'Tổng lượt ghi nhận', value: positive.tongSoLuot }]),
+    rows.length === 0
+      ? new Paragraph({ children: [new TextRun('Không có ghi nhận tích cực nào trong kỳ báo cáo này.')] })
+      : new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: TABLE_BORDERS, rows: tableRows }),
   ]
 }
 

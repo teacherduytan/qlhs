@@ -383,6 +383,7 @@ export function ReportsPage() {
           data={reportData}
           exporting={exporting}
           exportError={exportError}
+          isStudentReport={Boolean(selectedStudent)}
           onExportWord={() => void handleExportWord()}
           onExportPdf={() => void handleExportPdf()}
         />
@@ -396,6 +397,7 @@ function ReportPreview({
   data,
   exporting,
   exportError,
+  isStudentReport,
   onExportWord,
   onExportPdf,
 }: {
@@ -403,6 +405,7 @@ function ReportPreview({
   data: ReportData
   exporting: 'word' | 'pdf' | null
   exportError: string | null
+  isStudentReport: boolean
   onExportWord: () => void
   onExportPdf: () => void
 }) {
@@ -447,8 +450,17 @@ function ReportPreview({
       ) : null}
 
       <AttendanceSection data={data} />
-      <ViolationSection data={data} />
-      <PositiveSection data={data} />
+      {isStudentReport ? (
+        <>
+          <StudentViolationSection data={data} />
+          <StudentPositiveSection data={data} />
+        </>
+      ) : (
+        <>
+          <ViolationSection data={data} />
+          <PositiveSection data={data} />
+        </>
+      )}
     </div>
   )
 }
@@ -530,6 +542,111 @@ const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
   vang_khong_phep: 'Vắng không phép',
   vang_co_phep: 'Vắng có phép',
   tre: 'Trễ',
+}
+
+// Ban de doc cho phu huynh (C275): liet ke tung lan vi pham theo dung thoi
+// gian xay ra (ngay + tiet), noi dung mo ta ro rang thay vi ma so, kem so
+// lan lap lai luy ke cua DUNG loi do (dua theo ma danh muc) - giup phu
+// huynh thay ngay con minh vi pham gi, luc nao, va da tai pham bao nhieu
+// lan, khong can tra cuu ma vi pham nhu ban thong ke ca lop.
+function StudentViolationSection({ data }: { data: ReportData }) {
+  const { violation, studentTimeline } = data
+  const rows = studentTimeline.violations
+  return (
+    <section className="rounded-lg border border-rose-200 bg-white">
+      <div className="rounded-t-lg bg-rose-700 px-4 py-2.5">
+        <h3 className="text-base font-bold text-white">Phần 2 — Vi phạm nề nếp</h3>
+      </div>
+      <div className="space-y-3 p-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+          <StatBox label="Tổng lượt vi phạm" value={violation.tongSoLuot} tone="amber" />
+          <StatBox label="Vi phạm nghiêm trọng" value={violation.soViPhamNghiemTrong} tone="rose" />
+        </div>
+
+        {rows.length === 0 ? (
+          <p className="rounded-md border border-slate-200 bg-slate-100 p-3 text-sm text-slate-600">
+            Không có vi phạm nào trong kỳ báo cáo này.
+          </p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
+                <tr>
+                  <th className="px-3 py-2">STT</th>
+                  <th className="px-3 py-2">Ngày</th>
+                  <th className="px-3 py-2">Tiết</th>
+                  <th className="px-3 py-2">Nội dung vi phạm</th>
+                  <th className="px-3 py-2">Số lần lặp lại</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((row, index) => (
+                  <tr key={index} className={row.nghiemTrong ? 'bg-rose-50' : undefined}>
+                    <td className="px-3 py-2 text-slate-500">{index + 1}</td>
+                    <td className="px-3 py-2 text-slate-700">{formatDateCompact(row.ngay)}</td>
+                    <td className="px-3 py-2 text-slate-600">{row.tiet || '—'}</td>
+                    <td className="px-3 py-2 font-semibold text-slate-900">
+                      {row.noiDung}
+                      {row.nghiemTrong ? <span className="ml-1 text-xs font-bold text-rose-700">(nghiêm trọng)</span> : null}
+                    </td>
+                    <td className="px-3 py-2 text-slate-700">Lần thứ {row.soLanLuyKe}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function StudentPositiveSection({ data }: { data: ReportData }) {
+  const { positive, studentTimeline } = data
+  const rows = studentTimeline.positives
+  return (
+    <section className="rounded-lg border border-emerald-200 bg-white">
+      <div className="rounded-t-lg bg-emerald-700 px-4 py-2.5">
+        <h3 className="text-base font-bold text-white">Phần 3 — Ghi nhận tích cực</h3>
+      </div>
+      <div className="space-y-3 p-4">
+        <div className="grid grid-cols-1 gap-3 sm:max-w-xs">
+          <StatBox label="Tổng lượt ghi nhận" value={positive.tongSoLuot} tone="sky" />
+        </div>
+
+        {rows.length === 0 ? (
+          <p className="rounded-md border border-slate-200 bg-slate-100 p-3 text-sm text-slate-600">
+            Không có ghi nhận tích cực nào trong kỳ báo cáo này.
+          </p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
+                <tr>
+                  <th className="px-3 py-2">STT</th>
+                  <th className="px-3 py-2">Ngày</th>
+                  <th className="px-3 py-2">Tiết</th>
+                  <th className="px-3 py-2">Nội dung</th>
+                  <th className="px-3 py-2">Số lần</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((row, index) => (
+                  <tr key={index}>
+                    <td className="px-3 py-2 text-slate-500">{index + 1}</td>
+                    <td className="px-3 py-2 text-slate-700">{formatDateCompact(row.ngay)}</td>
+                    <td className="px-3 py-2 text-slate-600">{row.tiet || '—'}</td>
+                    <td className="px-3 py-2 font-semibold text-slate-900">{row.noiDung}</td>
+                    <td className="px-3 py-2 text-slate-700">Lần thứ {row.soLanLuyKe}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </section>
+  )
 }
 
 function ViolationSection({ data }: { data: ReportData }) {

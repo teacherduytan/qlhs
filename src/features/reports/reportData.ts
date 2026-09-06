@@ -7,6 +7,7 @@ import type {
   TrangThaiDiemDanh,
 } from '../../data/types'
 import { getRecordTypeLabel, isPositiveRecord, isViolationRecord } from '../dashboard/DashboardPage'
+import { formatTietLabel } from '../records/recordInsights'
 
 export interface ReportAttendanceRow {
   maHs: string
@@ -69,12 +70,31 @@ export interface ReportPositiveData {
   rows: ReportPositiveRow[]
 }
 
+// 1 dong "de doc" cho phu huynh - KHONG kem ma danh muc (chi dung ma o tang
+// tinh toan de dem so lan lap lai, khong hien thi ra ngoai). Dung cho bao
+// cao rieng 1 hoc sinh (C275) - thay the 2 bang thong ke gop nhom/theo ma
+// (ReportViolationGroupRow/ReportViolationDetailRow, hop voi bao cao ca
+// lop hon la bao cao gui 1 gia dinh doc).
+export interface ReportStudentTimelineRow {
+  ngay: string
+  tiet: string | null
+  monHoc: string | null
+  noiDung: string
+  soLanLuyKe: number
+  nghiemTrong: boolean
+}
+
 export interface ReportData {
   tuNgay: string
   denNgay: string
   attendance: ReportAttendanceData
   violation: ReportViolationData
   positive: ReportPositiveData
+  // Chi co y nghia khi buildReportData() duoc goi voi records da loc rieng
+  // 1 hoc sinh (xem ReportsPage.tsx) - neu goi voi ca lop, so lan luy ke se
+  // gop chung tat ca hoc sinh cho cung 1 ma danh muc, KHONG dung de hien
+  // thi cho bao cao ca lop (chi bao cao 1 hoc sinh moi doc bang nay).
+  studentTimeline: { violations: ReportStudentTimelineRow[]; positives: ReportStudentTimelineRow[] }
 }
 
 export interface BuildReportDataInput {
@@ -123,7 +143,49 @@ export function buildReportData(input: BuildReportDataInput): ReportData {
     ),
     violation: buildViolationData(recordsInRange, catalogByCode, studentByMaHs),
     positive: buildPositiveData(recordsInRange, catalogByCode, studentByMaHs),
+    studentTimeline: buildStudentTimeline(recordsInRange, catalogByCode),
   }
+}
+
+// Sap theo ngay -> tiet (tang dan) de "so lan luy ke" dung nghia "lan thu
+// may tinh den thoi diem nay", giup phu huynh thay ro muc do lap lai theo
+// thoi gian thay vi chi 1 con so tong cuoi ky.
+function buildStudentTimeline(
+  recordsInRange: GhiNhan[],
+  catalogByCode: Map<string, DanhMucDiem>,
+): { violations: ReportStudentTimelineRow[]; positives: ReportStudentTimelineRow[] } {
+  const sorted = [...recordsInRange].sort((left, right) => {
+    if (left.ngay !== right.ngay) return left.ngay < right.ngay ? -1 : 1
+    return (left.tiet || '').localeCompare(right.tiet || '')
+  })
+
+  const luyKe = new Map<string, number>()
+  const violations: ReportStudentTimelineRow[] = []
+  const positives: ReportStudentTimelineRow[] = []
+
+  for (const record of sorted) {
+    const catalogItem = record.ma_danh_muc ? catalogByCode.get(record.ma_danh_muc) : undefined
+    // Khoa dem lap lai theo ma danh muc - hoc sinh khac nhau nhung cung 1
+    // ma se khong lam sai lech nhau vi ham nay chi duoc doc khi records da
+    // loc con dung 1 hoc sinh (xem comment o ReportData.studentTimeline).
+    const key = record.ma_danh_muc || `noi-dung:${record.noi_dung || record.loai}`
+    const soLanMoi = (luyKe.get(key) || 0) + (record.so_lan || 1)
+    luyKe.set(key, soLanMoi)
+
+    const row: ReportStudentTimelineRow = {
+      ngay: record.ngay,
+      tiet: formatTietLabel(record.tiet),
+      monHoc: record.mon_hoc,
+      noiDung: catalogItem?.ten_muc || record.noi_dung || getRecordTypeLabel(record.loai),
+      soLanLuyKe: soLanMoi,
+      nghiemTrong: Boolean(catalogItem?.nghiem_trong),
+    }
+
+    if (isPositiveRecord(record, catalogByCode)) positives.push(row)
+    else if (isViolationRecord(record, catalogByCode)) violations.push(row)
+  }
+
+  return { violations, positives }
 }
 
 function normalizeStatus(status: string): TrangThaiDiemDanh {

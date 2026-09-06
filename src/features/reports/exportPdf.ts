@@ -99,8 +99,8 @@ function buildReportContainer(
   container.innerHTML = `
     ${renderLetterhead(meta)}
     ${renderAttendanceSection(data)}
-    ${renderViolationSection(data)}
-    ${renderPositiveSection(data)}
+    ${meta.hocSinh ? renderStudentViolationSection(data) : renderViolationSection(data)}
+    ${meta.hocSinh ? renderStudentPositiveSection(data) : renderPositiveSection(data)}
     ${renderBanCanSuSignatures(meta)}
     ${renderSignatureBlock()}
   `
@@ -202,6 +202,79 @@ function renderAttendanceSection(data: ReportData): string {
             <thead><tr>
               <th style="${th} text-align:center;">STT</th><th style="${th}">Họ tên</th><th style="${th} text-align:center;">Ngày</th>
               <th style="${th} text-align:center;">Trạng thái</th><th style="${th}">Chi tiết buổi</th><th style="${th} text-align:center;">Đã liên lạc PH?</th>
+            </tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>`
+    }
+  `
+}
+
+// Ban de doc gui phu huynh (khong ma vi pham, ro ngay/tiet/noi dung + so lan
+// lap lai) - xem giai thich day du o ReportsPage.tsx (StudentViolationSection).
+function renderStudentViolationSection(data: ReportData): string {
+  const { violation, studentTimeline } = data
+  const rows = studentTimeline.violations
+  const rowsHtml = rows
+    .map(
+      (row, index) => `
+        <tr${row.nghiemTrong ? ' style="background:#fff1f2;"' : ''}>
+          <td style="${td} text-align:center;">${index + 1}</td>
+          <td style="${td} text-align:center;">${formatDate(row.ngay)}</td>
+          <td style="${td} text-align:center;">${escapeHtml(row.tiet || '—')}</td>
+          <td style="${td}">${escapeHtml(row.noiDung)}${row.nghiemTrong ? ' <strong style="color:#c00000;">(nghiêm trọng)</strong>' : ''}</td>
+          <td style="${td} text-align:center;">Lần thứ ${row.soLanLuyKe}</td>
+        </tr>`,
+    )
+    .join('')
+
+  return `
+    <h2 style="${h2}">Phần 2 — Vi phạm nề nếp</h2>
+    <p style="margin:4px 0 8px;">
+      Tổng lượt vi phạm: <strong>${violation.tongSoLuot}</strong> ·
+      Vi phạm nghiêm trọng: <strong style="color:#c00000;">${violation.soViPhamNghiemTrong}</strong>
+    </p>
+    ${
+      rows.length === 0
+        ? '<p>Không có vi phạm nào trong kỳ báo cáo này.</p>'
+        : `<table style="${table}">
+            <thead><tr>
+              <th style="${th} text-align:center;">STT</th><th style="${th} text-align:center;">Ngày</th>
+              <th style="${th} text-align:center;">Tiết</th><th style="${th}">Nội dung vi phạm</th>
+              <th style="${th} text-align:center;">Số lần lặp lại</th>
+            </tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>`
+    }
+  `
+}
+
+function renderStudentPositiveSection(data: ReportData): string {
+  const { positive, studentTimeline } = data
+  const rows = studentTimeline.positives
+  const rowsHtml = rows
+    .map(
+      (row, index) => `
+        <tr>
+          <td style="${td} text-align:center;">${index + 1}</td>
+          <td style="${td} text-align:center;">${formatDate(row.ngay)}</td>
+          <td style="${td} text-align:center;">${escapeHtml(row.tiet || '—')}</td>
+          <td style="${td}">${escapeHtml(row.noiDung)}</td>
+          <td style="${td} text-align:center;">Lần thứ ${row.soLanLuyKe}</td>
+        </tr>`,
+    )
+    .join('')
+
+  return `
+    <h2 style="${h2}">Phần 3 — Ghi nhận tích cực</h2>
+    <p style="margin:4px 0 8px;">Tổng lượt ghi nhận: <strong>${positive.tongSoLuot}</strong></p>
+    ${
+      rows.length === 0
+        ? '<p>Không có ghi nhận tích cực nào trong kỳ báo cáo này.</p>'
+        : `<table style="${table}">
+            <thead><tr>
+              <th style="${th} text-align:center;">STT</th><th style="${th} text-align:center;">Ngày</th>
+              <th style="${th} text-align:center;">Tiết</th><th style="${th}">Nội dung</th>
+              <th style="${th} text-align:center;">Số lần</th>
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>`
