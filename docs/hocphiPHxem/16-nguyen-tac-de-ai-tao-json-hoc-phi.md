@@ -79,6 +79,11 @@ Mỗi phần tử `hoc_sinh[]`:
   bảo hiểm y tế, đồng phục, quỹ lớp… — bất kỳ khoản nào làm **tăng** số tiền phải đóng.
 - **`giam_tru`**: bất kỳ khoản làm **giảm** số tiền phải đóng trong chính kỳ này — giảm anh em/chị em, học bổng,
   chiết khấu, miễn giảm chính sách… Cột Excel thường có chữ "giảm", "trừ", "chiết khấu", "miễn", "học bổng".
+  **Giá trị luôn phải là số DƯƠNG** (độ lớn khoản giảm, ví dụ giảm 300.000đ thì ghi `300000`, không ghi `-300000`)
+  — app tự trừ đi và tự hiện dấu trừ khi hiển thị; ghi âm sẽ làm sai màu hiển thị (bị hiểu nhầm thành "dư tiền")
+  **và** làm `tong_thu` tự tính (mục 6) lệch với số thật trong Excel — đây là lỗi thật đã từng xảy ra khi AI khác
+  copy thẳng số âm từ 1 cột Excel có định dạng trừ tiền (ví dụ Excel tô đỏ số trong ngoặc `(300,000)`), cần đặc
+  biệt cẩn thận đổi dấu khi gặp định dạng này.
 - **`no`**: số dư **mang từ kỳ trước sang** (không phát sinh mới trong kỳ này) — "nợ tháng trước", "dư tháng trước",
   "chuyển kỳ trước". Giá trị **dương** = còn nợ (app tự hiện nhãn "Nợ kỳ trước", tô đỏ); giá trị **âm** = dư tiền
   thừa từ trước (app tự hiện nhãn "Dư kỳ trước", tô xanh) — AI không cần tự viết chữ "nợ"/"dư" vào `ten_cot`, chỉ
@@ -91,25 +96,31 @@ trước khi xếp loại — không đoán bừa, vì xếp sai `loai` sẽ là
 
 Đây là phần quan trọng nhất trả lời đúng câu hỏi "AI cần hiểu gì để ra đúng nội dung nhắn cho phụ huynh":
 
-1. **Nội dung thông báo** (dòng hiện ngay trên trang phụ huynh, phần "nổi" của tin nhắn) — **có 2 cách**:
+1. **Nội dung thông báo** (dòng hiện ngay trên trang phụ huynh, phần "nổi" của tin nhắn, cũng chính là nội dung
+   điền sẵn khi giáo viên bấm "Nhắn tin" gửi SMS) — **có 2 cách, cả hai đều tự động kèm link `/ph/:token` cá nhân
+   hoá theo đúng học sinh, AI không cần tự chèn link**:
    - **Cách mặc định** (không cần làm gì thêm): app tự sinh 1 câu chung cho mọi học sinh trong cùng `ma_ky`, theo
-     khuôn `Thông báo học phí — {ten_ky}. Bấm vào xem chi tiết các khoản thu.` — khi đó phần duy nhất AI kiểm soát
-     được là `ten_ky`, nên phải viết cho tự đọc lên đã hiểu ngay là kỳ nào (ví dụ `"Học phí tháng 9/2026"`, không
-     nên chỉ để `"09/2026"` hay `"Kỳ 3"`).
+     khuôn `{ten_ky}. Xem chi tiết và số tiền cụ thể tại: {link}` — phần duy nhất AI kiểm soát được là `ten_ky`,
+     nên phải viết cho tự đọc lên đã hiểu ngay là kỳ nào (ví dụ `"Học phí tháng 9/2026"`, không nên chỉ để
+     `"09/2026"` hay `"Kỳ 3"`).
    - **Cách cá nhân hoá riêng từng học sinh** (khuyến khích dùng nếu có sẵn nội dung nhắn tin/SMS đã soạn theo
-     từng em — ví dụ kèm số tiền, hạn đóng, số tài khoản): thêm 2 field tuỳ chọn vào từng phần tử `hoc_sinh[]`:
-     `"noi_dung_thong_bao"` (chuỗi — nội dung đầy đủ hiện cho đúng học sinh này, thay hẳn câu mặc định) và
-     `"ghi_chu_thong_bao"` (chuỗi — dòng ghi chú ngắn phía trên, ví dụ `"Học phí tháng 9 - còn nợ tháng 8"`). Có 2
-     field này thì AI **không cần** soạn `ten_ky` cho thật kêu nữa (vì mỗi em đã có câu riêng), chỉ cần `ma_ky`/
-     `ten_ky` đủ để định danh kỳ trong hệ thống. Học sinh nào không có 2 field này vẫn rơi về câu mặc định như
-     bình thường — có thể trộn lẫn (1 số em có nội dung riêng, số còn lại dùng câu chung) trong cùng 1 lần import.
-2. **Nội dung chi tiết** (phần "gập" bên dưới, phụ huynh bấm "Bấm vào xem chi tiết học phí" mới thấy): chính là
-   bảng dựng từ `cot_hoc_phi` + `chi_tiet` của học sinh đó, hiển thị theo đúng `loai` (mục 3), cộng dòng
-   **"Tổng cộng"** lấy thẳng từ `tong_thu` — không tự cộng lại từ `chi_tiet`. Phần này **luôn hiện đúng theo dữ
-   liệu**, bất kể học sinh đó dùng câu thông báo mặc định hay câu riêng ở mục (1).
+     từng em — ví dụ kèm số tiền, hạn đóng, số tài khoản ngân hàng): thêm 2 field tuỳ chọn vào từng phần tử
+     `hoc_sinh[]`: `"noi_dung_thong_bao"` (chuỗi — văn bản đầy đủ AI/giáo viên tự soạn cho đúng học sinh này) và
+     `"ghi_chu_thong_bao"` (chuỗi — dòng ghi chú ngắn phía trên, ví dụ `"Học phí tháng 9 - còn nợ tháng 8"`). App
+     **giữ nguyên** văn bản này và **tự nối thêm** `" Xem chi tiết tại: {link}"` vào cuối — AI chỉ cần lo đúng nội
+     dung câu chữ/số tiền, không cần và không nên tự chèn link vào `noi_dung_thong_bao` (app tự thêm; nếu văn bản
+     đã lỡ có sẵn 1 link `/ph/` rồi thì app nhận ra và không nối thêm lần 2, nhưng để đơn giản/an toàn nhất thì
+     cứ soạn văn bản KHÔNG kèm link, cứ để app lo phần đó). Có 2 field này thì AI **không cần** soạn `ten_ky` cho
+     thật kêu nữa (vì mỗi em đã có câu riêng), chỉ cần `ma_ky`/`ten_ky` đủ để định danh kỳ trong hệ thống. Học
+     sinh nào không có 2 field này vẫn rơi về câu mặc định như bình thường — có thể trộn lẫn (1 số em có nội dung
+     riêng, số còn lại dùng câu chung) trong cùng 1 lần import.
+2. **Nội dung chi tiết** (phần "gập" bên dưới, phụ huynh bấm "Bấm vào xem chi tiết học phí" mới thấy, cũng là nơi
+   link ở mục (1) dẫn tới): chính là bảng dựng từ `cot_hoc_phi` + `chi_tiet` của học sinh đó, hiển thị theo đúng
+   `loai` (mục 3), cộng dòng **"Tổng cộng"** lấy thẳng từ `tong_thu` — không tự cộng lại từ `chi_tiet`. Phần này
+   **luôn hiện đúng theo dữ liệu**, bất kể học sinh đó dùng câu thông báo mặc định hay câu riêng ở mục (1).
 
 Ví dụ 1 phần tử `hoc_sinh[]` có cả nội dung riêng lẫn chi tiết cột động (gộp chung 1 lần import, không cần nhập 2
-lần ở 2 luồng khác nhau):
+lần ở 2 luồng khác nhau) — chú ý `noi_dung_thong_bao` **không** kèm link, app tự nối vào lúc gửi:
 
 ```json
 {
@@ -137,7 +148,17 @@ Vì vậy:
 - Dòng nào không khớp được tên sẽ **không** làm hỏng cả lần nhập — app gom vào danh sách "cần rà soát" riêng, giáo
   viên tự xử lý tay. AI không cần (và không nên) tự "đoán" gán một học sinh gần giống tên cho dòng lỗi chính tả.
 
-## 6. `tong_thu` lấy từ đâu
+## 6. Tránh lỗi hiển thị tiếng Việt (mã hoá ký tự)
+
+Từng gặp trường hợp thực tế: AI/công cụ trung gian nào đó trả về văn bản tiếng Việt bị lỗi (dấu câu biến thành ký
+tự lạ kiểu `Há»c phÃ­` thay vì `Học phí`) do đi qua nhầm 1 bước mã hoá (thường là UTF-8 bị đọc nhầm thành
+Windows-1252 ở đâu đó trong chuỗi công cụ). JSON dạng này vẫn có thể hợp lệ về cấu trúc nhưng hiển thị sai hoàn
+toàn cho phụ huynh/giáo viên. Trước khi trả JSON, AI nên tự đọc lại toàn bộ chuỗi tiếng Việt (`ten_ky`, `ten_cot`,
+`ho_ten`, `noi_dung_thong_bao`, `ghi_chu_thong_bao`) xem có ký tự lạ/ký tự thay thế (`�`, `Ã`, `Æ°`, `á»`…) không —
+nếu người dùng đọc lại JSON và thấy dấu câu sai như vậy, đó luôn là lỗi cần yêu cầu AI xuất lại, không phải lỗi
+của app.
+
+## 7. `tong_thu` lấy từ đâu
 
 - Nếu file Excel **đã có sẵn cột tổng cộng** cho từng học sinh → dùng thẳng số đó cho `tong_thu`. Đây là nguồn
   đáng tin cậy nhất, app hiển thị `tong_thu` y nguyên, **không tự cộng lại** từ `chi_tiet` để so sánh hiển thị.
@@ -146,7 +167,7 @@ Vì vậy:
 - Nếu tự tính mà lệch với 1 cột "tổng" nào đó có trong Excel, **ưu tiên số trong Excel**, không ưu tiên số tự
   cộng — Excel là nguồn gốc dữ liệu thật, phép cộng chỉ để dự phòng khi Excel không có sẵn.
 
-## 7. Checklist AI phải tự kiểm tra trước khi trả JSON
+## 8. Checklist AI phải tự kiểm tra trước khi trả JSON
 
 Trước khi đưa JSON cho người dùng, tự rà lại đúng các điều kiện app sẽ kiểm tra (JSON không đạt sẽ bị từ chối ngay
 khi dán vào app, không tới bước import):
@@ -163,15 +184,24 @@ khi dán vào app, không tới bước import):
       soát giúp).
 - [ ] `ho_ten` chép nguyên văn từ Excel, không tự sửa.
 - [ ] `ma_hs` để `null` trừ khi có danh sách mã thật đi kèm.
-- [ ] `tong_thu` đúng theo mục 6, là số (không phải chuỗi có ký hiệu "đ" hay dấu phẩy ngăn cách).
+- [ ] Mọi cột `loai: "giam_tru"` đều ghi giá trị **dương** (mục 3) — không copy nhầm số âm từ ô Excel định dạng
+      trừ tiền kiểu `(300,000)`.
+- [ ] `tong_thu` đúng theo mục 7, là số (không phải chuỗi có ký hiệu "đ" hay dấu phẩy ngăn cách).
+- [ ] `noi_dung_thong_bao`/`ghi_chu_thong_bao` (nếu có) **không** tự chèn link — để app tự nối (mục 4).
+- [ ] Đọc lại mọi chuỗi tiếng Việt xem có ký tự lạ do lỗi mã hoá không (mục 6).
 
-## 8. Cách người dùng dùng JSON này
+## 9. Cách người dùng dùng JSON này
 
 1. Dán/tải file JSON vào app: tab **Import** → nút gạt chế độ chọn **"💰 Học phí (cột động)"** → dán vào ô JSON
    hoặc chọn file → bấm "Xác nhận nhập học phí".
-2. App tự tạo (hoặc cập nhật nếu `ma_ky` đã tồn tại) 1 thông báo "Học phí" cho từng học sinh khớp được tên, và
-   lưu chi tiết theo đúng `cot_hoc_phi`/`chi_tiet`.
+2. App tự tạo (hoặc cập nhật nếu `ma_ky` đã tồn tại) 1 thông báo "Học phí" cho từng học sinh khớp được tên, lưu
+   chi tiết theo đúng `cot_hoc_phi`/`chi_tiet`, và gộp thành 1 "đợt" riêng có ngày giờ rõ ràng trong tab **Nhắn tin
+   PH** (như mọi đợt import tin nhắn khác).
 3. Học sinh không khớp được tên sẽ hiện trong danh sách "Cần rà soát" ngay trên màn hình import — người dùng tự
-   sửa tên trong Excel/JSON và nhập lại (cùng `ma_ky` sẽ ghi đè, không tạo trùng).
+   sửa tên trong Excel/JSON và nhập lại (cùng `ma_ky` sẽ ghi đè, không tạo trùng). Mục **"Lịch sử nhập học phí"**
+   ngay bên dưới form (cùng màn hình) liệt kê mọi kỳ đã nhập kèm ngày giờ nhập gần nhất, dùng để đối chiếu đã nhập
+   đúng kỳ/đúng lúc chưa.
 4. Phụ huynh vào trang riêng của mình (`/ph/:token`) sẽ thấy dòng thông báo mới, bấm "Bấm vào xem chi tiết học
    phí" để xem đúng bảng chi tiết vừa nhập.
+5. Giáo viên bấm số điện thoại phụ huynh (trang Học sinh hoặc trang chi tiết học sinh) → "Nhắn tin" sẽ tự điền
+   sẵn đúng nội dung thông báo ở mục 4 (kèm link) làm nội dung SMS.
