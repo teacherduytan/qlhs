@@ -23,7 +23,6 @@ export interface ReportAttendanceData {
   soHocSinhNghi: number
   soLuotVangCoPhep: number
   soLuotVangKhongPhep: number
-  soLuotDiTre: number
   rows: ReportAttendanceRow[]
 }
 
@@ -131,14 +130,7 @@ export function buildReportData(input: BuildReportDataInput): ReportData {
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
 
   const inRange = (ngay: string) => ngay >= tuNgay && ngay <= denNgay
-  // Loai bo cac ghi nhan tu dong sinh ra tu diem danh "Tre" (nguon =
-  // 'diem_danh_tu_dong', xem upsert_diem_danh() trong Supabase): thong tin
-  // di tre da hien thi day du o Phan 1 - Chuyen can (doc thang tu
-  // attendanceEntries), neu giu lai o day se bi trung lap voi Phan 2 - Vi
-  // pham ne nep trong cung 1 bao cao.
-  const recordsInRange = records.filter(
-    (record) => inRange(record.ngay) && record.nguon !== 'diem_danh_tu_dong',
-  )
+  const recordsInRange = records.filter((record) => inRange(record.ngay))
 
   return {
     tuNgay,
@@ -223,7 +215,6 @@ function buildAttendanceData(
   const absentStudents = new Set<string>()
   let soLuotVangCoPhep = 0
   let soLuotVangKhongPhep = 0
-  let soLuotDiTre = 0
 
   for (const [key, dayEntries] of groups) {
     const [maHs, ngay] = key.split('|')
@@ -235,9 +226,15 @@ function buildAttendanceData(
     }
     const trangThai = normalizeStatus(winner.trang_thai)
 
+    // Theo yeu cau: "di tre" gop chung 1 noi duy nhat la Phan 2 - Vi pham
+    // ne nep (ghi_nhan CC01 duoc upsert_diem_danh() tu dong tao), khong
+    // liet ke lai o Phan 1 - Chuyen can de tranh 1 su kien hien 2 lan trong
+    // cung 1 bao cao. He thong diem danh goc khong doi, chi thay doi cach
+    // trinh bay cho nguoi doc (phu huynh/GVCN).
+    if (trangThai === 'tre') continue
+
     if (trangThai === 'vang_co_phep') soLuotVangCoPhep += 1
-    else if (trangThai === 'vang_khong_phep') soLuotVangKhongPhep += 1
-    else soLuotDiTre += 1
+    else soLuotVangKhongPhep += 1
 
     if (trangThai === 'vang_co_phep' || trangThai === 'vang_khong_phep') {
       absentStudents.add(maHs)
@@ -281,7 +278,6 @@ function buildAttendanceData(
     soHocSinhNghi: absentStudents.size,
     soLuotVangCoPhep,
     soLuotVangKhongPhep,
-    soLuotDiTre,
     rows,
   }
 }

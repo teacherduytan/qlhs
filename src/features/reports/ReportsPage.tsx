@@ -488,16 +488,18 @@ function AttendanceSection({ data, isStudentReport }: { data: ReportData; isStud
         <h3 className="text-base font-bold text-white">Phần 1 — Chuyên cần</h3>
       </div>
       <div className="space-y-3 p-4">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <StatBox label="Học sinh nghỉ học" value={attendance.soHocSinhNghi} tone="slate" />
           <StatBox label="Lượt vắng có phép" value={attendance.soLuotVangCoPhep} tone="sky" />
           <StatBox label="Lượt vắng không phép" value={attendance.soLuotVangKhongPhep} tone="rose" />
-          <StatBox label="Lượt đi trễ" value={attendance.soLuotDiTre} tone="amber" />
         </div>
+        <p className="text-xs italic text-slate-500">
+          Thông tin đi trễ được gộp chung vào mục "Vi phạm nề nếp" bên dưới để tránh trùng lặp.
+        </p>
 
         {attendance.rows.length === 0 ? (
           <p className="rounded-md border border-slate-200 bg-slate-100 p-3 text-sm text-slate-600">
-            Không có học sinh vắng/trễ trong kỳ báo cáo này.
+            Không có học sinh vắng trong kỳ báo cáo này.
           </p>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-slate-200">

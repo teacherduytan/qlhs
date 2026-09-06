@@ -195,12 +195,14 @@ function renderAttendanceSection(data: ReportData, isStudentReport: boolean): st
     <p style="margin:4px 0 8px;">
       Học sinh nghỉ học: <strong>${attendance.soHocSinhNghi}</strong> ·
       Vắng có phép: <strong>${attendance.soLuotVangCoPhep}</strong> ·
-      Vắng không phép: <strong>${attendance.soLuotVangKhongPhep}</strong> ·
-      Đi trễ: <strong>${attendance.soLuotDiTre}</strong>
+      Vắng không phép: <strong>${attendance.soLuotVangKhongPhep}</strong>
+    </p>
+    <p style="margin:0 0 8px;font-style:italic;color:#555;">
+      Thông tin đi trễ được gộp chung vào mục "Vi phạm nề nếp" bên dưới để tránh trùng lặp.
     </p>
     ${
       attendance.rows.length === 0
-        ? '<p>Không có học sinh vắng/trễ trong kỳ báo cáo này.</p>'
+        ? '<p>Không có học sinh vắng trong kỳ báo cáo này.</p>'
         : `<table style="${table}">
             <thead><tr>
               <th style="${th} text-align:center;">STT</th><th style="${th}">Họ tên</th><th style="${th} text-align:center;">Ngày</th>

@@ -248,10 +248,17 @@ function buildAttendanceSection(data: ReportData, isStudentReport: boolean) {
       { label: 'Học sinh nghỉ học', value: attendance.soHocSinhNghi },
       { label: 'Vắng có phép', value: attendance.soLuotVangCoPhep },
       { label: 'Vắng không phép', value: attendance.soLuotVangKhongPhep },
-      { label: 'Đi trễ', value: attendance.soLuotDiTre },
     ]),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: 'Thông tin đi trễ được gộp chung vào mục "Vi phạm nề nếp" bên dưới để tránh trùng lặp.',
+          italics: true,
+        }),
+      ],
+    }),
     attendance.rows.length === 0
-      ? new Paragraph({ children: [new TextRun('Không có học sinh vắng/trễ trong kỳ báo cáo này.')] })
+      ? new Paragraph({ children: [new TextRun('Không có học sinh vắng trong kỳ báo cáo này.')] })
       : new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: TABLE_BORDERS, rows }),
   ]
 }
