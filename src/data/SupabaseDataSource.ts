@@ -1385,12 +1385,16 @@ export class SupabaseDataSource implements DataSource {
 
     while (latest.den_ngay < isoDate) {
       const nextStart = addDays(latest.tu_ngay, 7)
-      const nextEnd = addDays(nextStart, 4)
+      // Mo rong het Chu Nhat (Thu Hai + 6 = Chu Nhat) thay vi chi den Thu Sau
+      // (+4) nhu truoc - truong co lich hoc/diem danh ca Chu Nhat, tuan cu
+      // chi den Thu Sau khien tinh_bao_cao_si_so bao loi "Ngay nay chua co
+      // trong lich diem danh" cho moi ngay Thu Bay/Chu Nhat.
+      const nextEnd = addDays(nextStart, 6)
       const nextWeek: CauHinhTuan = {
         tuan_so: latest.tuan_so + 1,
         tu_ngay: nextStart,
         den_ngay: nextEnd,
-        so_ngay: 5,
+        so_ngay: 7,
         loai_tuan: 'hoc_binh_thuong',
       }
       rowsToInsert.push(nextWeek)

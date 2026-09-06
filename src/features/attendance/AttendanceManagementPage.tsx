@@ -27,6 +27,7 @@ const STATUS_OPTIONS: Array<{ label: string; value: LuaChonDiemDanh }> = [
   { label: 'Có mặt', value: 'co_mat' },
   { label: 'Vắng có phép', value: 'vang_co_phep' },
   { label: 'Vắng không phép', value: 'vang_khong_phep' },
+  { label: 'Đi trễ', value: 'tre' },
 ]
 
 const CONTACT_OPTIONS: Array<{ label: string; value: HinhThucLienLacPhuHuynh }> = [
@@ -36,8 +37,12 @@ const CONTACT_OPTIONS: Array<{ label: string; value: HinhThucLienLacPhuHuynh }> 
   { label: 'SMS', value: 'sms' },
 ]
 
-// Nhãn/màu vẫn giữ 'tre' để các bản ghi Trễ ghi từ trước (trước khi bỏ lựa chọn
-// này khỏi form) tiếp tục hiển thị đúng trong lịch sử, dù không còn chọn mới được.
+// 'tre' (Trễ) da tung bi bo khoi STATUS_OPTIONS 1 thoi gian, nay them lai theo
+// yeu cau nguoi dung - RPC tinh_bao_cao_si_so va check constraint tren
+// diem_danh van luon ho tro gia tri nay tu truoc gio (chi UI form la khong
+// cho chon), nen khong can doi gi o tang du lieu. Di tre KHONG tinh la vang
+// (mac dinh p_tre_tinh_co_mat = true trong RPC sinh so), chi ghi nhan rieng
+// de thong ke.
 const STATUS_LABELS: Record<TrangThaiDiemDanh, string> = {
   tre: 'Trễ',
   vang_co_phep: 'Vắng có phép',
@@ -460,7 +465,7 @@ export function AttendanceManagementPage() {
       {error ? <p className="rounded-md border border-red-200 bg-red-100 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
       {message ? <p className="rounded-md border border-emerald-200 bg-emerald-100 p-3 text-sm font-semibold text-emerald-700">{message}</p> : null}
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-4">
         <SummaryCard color="slate" label="Sĩ số" value={scope === 'diem_danh' ? sessionSummary.siSo : monthSummary.siSo} />
         <SummaryCard
           color="emerald"
@@ -468,6 +473,7 @@ export function AttendanceManagementPage() {
           value={scope === 'diem_danh' ? sessionSummary.hienDien : monthSummary.hienDien}
         />
         <SummaryCard color="rose" label="Vắng" value={scope === 'diem_danh' ? sessionSummary.vang : monthSummary.vang} />
+        <SummaryCard color="amber" label="Đi trễ" value={scope === 'diem_danh' ? sessionSummary.tre : monthSummary.tre} />
       </div>
       <p className="-mt-3 text-xs text-slate-500">
         {scope === 'diem_danh'
@@ -1276,22 +1282,35 @@ function summarizeAttendance(entries: DiemDanh[], studentCount: number) {
       .map((entry) => entry.ma_hs)
       .filter((maHs): maHs is string => Boolean(maHs)),
   )
+  // Tre KHONG tinh la vang (dung khuon voi tinh_bao_cao_si_so mac dinh
+  // p_tre_tinh_co_mat = true) - dem rieng theo so LUOT (khong phai so hoc
+  // sinh duy nhat nhu vangCoPhep/vangKhongPhep) de dung thong ke bao cao,
+  // khong anh huong den Si so/Hien dien/Vang.
+  const treStudentIds = new Set(
+    entries
+      .filter((entry) => entry.trang_thai === 'tre')
+      .map((entry) => entry.ma_hs)
+      .filter((maHs): maHs is string => Boolean(maHs)),
+  )
   const siSo = studentCount
   const vang = absentStudentIds.size
+  const tre = treStudentIds.size
   const hienDien = Math.max(0, siSo - vang)
 
-  return { siSo, vang, hienDien, vangCoPhep, vangKhongPhep }
+  return { siSo, vang, hienDien, vangCoPhep, vangKhongPhep, tre }
 }
 
 function findWeekForDate(weeks: CauHinhTuan[], date: string): CauHinhTuan | null {
   return weeks.find((week) => week.tu_ngay <= date && date <= week.den_ngay) || null
 }
 
-// CauHinhTuan chỉ cấu hình 5 ngày Thứ Hai-Thứ Sáu (so_ngay: 5), nên Thứ Bảy/Chủ Nhật
-// không nằm trong khoảng tu_ngay..den_ngay của tuần nào. Trước đây rơi vào trường hợp
-// này thì lấy đại weeks[0] (tuần đầu tiên từng cấu hình), sai hẳn sang tuần cũ và làm
-// lệch tuan_so lúc lưu cũng như số liệu Sĩ số/Tuần vắng. Đúng ra phải lấy tuần gần nhất
-// đã bắt đầu (tu_ngay lớn nhất mà vẫn <= date) — tức tuần chứa Thứ Hai-Thứ Sáu ngay trước đó.
+// Tu ban vieted (xem migration 20260823000600), CauHinhTuan da mo rong het
+// Chu Nhat (den_ngay = tu_ngay + 6) nen findWeekForDate o tren se khop DUNG
+// cho moi ngay trong tuan, ke ca Thu Bay/Chu Nhat. Fallback ben duoi van giu
+// lai lam luoi an toan cho cac tuan/du lieu cu chua chay migration, hoac
+// truong hop hiem ngay nam ngoai het moi tuan da cau hinh (vd chon nham
+// ngay qua xa tuong lai) - lay tuan gan nhat da bat dau (tu_ngay lon nhat ma
+// van <= date) thay vi rot ve weeks[0] nhu bug cu tung gap.
 function resolveWeekForDate(weeks: CauHinhTuan[], date: string): CauHinhTuan | null {
   const exact = findWeekForDate(weeks, date)
   if (exact) return exact
