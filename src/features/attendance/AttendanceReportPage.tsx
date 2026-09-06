@@ -251,6 +251,19 @@ export function AttendanceReportPage() {
                 className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </label>
+
+            {report.tre.length > 0 ? (
+              <div className="mt-4 rounded-md border border-amber-200 bg-amber-100 p-3">
+                <p className="text-sm font-semibold text-amber-900">
+                  Đi trễ ({report.tre.length}) — không tính vào Vắng, đã tự ghi nhận vi phạm
+                </p>
+                <ul className="mt-2 list-inside list-disc space-y-0.5 text-sm text-amber-900">
+                  {report.tre.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

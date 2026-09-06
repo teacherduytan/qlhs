@@ -437,6 +437,11 @@ export interface AttendanceReport {
   co_mat: AttendanceByDien
   tong: AttendanceByDien
   vang: string[]
+  // Danh sach rieng hoc sinh danh dau "tre" buoi do - LUON tra ve du
+  // tre_tinh_co_mat dang bat/tat (khac voi `vang`, vong lap cua no chi gom
+  // tre khi tre_tinh_co_mat = false) - de GVCN xem duoc ai tre ngay ca khi
+  // dang tinh tre la co mat (khong tinh vao si so vang).
+  tre: string[]
   generated_at: string
 }
 
