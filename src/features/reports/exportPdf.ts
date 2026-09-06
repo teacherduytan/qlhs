@@ -221,6 +221,7 @@ function renderStudentViolationSection(data: ReportData): string {
           <td style="${td} text-align:center;">${index + 1}</td>
           <td style="${td} text-align:center;">${formatDate(row.ngay)}</td>
           <td style="${td} text-align:center;">${escapeHtml(row.tiet || '—')}</td>
+          <td style="${td} text-align:center;">${escapeHtml(row.monHoc || '—')}</td>
           <td style="${td}">${escapeHtml(row.noiDung)}${row.nghiemTrong ? ' <strong style="color:#c00000;">(nghiêm trọng)</strong>' : ''}</td>
           <td style="${td} text-align:center;">Lần thứ ${row.soLanLuyKe}</td>
         </tr>`,
@@ -239,8 +240,8 @@ function renderStudentViolationSection(data: ReportData): string {
         : `<table style="${table}">
             <thead><tr>
               <th style="${th} text-align:center;">STT</th><th style="${th} text-align:center;">Ngày</th>
-              <th style="${th} text-align:center;">Tiết</th><th style="${th}">Nội dung vi phạm</th>
-              <th style="${th} text-align:center;">Số lần lặp lại</th>
+              <th style="${th} text-align:center;">Tiết</th><th style="${th} text-align:center;">Môn</th>
+              <th style="${th}">Nội dung vi phạm</th><th style="${th} text-align:center;">Số lần lặp lại</th>
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>`
@@ -258,6 +259,7 @@ function renderStudentPositiveSection(data: ReportData): string {
           <td style="${td} text-align:center;">${index + 1}</td>
           <td style="${td} text-align:center;">${formatDate(row.ngay)}</td>
           <td style="${td} text-align:center;">${escapeHtml(row.tiet || '—')}</td>
+          <td style="${td} text-align:center;">${escapeHtml(row.monHoc || '—')}</td>
           <td style="${td}">${escapeHtml(row.noiDung)}</td>
           <td style="${td} text-align:center;">Lần thứ ${row.soLanLuyKe}</td>
         </tr>`,
@@ -273,8 +275,8 @@ function renderStudentPositiveSection(data: ReportData): string {
         : `<table style="${table}">
             <thead><tr>
               <th style="${th} text-align:center;">STT</th><th style="${th} text-align:center;">Ngày</th>
-              <th style="${th} text-align:center;">Tiết</th><th style="${th}">Nội dung</th>
-              <th style="${th} text-align:center;">Số lần</th>
+              <th style="${th} text-align:center;">Tiết</th><th style="${th} text-align:center;">Môn</th>
+              <th style="${th}">Nội dung</th><th style="${th} text-align:center;">Số lần</th>
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>`

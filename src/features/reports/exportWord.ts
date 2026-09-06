@@ -255,15 +255,16 @@ function buildAttendanceSection(data: ReportData) {
 function buildStudentViolationSection(data: ReportData) {
   const { violation, studentTimeline } = data
   const rows = studentTimeline.violations
-  const centerCols = [0, 1, 2, 4]
+  const centerCols = [0, 1, 2, 3, 5]
   const tableRows = [
-    headerRow(['STT', 'Ngày', 'Tiết', 'Nội dung vi phạm', 'Số lần lặp lại'], centerCols),
+    headerRow(['STT', 'Ngày', 'Tiết', 'Môn', 'Nội dung vi phạm', 'Số lần lặp lại'], centerCols),
     ...rows.map((row, index) =>
       dataRow(
         [
           String(index + 1),
           formatDate(row.ngay),
           row.tiet || '—',
+          row.monHoc || '—',
           row.nghiemTrong ? `${row.noiDung} (nghiêm trọng)` : row.noiDung,
           `Lần thứ ${row.soLanLuyKe}`,
         ],
@@ -287,11 +288,14 @@ function buildStudentViolationSection(data: ReportData) {
 function buildStudentPositiveSection(data: ReportData) {
   const { positive, studentTimeline } = data
   const rows = studentTimeline.positives
-  const centerCols = [0, 1, 2, 4]
+  const centerCols = [0, 1, 2, 3, 5]
   const tableRows = [
-    headerRow(['STT', 'Ngày', 'Tiết', 'Nội dung', 'Số lần'], centerCols),
+    headerRow(['STT', 'Ngày', 'Tiết', 'Môn', 'Nội dung', 'Số lần'], centerCols),
     ...rows.map((row, index) =>
-      dataRow([String(index + 1), formatDate(row.ngay), row.tiet || '—', row.noiDung, `Lần thứ ${row.soLanLuyKe}`], centerCols),
+      dataRow(
+        [String(index + 1), formatDate(row.ngay), row.tiet || '—', row.monHoc || '—', row.noiDung, `Lần thứ ${row.soLanLuyKe}`],
+        centerCols,
+      ),
     ),
   ]
 

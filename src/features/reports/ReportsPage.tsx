@@ -575,6 +575,7 @@ function StudentViolationSection({ data }: { data: ReportData }) {
                   <th className="px-3 py-2">STT</th>
                   <th className="px-3 py-2">Ngày</th>
                   <th className="px-3 py-2">Tiết</th>
+                  <th className="px-3 py-2">Môn</th>
                   <th className="px-3 py-2">Nội dung vi phạm</th>
                   <th className="px-3 py-2">Số lần lặp lại</th>
                 </tr>
@@ -585,6 +586,7 @@ function StudentViolationSection({ data }: { data: ReportData }) {
                     <td className="px-3 py-2 text-slate-500">{index + 1}</td>
                     <td className="px-3 py-2 text-slate-700">{formatDateCompact(row.ngay)}</td>
                     <td className="px-3 py-2 text-slate-600">{row.tiet || '—'}</td>
+                    <td className="px-3 py-2 text-slate-600">{row.monHoc || '—'}</td>
                     <td className="px-3 py-2 font-semibold text-slate-900">
                       {row.noiDung}
                       {row.nghiemTrong ? <span className="ml-1 text-xs font-bold text-rose-700">(nghiêm trọng)</span> : null}
@@ -626,6 +628,7 @@ function StudentPositiveSection({ data }: { data: ReportData }) {
                   <th className="px-3 py-2">STT</th>
                   <th className="px-3 py-2">Ngày</th>
                   <th className="px-3 py-2">Tiết</th>
+                  <th className="px-3 py-2">Môn</th>
                   <th className="px-3 py-2">Nội dung</th>
                   <th className="px-3 py-2">Số lần</th>
                 </tr>
@@ -636,6 +639,7 @@ function StudentPositiveSection({ data }: { data: ReportData }) {
                     <td className="px-3 py-2 text-slate-500">{index + 1}</td>
                     <td className="px-3 py-2 text-slate-700">{formatDateCompact(row.ngay)}</td>
                     <td className="px-3 py-2 text-slate-600">{row.tiet || '—'}</td>
+                    <td className="px-3 py-2 text-slate-600">{row.monHoc || '—'}</td>
                     <td className="px-3 py-2 font-semibold text-slate-900">{row.noiDung}</td>
                     <td className="px-3 py-2 text-slate-700">Lần thứ {row.soLanLuyKe}</td>
                   </tr>
