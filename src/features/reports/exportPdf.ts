@@ -102,7 +102,7 @@ function buildReportContainer(
     ${meta.hocSinh ? renderStudentViolationSection(data) : renderViolationSection(data)}
     ${meta.hocSinh ? renderStudentPositiveSection(data) : renderPositiveSection(data)}
     ${renderBanCanSuSignatures(meta)}
-    ${renderSignatureBlock()}
+    ${meta.hocSinh ? renderParentFeedbackAndSignature() : renderSignatureBlock()}
   `
 
   hiddenWrapper.appendChild(container)
@@ -153,6 +153,33 @@ function renderBanCanSuSignatures(meta: ReportPresentationMeta): string {
   return `
     <p style="margin:16px 0 8px;text-align:center;font-weight:bold;">XÁC NHẬN CỦA BAN CÁN SỰ LỚP</p>
     <table style="width:100%;border-collapse:collapse;"><tbody><tr>${cellsHtml}</tr></tbody></table>
+  `
+}
+
+// Danh cho bao cao rieng 1 hoc sinh (C282): them 1 khung trong de phu huynh
+// ghi y kien va ky ten canh GVCN, thay the renderSignatureBlock() (chi co
+// GVCN, dung cho bao cao ca lop).
+function renderParentFeedbackAndSignature(): string {
+  const now = new Date()
+  const ngayLap = `ngày ${now.getDate()} tháng ${now.getMonth() + 1} năm ${now.getFullYear()}`
+
+  return `
+    <p style="margin:20px 0 8px;font-weight:bold;">Ý KIẾN CỦA PHỤ HUYNH</p>
+    <div style="border:1px solid #999;border-radius:4px;padding:8px;min-height:72px;margin-bottom:16px;"></div>
+    <p style="margin:0 0 12px;text-align:right;">${escapeHtml(REPORT_CONFIG.diaDiemKy)}, ${ngayLap}</p>
+    <table style="width:100%;border-collapse:collapse;"><tbody><tr>
+      <td style="border:none;padding:0 6px;text-align:center;vertical-align:top;width:50%;">
+        <p style="margin:0;font-weight:bold;">PHỤ HUYNH HỌC SINH</p>
+        <p style="margin:0;font-style:italic;font-size:11px;">(Ký, ghi rõ họ tên)</p>
+        <div style="height:60px;"></div>
+      </td>
+      <td style="border:none;padding:0 6px;text-align:center;vertical-align:top;width:50%;">
+        <p style="margin:0;font-weight:bold;">GIÁO VIÊN CHỦ NHIỆM</p>
+        <p style="margin:0;font-style:italic;">(Ký và ghi rõ họ tên)</p>
+        <div style="height:60px;"></div>
+        <p style="margin:0;font-weight:bold;">${escapeHtml(REPORT_CONFIG.tenGvcn)}</p>
+      </td>
+    </tr></tbody></table>
   `
 }
 

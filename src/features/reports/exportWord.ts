@@ -68,7 +68,7 @@ export async function exportReportToWord(
           ...(meta.hocSinh ? buildStudentViolationSection(data) : buildViolationSection(data)),
           ...(meta.hocSinh ? buildStudentPositiveSection(data) : buildPositiveSection(data)),
           ...buildBanCanSuSignatures(meta),
-          ...buildSignatureBlock(),
+          ...(meta.hocSinh ? buildParentFeedbackAndSignature() : buildSignatureBlock()),
         ],
       },
     ],
@@ -156,6 +156,82 @@ function buildBanCanSuSignatures(meta: ReportPresentationMeta): (Paragraph | Tab
       width: { size: 100, type: WidthType.PERCENTAGE },
       borders: NO_TABLE_BORDERS,
       rows: [new TableRow({ children: cells })],
+    }),
+  ]
+}
+
+// Danh cho bao cao rieng 1 hoc sinh (C282): them 1 khung trong de phu huynh
+// ghi y kien va ky ten canh GVCN, thay the buildSignatureBlock() (chi co
+// GVCN, dung cho bao cao ca lop).
+function buildParentFeedbackAndSignature(): (Paragraph | Table)[] {
+  const now = new Date()
+  const ngayLap = `ngày ${now.getDate()} tháng ${now.getMonth() + 1} năm ${now.getFullYear()}`
+
+  const feedbackBox = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: TABLE_BORDERS,
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({ children: [] }),
+              new Paragraph({ children: [] }),
+              new Paragraph({ children: [] }),
+              new Paragraph({ children: [] }),
+            ],
+          }),
+        ],
+      }),
+    ],
+  })
+
+  const signatureCells = [
+    { chucVu: 'PHỤ HUYNH HỌC SINH', hoTen: '' },
+    { chucVu: 'GIÁO VIÊN CHỦ NHIỆM', hoTen: REPORT_CONFIG.tenGvcn },
+  ].map(
+    (item) =>
+      new TableCell({
+        width: { size: 50, type: WidthType.PERCENTAGE },
+        borders: NO_CELL_BORDERS,
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: item.chucVu, bold: true })],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: '(Ký, ghi rõ họ tên)', italics: true, size: 20 })],
+          }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [] }),
+          ...(item.hoTen
+            ? [
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [new TextRun({ text: item.hoTen, bold: true })],
+                }),
+              ]
+            : []),
+        ],
+      }),
+  )
+
+  return [
+    new Paragraph({ children: [] }),
+    sectionHeading('Ý kiến của phụ huynh'),
+    feedbackBox,
+    new Paragraph({ children: [] }),
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [new TextRun(`${REPORT_CONFIG.diaDiemKy}, ${ngayLap}`)],
+    }),
+    new Paragraph({ children: [] }),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: NO_TABLE_BORDERS,
+      rows: [new TableRow({ children: signatureCells })],
     }),
   ]
 }
