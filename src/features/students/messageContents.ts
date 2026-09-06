@@ -1,4 +1,5 @@
 import type { HocPhiKyThamChieu, NoiDungTinNhan } from '../../data/types'
+import { buildHocPhiThongBaoText } from '../../lib/hocPhiSms'
 
 // "Hien tai" = ban ghi da_duyet=true co created_at MOI NHAT - moi lan import
 // la 1 ban ghi moi (khong upsert), lich su hinh thanh tu nhien qua nhieu lan
@@ -20,28 +21,11 @@ export function findLatestHocPhiKy(list: HocPhiKyThamChieu[], maHs: string): Hoc
   return [...matched].sort((left, right) => (left.created_at < right.created_at ? 1 : -1))[0]
 }
 
-// Bo dau tieng Viet, GIU nguyen hoa/thuong (khac ham chuanHoaTen dung de so
-// khop ten - ham do ha chu thuong luon, khong hop de dung lam van ban SMS
-// doc duoc). Dung cho noi dung SMS tu sinh de tranh loi encode/hien thi sai
-// dau tren mot so dien thoai/nha mang cu, dung mau file JSON mau nguoi dung
-// dua (hocphi_thang9_import*.json) deu la van ban khong dau.
-export function boDauTiengViet(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-}
-
-// Sinh noi dung SMS tu 1 ky hoc phi: cau chung theo ten_ky + link ca nhan hoa
-// theo token cua dung hoc sinh do (/ph/:token, trang phu huynh xem duoc dung
-// so tien cua con minh - xem canh bao bao mat ve do ngau nhien cua token o
-// docs/hocphiPHxem/17-gop-thongbao-hocphi-sms-canhan.md muc 4). Dung
-// window.location.origin + pathname dung y het cach StudentsPage.tsx dang
-// copy link phu huynh (khong bia them bien moi truong rieng).
+// Sinh noi dung SMS tu 1 ky hoc phi - dung chung 1 khuon cau voi thong bao
+// tu tao luc import (xem src/lib/hocPhiSms.ts giai thich ly do BAT BUOC dung
+// chung, khong duoc de 2 noi tu viet cau rieng).
 export function buildSmsFromHocPhiKy(tenKy: string, tokenHoSo: string): string {
-  const link = `${window.location.origin}${window.location.pathname}#/ph/${tokenHoSo}`
-  return boDauTiengViet(`${tenKy}. Xem chi tiet va so tien cu the tai: ${link}`)
+  return buildHocPhiThongBaoText(tenKy, tokenHoSo)
 }
 
 // Quy tac uu tien noi dung SMS dien san khi bam "Nhan tin" (muc 3.3 tai lieu

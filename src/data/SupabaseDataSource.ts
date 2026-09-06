@@ -1,5 +1,6 @@
 import type { DataSource } from './DataSource'
 import { getSupabaseClient } from '../lib/supabaseClient'
+import { buildHocPhiThongBaoText } from '../lib/hocPhiSms'
 import type {
   ApproveDeXuatGhiNhanOverrides,
   AttendanceFormPayload,
@@ -234,6 +235,7 @@ export class SupabaseDataSource implements DataSource {
     const students = await this.getStudents()
     const maHsHopLe = new Set(students.map((student) => student.ma_hs))
     const byTenChuan = new Map(students.map((student) => [chuanHoaTen(`${student.ho} ${student.ten}`), student.ma_hs]))
+    const tokenByMaHs = new Map(students.map((student) => [student.ma_hs, student.token_ho_so]))
 
     const { data: kyRow, error: kyError } = await getSupabaseClient()
       .from('hoc_phi_ky')
@@ -319,7 +321,7 @@ export class SupabaseDataSource implements DataSource {
     }
 
     if (taoThongBao && maHsDaKhop.length > 0) {
-      await this.taoThongBaoHocPhi(payload.ma_ky, payload.ten_ky, maHsDaKhop, thongBaoRieng)
+      await this.taoThongBaoHocPhi(payload.ma_ky, payload.ten_ky, maHsDaKhop, thongBaoRieng, tokenByMaHs)
     }
 
     return {
@@ -371,11 +373,22 @@ export class SupabaseDataSource implements DataSource {
   // truyen san noi_dung/ghi_chu rieng cho tung hoc sinh (vd van ban SMS da
   // soan tay kem so tien/han dong) - hoc sinh nao khong co trong `override`
   // van dung cau mac dinh chung nhu truoc.
+  //
+  // Cau mac dinh (C263) BAT BUOC dung chung khuon voi noi dung SMS tu sinh
+  // luc bam "Nhan tin" (`buildHocPhiThongBaoText` trong src/lib/hocPhiSms.ts,
+  // dung boi messageContents.ts) - truoc C263, 2 noi tung tu viet cau rieng
+  // (thong bao khong co link, SMS co link) khien `resolveSmsBody()` (uu tien
+  // noi dung MOI HON) luon lay nham cau thong bao KHONG LINK vi dong do luon
+  // duoc tao SAU hoc_phi_ky (moi hon) trong cung 1 lan goi upsertHocPhiKy() -
+  // ket qua la SMS gui that gan nhu khong bao gio co link xem chi tiet, trai
+  // muc dich chinh cua docs/hocphiPHxem/17-gop-thongbao-hocphi-sms-canhan.md.
+  // Sua bang cach dung CHUNG 1 ham dung cau (kem link) cho ca 2 noi.
   private async taoThongBaoHocPhi(
     maKy: string,
     tenKy: string,
     dsMaHs: string[],
     override?: Map<string, { noiDung?: string; ghiChu?: string }>,
+    tokenByMaHs?: Map<string, string>,
   ): Promise<void> {
     const { data: daCo, error: daCoError } = await getSupabaseClient()
       .from('noi_dung_tin_nhan')
@@ -384,8 +397,8 @@ export class SupabaseDataSource implements DataSource {
       .in('ma_hs', dsMaHs)
     assertNoError(daCoError, 'Khong doc duoc thong bao hoc phi da co tren Supabase')
 
-    const noiDungMacDinh = `Thông báo học phí — ${tenKy}. Bấm vào xem chi tiết các khoản thu.`
-    const noiDungCho = (maHs: string) => override?.get(maHs)?.noiDung || noiDungMacDinh
+    const noiDungCho = (maHs: string) =>
+      override?.get(maHs)?.noiDung || buildHocPhiThongBaoText(tenKy, tokenByMaHs?.get(maHs) || '')
     const ghiChuCho = (maHs: string) => override?.get(maHs)?.ghiChu || tenKy
 
     const daCoRows = (daCo || []) as Array<{ id: string; ma_hs: string }>
