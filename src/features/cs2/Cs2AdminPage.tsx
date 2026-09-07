@@ -454,7 +454,6 @@ function Cs2HistoryModal({ maHs, onClose }: { maHs: string; onClose: () => void 
 function Cs2QuickAddTab() {
   const [coSo, setCoSo] = useState(CO_SO_OPTIONS[0])
   const [lop, setLop] = useState('')
-  const [maHs, setMaHs] = useState('')
   const [tenHs, setTenHs] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -468,22 +467,23 @@ function Cs2QuickAddTab() {
   async function handleSubmit() {
     setError(null)
     setMessage(null)
-    if (!maHs.trim()) return setError('Chưa nhập mã học sinh.')
     if (!tenHs.trim()) return setError('Chưa nhập tên học sinh.')
     if (!lop.trim()) return setError('Chưa nhập lớp.')
     if (validationError) return setError(validationError)
 
     setSubmitting(true)
     try {
-      const { error: rpcError } = await getSupabaseClient().rpc('them_nhanh_hoc_sinh', {
-        p_ma_hs: maHs.trim(),
+      // Khong con nhap tay ma_hs - he thong tu sinh (dai "9xxxxx", khong bao
+      // gio trung voi ma_hs sinh tu sbd khi import JSON, dang "26...") va
+      // tra ve ma vua cap de GVCN bao cho hoc sinh biet dung ma nao de tra
+      // cuu (xem docs/thuthapthongtincs2/18-bo-sung-auto-sinh-ma-hs.md).
+      const { data, error: rpcError } = await getSupabaseClient().rpc('them_nhanh_hoc_sinh', {
         p_ten_hs: tenHs.trim(),
         p_lop: lop.trim(),
         p_co_so: coSo,
       })
       if (rpcError) throw rpcError
-      setMessage(`Đã thêm học sinh ${tenHs.trim()} (${maHs.trim()}) vào lớp ${lop.trim()}.`)
-      setMaHs('')
+      setMessage(`Đã thêm học sinh ${tenHs.trim()} vào lớp ${lop.trim()}. Mã HS được cấp: ${data as string}`)
       setTenHs('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không thêm được học sinh.')
@@ -494,6 +494,9 @@ function Cs2QuickAddTab() {
 
   return (
     <div className="flex max-w-md flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4">
+      <p className="text-xs text-slate-500">
+        Mã học sinh sẽ được hệ thống tự động cấp (không cần nhập tay) sau khi thêm thành công.
+      </p>
       <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
         Cơ sở
         <select value={coSo} onChange={(event) => setCoSo(event.target.value)} className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900">
@@ -510,15 +513,6 @@ function Cs2QuickAddTab() {
           type="text"
           value={lop}
           onChange={(event) => setLop(event.target.value)}
-          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-        Mã học sinh
-        <input
-          type="text"
-          value={maHs}
-          onChange={(event) => setMaHs(event.target.value)}
           className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
       </label>
