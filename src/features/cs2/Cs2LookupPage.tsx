@@ -301,11 +301,24 @@ export function Cs2LookupPage() {
                 className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               >
                 <option value="">{provinceCode ? '— Chọn Phường/Xã —' : 'Chọn Tỉnh/Thành phố trước'}</option>
-                {wardOptions.map((ward) => (
-                  <option key={ward.code} value={ward.code}>
-                    {wardLabel(ward)}
-                  </option>
-                ))}
+                <optgroup label="Phường">
+                  {wardOptions
+                    .filter((ward) => ward.type === 'ward')
+                    .map((ward) => (
+                      <option key={ward.code} value={ward.code}>
+                        {wardLabel(ward)}
+                      </option>
+                    ))}
+                </optgroup>
+                <optgroup label="Xã">
+                  {wardOptions
+                    .filter((ward) => ward.type === 'commune')
+                    .map((ward) => (
+                      <option key={ward.code} value={ward.code}>
+                        {wardLabel(ward)}
+                      </option>
+                    ))}
+                </optgroup>
               </select>
             </label>
           </div>

@@ -37,8 +37,13 @@ export function wardLabel(ward: VnWard): string {
   return `${ward.type === 'ward' ? 'Phường' : 'Xã'} ${ward.name}`
 }
 
+// Sap "Phuong" rieng, "Xa" rieng (moi nhom tu A-Z) thay vi tron lan theo ten
+// - giup danh sach de do khi 1 tinh/thanh co ca phuong lan xa.
 export function wardsByProvince(wards: VnWard[], provinceCode: string): VnWard[] {
   return wards
     .filter((ward) => ward.provinceCode === provinceCode)
-    .sort((a, b) => a.name.localeCompare(b.name, 'vi'))
+    .sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'ward' ? -1 : 1
+      return a.name.localeCompare(b.name, 'vi')
+    })
 }
