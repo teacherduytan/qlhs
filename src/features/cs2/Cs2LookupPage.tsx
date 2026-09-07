@@ -1,7 +1,44 @@
 import { useEffect, useState } from 'react'
 import { getSupabaseClient } from '../../lib/supabaseClient'
 import { CO_SO_OPTIONS, isValidCccd, isValidEmail, type Cs2StudentLookup } from './cs2Shared'
+import { Cs2TeacherProgressTab } from './Cs2TeacherProgressTab'
 import { loadVnAddressData, wardLabel, wardsByProvince, type VnProvince, type VnWard } from './vnAddressData'
+
+type LookupPageTab = 'hoc-sinh' | 'giao-vien'
+
+/** Trang cong khai (khong dang nhap chung) o /cs2/tra-cuu - gom 2 tab: hoc
+ * sinh tu tra cuu de dien lien lac/CCCD (mac dinh) va giao vien theo doi
+ * tien do (can dang nhap rieng bang ten lop + mat khau, xem
+ * Cs2TeacherProgressTab.tsx). */
+export function Cs2LookupPage() {
+  const [tab, setTab] = useState<LookupPageTab>('hoc-sinh')
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto flex max-w-lg gap-1 p-4 pb-0 sm:max-w-5xl">
+        <button
+          type="button"
+          onClick={() => setTab('hoc-sinh')}
+          className={`h-10 flex-1 rounded-t-md text-sm font-semibold ${
+            tab === 'hoc-sinh' ? 'bg-white text-indigo-700 shadow-sm' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+          }`}
+        >
+          🎓 Học sinh tra cứu
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('giao-vien')}
+          className={`h-10 flex-1 rounded-t-md text-sm font-semibold ${
+            tab === 'giao-vien' ? 'bg-white text-indigo-700 shadow-sm' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+          }`}
+        >
+          👩‍🏫 Giáo viên theo dõi tiến độ
+        </button>
+      </div>
+      {tab === 'hoc-sinh' ? <Cs2StudentLookupTab /> : <Cs2TeacherProgressTab />}
+    </div>
+  )
+}
 
 type Step = 'dinh-danh' | 'dien' | 'thanh-cong'
 
@@ -20,9 +57,9 @@ function formatDateTime(value: string | null): string {
   return date.toLocaleString('vi-VN')
 }
 
-/** Trang cong khai (khong dang nhap) de hoc sinh CS2 tu tra cuu + dien Email/
+/** Tab "Hoc sinh tra cuu" (mac dinh) - hoc sinh CS2 tu tra cuu + dien Email/
  * Dia chi/CCCD. Xem quy trinh day du o docs/thuthapthongtincs2/16-...-hs-cs2.md. */
-export function Cs2LookupPage() {
+function Cs2StudentLookupTab() {
   const [step, setStep] = useState<Step>('dinh-danh')
 
   const [coSo, setCoSo] = useState(CO_SO_OPTIONS[0])

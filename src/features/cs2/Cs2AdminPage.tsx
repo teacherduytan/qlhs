@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getSupabaseClient } from '../../lib/supabaseClient'
 import { getTeacherAuthSession, loginTeacherWithSupabase, logoutTeacher } from '../../data/teacherAuth'
+import { Cs2CheckResultCard, type Cs2CheckResult } from './Cs2CheckResultCard'
 import { CS2_EXPORT_COLUMNS, DEFAULT_CS2_EXPORT_COLUMNS, type Cs2ExportColumnKey } from './cs2ExportColumns'
 import {
   autoCapitalizeName,
@@ -187,11 +188,7 @@ function Cs2StudentListTab() {
   const [revealedCccd, setRevealedCccd] = useState<Record<string, boolean>>({})
   const [historyMaHs, setHistoryMaHs] = useState<string | null>(null)
   const [editingRow, setEditingRow] = useState<Cs2Row | null>(null)
-  const [checkResult, setCheckResult] = useState<{
-    tongSo: number
-    daDien: number
-    chuaDienTheoLop: { lop: string; students: { ma_hs: string; ten: string }[] }[]
-  } | null>(null)
+  const [checkResult, setCheckResult] = useState<Cs2CheckResult | null>(null)
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportingPerClass, setExportingPerClass] = useState(false)
@@ -434,27 +431,7 @@ function Cs2StudentListTab() {
         </p>
       ) : null}
 
-      {checkResult ? (
-        <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
-          <p className="font-semibold text-slate-900">
-            Tổng: {checkResult.tongSo} học sinh — Đã điền đủ: {checkResult.daDien} — Chưa điền: {checkResult.tongSo - checkResult.daDien}
-          </p>
-          {checkResult.chuaDienTheoLop.length > 0 ? (
-            <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-slate-200">
-              {checkResult.chuaDienTheoLop.map((group) => (
-                <div key={group.lop} className="border-b border-slate-100 p-2 last:border-b-0">
-                  <p className="text-xs font-semibold text-slate-700">
-                    Lớp {group.lop} ({group.students.length} chưa điền)
-                  </p>
-                  <p className="text-xs text-slate-600">
-                    {group.students.map((student) => `${student.ma_hs} - ${student.ten}`).join('; ')}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      {checkResult ? <Cs2CheckResultCard result={checkResult} /> : null}
 
       {error ? <p className="text-sm font-semibold text-red-700">{error}</p> : null}
 
