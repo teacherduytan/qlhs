@@ -3,6 +3,8 @@ import { Layout } from './components/Layout'
 import { AttendanceManagementPage } from './features/attendance/AttendanceManagementPage'
 import { AttendanceReportPage } from './features/attendance/AttendanceReportPage'
 import { CatalogPage } from './features/catalog/CatalogPage'
+import { Cs2AdminPage } from './features/cs2/Cs2AdminPage'
+import { Cs2LookupPage } from './features/cs2/Cs2LookupPage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { DocumentsPage } from './features/documents/DocumentsPage'
 import { ImportPage } from './features/import/ImportPage'
@@ -45,5 +47,16 @@ export const router = createHashRouter([
   {
     path: '/ph/:token',
     element: <ParentProfilePage />,
+  },
+  // Tinh nang thu thap thong tin lien lac/CCCD hoc sinh CS2 (spec 16,
+  // docs/thuthapthongtincs2/) - doc lap hoan toan voi app 11C5, khong nam
+  // trong Layout/menu chinh, khong dung DataSource cua app 11C5.
+  {
+    path: '/cs2/tra-cuu',
+    element: <Cs2LookupPage />,
+  },
+  {
+    path: '/cs2/quan-tri',
+    element: <Cs2AdminPage />,
   },
 ])
