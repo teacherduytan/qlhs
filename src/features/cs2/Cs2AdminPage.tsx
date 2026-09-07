@@ -186,6 +186,8 @@ function Cs2StudentListTab() {
   } | null>(null)
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [exportingPerClass, setExportingPerClass] = useState(false)
+  const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null)
 
   useEffect(() => {
     let active = true
@@ -264,6 +266,39 @@ function Cs2StudentListTab() {
     }
   }
 
+  // Xuat rieng moi lop 1 file (thay vi gop chung 1 file toan truong) - danh
+  // cho luc dang xem "Tat ca" va muon co san N file rieng de gui/in cho
+  // tung lop. Lan luot tao va tai/chia se tung file 1 (khong dong thoi) de
+  // tranh trinh duyet chan bot cua so tai khi bung nhieu file cung luc, dong
+  // thoi bao tien do "Dang xuat X/N" cho danh sach nhieu lop.
+  async function handleExportExcelPerClass() {
+    if (!rows) return
+    setExportingPerClass(true)
+    setExportError(null)
+    try {
+      const { exportCs2StudentsToExcel } = await import('./exportCs2StudentsExcel')
+      const byLop = new Map<string, Cs2Row[]>()
+      for (const row of rows) {
+        const key = row.lop || '(Chưa rõ lớp)'
+        const list = byLop.get(key) || []
+        list.push(row)
+        byLop.set(key, list)
+      }
+      const groups = Array.from(byLop.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+      setExportProgress({ done: 0, total: groups.length })
+      for (let i = 0; i < groups.length; i += 1) {
+        const [lopName, lopRows] = groups[i]
+        await exportCs2StudentsToExcel(lopRows, { coSo, lop: lopName }, `DanhSachHS-${coSo}-${lopName}`)
+        setExportProgress({ done: i + 1, total: groups.length })
+      }
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Không xuất được toàn bộ file Excel theo lớp.')
+    } finally {
+      setExportingPerClass(false)
+      setExportProgress(null)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
@@ -306,14 +341,31 @@ function Cs2StudentListTab() {
         <button
           type="button"
           onClick={() => void handleExportExcel()}
-          disabled={!rows || exporting}
+          disabled={!rows || exporting || exportingPerClass}
           className="h-9 rounded-md bg-emerald-700 px-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          {exporting ? 'Đang xuất...' : lop ? `📊 Xuất Excel lớp ${lop}` : '📊 Xuất Excel toàn trường'}
+          {exporting ? 'Đang xuất...' : lop ? `📊 Xuất Excel lớp ${lop}` : '📊 Xuất Excel toàn trường (1 file)'}
         </button>
+        {!lop ? (
+          <button
+            type="button"
+            onClick={() => void handleExportExcelPerClass()}
+            disabled={!rows || exporting || exportingPerClass}
+            className="h-9 rounded-md bg-teal-700 px-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {exportingPerClass
+              ? `Đang xuất... (${exportProgress?.done ?? 0}/${exportProgress?.total ?? 0})`
+              : '📁 Xuất mỗi lớp 1 file'}
+          </button>
+        ) : null}
       </div>
 
       {exportError ? <p className="text-sm font-semibold text-red-700">{exportError}</p> : null}
+      {exportingPerClass ? (
+        <p className="text-xs text-slate-500">
+          Trình duyệt có thể hỏi xin phép tải nhiều file — chọn "Cho phép" để nhận đủ {exportProgress?.total ?? 0} file.
+        </p>
+      ) : null}
 
       {checkResult ? (
         <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
