@@ -10,6 +10,29 @@
 // (vd them CS1) ma khong phai doi logic dropdown.
 export const CO_SO_OPTIONS = ['CS2']
 
+// PostgREST (Supabase) mac dinh chi tra ve toi da 1000 dong moi lan goi, du
+// khong co .limit() nao trong cau query - voi ~1000+ hoc sinh CS2 (nhieu hon
+// 40 em cua rieng 11C5 truoc day chua bao gio cham gioi han nay), cac man
+// hinh liet ke TOAN BO hoc sinh phai tu phan trang qua .range() de lay het,
+// neu khong se bi cat mat cac dong sau dong thu 1000 (vd STT dung lai o
+// 1000, thieu hoc sinh cua cac lop nhap sau).
+export async function fetchAllRows<T>(
+  buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<T[]> {
+  const pageSize = 1000
+  const all: T[] = []
+  let from = 0
+  for (;;) {
+    const { data, error } = await buildQuery(from, from + pageSize - 1)
+    if (error) throw new Error(error.message)
+    const chunk = data || []
+    all.push(...chunk)
+    if (chunk.length < pageSize) break
+    from += pageSize
+  }
+  return all
+}
+
 // Tai khoan dung chung cho trang quan tri (spec 16, muc 6.1): nguoi dung go
 // "admincs2/admincs2", nhung Supabase Auth can dinh dang email - anh xa sang
 // 1 email co dinh noi bo, khong hien thi ra ngoai.

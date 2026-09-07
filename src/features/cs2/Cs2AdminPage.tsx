@@ -6,6 +6,7 @@ import {
   CO_SO_OPTIONS,
   CS2_ADMIN_EMAIL,
   CS2_ADMIN_LOGIN,
+  fetchAllRows,
   fixMojibake,
   hasDigitOrSpecialChar,
   maskCccd,
@@ -186,15 +187,14 @@ function Cs2StudentListTab() {
 
   useEffect(() => {
     let active = true
+    // Dung RPC (tinh server-side qua array_agg) thay vi tu SELECT lop roi loc
+    // trung o client - tranh bi gioi han 1000 dong mac dinh cua PostgREST cat
+    // mat cac lop chi xuat hien o cac dong sau dong thu 1000.
     getSupabaseClient()
-      .from('cs2_hoc_sinh')
-      .select('lop')
-      .eq('co_so', coSo)
-      .is('ngay_roi_lop', null)
-      .then(({ data }) => {
+      .rpc('danh_sach_lop_theo_co_so', { p_co_so: coSo })
+      .then(({ data, error: err }) => {
         if (!active) return
-        const distinct = Array.from(new Set((data || []).map((row) => row.lop as string).filter(Boolean))).sort()
-        setLopOptions(distinct)
+        if (!err) setLopOptions(((data as string[]) || []).slice().sort())
       })
     return () => {
       active = false
@@ -204,20 +204,26 @@ function Cs2StudentListTab() {
   useEffect(() => {
     let active = true
     setError(null)
-    let query = getSupabaseClient()
-      .from('cs2_hoc_sinh')
-      .select('ma_hs, ho, ten, lop, email, dia_chi_hien_tai, cccd, so_lan_sua_lienlac, ngay_cap_nhat_lienlac')
-      .eq('co_so', coSo)
-      .is('ngay_roi_lop', null)
-      .order('lop')
-      .order('ho')
-      .order('ten')
-    if (lop) query = query.eq('lop', lop)
-    query.then(({ data, error: err }) => {
-      if (!active) return
-      if (err) setError(err.message)
-      else setRows((data || []) as Cs2Row[])
+    fetchAllRows<Cs2Row>((from, to) => {
+      let query = getSupabaseClient()
+        .from('cs2_hoc_sinh')
+        .select('ma_hs, ho, ten, lop, email, dia_chi_hien_tai, cccd, so_lan_sua_lienlac, ngay_cap_nhat_lienlac')
+        .eq('co_so', coSo)
+        .is('ngay_roi_lop', null)
+        .order('lop')
+        .order('ho')
+        .order('ten')
+        .order('ma_hs')
+        .range(from, to)
+      if (lop) query = query.eq('lop', lop)
+      return query as unknown as PromiseLike<{ data: Cs2Row[] | null; error: { message: string } | null }>
     })
+      .then((data) => {
+        if (active) setRows(data)
+      })
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof Error ? err.message : 'Không tải được danh sách học sinh.')
+      })
     return () => {
       active = false
     }
@@ -627,13 +633,19 @@ function Cs2ImportTab() {
     if (lops.length === 0) return
     setLoadingExisting(true)
     try {
-      const { data, error } = await getSupabaseClient().from('cs2_hoc_sinh').select('ma_hs, lop').eq('co_so', 'CS2').in('lop', lops)
-      if (error) throw error
+      const data = await fetchAllRows<{ ma_hs: string; lop: string }>((from, to) =>
+        getSupabaseClient()
+          .from('cs2_hoc_sinh')
+          .select('ma_hs, lop')
+          .eq('co_so', 'CS2')
+          .in('lop', lops)
+          .order('ma_hs')
+          .range(from, to),
+      )
       const map: Record<string, Set<string>> = {}
-      for (const row of data || []) {
-        const lop = row.lop as string
-        if (!map[lop]) map[lop] = new Set()
-        map[lop].add(row.ma_hs as string)
+      for (const row of data) {
+        if (!map[row.lop]) map[row.lop] = new Set()
+        map[row.lop].add(row.ma_hs)
       }
       setExistingByLop(map)
     } catch {
