@@ -451,13 +451,37 @@ function Cs2HistoryModal({ maHs, onClose }: { maHs: string; onClose: () => void 
   )
 }
 
+const LOP_KHAC_VALUE = '__lop_khac__'
+
 function Cs2QuickAddTab() {
   const [coSo, setCoSo] = useState(CO_SO_OPTIONS[0])
-  const [lop, setLop] = useState('')
+  const [lopOptions, setLopOptions] = useState<string[]>([])
+  const [lopSelect, setLopSelect] = useState('')
+  const [lopKhac, setLopKhac] = useState('')
   const [tenHs, setTenHs] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  // Danh sach lop de chon nhanh (tranh go tay sai ten lop da co san) - van
+  // co lua chon "Lop khac" cho truong hop them hoc sinh dau tien cua 1 lop
+  // hoan toan moi.
+  useEffect(() => {
+    let active = true
+    setLopSelect('')
+    setLopKhac('')
+    getSupabaseClient()
+      .rpc('danh_sach_lop_theo_co_so', { p_co_so: coSo })
+      .then(({ data, error: err }) => {
+        if (!active) return
+        if (!err) setLopOptions(((data as string[]) || []).slice().sort())
+      })
+    return () => {
+      active = false
+    }
+  }, [coSo])
+
+  const lop = lopSelect === LOP_KHAC_VALUE ? lopKhac.trim() : lopSelect
 
   const validationError = useMemo(() => {
     if (tenHs && hasDigitOrSpecialChar(tenHs)) return 'Tên học sinh không được chứa số hoặc ký tự đặc biệt.'
@@ -468,7 +492,8 @@ function Cs2QuickAddTab() {
     setError(null)
     setMessage(null)
     if (!tenHs.trim()) return setError('Chưa nhập tên học sinh.')
-    if (!lop.trim()) return setError('Chưa nhập lớp.')
+    if (!lopSelect) return setError('Chưa chọn lớp.')
+    if (lopSelect === LOP_KHAC_VALUE && !lopKhac.trim()) return setError('Chưa nhập tên lớp mới.')
     if (validationError) return setError(validationError)
 
     setSubmitting(true)
@@ -479,12 +504,19 @@ function Cs2QuickAddTab() {
       // cuu (xem docs/thuthapthongtincs2/18-bo-sung-auto-sinh-ma-hs.md).
       const { data, error: rpcError } = await getSupabaseClient().rpc('them_nhanh_hoc_sinh', {
         p_ten_hs: tenHs.trim(),
-        p_lop: lop.trim(),
+        p_lop: lop,
         p_co_so: coSo,
       })
       if (rpcError) throw rpcError
-      setMessage(`Đã thêm học sinh ${tenHs.trim()} vào lớp ${lop.trim()}. Mã HS được cấp: ${data as string}`)
+      setMessage(`Đã thêm học sinh ${tenHs.trim()} vào lớp ${lop}. Mã HS được cấp: ${data as string}`)
       setTenHs('')
+      if (lopSelect === LOP_KHAC_VALUE) {
+        // Lop moi vua tao gio da ton tai - lam moi danh sach de lan sau chon
+        // duoc luon tu droplist thay vi lai phai go tay "Lop khac".
+        setLopOptions((current) => (current.includes(lop) ? current : [...current, lop].sort()))
+        setLopSelect(lop)
+        setLopKhac('')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không thêm được học sinh.')
     } finally {
@@ -509,13 +541,32 @@ function Cs2QuickAddTab() {
       </label>
       <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
         Lớp
-        <input
-          type="text"
-          value={lop}
-          onChange={(event) => setLop(event.target.value)}
+        <select
+          value={lopSelect}
+          onChange={(event) => setLopSelect(event.target.value)}
           className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-        />
+        >
+          <option value="">— Chọn lớp —</option>
+          {lopOptions.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+          <option value={LOP_KHAC_VALUE}>➕ Lớp khác (nhập tay)</option>
+        </select>
       </label>
+      {lopSelect === LOP_KHAC_VALUE ? (
+        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+          Tên lớp mới
+          <input
+            type="text"
+            value={lopKhac}
+            onChange={(event) => setLopKhac(event.target.value)}
+            placeholder="VD: 10A210"
+            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
+      ) : null}
       <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
         Tên học sinh
         <input
