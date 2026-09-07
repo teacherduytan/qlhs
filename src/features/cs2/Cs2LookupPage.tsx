@@ -15,7 +15,7 @@ export function Cs2LookupPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex max-w-lg gap-1 p-4 pb-0 sm:max-w-5xl">
+      <div className="mx-auto flex max-w-lg gap-1 p-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-0 sm:max-w-5xl">
         <button
           type="button"
           onClick={() => setTab('hoc-sinh')}

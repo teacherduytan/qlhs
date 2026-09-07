@@ -94,7 +94,7 @@ export function Cs2AdminPage() {
 
   if (!loggedIn) {
     return (
-      <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-3 p-4">
+      <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-3 p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
         <h1 className="text-lg font-bold text-slate-900">Quản trị thu thập thông tin CS2</h1>
         <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
           Tài khoản
@@ -136,7 +136,7 @@ function Cs2AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<AdminTab>('danh-sach')
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-4 p-4">
+    <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-4 p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-slate-900">Quản trị thu thập thông tin CS2</h1>
         <button type="button" onClick={onLogout} className="text-sm font-semibold text-slate-600 hover:underline">
