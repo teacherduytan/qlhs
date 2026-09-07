@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getSupabaseClient } from '../../lib/supabaseClient'
 import { CO_SO_OPTIONS, isValidCccd, isValidEmail, type Cs2StudentLookup } from './cs2Shared'
+import { loadVnAddressData, wardLabel, wardsByProvince, type VnProvince, type VnWard } from './vnAddressData'
 
 type Step = 'dinh-danh' | 'dien' | 'thanh-cong'
 
@@ -27,9 +28,13 @@ export function Cs2LookupPage() {
   const [student, setStudent] = useState<Cs2StudentLookup | null>(null)
 
   const [email, setEmail] = useState('')
-  const [diaChi, setDiaChi] = useState('')
+  const [soNha, setSoNha] = useState('')
+  const [provinceCode, setProvinceCode] = useState('')
+  const [wardCode, setWardCode] = useState('')
   const [cccd, setCccd] = useState('')
   const [fieldError, setFieldError] = useState<string | null>(null)
+
+  const [addressData, setAddressData] = useState<{ provinces: VnProvince[]; wards: VnWard[] } | null>(null)
 
   const [showConfirm, setShowConfirm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -64,17 +69,35 @@ export function Cs2LookupPage() {
     }
     setLookupLoading(true)
     try {
-      const { data, error } = await getSupabaseClient().rpc('tra_cuu_hoc_sinh', {
-        p_ma_hs: maHs.trim(),
-        p_lop: lop,
-        p_co_so: coSo,
-      })
+      const [{ data, error }, address] = await Promise.all([
+        getSupabaseClient().rpc('tra_cuu_hoc_sinh', {
+          p_ma_hs: maHs.trim(),
+          p_lop: lop,
+          p_co_so: coSo,
+        }),
+        loadVnAddressData(),
+      ])
       if (error) throw error
       const found = data as Cs2StudentLookup
       setStudent(found)
       setEmail(found.email || '')
-      setDiaChi(found.dia_chi_hien_tai || '')
       setCccd(found.cccd || '')
+      setAddressData(address)
+
+      // Pre-fill lai dropdown Tinh/Xa tu ten da luu truoc do (khong luu code)
+      // - khop dung ten hien thi voi danh sach dang tai, neu khong khop duoc
+      // (vd du lieu hanh chinh sau nay thay doi) thi de trong, bat chon lai.
+      const matchedProvince = found.dia_chi_tinh_thanh
+        ? address.provinces.find((province) => province.fullName === found.dia_chi_tinh_thanh)
+        : undefined
+      setProvinceCode(matchedProvince?.code || '')
+      const matchedWard =
+        matchedProvince && found.dia_chi_phuong_xa
+          ? wardsByProvince(address.wards, matchedProvince.code).find((ward) => wardLabel(ward) === found.dia_chi_phuong_xa)
+          : undefined
+      setWardCode(matchedWard?.code || '')
+      setSoNha(found.dia_chi_so_nha || '')
+
       setStep('dien')
     } catch (error) {
       setLookupError(
@@ -92,8 +115,16 @@ export function Cs2LookupPage() {
       setFieldError('Email không đúng định dạng.')
       return false
     }
-    if (!diaChi.trim()) {
-      setFieldError('Vui lòng nhập địa chỉ nhà đang sinh sống.')
+    if (!soNha.trim()) {
+      setFieldError('Vui lòng nhập số nhà, tên đường.')
+      return false
+    }
+    if (!provinceCode) {
+      setFieldError('Vui lòng chọn Tỉnh/Thành phố.')
+      return false
+    }
+    if (!wardCode) {
+      setFieldError('Vui lòng chọn Phường/Xã.')
       return false
     }
     if (!isValidCccd(cccd)) {
@@ -109,8 +140,12 @@ export function Cs2LookupPage() {
     setShowConfirm(true)
   }
 
+  const selectedProvince = addressData?.provinces.find((province) => province.code === provinceCode) || null
+  const wardOptions = addressData ? wardsByProvince(addressData.wards, provinceCode) : []
+  const selectedWard = wardOptions.find((ward) => ward.code === wardCode) || null
+
   async function handleConfirmSubmit() {
-    if (!student) return
+    if (!student || !selectedProvince || !selectedWard) return
     setSubmitting(true)
     setSubmitError(null)
     try {
@@ -119,7 +154,9 @@ export function Cs2LookupPage() {
         p_lop: lop,
         p_co_so: coSo,
         p_email: email.trim(),
-        p_dia_chi: diaChi.trim(),
+        p_dia_chi_so_nha: soNha.trim(),
+        p_dia_chi_tinh_thanh: selectedProvince.fullName,
+        p_dia_chi_phuong_xa: wardLabel(selectedWard),
         p_cccd: cccd.trim(),
       })
       if (error) throw error
@@ -224,14 +261,54 @@ export function Cs2LookupPage() {
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-            Địa chỉ nhà đang sinh sống
-            <textarea
-              value={diaChi}
-              onChange={(event) => setDiaChi(event.target.value)}
-              className="min-h-20 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
+          <div className="flex flex-col gap-3 rounded-md border border-slate-200 p-3">
+            <p className="text-sm font-medium text-slate-700">Địa chỉ nhà đang sinh sống</p>
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+              Số nhà, tên đường
+              <input
+                type="text"
+                value={soNha}
+                onChange={(event) => setSoNha(event.target.value)}
+                placeholder="VD: 12 Nguyễn Trãi"
+                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+              Tỉnh/Thành phố
+              <select
+                value={provinceCode}
+                onChange={(event) => {
+                  setProvinceCode(event.target.value)
+                  setWardCode('')
+                }}
+                disabled={!addressData}
+                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">{addressData ? '— Chọn Tỉnh/Thành phố —' : 'Đang tải danh sách...'}</option>
+                {addressData?.provinces.map((province) => (
+                  <option key={province.code} value={province.code}>
+                    {province.fullName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+              Phường/Xã
+              <select
+                value={wardCode}
+                onChange={(event) => setWardCode(event.target.value)}
+                disabled={!provinceCode}
+                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">{provinceCode ? '— Chọn Phường/Xã —' : 'Chọn Tỉnh/Thành phố trước'}</option>
+                {wardOptions.map((ward) => (
+                  <option key={ward.code} value={ward.code}>
+                    {wardLabel(ward)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
             Số CCCD (hoặc mã định danh cá nhân trên giấy khai sinh nếu chưa có CCCD)
@@ -291,7 +368,9 @@ export function Cs2LookupPage() {
                 <span className="font-semibold">Email:</span> {email}
               </p>
               <p>
-                <span className="font-semibold">Địa chỉ:</span> {diaChi}
+                <span className="font-semibold">Địa chỉ:</span> {soNha}
+                {selectedWard ? `, ${wardLabel(selectedWard)}` : ''}
+                {selectedProvince ? `, ${selectedProvince.fullName}` : ''}
               </p>
               <p>
                 <span className="font-semibold">CCCD:</span> {cccd}

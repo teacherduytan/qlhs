@@ -21,6 +21,9 @@ export interface Cs2StudentLookup {
   ten_hs: string
   email: string | null
   dia_chi_hien_tai: string | null
+  dia_chi_so_nha: string | null
+  dia_chi_tinh_thanh: string | null
+  dia_chi_phuong_xa: string | null
   cccd: string | null
   so_lan_sua_lienlac: number
   ngay_cap_nhat_lienlac: string | null
