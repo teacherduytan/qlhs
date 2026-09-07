@@ -148,7 +148,11 @@ const RECORD_TYPE_BY_GROUP: Record<DanhMucDiem['nhom'], LoaiGhiNhan> = {
 
 export class SupabaseDataSource implements DataSource {
   async getStudents(): Promise<HocSinh[]> {
-    const { data, error } = await getSupabaseClient().from('hoc_sinh').select('*').order('tt')
+    // Loc lop = '11C5': bang hoc_sinh gio dung CHUNG voi tinh nang thu thap
+    // thong tin CS2 (~2000 hs nhieu lop khac, xem docs/thuthapthongtincs2/ +
+    // migration 20260907000100) - khong loc se lay nham hoc sinh lop khac
+    // vao moi thong ke/bao cao cua 11C5.
+    const { data, error } = await getSupabaseClient().from('hoc_sinh').select('*').eq('lop', '11C5').order('tt')
     assertNoError(error, 'Khong doc duoc HocSinh tu Supabase')
     return (data || []) as HocSinh[]
   }
@@ -492,9 +496,13 @@ export class SupabaseDataSource implements DataSource {
   }
 
   async addStudent(student: HocSinh): Promise<HocSinh> {
+    // Gan cung lop = '11C5' / co_so = 'CS2' cho moi hoc sinh them qua app nay
+    // (khong doc tu `student` - HocSinh chua co 2 truong nay o tang TS) de
+    // dam bao hoc sinh moi van hien dung trong getStudents() da loc lop o
+    // tren. Xem migration 20260907000100.
     const { data, error } = await getSupabaseClient()
       .from('hoc_sinh')
-      .insert(pickColumns(student as unknown as AnyRow, TABLE_COLUMNS.hoc_sinh))
+      .insert({ ...pickColumns(student as unknown as AnyRow, TABLE_COLUMNS.hoc_sinh), lop: '11C5', co_so: 'CS2' })
       .select()
       .single()
     assertNoError(error, 'Khong tao duoc HocSinh tren Supabase')
