@@ -313,6 +313,7 @@ function Cs2StudentListTab() {
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
               <tr>
+                <th className="px-3 py-2">STT</th>
                 <th className="px-3 py-2">Mã HS</th>
                 <th className="px-3 py-2">Tên</th>
                 <th className="px-3 py-2">Lớp</th>
@@ -326,8 +327,9 @@ function Cs2StudentListTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.map((row) => (
+              {rows.map((row, index) => (
                 <tr key={row.ma_hs}>
+                  <td className="px-3 py-2 text-slate-500">{index + 1}</td>
                   <td className="px-3 py-2 text-slate-700">{row.ma_hs}</td>
                   <td className="px-3 py-2 font-medium text-slate-900">
                     {row.ho} {row.ten}
