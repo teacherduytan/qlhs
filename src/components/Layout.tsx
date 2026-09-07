@@ -29,6 +29,8 @@ const navItems = [
   { to: '/import', label: 'Import', icon: '📥' },
   { to: '/dong-hanh', label: 'Đồng hành', icon: '🤝' },
   { to: '/tai-lieu', label: 'Tài liệu', icon: '📎' },
+  { to: '/cs2/quan-tri', label: 'CS2: Quản trị', icon: '🏫' },
+  { to: '/cs2/tra-cuu', label: 'CS2: Tra cứu (demo)', icon: '🔎' },
 ]
 
 function NavLinkList({
