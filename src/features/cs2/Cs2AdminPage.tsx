@@ -184,6 +184,8 @@ function Cs2StudentListTab() {
     daDien: number
     chuaDienTheoLop: { lop: string; students: { ma_hs: string; ten: string }[] }[]
   } | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -247,6 +249,21 @@ function Cs2StudentListTab() {
     setCheckResult({ tongSo, daDien, chuaDienTheoLop })
   }
 
+  async function handleExportExcel() {
+    if (!rows) return
+    setExporting(true)
+    setExportError(null)
+    try {
+      const { exportCs2StudentsToExcel } = await import('./exportCs2StudentsExcel')
+      const fileBaseName = lop ? `DanhSachHS-${coSo}-${lop}` : `DanhSachHS-${coSo}-ToanTruong`
+      await exportCs2StudentsToExcel(rows, { coSo, lop }, fileBaseName)
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Không xuất được file Excel.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
@@ -286,7 +303,17 @@ function Cs2StudentListTab() {
         >
           Tính toán kiểm tra
         </button>
+        <button
+          type="button"
+          onClick={() => void handleExportExcel()}
+          disabled={!rows || exporting}
+          className="h-9 rounded-md bg-emerald-700 px-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          {exporting ? 'Đang xuất...' : lop ? `📊 Xuất Excel lớp ${lop}` : '📊 Xuất Excel toàn trường'}
+        </button>
       </div>
+
+      {exportError ? <p className="text-sm font-semibold text-red-700">{exportError}</p> : null}
 
       {checkResult ? (
         <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
