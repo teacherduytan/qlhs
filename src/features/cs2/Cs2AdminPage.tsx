@@ -188,6 +188,7 @@ function Cs2StudentListTab() {
   const [revealedCccd, setRevealedCccd] = useState<Record<string, boolean>>({})
   const [historyMaHs, setHistoryMaHs] = useState<string | null>(null)
   const [editingRow, setEditingRow] = useState<Cs2Row | null>(null)
+  const [deletingMaHs, setDeletingMaHs] = useState<string | null>(null)
   const [checkResult, setCheckResult] = useState<Cs2CheckResult | null>(null)
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
@@ -245,6 +246,21 @@ function Cs2StudentListTab() {
       active = false
     }
   }, [coSo, lop])
+
+  async function handleDelete(maHs: string, hoTen: string) {
+    if (!window.confirm(`Xoá học sinh "${hoTen}" (${maHs}) khỏi danh sách? Không thể khôi phục, kể cả lịch sử đã sửa.`)) return
+    setDeletingMaHs(maHs)
+    setError(null)
+    try {
+      const { error: rpcError } = await getSupabaseClient().rpc('xoa_hoc_sinh_cs2', { p_ma_hs: maHs })
+      if (rpcError) throw rpcError
+      setRows((current) => (current || []).filter((row) => row.ma_hs !== maHs))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không xoá được học sinh.')
+    } finally {
+      setDeletingMaHs(null)
+    }
+  }
 
   function handleCheck() {
     if (!rows) return
@@ -508,6 +524,14 @@ function Cs2StudentListTab() {
                         className="text-xs font-semibold text-blue-700 hover:underline"
                       >
                         Xem lịch sử
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete(row.ma_hs, `${row.ho} ${row.ten}`)}
+                        disabled={deletingMaHs === row.ma_hs}
+                        className="text-xs font-semibold text-red-700 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {deletingMaHs === row.ma_hs ? 'Đang xoá...' : 'Xoá'}
                       </button>
                     </div>
                   </td>
