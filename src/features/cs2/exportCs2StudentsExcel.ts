@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs'
 import { shareOrDownloadFile } from '../reports/shareFile'
+import { CS2_EXPORT_COLUMNS, getCs2ExportCellValue, type Cs2ExportColumnKey } from './cs2ExportColumns'
 
 const EXCEL_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
@@ -15,10 +16,6 @@ export interface Cs2ExportRow {
   ngay_cap_nhat_lienlac: string | null
 }
 
-function isDaDien(row: Cs2ExportRow): boolean {
-  return Boolean(row.email && row.dia_chi_hien_tai && row.cccd)
-}
-
 // Ten sheet Excel: toi da 31 ky tu, khong duoc chua : \ / ? * [ ] - cat bot
 // va bo ky tu cam de tranh loi khi ghi file (vd ten lop qua dai hoac co ky
 // tu dac biet la truong hop hiem nhung van nen phong).
@@ -30,21 +27,25 @@ function sanitizeSheetName(name: string): string {
 // Dung chung cho ca xuat 1 sheet don le (exportCs2StudentsToExcel) va xuat
 // nhieu sheet trong cung 1 workbook (exportCs2StudentsMultiSheetToExcel) -
 // STT luon tu 1..N theo DUNG danh sach `rows` truyen vao sheet nay, khong
-// phu thuoc cac sheet khac trong cung workbook.
-function addStudentSheet(workbook: ExcelJS.Workbook, sheetName: string, rows: Cs2ExportRow[], title: string) {
+// phu thuoc cac sheet khac trong cung workbook. `columns` = danh sach cot
+// tuy chon nguoi dung da tick (STT/Ma HS/Ho ten luon co san, khong tinh vao
+// day - xem cs2ExportColumns.ts).
+function addStudentSheet(
+  workbook: ExcelJS.Workbook,
+  sheetName: string,
+  rows: Cs2ExportRow[],
+  title: string,
+  columns: Cs2ExportColumnKey[],
+) {
   const sheet = workbook.addWorksheet(sanitizeSheetName(sheetName))
-  const totalColumns = 9
+  const columnDefs = CS2_EXPORT_COLUMNS.filter((column) => columns.includes(column.key))
+  const totalColumns = 3 + columnDefs.length
 
   sheet.columns = [
     { key: 'stt', width: 6 },
     { key: 'ma_hs', width: 12 },
     { key: 'ho_ten', width: 26 },
-    { key: 'lop', width: 12 },
-    { key: 'email', width: 26 },
-    { key: 'dia_chi', width: 36 },
-    { key: 'cccd', width: 16 },
-    { key: 'trang_thai', width: 14 },
-    { key: 'cap_nhat', width: 18 },
+    ...columnDefs.map((column) => ({ key: column.key, width: column.width })),
   ]
 
   function mergedRow(text: string, bold: boolean, size?: number) {
@@ -60,7 +61,7 @@ function addStudentSheet(workbook: ExcelJS.Workbook, sheetName: string, rows: Cs
   mergedRow(`Tổng số: ${rows.length} học sinh — Xuất ngày ${new Date().toLocaleDateString('vi-VN')}`, false)
   sheet.addRow([])
 
-  const headerRow = sheet.addRow(['STT', 'Mã HS', 'Họ và tên', 'Lớp', 'Email', 'Địa chỉ', 'CCCD', 'Trạng thái', 'Cập nhật gần nhất'])
+  const headerRow = sheet.addRow(['STT', 'Mã HS', 'Họ và tên', ...columnDefs.map((column) => column.label)])
   headerRow.eachCell((cell) => {
     cell.font = { bold: true }
     cell.alignment = { horizontal: 'center', vertical: 'middle' }
@@ -73,12 +74,7 @@ function addStudentSheet(workbook: ExcelJS.Workbook, sheetName: string, rows: Cs
       index + 1,
       row.ma_hs,
       `${row.ho} ${row.ten}`.trim(),
-      row.lop || '',
-      row.email || '',
-      row.dia_chi_hien_tai || '',
-      row.cccd || '',
-      isDaDien(row) ? 'Đã điền' : 'Chưa điền',
-      row.ngay_cap_nhat_lienlac ? new Date(row.ngay_cap_nhat_lienlac).toLocaleString('vi-VN') : '',
+      ...columnDefs.map((column) => getCs2ExportCellValue(row, column.key)),
     ])
     dataRow.eachCell((cell) => {
       cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
@@ -93,11 +89,12 @@ function addStudentSheet(workbook: ExcelJS.Workbook, sheetName: string, rows: Cs
 export async function exportCs2StudentsToExcel(
   rows: Cs2ExportRow[],
   meta: { coSo: string; lop: string },
+  columns: Cs2ExportColumnKey[],
   fileBaseName: string,
 ): Promise<void> {
   const workbook = new ExcelJS.Workbook()
   const title = meta.lop ? `DANH SÁCH HỌC SINH LỚP ${meta.lop}` : `DANH SÁCH HỌC SINH TOÀN TRƯỜNG (CƠ SỞ ${meta.coSo})`
-  addStudentSheet(workbook, 'Danh sách học sinh', rows, title)
+  addStudentSheet(workbook, 'Danh sách học sinh', rows, title, columns)
 
   const buffer = await workbook.xlsx.writeBuffer()
   const blob = new Blob([buffer], { type: EXCEL_MIME_TYPE })
@@ -111,6 +108,7 @@ export async function exportCs2StudentsToExcel(
 export async function exportCs2StudentsMultiSheetToExcel(
   groups: { lop: string; rows: Cs2ExportRow[] }[],
   coSo: string,
+  columns: Cs2ExportColumnKey[],
   fileBaseName: string,
 ): Promise<void> {
   const workbook = new ExcelJS.Workbook()
@@ -127,7 +125,7 @@ export async function exportCs2StudentsMultiSheetToExcel(
       suffix += 1
     }
     usedNames.add(sheetName)
-    addStudentSheet(workbook, sheetName, group.rows, `DANH SÁCH HỌC SINH LỚP ${group.lop}`)
+    addStudentSheet(workbook, sheetName, group.rows, `DANH SÁCH HỌC SINH LỚP ${group.lop}`, columns)
   }
 
   const title = `DANH SÁCH HỌC SINH TOÀN TRƯỜNG (CƠ SỞ ${coSo}) — MỖI LỚP 1 SHEET`

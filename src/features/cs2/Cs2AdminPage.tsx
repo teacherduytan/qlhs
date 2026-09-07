@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getSupabaseClient } from '../../lib/supabaseClient'
 import { getTeacherAuthSession, loginTeacherWithSupabase, logoutTeacher } from '../../data/teacherAuth'
+import { CS2_EXPORT_COLUMNS, DEFAULT_CS2_EXPORT_COLUMNS, type Cs2ExportColumnKey } from './cs2ExportColumns'
 import {
   autoCapitalizeName,
   CO_SO_OPTIONS,
@@ -189,6 +190,11 @@ function Cs2StudentListTab() {
   const [exportingPerClass, setExportingPerClass] = useState(false)
   const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null)
   const [exportingMultiSheet, setExportingMultiSheet] = useState(false)
+  const [exportColumns, setExportColumns] = useState<Cs2ExportColumnKey[]>(DEFAULT_CS2_EXPORT_COLUMNS)
+
+  function toggleExportColumn(key: Cs2ExportColumnKey) {
+    setExportColumns((current) => (current.includes(key) ? current.filter((item) => item !== key) : [...current, key]))
+  }
 
   useEffect(() => {
     let active = true
@@ -259,7 +265,7 @@ function Cs2StudentListTab() {
     try {
       const { exportCs2StudentsToExcel } = await import('./exportCs2StudentsExcel')
       const fileBaseName = lop ? `DanhSachHS-${coSo}-${lop}` : `DanhSachHS-${coSo}-ToanTruong`
-      await exportCs2StudentsToExcel(rows, { coSo, lop }, fileBaseName)
+      await exportCs2StudentsToExcel(rows, { coSo, lop }, exportColumns, fileBaseName)
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'Không xuất được file Excel.')
     } finally {
@@ -295,7 +301,7 @@ function Cs2StudentListTab() {
       setExportProgress({ done: 0, total: groups.length })
       for (let i = 0; i < groups.length; i += 1) {
         const group = groups[i]
-        await exportCs2StudentsToExcel(group.rows, { coSo, lop: group.lop }, `DanhSachHS-${coSo}-${group.lop}`)
+        await exportCs2StudentsToExcel(group.rows, { coSo, lop: group.lop }, exportColumns, `DanhSachHS-${coSo}-${group.lop}`)
         setExportProgress({ done: i + 1, total: groups.length })
       }
     } catch (err) {
@@ -315,7 +321,7 @@ function Cs2StudentListTab() {
     try {
       const { exportCs2StudentsMultiSheetToExcel } = await import('./exportCs2StudentsExcel')
       const groups = groupRowsByLop(rows)
-      await exportCs2StudentsMultiSheetToExcel(groups, coSo, `DanhSachHS-${coSo}-ToanTruong-TheoLop`)
+      await exportCs2StudentsMultiSheetToExcel(groups, coSo, exportColumns, `DanhSachHS-${coSo}-ToanTruong-TheoLop`)
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'Không xuất được file Excel nhiều sheet.')
     } finally {
@@ -392,6 +398,24 @@ function Cs2StudentListTab() {
             {exportingMultiSheet ? 'Đang xuất...' : '📑 Xuất 1 file, mỗi lớp 1 sheet'}
           </button>
         ) : null}
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-3">
+        <p className="text-sm font-semibold text-slate-900">Tuỳ chọn cột xuất Excel</p>
+        <p className="mt-1 text-xs text-slate-500">STT, Mã HS và Họ tên luôn được xuất mặc định.</p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-3">
+          {CS2_EXPORT_COLUMNS.map((column) => (
+            <label key={column.key} className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={exportColumns.includes(column.key)}
+                onChange={() => toggleExportColumn(column.key)}
+                className="h-4 w-4 rounded border-slate-300 text-blue-600"
+              />
+              {column.label}
+            </label>
+          ))}
+        </div>
       </div>
 
       {exportError ? <p className="text-sm font-semibold text-red-700">{exportError}</p> : null}
