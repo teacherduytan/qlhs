@@ -889,6 +889,10 @@ function Cs2QuickAddTab() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  // Danh sach vua them trong phien lam viec nay (khong luu CSDL rieng, chi
+  // giu tam tren man hinh) - de GVCN tien tra lai ma HS vua cap ma khong can
+  // nho/chep lai tung lan, phong khi them lien tiep nhieu em.
+  const [recentlyAdded, setRecentlyAdded] = useState<{ maHs: string; hoTen: string; lop: string }[]>([])
 
   // Danh sach lop de chon nhanh (tranh go tay sai ten lop da co san) - van
   // co lua chon "Lop khac" cho truong hop them hoc sinh dau tien cua 1 lop
@@ -923,6 +927,12 @@ function Cs2QuickAddTab() {
     if (lopSelect === LOP_KHAC_VALUE && !lopKhac.trim()) return setError('Chưa nhập tên lớp mới.')
     if (validationError) return setError(validationError)
 
+    // Luon chuan hoa viet hoa chu cai dau moi tu truoc khi gui - khong chi
+    // dua vao onBlur (vd nguoi dung go xong bam Enter/nut Them ngay, chua
+    // kip roi khoi o nhap thi cung khong bi luu sai dinh dang).
+    const tenChuanHoa = autoCapitalizeName(tenHs)
+    setTenHs(tenChuanHoa)
+
     setSubmitting(true)
     try {
       // Khong con nhap tay ma_hs - he thong tu sinh (dai "9xxxxx", khong bao
@@ -930,12 +940,14 @@ function Cs2QuickAddTab() {
       // tra ve ma vua cap de GVCN bao cho hoc sinh biet dung ma nao de tra
       // cuu (xem docs/thuthapthongtincs2/18-bo-sung-auto-sinh-ma-hs.md).
       const { data, error: rpcError } = await getSupabaseClient().rpc('them_nhanh_hoc_sinh', {
-        p_ten_hs: tenHs.trim(),
+        p_ten_hs: tenChuanHoa,
         p_lop: lop,
         p_co_so: coSo,
       })
       if (rpcError) throw rpcError
-      setMessage(`Đã thêm học sinh ${tenHs.trim()} vào lớp ${lop}. Mã HS được cấp: ${data as string}`)
+      const maHsMoi = data as string
+      setMessage(`Đã thêm học sinh ${tenChuanHoa} vào lớp ${lop}. Mã HS được cấp: ${maHsMoi}`)
+      setRecentlyAdded((current) => [{ maHs: maHsMoi, hoTen: tenChuanHoa, lop }, ...current])
       setTenHs('')
       if (lopSelect === LOP_KHAC_VALUE) {
         // Lop moi vua tao gio da ton tai - lam moi danh sach de lan sau chon
@@ -1001,6 +1013,7 @@ function Cs2QuickAddTab() {
           value={tenHs}
           onChange={(event) => setTenHs(event.target.value)}
           onBlur={() => setTenHs((current) => autoCapitalizeName(current))}
+          placeholder="VD: Nguyễn Văn A"
           className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
       </label>
@@ -1014,6 +1027,22 @@ function Cs2QuickAddTab() {
       >
         {submitting ? 'Đang thêm...' : 'Thêm nhanh học sinh'}
       </button>
+
+      {recentlyAdded.length > 0 ? (
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Vừa thêm trong phiên này</p>
+          <ul className="flex flex-col gap-1 text-sm">
+            {recentlyAdded.map((item) => (
+              <li key={item.maHs} className="flex items-center justify-between gap-2 rounded-md bg-white px-2 py-1.5">
+                <span className="text-slate-700">
+                  {item.hoTen} <span className="text-slate-400">— Lớp {item.lop}</span>
+                </span>
+                <span className="font-mono font-semibold text-indigo-700">{item.maHs}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   )
 }

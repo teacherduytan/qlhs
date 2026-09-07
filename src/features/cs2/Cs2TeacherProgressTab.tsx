@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getSupabaseClient } from '../../lib/supabaseClient'
 import { Cs2CheckResultCard, type Cs2CheckResult } from './Cs2CheckResultCard'
-import { hasDigitOrSpecialChar, maskCccd } from './cs2Shared'
+import { autoCapitalizeName, hasDigitOrSpecialChar, maskCccd } from './cs2Shared'
 
 // Tab "Giao vien theo doi tien do" trong trang tra cuu cong khai
 // (Cs2LookupPage.tsx) - GVCN dang nhap bang chinh ten lop (viet hoa) + mat
@@ -267,6 +267,9 @@ function Cs2TeacherQuickAddTab({ session }: { session: TeacherSession }) {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  // Danh sach vua them trong phien lam viec nay (khong luu CSDL rieng) - de
+  // GVCN tien tra lai ma HS vua cap ma khong can nho/chep lai tung lan.
+  const [recentlyAdded, setRecentlyAdded] = useState<{ maHs: string; hoTen: string }[]>([])
 
   async function handleSubmit() {
     setError(null)
@@ -274,15 +277,22 @@ function Cs2TeacherQuickAddTab({ session }: { session: TeacherSession }) {
     if (!tenHs.trim()) return setError('Chưa nhập tên học sinh.')
     if (hasDigitOrSpecialChar(tenHs)) return setError('Tên học sinh không được chứa số hoặc ký tự đặc biệt.')
 
+    // Luon chuan hoa viet hoa chu cai dau moi tu truoc khi gui - khong chi
+    // dua vao onBlur (vd go xong bam Enter ngay, chua kip roi khoi o nhap).
+    const tenChuanHoa = autoCapitalizeName(tenHs)
+    setTenHs(tenChuanHoa)
+
     setSubmitting(true)
     try {
       const { data, error: rpcError } = await getSupabaseClient().rpc('giao_vien_them_nhanh_hoc_sinh', {
         p_lop: session.lop,
         p_mat_khau: session.matKhau,
-        p_ten_hs: tenHs.trim(),
+        p_ten_hs: tenChuanHoa,
       })
       if (rpcError) throw rpcError
-      setMessage(`Đã thêm học sinh ${tenHs.trim()} vào lớp ${session.lop}. Mã HS được cấp: ${data as string}`)
+      const maHsMoi = data as string
+      setMessage(`Đã thêm học sinh ${tenChuanHoa} vào lớp ${session.lop}. Mã HS được cấp: ${maHsMoi}`)
+      setRecentlyAdded((current) => [{ maHs: maHsMoi, hoTen: tenChuanHoa }, ...current])
       setTenHs('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không thêm được học sinh.')
@@ -303,7 +313,9 @@ function Cs2TeacherQuickAddTab({ session }: { session: TeacherSession }) {
           type="text"
           value={tenHs}
           onChange={(event) => setTenHs(event.target.value)}
+          onBlur={() => setTenHs((current) => autoCapitalizeName(current))}
           onKeyDown={(event) => event.key === 'Enter' && void handleSubmit()}
+          placeholder="VD: Nguyễn Văn A"
           className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
       </label>
@@ -317,6 +329,20 @@ function Cs2TeacherQuickAddTab({ session }: { session: TeacherSession }) {
       >
         {submitting ? 'Đang thêm...' : 'Thêm nhanh học sinh'}
       </button>
+
+      {recentlyAdded.length > 0 ? (
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Vừa thêm trong phiên này</p>
+          <ul className="flex flex-col gap-1 text-sm">
+            {recentlyAdded.map((item) => (
+              <li key={item.maHs} className="flex items-center justify-between gap-2 rounded-md bg-white px-2 py-1.5">
+                <span className="text-slate-700">{item.hoTen}</span>
+                <span className="font-mono font-semibold text-indigo-700">{item.maHs}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   )
 }
