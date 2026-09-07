@@ -6,8 +6,10 @@ import {
   CO_SO_OPTIONS,
   CS2_ADMIN_EMAIL,
   CS2_ADMIN_LOGIN,
+  fixMojibake,
   hasDigitOrSpecialChar,
   maskCccd,
+  splitHoTen,
 } from './cs2Shared'
 
 interface Cs2Row {
@@ -30,7 +32,7 @@ interface LichSuRow {
   thoi_gian: string
 }
 
-type AdminTab = 'danh-sach' | 'them-nhanh'
+type AdminTab = 'danh-sach' | 'them-nhanh' | 'import'
 
 function isDaDien(row: Cs2Row): boolean {
   return Boolean(row.email && row.dia_chi_hien_tai && row.cccd)
@@ -152,9 +154,18 @@ function Cs2AdminDashboard({ onLogout }: { onLogout: () => void }) {
         >
           Thêm nhanh HS mới
         </button>
+        <button
+          type="button"
+          onClick={() => setTab('import')}
+          className={`h-10 flex-1 rounded-md text-sm font-semibold ${
+            tab === 'import' ? 'bg-indigo-700 text-white' : 'text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          Import DS
+        </button>
       </div>
 
-      {tab === 'danh-sach' ? <Cs2StudentListTab /> : <Cs2QuickAddTab />}
+      {tab === 'danh-sach' ? <Cs2StudentListTab /> : tab === 'them-nhanh' ? <Cs2QuickAddTab /> : <Cs2ImportTab />}
     </div>
   )
 }
@@ -523,6 +534,340 @@ function Cs2QuickAddTab() {
       >
         {submitting ? 'Đang thêm...' : 'Thêm nhanh học sinh'}
       </button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Import roster hoc sinh tu file JSON "danh sach phong thi" (dataset_type =
+// exam_candidate_list) - xem docs/thuthapthongtincs2/17-import-roster-hs-tu-json.md.
+// Khac ban dac ta goc: KHONG con co che "chan lop da co du lieu" (vi gio dung
+// bang cs2_hoc_sinh rieng, khong con chung du lieu voi 11C5 de so trung nua) -
+// chi con giu lai buoc "bo qua ma_hs da ton tai" cho an toan khi lo chay
+// import lai cung 1 file.
+
+function todayIso(): string {
+  const now = new Date()
+  return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-')
+}
+
+interface ImportStudentRow {
+  sbd: string
+  hoTen: string
+  lop: string
+}
+
+interface ImportGroup {
+  id: string
+  name: string
+  students: ImportStudentRow[]
+  errorCount: number
+}
+
+interface ParsedImport {
+  datasetName: string
+  groups: ImportGroup[]
+}
+
+function parseImportJson(raw: unknown): ParsedImport {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('File JSON không hợp lệ.')
+  }
+  const obj = raw as Record<string, unknown>
+  if (obj.dataset_type !== 'exam_candidate_list') {
+    throw new Error('File không đúng định dạng (dataset_type phải là "exam_candidate_list").')
+  }
+  if (!Array.isArray(obj.groups)) {
+    throw new Error('File thiếu mảng "groups".')
+  }
+
+  const groups: ImportGroup[] = obj.groups.map((rawGroup, groupIndex) => {
+    const group = (rawGroup || {}) as Record<string, unknown>
+    const students: ImportStudentRow[] = []
+    let errorCount = 0
+    const rawStudents = Array.isArray(group.students) ? group.students : []
+    for (const rawStudent of rawStudents) {
+      const student = (rawStudent || {}) as Record<string, unknown>
+      const sbd = String(student.sbd ?? '').trim()
+      const hoTenRaw = String(student.ho_ten ?? '').trim()
+      const lopRaw = String(student.lop ?? '').trim()
+      if (!sbd || !hoTenRaw || !lopRaw) {
+        errorCount += 1
+        continue
+      }
+      students.push({ sbd, hoTen: fixMojibake(hoTenRaw), lop: fixMojibake(lopRaw) })
+    }
+    const rawName = String(group.name ?? group.id ?? `Đợt ${groupIndex + 1}`)
+    return {
+      id: String(group.id ?? groupIndex),
+      name: fixMojibake(rawName),
+      students,
+      errorCount,
+    }
+  })
+
+  return { datasetName: fixMojibake(String(obj.dataset_name ?? '')), groups }
+}
+
+function Cs2ImportTab() {
+  const [parsed, setParsed] = useState<ParsedImport | null>(null)
+  const [parseError, setParseError] = useState<string | null>(null)
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
+  const [ngayNhapHoc, setNgayNhapHoc] = useState(() => todayIso())
+  const [existingByLop, setExistingByLop] = useState<Record<string, Set<string>>>({})
+  const [loadingExisting, setLoadingExisting] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{ created: number; skipped: number } | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
+
+  async function loadExisting(groups: ImportGroup[]) {
+    const lops = Array.from(new Set(groups.flatMap((group) => group.students.map((student) => student.lop))))
+    if (lops.length === 0) return
+    setLoadingExisting(true)
+    try {
+      const { data, error } = await getSupabaseClient().from('cs2_hoc_sinh').select('ma_hs, lop').eq('co_so', 'CS2').in('lop', lops)
+      if (error) throw error
+      const map: Record<string, Set<string>> = {}
+      for (const row of data || []) {
+        const lop = row.lop as string
+        if (!map[lop]) map[lop] = new Set()
+        map[lop].add(row.ma_hs as string)
+      }
+      setExistingByLop(map)
+    } catch {
+      // Chi la thong tin tham khao hien thi truoc khi import - khong chan luong neu loi.
+    } finally {
+      setLoadingExisting(false)
+    }
+  }
+
+  async function handleFile(file: File | null) {
+    if (!file) return
+    setParseError(null)
+    setImportError(null)
+    setImportResult(null)
+    setExistingByLop({})
+    try {
+      const text = await file.text()
+      const json = JSON.parse(text)
+      const result = parseImportJson(json)
+      setParsed(result)
+      setSelectedGroupIds(result.groups.map((group) => group.id))
+      await loadExisting(result.groups)
+    } catch (err) {
+      setParsed(null)
+      setParseError(err instanceof Error ? err.message : 'Không đọc được file JSON.')
+    }
+  }
+
+  const perLopSummary = useMemo(() => {
+    if (!parsed) return []
+    const map = new Map<string, { lop: string; total: number; existing: number }>()
+    for (const group of parsed.groups) {
+      if (!selectedGroupIds.includes(group.id)) continue
+      for (const student of group.students) {
+        const entry = map.get(student.lop) || { lop: student.lop, total: 0, existing: 0 }
+        entry.total += 1
+        if (existingByLop[student.lop]?.has(student.sbd)) entry.existing += 1
+        map.set(student.lop, entry)
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.lop.localeCompare(b.lop))
+  }, [parsed, selectedGroupIds, existingByLop])
+
+  const totalErrorRows = parsed ? parsed.groups.reduce((sum, group) => sum + group.errorCount, 0) : 0
+
+  // Danh sach hoc sinh THUC SU se duoc tao moi (da loc bo trung/da ton tai) -
+  // dung chung cho ca bang xem truoc (de ra soat ten truoc khi bam import,
+  // quan trong vi file nguon co the bi loi phong chu/mojibake) va cho
+  // handleImport ben duoi, tranh tinh lai 2 lan.
+  const candidateRows = useMemo(() => {
+    if (!parsed) return []
+    const candidates = parsed.groups.filter((group) => selectedGroupIds.includes(group.id)).flatMap((group) => group.students)
+    const seen = new Set<string>()
+    const rows: { ma_hs: string; ho: string; ten: string; lop: string; co_so: string; ngay_nhap_hoc: string }[] = []
+    for (const student of candidates) {
+      if (seen.has(student.sbd) || existingByLop[student.lop]?.has(student.sbd)) continue
+      seen.add(student.sbd)
+      const { ho, ten } = splitHoTen(student.hoTen)
+      rows.push({ ma_hs: student.sbd, ho, ten, lop: student.lop, co_so: 'CS2', ngay_nhap_hoc: ngayNhapHoc })
+    }
+    return rows
+  }, [parsed, selectedGroupIds, existingByLop, ngayNhapHoc])
+
+  async function handleImport() {
+    if (!parsed) return
+    setImporting(true)
+    setImportError(null)
+    setImportResult(null)
+    try {
+      const rows = candidateRows
+      const totalCandidates = parsed.groups
+        .filter((group) => selectedGroupIds.includes(group.id))
+        .reduce((sum, group) => sum + group.students.length, 0)
+      const skipped = totalCandidates - rows.length
+
+      const chunkSize = 500
+      let created = 0
+      for (let i = 0; i < rows.length; i += chunkSize) {
+        const chunk = rows.slice(i, i + chunkSize)
+        // upsert + ignoreDuplicates de an toan truoc rui ro trung (vd chay lai
+        // import cung luc tu 2 tab) du da loc truoc o tren - khong bao loi ca
+        // batch chi vi 1 dong trung ma_hs.
+        const { error } = await getSupabaseClient()
+          .from('cs2_hoc_sinh')
+          .upsert(chunk, { onConflict: 'ma_hs', ignoreDuplicates: true })
+        if (error) throw error
+        created += chunk.length
+      }
+
+      setImportResult({ created, skipped })
+      setParsed(null)
+      setExistingByLop({})
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Không import được danh sách.')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 p-6 text-center hover:bg-blue-100">
+          <span className="text-2xl" aria-hidden="true">
+            📥
+          </span>
+          <span className="text-sm font-semibold text-blue-700">Chọn file JSON danh sách phòng thi</span>
+          <span className="text-xs text-slate-500">Định dạng dataset_type = "exam_candidate_list" (schema_version 1.0)</span>
+          <input
+            type="file"
+            accept="application/json"
+            className="hidden"
+            onChange={(event) => {
+              void handleFile(event.target.files?.[0] || null)
+              event.target.value = ''
+            }}
+          />
+        </label>
+        {parseError ? <p className="mt-2 text-sm font-semibold text-red-700">{parseError}</p> : null}
+      </div>
+
+      {importResult ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-100 p-4 text-sm font-semibold text-emerald-800">
+          Đã tạo mới {importResult.created} học sinh, bỏ qua {importResult.skipped} học sinh (đã tồn tại hoặc trùng trong file).
+        </div>
+      ) : null}
+      {importError ? <div className="rounded-lg border border-red-200 bg-red-100 p-4 text-sm font-semibold text-red-700">{importError}</div> : null}
+
+      {parsed ? (
+        <>
+          <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+            <p className="text-sm font-semibold text-slate-700">
+              {parsed.datasetName || 'Danh sách đã chọn'} — chọn đợt (group) muốn import
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {parsed.groups.map((group) => (
+                <label key={group.id} className="flex items-center gap-1.5 text-sm text-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={selectedGroupIds.includes(group.id)}
+                    onChange={(event) => {
+                      setSelectedGroupIds((current) =>
+                        event.target.checked ? [...current, group.id] : current.filter((id) => id !== group.id),
+                      )
+                    }}
+                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  {group.name} ({group.students.length} HS{group.errorCount > 0 ? `, ${group.errorCount} dòng lỗi` : ''})
+                </label>
+              ))}
+            </div>
+            {totalErrorRows > 0 ? (
+              <p className="text-xs font-semibold text-amber-700">
+                {totalErrorRows} dòng thiếu sbd/ho_ten/lop trong file — đã tự động loại khỏi danh sách import.
+              </p>
+            ) : null}
+            <label className="flex max-w-xs flex-col gap-1 text-xs font-medium text-slate-700">
+              Ngày nhập học (áp dụng cho cả batch)
+              <input
+                type="date"
+                value={ngayNhapHoc}
+                onChange={(event) => setNgayNhapHoc(event.target.value)}
+                className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <p className="mb-2 text-sm font-semibold text-slate-700">
+              Xem trước theo lớp {loadingExisting ? '(đang kiểm tra dữ liệu đã có...)' : ''}
+            </p>
+            <div className="overflow-x-auto rounded-md border border-slate-200">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
+                  <tr>
+                    <th className="px-3 py-2">Lớp</th>
+                    <th className="px-3 py-2">Số HS trong file</th>
+                    <th className="px-3 py-2">Đã có trong hệ thống</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {perLopSummary.map((row) => (
+                    <tr key={row.lop}>
+                      <td className="px-3 py-2 font-semibold text-slate-900">{row.lop}</td>
+                      <td className="px-3 py-2 text-slate-700">{row.total}</td>
+                      <td className="px-3 py-2 text-slate-700">
+                        {row.existing > 0 ? <span className="font-semibold text-amber-700">{row.existing}</span> : row.existing}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <p className="mb-2 text-sm font-semibold text-slate-700">
+              Xem trước tên học sinh sẽ tạo mới ({candidateRows.length} học sinh) — kiểm tra kỹ dấu tiếng Việt trước khi import,
+              nhất là nếu file gốc từng bị lỗi phông chữ khi xuất từ Excel.
+            </p>
+            <div className="max-h-72 overflow-y-auto rounded-md border border-slate-200">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="sticky top-0 bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
+                  <tr>
+                    <th className="px-3 py-2">Mã HS</th>
+                    <th className="px-3 py-2">Họ tên</th>
+                    <th className="px-3 py-2">Lớp</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {candidateRows.map((row) => (
+                    <tr key={row.ma_hs}>
+                      <td className="px-3 py-2 text-slate-500">{row.ma_hs}</td>
+                      <td className="px-3 py-2 font-medium text-slate-900">
+                        {row.ho} {row.ten}
+                      </td>
+                      <td className="px-3 py-2 text-slate-700">{row.lop}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <button
+              type="button"
+              onClick={() => void handleImport()}
+              disabled={importing || selectedGroupIds.length === 0 || candidateRows.length === 0}
+              className="h-10 rounded-md bg-indigo-700 px-4 text-sm font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {importing ? 'Đang import...' : `Xác nhận Import ${candidateRows.length} học sinh thuộc ${perLopSummary.length} lớp`}
+            </button>
+          </div>
+        </>
+      ) : null}
     </div>
   )
 }
