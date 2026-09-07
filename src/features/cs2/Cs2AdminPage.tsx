@@ -188,6 +188,7 @@ function Cs2StudentListTab() {
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportingPerClass, setExportingPerClass] = useState(false)
   const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null)
+  const [exportingMultiSheet, setExportingMultiSheet] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -266,6 +267,19 @@ function Cs2StudentListTab() {
     }
   }
 
+  function groupRowsByLop(list: Cs2Row[]): { lop: string; rows: Cs2Row[] }[] {
+    const byLop = new Map<string, Cs2Row[]>()
+    for (const row of list) {
+      const key = row.lop || '(Chưa rõ lớp)'
+      const group = byLop.get(key) || []
+      group.push(row)
+      byLop.set(key, group)
+    }
+    return Array.from(byLop.entries())
+      .map(([lopName, lopRows]) => ({ lop: lopName, rows: lopRows }))
+      .sort((a, b) => a.lop.localeCompare(b.lop))
+  }
+
   // Xuat rieng moi lop 1 file (thay vi gop chung 1 file toan truong) - danh
   // cho luc dang xem "Tat ca" va muon co san N file rieng de gui/in cho
   // tung lop. Lan luot tao va tai/chia se tung file 1 (khong dong thoi) de
@@ -277,18 +291,11 @@ function Cs2StudentListTab() {
     setExportError(null)
     try {
       const { exportCs2StudentsToExcel } = await import('./exportCs2StudentsExcel')
-      const byLop = new Map<string, Cs2Row[]>()
-      for (const row of rows) {
-        const key = row.lop || '(Chưa rõ lớp)'
-        const list = byLop.get(key) || []
-        list.push(row)
-        byLop.set(key, list)
-      }
-      const groups = Array.from(byLop.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+      const groups = groupRowsByLop(rows)
       setExportProgress({ done: 0, total: groups.length })
       for (let i = 0; i < groups.length; i += 1) {
-        const [lopName, lopRows] = groups[i]
-        await exportCs2StudentsToExcel(lopRows, { coSo, lop: lopName }, `DanhSachHS-${coSo}-${lopName}`)
+        const group = groups[i]
+        await exportCs2StudentsToExcel(group.rows, { coSo, lop: group.lop }, `DanhSachHS-${coSo}-${group.lop}`)
         setExportProgress({ done: i + 1, total: groups.length })
       }
     } catch (err) {
@@ -296,6 +303,23 @@ function Cs2StudentListTab() {
     } finally {
       setExportingPerClass(false)
       setExportProgress(null)
+    }
+  }
+
+  // Xuat toan truong nhung goi chung vao 1 file duy nhat, moi lop 1 sheet
+  // rieng (khac voi handleExportExcelPerClass - o do xuat rieng N file).
+  async function handleExportExcelMultiSheet() {
+    if (!rows) return
+    setExportingMultiSheet(true)
+    setExportError(null)
+    try {
+      const { exportCs2StudentsMultiSheetToExcel } = await import('./exportCs2StudentsExcel')
+      const groups = groupRowsByLop(rows)
+      await exportCs2StudentsMultiSheetToExcel(groups, coSo, `DanhSachHS-${coSo}-ToanTruong-TheoLop`)
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Không xuất được file Excel nhiều sheet.')
+    } finally {
+      setExportingMultiSheet(false)
     }
   }
 
@@ -350,12 +374,22 @@ function Cs2StudentListTab() {
           <button
             type="button"
             onClick={() => void handleExportExcelPerClass()}
-            disabled={!rows || exporting || exportingPerClass}
+            disabled={!rows || exporting || exportingPerClass || exportingMultiSheet}
             className="h-9 rounded-md bg-teal-700 px-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             {exportingPerClass
               ? `Đang xuất... (${exportProgress?.done ?? 0}/${exportProgress?.total ?? 0})`
               : '📁 Xuất mỗi lớp 1 file'}
+          </button>
+        ) : null}
+        {!lop ? (
+          <button
+            type="button"
+            onClick={() => void handleExportExcelMultiSheet()}
+            disabled={!rows || exporting || exportingPerClass || exportingMultiSheet}
+            className="h-9 rounded-md bg-cyan-700 px-3 text-sm font-semibold text-white hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {exportingMultiSheet ? 'Đang xuất...' : '📑 Xuất 1 file, mỗi lớp 1 sheet'}
           </button>
         ) : null}
       </div>
