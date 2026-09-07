@@ -10,9 +10,12 @@ import {
   fetchAllRows,
   fixMojibake,
   hasDigitOrSpecialChar,
+  isValidCccd,
+  isValidEmail,
   maskCccd,
   splitHoTen,
 } from './cs2Shared'
+import { loadVnAddressData, wardLabel, wardsByProvince, type VnProvince, type VnWard } from './vnAddressData'
 
 interface Cs2Row {
   ma_hs: string
@@ -21,6 +24,9 @@ interface Cs2Row {
   lop: string | null
   email: string | null
   dia_chi_hien_tai: string | null
+  dia_chi_so_nha: string | null
+  dia_chi_tinh_thanh: string | null
+  dia_chi_phuong_xa: string | null
   cccd: string | null
   so_lan_sua_lienlac: number
   ngay_cap_nhat_lienlac: string | null
@@ -180,6 +186,7 @@ function Cs2StudentListTab() {
   const [error, setError] = useState<string | null>(null)
   const [revealedCccd, setRevealedCccd] = useState<Record<string, boolean>>({})
   const [historyMaHs, setHistoryMaHs] = useState<string | null>(null)
+  const [editingRow, setEditingRow] = useState<Cs2Row | null>(null)
   const [checkResult, setCheckResult] = useState<{
     tongSo: number
     daDien: number
@@ -218,7 +225,9 @@ function Cs2StudentListTab() {
     fetchAllRows<Cs2Row>((from, to) => {
       let query = getSupabaseClient()
         .from('cs2_hoc_sinh')
-        .select('ma_hs, ho, ten, lop, email, dia_chi_hien_tai, cccd, so_lan_sua_lienlac, ngay_cap_nhat_lienlac')
+        .select(
+          'ma_hs, ho, ten, lop, email, dia_chi_hien_tai, dia_chi_so_nha, dia_chi_tinh_thanh, dia_chi_phuong_xa, cccd, so_lan_sua_lienlac, ngay_cap_nhat_lienlac',
+        )
         .eq('co_so', coSo)
         .is('ngay_roi_lop', null)
         .order('lop')
@@ -508,13 +517,22 @@ function Cs2StudentListTab() {
                     {row.ngay_cap_nhat_lienlac ? new Date(row.ngay_cap_nhat_lienlac).toLocaleString('vi-VN') : '—'}
                   </td>
                   <td className="px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={() => setHistoryMaHs(row.ma_hs)}
-                      className="text-xs font-semibold text-blue-700 hover:underline"
-                    >
-                      Xem lịch sử
-                    </button>
+                    <div className="flex flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditingRow(row)}
+                        className="text-xs font-semibold text-emerald-700 hover:underline"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHistoryMaHs(row.ma_hs)}
+                        className="text-xs font-semibold text-blue-700 hover:underline"
+                      >
+                        Xem lịch sử
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -524,6 +542,17 @@ function Cs2StudentListTab() {
       )}
 
       {historyMaHs ? <Cs2HistoryModal maHs={historyMaHs} onClose={() => setHistoryMaHs(null)} /> : null}
+      {editingRow ? (
+        <Cs2EditStudentModal
+          row={editingRow}
+          lopOptions={lopOptions}
+          onClose={() => setEditingRow(null)}
+          onSaved={(updated) => {
+            setRows((current) => (current || []).map((item) => (item.ma_hs === updated.ma_hs ? updated : item)))
+            setEditingRow(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }
@@ -583,6 +612,266 @@ function Cs2HistoryModal({ maHs, onClose }: { maHs: string; onClose: () => void 
             ))}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// Cho GVCN sua lai thong tin 1 hoc sinh CS2 tu trang quan tri - khac voi
+// Cs2LookupPage.tsx (hoc sinh tu sua thong tin lien lac cua chinh minh),
+// modal nay con cho sua ca Ho/Ten/Lop (hoc sinh khong tu sua duoc 3 truong
+// nay o trang cong khai). Goi RPC cap_nhat_thongtin_hs_admin - ghi lich su
+// voi nguon = 'gvcn_sua' de phan biet voi lan hoc sinh tu dien (hs_tu_dien).
+function Cs2EditStudentModal({
+  row,
+  lopOptions,
+  onClose,
+  onSaved,
+}: {
+  row: Cs2Row
+  lopOptions: string[]
+  onClose: () => void
+  onSaved: (updated: Cs2Row) => void
+}) {
+  const [ho, setHo] = useState(row.ho)
+  const [ten, setTen] = useState(row.ten)
+  const [lop, setLop] = useState(row.lop || '')
+  const [email, setEmail] = useState(row.email || '')
+  const [cccd, setCccd] = useState(row.cccd || '')
+  const [soNha, setSoNha] = useState(row.dia_chi_so_nha || '')
+  const [provinceCode, setProvinceCode] = useState('')
+  const [wardCode, setWardCode] = useState('')
+  const [addressData, setAddressData] = useState<{ provinces: VnProvince[]; wards: VnWard[] } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    loadVnAddressData().then((address) => {
+      if (!active) return
+      setAddressData(address)
+      const matchedProvince = row.dia_chi_tinh_thanh
+        ? address.provinces.find((province) => province.fullName === row.dia_chi_tinh_thanh)
+        : undefined
+      setProvinceCode(matchedProvince?.code || '')
+      const matchedWard =
+        matchedProvince && row.dia_chi_phuong_xa
+          ? wardsByProvince(address.wards, matchedProvince.code).find((ward) => wardLabel(ward) === row.dia_chi_phuong_xa)
+          : undefined
+      setWardCode(matchedWard?.code || '')
+    })
+    return () => {
+      active = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const wardOptions = addressData ? wardsByProvince(addressData.wards, provinceCode) : []
+  const selectedProvince = addressData?.provinces.find((province) => province.code === provinceCode) || null
+  const selectedWard = wardOptions.find((ward) => ward.code === wardCode) || null
+
+  async function handleSave() {
+    setError(null)
+    if (!ten.trim()) return setError('Chưa nhập tên học sinh.')
+    if (hasDigitOrSpecialChar(ten) || hasDigitOrSpecialChar(ho)) return setError('Họ/tên không được chứa số hoặc ký tự đặc biệt.')
+    if (!lop.trim()) return setError('Chưa chọn lớp.')
+    if (email.trim() && !isValidEmail(email)) return setError('Email không đúng định dạng.')
+    if (cccd.trim() && !isValidCccd(cccd)) return setError('Số CCCD/mã định danh phải gồm đúng 12 chữ số.')
+    // Neu co dien 1 phan dia chi thi bat dien du ca 3 phan, tranh luu dia chi
+    // nua vo nua co (vd co so nha nhung thieu tinh/xa).
+    const addressPartsFilled = [soNha.trim(), selectedProvince, selectedWard].filter(Boolean).length
+    if (addressPartsFilled > 0 && addressPartsFilled < 3) {
+      return setError('Đã điền 1 phần địa chỉ thì cần điền đủ Số nhà + Tỉnh/Thành + Phường/Xã.')
+    }
+
+    setSaving(true)
+    try {
+      const { error: rpcError } = await getSupabaseClient().rpc('cap_nhat_thongtin_hs_admin', {
+        p_ma_hs: row.ma_hs,
+        p_ho: ho.trim(),
+        p_ten: ten.trim(),
+        p_lop: lop.trim(),
+        p_email: email.trim(),
+        p_dia_chi_so_nha: soNha.trim(),
+        p_dia_chi_tinh_thanh: selectedProvince?.fullName || '',
+        p_dia_chi_phuong_xa: selectedWard ? wardLabel(selectedWard) : '',
+        p_cccd: cccd.trim(),
+      })
+      if (rpcError) throw rpcError
+      const diaChiHienTai = addressPartsFilled === 3 ? `${soNha.trim()}, ${wardLabel(selectedWard!)}, ${selectedProvince!.fullName}` : null
+      onSaved({
+        ...row,
+        ho: ho.trim(),
+        ten: ten.trim(),
+        lop: lop.trim(),
+        email: email.trim() || null,
+        cccd: cccd.trim() || null,
+        dia_chi_so_nha: soNha.trim() || null,
+        dia_chi_tinh_thanh: selectedProvince?.fullName || null,
+        dia_chi_phuong_xa: selectedWard ? wardLabel(selectedWard) : null,
+        dia_chi_hien_tai: diaChiHienTai,
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không lưu được thay đổi.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-4 shadow-xl">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-bold text-slate-900">Sửa thông tin — {row.ma_hs}</h2>
+          <button type="button" onClick={onClose} className="text-sm font-semibold text-slate-600 hover:underline">
+            Đóng
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+              Họ
+              <input
+                type="text"
+                value={ho}
+                onChange={(event) => setHo(event.target.value)}
+                onBlur={() => setHo((current) => autoCapitalizeName(current))}
+                className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+              Tên
+              <input
+                type="text"
+                value={ten}
+                onChange={(event) => setTen(event.target.value)}
+                onBlur={() => setTen((current) => autoCapitalizeName(current))}
+                className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+          </div>
+
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+            Lớp
+            <input
+              type="text"
+              list="cs2-edit-lop-options"
+              value={lop}
+              onChange={(event) => setLop(event.target.value)}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+            <datalist id="cs2-edit-lop-options">
+              {lopOptions.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
+          </label>
+
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+
+          <div className="flex flex-col gap-2 rounded-md border border-slate-200 p-3">
+            <p className="text-xs font-semibold text-slate-700">Địa chỉ nhà đang sinh sống</p>
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+              Số nhà, tên đường
+              <input
+                type="text"
+                value={soNha}
+                onChange={(event) => setSoNha(event.target.value)}
+                className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+              Tỉnh/Thành phố
+              <select
+                value={provinceCode}
+                onChange={(event) => {
+                  setProvinceCode(event.target.value)
+                  setWardCode('')
+                }}
+                disabled={!addressData}
+                className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">{addressData ? '— Chọn Tỉnh/Thành phố —' : 'Đang tải danh sách...'}</option>
+                {addressData?.provinces.map((province) => (
+                  <option key={province.code} value={province.code}>
+                    {province.fullName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+              Phường/Xã
+              <select
+                value={wardCode}
+                onChange={(event) => setWardCode(event.target.value)}
+                disabled={!provinceCode}
+                className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">{provinceCode ? '— Chọn Phường/Xã —' : 'Chọn Tỉnh/Thành phố trước'}</option>
+                <optgroup label="Phường">
+                  {wardOptions
+                    .filter((ward) => ward.type === 'ward')
+                    .map((ward) => (
+                      <option key={ward.code} value={ward.code}>
+                        {wardLabel(ward)}
+                      </option>
+                    ))}
+                </optgroup>
+                <optgroup label="Xã">
+                  {wardOptions
+                    .filter((ward) => ward.type === 'commune')
+                    .map((ward) => (
+                      <option key={ward.code} value={ward.code}>
+                        {wardLabel(ward)}
+                      </option>
+                    ))}
+                </optgroup>
+              </select>
+            </label>
+          </div>
+
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+            Số CCCD (hoặc mã định danh cá nhân)
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={12}
+              value={cccd}
+              onChange={(event) => setCccd(event.target.value.replace(/\D/g, ''))}
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+
+          {error ? <p className="text-sm font-semibold text-red-700">{error}</p> : null}
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saving}
+              className="h-10 flex-1 rounded-md bg-indigo-700 text-sm font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="h-10 flex-1 rounded-md border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Huỷ
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
