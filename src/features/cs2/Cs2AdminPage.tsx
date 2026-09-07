@@ -176,7 +176,7 @@ function Cs2StudentListTab() {
   useEffect(() => {
     let active = true
     getSupabaseClient()
-      .from('hoc_sinh')
+      .from('cs2_hoc_sinh')
       .select('lop')
       .eq('co_so', coSo)
       .is('ngay_roi_lop', null)
@@ -194,12 +194,13 @@ function Cs2StudentListTab() {
     let active = true
     setError(null)
     let query = getSupabaseClient()
-      .from('hoc_sinh')
+      .from('cs2_hoc_sinh')
       .select('ma_hs, ho, ten, lop, email, dia_chi_hien_tai, cccd, so_lan_sua_lienlac, ngay_cap_nhat_lienlac')
       .eq('co_so', coSo)
       .is('ngay_roi_lop', null)
       .order('lop')
-      .order('tt')
+      .order('ho')
+      .order('ten')
     if (lop) query = query.eq('lop', lop)
     query.then(({ data, error: err }) => {
       if (!active) return
@@ -378,7 +379,7 @@ function Cs2HistoryModal({ maHs, onClose }: { maHs: string; onClose: () => void 
   useEffect(() => {
     let active = true
     getSupabaseClient()
-      .from('hoc_sinh_lienlac_lichsu')
+      .from('cs2_hoc_sinh_lienlac_lichsu')
       .select('id, gia_tri_cu, gia_tri_moi, nguon, thoi_gian')
       .eq('ma_hs', maHs)
       .order('thoi_gian', { ascending: false })
