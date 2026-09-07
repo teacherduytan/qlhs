@@ -5,6 +5,14 @@ import { loadVnAddressData, wardLabel, wardsByProvince, type VnProvince, type Vn
 
 type Step = 'dinh-danh' | 'dien' | 'thanh-cong'
 
+interface FieldErrors {
+  email?: string
+  soNha?: string
+  provinceCode?: string
+  wardCode?: string
+  cccd?: string
+}
+
 function formatDateTime(value: string | null): string {
   if (!value) return ''
   const date = new Date(value)
@@ -32,7 +40,7 @@ export function Cs2LookupPage() {
   const [provinceCode, setProvinceCode] = useState('')
   const [wardCode, setWardCode] = useState('')
   const [cccd, setCccd] = useState('')
-  const [fieldError, setFieldError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
 
   const [addressData, setAddressData] = useState<{ provinces: VnProvince[]; wards: VnWard[] } | null>(null)
 
@@ -97,6 +105,7 @@ export function Cs2LookupPage() {
           : undefined
       setWardCode(matchedWard?.code || '')
       setSoNha(found.dia_chi_so_nha || '')
+      setFieldErrors({})
 
       setStep('dien')
     } catch (error) {
@@ -110,29 +119,27 @@ export function Cs2LookupPage() {
     }
   }
 
+  // Kiem tra TAT CA cac o cung luc (khong dung lai o loi dau tien) va gan
+  // loi vao dung tung o - de nguoi dien thay het cac cho can sua ngay 1 lan,
+  // hien ngay sat o nhap thay vi 1 dong loi chung chung o cuoi form.
   function validateFields(): boolean {
-    if (!isValidEmail(email)) {
-      setFieldError('Email không đúng định dạng.')
-      return false
-    }
-    if (!soNha.trim()) {
-      setFieldError('Vui lòng nhập số nhà, tên đường.')
-      return false
-    }
-    if (!provinceCode) {
-      setFieldError('Vui lòng chọn Tỉnh/Thành phố.')
-      return false
-    }
-    if (!wardCode) {
-      setFieldError('Vui lòng chọn Phường/Xã.')
-      return false
-    }
-    if (!isValidCccd(cccd)) {
-      setFieldError('Số CCCD/mã định danh phải gồm đúng 12 chữ số.')
-      return false
-    }
-    setFieldError(null)
-    return true
+    const errors: FieldErrors = {}
+    if (!isValidEmail(email)) errors.email = 'Email không đúng định dạng.'
+    if (!soNha.trim()) errors.soNha = 'Vui lòng nhập số nhà, tên đường.'
+    if (!provinceCode) errors.provinceCode = 'Vui lòng chọn Tỉnh/Thành phố.'
+    if (!wardCode) errors.wardCode = 'Vui lòng chọn Phường/Xã.'
+    if (!isValidCccd(cccd)) errors.cccd = 'Số CCCD/mã định danh phải gồm đúng 12 chữ số.'
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  function clearFieldError(field: keyof FieldErrors) {
+    setFieldErrors((current) => {
+      if (!(field in current)) return current
+      const next = { ...current }
+      delete next[field]
+      return next
+    })
   }
 
   function openConfirm() {
@@ -256,9 +263,17 @@ export function Cs2LookupPage() {
             <input
               type="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              onChange={(event) => {
+                setEmail(event.target.value)
+                clearFieldError('email')
+              }}
+              className={`h-10 rounded-md border bg-white px-3 text-sm text-slate-900 outline-none focus:ring-2 ${
+                fieldErrors.email
+                  ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                  : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
+              }`}
             />
+            {fieldErrors.email ? <span className="text-xs font-semibold text-red-700">{fieldErrors.email}</span> : null}
           </label>
 
           <div className="flex flex-col gap-3 rounded-md border border-slate-200 p-3">
@@ -268,10 +283,18 @@ export function Cs2LookupPage() {
               <input
                 type="text"
                 value={soNha}
-                onChange={(event) => setSoNha(event.target.value)}
+                onChange={(event) => {
+                  setSoNha(event.target.value)
+                  clearFieldError('soNha')
+                }}
                 placeholder="VD: 12 Nguyễn Trãi"
-                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className={`h-10 rounded-md border bg-white px-3 text-sm text-slate-900 outline-none focus:ring-2 ${
+                  fieldErrors.soNha
+                    ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                    : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
+                }`}
               />
+              {fieldErrors.soNha ? <span className="text-xs font-semibold text-red-700">{fieldErrors.soNha}</span> : null}
             </label>
             <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
               Tỉnh/Thành phố
@@ -280,9 +303,14 @@ export function Cs2LookupPage() {
                 onChange={(event) => {
                   setProvinceCode(event.target.value)
                   setWardCode('')
+                  clearFieldError('provinceCode')
                 }}
                 disabled={!addressData}
-                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className={`h-10 rounded-md border bg-white px-3 text-sm text-slate-900 outline-none focus:ring-2 ${
+                  fieldErrors.provinceCode
+                    ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                    : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
+                }`}
               >
                 <option value="">{addressData ? '— Chọn Tỉnh/Thành phố —' : 'Đang tải danh sách...'}</option>
                 {addressData?.provinces.map((province) => (
@@ -291,14 +319,24 @@ export function Cs2LookupPage() {
                   </option>
                 ))}
               </select>
+              {fieldErrors.provinceCode ? (
+                <span className="text-xs font-semibold text-red-700">{fieldErrors.provinceCode}</span>
+              ) : null}
             </label>
             <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
               Phường/Xã
               <select
                 value={wardCode}
-                onChange={(event) => setWardCode(event.target.value)}
+                onChange={(event) => {
+                  setWardCode(event.target.value)
+                  clearFieldError('wardCode')
+                }}
                 disabled={!provinceCode}
-                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className={`h-10 rounded-md border bg-white px-3 text-sm text-slate-900 outline-none focus:ring-2 ${
+                  fieldErrors.wardCode
+                    ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                    : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
+                }`}
               >
                 <option value="">{provinceCode ? '— Chọn Phường/Xã —' : 'Chọn Tỉnh/Thành phố trước'}</option>
                 <optgroup label="Phường">
@@ -320,6 +358,7 @@ export function Cs2LookupPage() {
                     ))}
                 </optgroup>
               </select>
+              {fieldErrors.wardCode ? <span className="text-xs font-semibold text-red-700">{fieldErrors.wardCode}</span> : null}
             </label>
           </div>
 
@@ -330,12 +369,18 @@ export function Cs2LookupPage() {
               inputMode="numeric"
               maxLength={12}
               value={cccd}
-              onChange={(event) => setCccd(event.target.value.replace(/\D/g, ''))}
-              className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              onChange={(event) => {
+                setCccd(event.target.value.replace(/\D/g, ''))
+                clearFieldError('cccd')
+              }}
+              className={`h-10 rounded-md border bg-white px-3 text-sm text-slate-900 outline-none focus:ring-2 ${
+                fieldErrors.cccd
+                  ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                  : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
+              }`}
             />
+            {fieldErrors.cccd ? <span className="text-xs font-semibold text-red-700">{fieldErrors.cccd}</span> : null}
           </label>
-
-          {fieldError ? <p className="text-sm font-semibold text-red-700">{fieldError}</p> : null}
 
           <div className="flex gap-2">
             <button
