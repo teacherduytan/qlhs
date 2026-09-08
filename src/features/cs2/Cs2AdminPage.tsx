@@ -189,6 +189,8 @@ function Cs2StudentListTab() {
   const [historyMaHs, setHistoryMaHs] = useState<string | null>(null)
   const [editingRow, setEditingRow] = useState<Cs2Row | null>(null)
   const [deletingMaHs, setDeletingMaHs] = useState<string | null>(null)
+  const [deletingClass, setDeletingClass] = useState(false)
+  const [classActionMessage, setClassActionMessage] = useState<string | null>(null)
   const [checkResult, setCheckResult] = useState<Cs2CheckResult | null>(null)
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
@@ -246,6 +248,38 @@ function Cs2StudentListTab() {
       active = false
     }
   }, [coSo, lop])
+
+  // Xoa toan bo hoc sinh cua 1 lop dang chon (vd lop can thay doi ca danh
+  // sach - xoa het roi sang tab "Import DS" nhap lai file JSON moi cho dung
+  // lop do). Bat go lai chinh xac ten lop de xac nhan (thay vi 1 nut Huy/
+  // Dong y don gian) vi day la thao tac xoa hang loat, kho hoi neu bam nham.
+  async function handleDeleteClass() {
+    if (!lop) return
+    const typed = window.prompt(
+      `Thao tác này sẽ XOÁ VĨNH VIỄN toàn bộ học sinh thuộc lớp "${lop}" (kể cả lịch sử đã sửa). Để xác nhận, hãy gõ lại chính xác tên lớp:`,
+    )
+    if (typed === null) return
+    if (typed.trim() !== lop) {
+      setError('Tên lớp gõ lại không khớp — đã huỷ thao tác xoá.')
+      return
+    }
+
+    setDeletingClass(true)
+    setError(null)
+    setClassActionMessage(null)
+    try {
+      const { data, error: rpcError } = await getSupabaseClient().rpc('xoa_ca_lop_cs2', { p_lop: lop, p_co_so: coSo })
+      if (rpcError) throw rpcError
+      const soLuong = data as number
+      setClassActionMessage(`Đã xoá ${soLuong} học sinh thuộc lớp "${lop}". Vào tab "Import DS" để nhập lại danh sách mới.`)
+      setLopOptions((current) => current.filter((item) => item !== lop))
+      setLop('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không xoá được lớp.')
+    } finally {
+      setDeletingClass(false)
+    }
+  }
 
   async function handleDelete(maHs: string, hoTen: string) {
     if (!window.confirm(`Xoá học sinh "${hoTen}" (${maHs}) khỏi danh sách? Không thể khôi phục, kể cả lịch sử đã sửa.`)) return
@@ -420,7 +454,24 @@ function Cs2StudentListTab() {
             {exportingMultiSheet ? 'Đang xuất...' : '📑 Xuất 1 file, mỗi lớp 1 sheet'}
           </button>
         ) : null}
+        {lop ? (
+          <button
+            type="button"
+            onClick={() => void handleDeleteClass()}
+            disabled={deletingClass}
+            title="Xoá toàn bộ học sinh thuộc lớp này - dùng khi cần thay hẳn danh sách lớp rồi import lại"
+            className="h-9 rounded-md bg-red-700 px-3 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {deletingClass ? 'Đang xoá...' : `🗑️ Xoá cả lớp ${lop}`}
+          </button>
+        ) : null}
       </div>
+
+      {classActionMessage ? (
+        <p className="rounded-md border border-emerald-200 bg-emerald-100 p-3 text-sm font-semibold text-emerald-800">
+          {classActionMessage}
+        </p>
+      ) : null}
 
       <div className="rounded-lg border border-slate-200 bg-white p-3">
         <p className="text-sm font-semibold text-slate-900">Tuỳ chọn cột xuất Excel</p>
