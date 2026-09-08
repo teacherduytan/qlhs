@@ -192,7 +192,7 @@ function Cs2TeacherListTab({ session }: { session: TeacherSession }) {
           disabled={!rows}
           className="h-9 rounded-md bg-indigo-700 px-3 text-sm font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          Tính toán kiểm tra
+          Xem tiến độ
         </button>
       </div>
 
