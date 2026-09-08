@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/apple-touch-icon.png'],
       manifest: {
-        name: 'QLHS - Quản lý học sinh 11C5',
+        name: 'QLHS - THCS - THPT Lạc Hồng',
         short_name: 'QLHS',
-        description: 'Ứng dụng quản lý thi đua và điểm học sinh lớp 11C5',
+        description: 'Ứng dụng quản lý thi đua và điểm học sinh - Trường THCS và THPT Lạc Hồng',
         theme_color: '#1e40af',
         background_color: '#ffffff',
         display: 'standalone',
