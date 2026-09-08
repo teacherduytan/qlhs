@@ -190,6 +190,8 @@ function Cs2StudentListTab() {
   const [editingRow, setEditingRow] = useState<Cs2Row | null>(null)
   const [deletingMaHs, setDeletingMaHs] = useState<string | null>(null)
   const [deletingClass, setDeletingClass] = useState(false)
+  const [confirmDeleteClass, setConfirmDeleteClass] = useState(false)
+  const [confirmDeleteRow, setConfirmDeleteRow] = useState<{ maHs: string; hoTen: string } | null>(null)
   const [classActionMessage, setClassActionMessage] = useState<string | null>(null)
   const [checkResult, setCheckResult] = useState<Cs2CheckResult | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -251,19 +253,12 @@ function Cs2StudentListTab() {
 
   // Xoa toan bo hoc sinh cua 1 lop dang chon (vd lop can thay doi ca danh
   // sach - xoa het roi sang tab "Import DS" nhap lai file JSON moi cho dung
-  // lop do). Bat go lai chinh xac ten lop de xac nhan (thay vi 1 nut Huy/
-  // Dong y don gian) vi day la thao tac xoa hang loat, kho hoi neu bam nham.
-  async function handleDeleteClass() {
+  // lop do). Dung modal xac nhan rieng (gomm o nhap go lai ten lop) thay vi
+  // window.prompt/window.confirm - CAC HOP THOAI NATIVE NAY KHONG HIEN RA
+  // (im lang tra ve null) khi app chay o che do PWA da cai dat tren nhieu
+  // trinh duyet di dong, lam nut bam nhu khong co phan ung gi ca.
+  async function performDeleteClass() {
     if (!lop) return
-    const typed = window.prompt(
-      `Thao tác này sẽ XOÁ VĨNH VIỄN toàn bộ học sinh thuộc lớp "${lop}" (kể cả lịch sử đã sửa). Để xác nhận, hãy gõ lại chính xác tên lớp:`,
-    )
-    if (typed === null) return
-    if (typed.trim() !== lop) {
-      setError('Tên lớp gõ lại không khớp — đã huỷ thao tác xoá.')
-      return
-    }
-
     setDeletingClass(true)
     setError(null)
     setClassActionMessage(null)
@@ -274,6 +269,7 @@ function Cs2StudentListTab() {
       setClassActionMessage(`Đã xoá ${soLuong} học sinh thuộc lớp "${lop}". Vào tab "Import DS" để nhập lại danh sách mới.`)
       setLopOptions((current) => current.filter((item) => item !== lop))
       setLop('')
+      setConfirmDeleteClass(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không xoá được lớp.')
     } finally {
@@ -281,14 +277,14 @@ function Cs2StudentListTab() {
     }
   }
 
-  async function handleDelete(maHs: string, hoTen: string) {
-    if (!window.confirm(`Xoá học sinh "${hoTen}" (${maHs}) khỏi danh sách? Không thể khôi phục, kể cả lịch sử đã sửa.`)) return
+  async function performDelete(maHs: string) {
     setDeletingMaHs(maHs)
     setError(null)
     try {
       const { error: rpcError } = await getSupabaseClient().rpc('xoa_hoc_sinh_cs2', { p_ma_hs: maHs })
       if (rpcError) throw rpcError
       setRows((current) => (current || []).filter((row) => row.ma_hs !== maHs))
+      setConfirmDeleteRow(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không xoá được học sinh.')
     } finally {
@@ -457,7 +453,7 @@ function Cs2StudentListTab() {
         {lop ? (
           <button
             type="button"
-            onClick={() => void handleDeleteClass()}
+            onClick={() => setConfirmDeleteClass(true)}
             disabled={deletingClass}
             title="Xoá toàn bộ học sinh thuộc lớp này - dùng khi cần thay hẳn danh sách lớp rồi import lại"
             className="h-9 rounded-md bg-red-700 px-3 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-slate-400"
@@ -578,7 +574,7 @@ function Cs2StudentListTab() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => void handleDelete(row.ma_hs, `${row.ho} ${row.ten}`)}
+                        onClick={() => setConfirmDeleteRow({ maHs: row.ma_hs, hoTen: `${row.ho} ${row.ten}` })}
                         disabled={deletingMaHs === row.ma_hs}
                         className="text-xs font-semibold text-red-700 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
                       >
@@ -603,6 +599,27 @@ function Cs2StudentListTab() {
             setRows((current) => (current || []).map((item) => (item.ma_hs === updated.ma_hs ? updated : item)))
             setEditingRow(null)
           }}
+        />
+      ) : null}
+      {confirmDeleteRow ? (
+        <Cs2ConfirmModal
+          title="Xoá học sinh"
+          message={`Xoá học sinh "${confirmDeleteRow.hoTen}" (${confirmDeleteRow.maHs}) khỏi danh sách? Không thể khôi phục, kể cả lịch sử đã sửa.`}
+          confirmLabel="Xoá học sinh"
+          busy={deletingMaHs === confirmDeleteRow.maHs}
+          onConfirm={() => void performDelete(confirmDeleteRow.maHs)}
+          onCancel={() => setConfirmDeleteRow(null)}
+        />
+      ) : null}
+      {confirmDeleteClass && lop ? (
+        <Cs2ConfirmModal
+          title={`Xoá cả lớp ${lop}`}
+          message={`Thao tác này sẽ XOÁ VĨNH VIỄN toàn bộ học sinh thuộc lớp "${lop}" (kể cả lịch sử đã sửa). Không thể khôi phục.`}
+          confirmLabel={`Xoá cả lớp ${lop}`}
+          requireText={lop}
+          busy={deletingClass}
+          onConfirm={() => void performDeleteClass()}
+          onCancel={() => setConfirmDeleteClass(false)}
         />
       ) : null}
     </div>
@@ -664,6 +681,73 @@ function Cs2HistoryModal({ maHs, onClose }: { maHs: string; onClose: () => void 
             ))}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// Modal xac nhan dung chung cho cac thao tac xoa (1 hoc sinh hoac ca 1 lop) -
+// CO Y KHONG dung window.confirm()/window.prompt() vi cac hop thoai native
+// nay bi trinh duyet AM THAM BO QUA (tra ve null ngay, khong hien gi ca) khi
+// app chay o che do PWA da cai dat tren nhieu dien thoai, khien nut bam nhu
+// khong co phan ung. `requireText` (neu co) bat nguoi dung go lai dung chuoi
+// do moi bam duoc nut xac nhan - dung cho thao tac xoa hang loat khong the
+// khoi phuc (xoa ca lop); bo qua thi chi la hop thoai Xac nhan/Huy thuong.
+function Cs2ConfirmModal({
+  title,
+  message,
+  confirmLabel,
+  requireText,
+  busy,
+  onConfirm,
+  onCancel,
+}: {
+  title: string
+  message: string
+  confirmLabel: string
+  requireText?: string
+  busy?: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const [typed, setTyped] = useState('')
+  const canConfirm = !requireText || typed.trim() === requireText
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-sm rounded-lg bg-white p-4 shadow-xl">
+        <h2 className="text-base font-bold text-slate-900">{title}</h2>
+        <p className="mt-2 text-sm text-slate-700">{message}</p>
+        {requireText ? (
+          <label className="mt-3 flex flex-col gap-1 text-xs font-medium text-slate-700">
+            Gõ lại "{requireText}" để xác nhận
+            <input
+              type="text"
+              value={typed}
+              onChange={(event) => setTyped(event.target.value)}
+              autoFocus
+              className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+            />
+          </label>
+        ) : null}
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="h-10 flex-1 rounded-md border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Huỷ
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy || !canConfirm}
+            className="h-10 flex-1 rounded-md bg-red-700 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {busy ? 'Đang xoá...' : confirmLabel}
+          </button>
+        </div>
       </div>
     </div>
   )
