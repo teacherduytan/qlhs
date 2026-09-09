@@ -4,6 +4,7 @@ import type {
   GhiNhan,
   HocSinh,
   LienLacPhuHuynh,
+  TaiLieuChiTiet,
   TrangThaiDiemDanh,
 } from '../../data/types'
 import { getRecordTypeLabel, isPositiveRecord, isViolationRecord } from '../dashboard/DashboardPage'
@@ -83,6 +84,16 @@ export interface ReportStudentTimelineRow {
   nghiemTrong: boolean
 }
 
+// 1 dong tham chieu toi 1 tai lieu da dinh kem (bien ban, cam ket...) cho hoc
+// sinh - chi tham chieu (tieu de/loai/ngay), KHONG chen anh/scan that vao
+// bao cao (xem thu vien tai lieu de xem anh goc).
+export interface ReportDocumentRow {
+  ngay: string | null
+  tieuDe: string
+  loaiTaiLieu: string
+  ghiChu: string | null
+}
+
 export interface ReportData {
   tuNgay: string
   denNgay: string
@@ -94,6 +105,9 @@ export interface ReportData {
   // gop chung tat ca hoc sinh cho cung 1 ma danh muc, KHONG dung de hien
   // thi cho bao cao ca lop (chi bao cao 1 hoc sinh moi doc bang nay).
   studentTimeline: { violations: ReportStudentTimelineRow[]; positives: ReportStudentTimelineRow[] }
+  // Cung nhu studentTimeline - chi co y nghia cho bao cao rieng 1 hoc sinh,
+  // rong voi bao cao ca lop.
+  documents: ReportDocumentRow[]
 }
 
 export interface BuildReportDataInput {
@@ -104,6 +118,10 @@ export interface BuildReportDataInput {
   records: GhiNhan[]
   catalog: DanhMucDiem[]
   contactHistory: LienLacPhuHuynh[]
+  // Tai lieu (bien ban, cam ket...) da loc san theo dung hoc sinh + khoang
+  // ngay dang xem (xem ReportsPage.tsx) - tuy chon, mac dinh rong cho bao
+  // cao ca lop (khong hien muc nay).
+  documents?: TaiLieuChiTiet[]
 }
 
 // Thu tu nang -> nhe theo dung yeu cau dac ta muc 3 Phan 1: gop 2 buoi/ngay
@@ -125,7 +143,7 @@ const STATUS_LABELS: Record<TrangThaiDiemDanh, string> = {
 const LOAI_ORDER = ['chuyen_can', 've_sinh', 'ne_nep', 'trat_tu_ky_luat', 'hoc_tap', 'khen_thuong']
 
 export function buildReportData(input: BuildReportDataInput): ReportData {
-  const { tuNgay, denNgay, students, attendanceEntries, records, catalog, contactHistory } = input
+  const { tuNgay, denNgay, students, attendanceEntries, records, catalog, contactHistory, documents } = input
   const studentByMaHs = new Map(students.map((student) => [student.ma_hs, student]))
   const catalogByCode = new Map(catalog.map((item) => [item.ma_danh_muc, item]))
 
@@ -143,7 +161,24 @@ export function buildReportData(input: BuildReportDataInput): ReportData {
     violation: buildViolationData(recordsInRange, catalogByCode, studentByMaHs),
     positive: buildPositiveData(recordsInRange, catalogByCode, studentByMaHs),
     studentTimeline: buildStudentTimeline(recordsInRange, catalogByCode),
+    documents: buildDocumentRows(documents || [], tuNgay, denNgay),
   }
+}
+
+// Danh sach tham chieu tai lieu da dinh kem (bien ban, cam ket...) - chi loc
+// theo ngay_viet nam trong khoang bao cao (tai lieu khong co ngay_viet bi
+// loai, vi khong the xac nhan co thuoc ky bao cao nay khong), sap moi nhat
+// truoc de phu huynh de thay tai lieu gan day nhat.
+function buildDocumentRows(documents: TaiLieuChiTiet[], tuNgay: string, denNgay: string): ReportDocumentRow[] {
+  return documents
+    .filter((doc) => doc.ngay_viet && doc.ngay_viet >= tuNgay && doc.ngay_viet <= denNgay)
+    .map((doc) => ({
+      ngay: doc.ngay_viet,
+      tieuDe: doc.tieu_de || doc.danh_muc?.ten || 'Tài liệu đính kèm',
+      loaiTaiLieu: doc.danh_muc?.ten || '',
+      ghiChu: doc.ghi_chu,
+    }))
+    .sort((left, right) => ((right.ngay || '') < (left.ngay || '') ? -1 : 1))
 }
 
 // Sap theo ngay -> tiet (tang dan) de "so lan luy ke" dung nghia "lan thu

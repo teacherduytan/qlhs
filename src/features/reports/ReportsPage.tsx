@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { dataSource } from '../../data/client'
-import type { BanCanSu, CauHinhTuan, DanhMucDiem, DiemDanh, GhiNhan, HocSinh, LienLacPhuHuynh } from '../../data/types'
+import type {
+  BanCanSu,
+  CauHinhTuan,
+  DanhMucDiem,
+  DiemDanh,
+  GhiNhan,
+  HocSinh,
+  LienLacPhuHuynh,
+  TaiLieuChiTiet,
+} from '../../data/types'
 import { formatDate, formatDateCompact, isActiveStudent } from '../dashboard/DashboardPage'
 import {
   findWeek,
@@ -48,6 +57,11 @@ export function ReportsPage() {
   const [attendanceEntries, setAttendanceEntries] = useState<DiemDanh[]>([])
   const [attendanceLoading, setAttendanceLoading] = useState(false)
   const [attendanceError, setAttendanceError] = useState<string | null>(null)
+
+  // Tai lieu (bien ban, cam ket...) da dinh kem trong ky bao cao - moc du
+  // lieu tu tinh nang "Thu vien tai lieu" (DocumentsPage.tsx) qua bao cao 1
+  // hoc sinh, chi de tham chieu (tieu de/loai/ngay), khong chen anh that.
+  const [documents, setDocuments] = useState<TaiLieuChiTiet[]>([])
 
   const [exporting, setExporting] = useState<'word' | 'pdf' | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
@@ -126,6 +140,23 @@ export function ReportsPage() {
     }
   }, [range?.tuNgay, range?.denNgay])
 
+  useEffect(() => {
+    if (!range) return
+    let active = true
+    dataSource
+      .getTaiLieu({ tuNgay: range.tuNgay, denNgay: range.denNgay })
+      .then((rows) => {
+        if (active) setDocuments(rows)
+      })
+      .catch(() => {
+        // Khong chan luong bao cao neu loi - tai lieu chi la muc tham chieu
+        // them, khong phai du lieu cot loi cua bao cao.
+      })
+    return () => {
+      active = false
+    }
+  }, [range?.tuNgay, range?.denNgay])
+
   // Danh sach chon o "Doi tuong bao cao" - chi hoc sinh dang hoc (dung
   // isActiveStudent() da co, tranh liet ke ca hoc sinh da roi lop), sap theo
   // tt cho dung thu tu so danh sach lop.
@@ -168,6 +199,9 @@ export function ReportsPage() {
       ? attendanceEntries.filter((entry) => entry.ma_hs === student.ma_hs)
       : attendanceEntries
     const filteredRecords = student ? state.records.filter((record) => record.ma_hs === student.ma_hs) : state.records
+    // Tai lieu chi hien nghia khi bao cao rieng 1 hoc sinh - bao cao ca lop
+    // khong loc gi (mang rong, muc "Tai lieu dinh kem" se khong hien).
+    const filteredDocuments = student ? documents.filter((doc) => doc.hoc_sinh.some((hs) => hs.ma_hs === student.ma_hs)) : []
 
     const reportData = buildReportData({
       tuNgay: range.tuNgay,
@@ -177,6 +211,7 @@ export function ReportsPage() {
       records: filteredRecords,
       catalog: state.catalog,
       contactHistory: state.contactHistory,
+      documents: filteredDocuments,
     })
 
     const baseTitle = (() => {
@@ -233,7 +268,7 @@ export function ReportsPage() {
   const bundle = useMemo(
     () => (isBulkMode ? null : computeBundle(selectedStudent)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [state, range, attendanceEntries, tab, customRange, tuanSo, thang, weeks, selectedStudent, isBulkMode],
+    [state, range, attendanceEntries, documents, tab, customRange, tuanSo, thang, weeks, selectedStudent, isBulkMode],
   )
 
   async function handleExportWord() {
@@ -606,6 +641,7 @@ function ReportPreview({
         <>
           <StudentViolationSection data={data} />
           <StudentPositiveSection data={data} />
+          <StudentDocumentsSection data={data} />
         </>
       ) : (
         <>
@@ -804,6 +840,50 @@ function StudentPositiveSection({ data }: { data: ReportData }) {
             </table>
           </div>
         )}
+      </div>
+    </section>
+  )
+}
+
+// Danh sach tham chieu tai lieu (bien ban, cam ket...) da dinh kem cho hoc
+// sinh trong ky bao cao - moc du lieu tu tinh nang "Thu vien tai lieu"
+// (DocumentsPage.tsx). Chi hien khi bao cao rieng 1 hoc sinh (data.documents
+// luon rong voi bao cao ca lop, xem buildReportData()).
+function StudentDocumentsSection({ data }: { data: ReportData }) {
+  const { documents } = data
+  if (documents.length === 0) return null
+
+  return (
+    <section className="rounded-lg border border-amber-200 bg-white">
+      <div className="rounded-t-lg bg-amber-700 px-4 py-2.5">
+        <h3 className="text-base font-bold text-white">Phần 4 — Tài liệu đính kèm</h3>
+      </div>
+      <div className="space-y-3 p-4">
+        <p className="text-xs text-slate-500">
+          Các biên bản/tài liệu đã ghi nhận cho học sinh trong kỳ báo cáo này - liên hệ GVCN để xem bản gốc.
+        </p>
+        <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-100 text-left text-xs font-semibold uppercase text-slate-600">
+              <tr>
+                <th className="px-3 py-2">STT</th>
+                <th className="px-3 py-2">Ngày</th>
+                <th className="px-3 py-2">Loại tài liệu</th>
+                <th className="px-3 py-2">Tiêu đề</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {documents.map((doc, index) => (
+                <tr key={index}>
+                  <td className="px-3 py-2 text-slate-500">{index + 1}</td>
+                  <td className="px-3 py-2 text-slate-700">{doc.ngay ? formatDateCompact(doc.ngay) : '—'}</td>
+                  <td className="px-3 py-2 text-slate-600">{doc.loaiTaiLieu || '—'}</td>
+                  <td className="px-3 py-2 font-semibold text-slate-900">{doc.tieuDe}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   )

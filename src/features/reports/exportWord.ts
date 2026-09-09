@@ -67,6 +67,7 @@ export async function exportReportToWord(
           ...buildAttendanceSection(data, Boolean(meta.hocSinh)),
           ...(meta.hocSinh ? buildStudentViolationSection(data) : buildViolationSection(data)),
           ...(meta.hocSinh ? buildStudentPositiveSection(data) : buildPositiveSection(data)),
+          ...(meta.hocSinh ? buildStudentDocumentsSection(data) : []),
           ...buildBanCanSuSignatures(meta),
           ...(meta.hocSinh ? buildParentFeedbackAndSignature() : buildSignatureBlock()),
         ],
@@ -394,6 +395,34 @@ function buildStudentPositiveSection(data: ReportData) {
     rows.length === 0
       ? new Paragraph({ children: [new TextRun('Không có ghi nhận tích cực nào trong kỳ báo cáo này.')] })
       : new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: TABLE_BORDERS, rows: tableRows }),
+  ]
+}
+
+// Danh sach tham chieu tai lieu (bien ban, cam ket...) da dinh kem cho hoc
+// sinh trong ky bao cao - chi tham chieu (khong chen anh that), tra rong khi
+// khong co tai lieu nao (khong them 1 phan trong cho vao file).
+function buildStudentDocumentsSection(data: ReportData): (Paragraph | Table)[] {
+  if (data.documents.length === 0) return []
+  const centerCols = [0, 1]
+  const tableRows = [
+    headerRow(['STT', 'Ngày', 'Loại tài liệu', 'Tiêu đề'], centerCols),
+    ...data.documents.map((doc, index) =>
+      dataRow([String(index + 1), doc.ngay ? formatDate(doc.ngay) : '—', doc.loaiTaiLieu || '—', doc.tieuDe], centerCols),
+    ),
+  ]
+
+  return [
+    sectionHeading('Phần 4 — Tài liệu đính kèm'),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: 'Các biên bản/tài liệu đã ghi nhận cho học sinh trong kỳ báo cáo này - liên hệ GVCN để xem bản gốc.',
+          italics: true,
+          size: 22,
+        }),
+      ],
+    }),
+    new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: TABLE_BORDERS, rows: tableRows }),
   ]
 }
 

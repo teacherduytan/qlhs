@@ -101,6 +101,7 @@ function buildReportContainer(
     ${renderAttendanceSection(data, Boolean(meta.hocSinh))}
     ${meta.hocSinh ? renderStudentViolationSection(data) : renderViolationSection(data)}
     ${meta.hocSinh ? renderStudentPositiveSection(data) : renderPositiveSection(data)}
+    ${meta.hocSinh ? renderStudentDocumentsSection(data) : ''}
     ${renderBanCanSuSignatures(meta)}
     ${meta.hocSinh ? renderParentFeedbackAndSignature() : renderSignatureBlock()}
   `
@@ -314,6 +315,38 @@ function renderStudentPositiveSection(data: ReportData): string {
             <tbody>${rowsHtml}</tbody>
           </table>`
     }
+  `
+}
+
+// Danh sach tham chieu tai lieu (bien ban, cam ket...) da dinh kem cho hoc
+// sinh trong ky bao cao - chi tham chieu (khong chen anh that), tra rong khi
+// khong co tai lieu nao (khong them 1 phan trong cho vao file).
+function renderStudentDocumentsSection(data: ReportData): string {
+  if (data.documents.length === 0) return ''
+  const rowsHtml = data.documents
+    .map(
+      (doc, index) => `
+        <tr>
+          <td style="${td} text-align:center;">${index + 1}</td>
+          <td style="${td} text-align:center;">${doc.ngay ? formatDate(doc.ngay) : '—'}</td>
+          <td style="${td} text-align:center;">${escapeHtml(doc.loaiTaiLieu || '—')}</td>
+          <td style="${td}">${escapeHtml(doc.tieuDe)}</td>
+        </tr>`,
+    )
+    .join('')
+
+  return `
+    <h2 style="${h2}">Phần 4 — Tài liệu đính kèm</h2>
+    <p style="margin:4px 0 8px;font-style:italic;">
+      Các biên bản/tài liệu đã ghi nhận cho học sinh trong kỳ báo cáo này - liên hệ GVCN để xem bản gốc.
+    </p>
+    <table style="${table}">
+      <thead><tr>
+        <th style="${th} text-align:center;">STT</th><th style="${th} text-align:center;">Ngày</th>
+        <th style="${th} text-align:center;">Loại tài liệu</th><th style="${th}">Tiêu đề</th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
   `
 }
 
