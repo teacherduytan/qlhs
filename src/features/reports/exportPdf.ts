@@ -331,6 +331,7 @@ function renderStudentDocumentsSection(data: ReportData): string {
           <td style="${td} text-align:center;">${doc.ngay ? formatDate(doc.ngay) : '—'}</td>
           <td style="${td} text-align:center;">${escapeHtml(doc.loaiTaiLieu || '—')}</td>
           <td style="${td}">${escapeHtml(doc.tieuDe)}</td>
+          <td style="${td}">${escapeHtml(doc.ghiChu || '—')}</td>
         </tr>`,
     )
     .join('')
@@ -344,6 +345,7 @@ function renderStudentDocumentsSection(data: ReportData): string {
       <thead><tr>
         <th style="${th} text-align:center;">STT</th><th style="${th} text-align:center;">Ngày</th>
         <th style="${th} text-align:center;">Loại tài liệu</th><th style="${th}">Tiêu đề</th>
+        <th style="${th}">Mô tả nội dung</th>
       </tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>

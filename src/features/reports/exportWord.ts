@@ -405,9 +405,12 @@ function buildStudentDocumentsSection(data: ReportData): (Paragraph | Table)[] {
   if (data.documents.length === 0) return []
   const centerCols = [0, 1]
   const tableRows = [
-    headerRow(['STT', 'Ngày', 'Loại tài liệu', 'Tiêu đề'], centerCols),
+    headerRow(['STT', 'Ngày', 'Loại tài liệu', 'Tiêu đề', 'Mô tả nội dung'], centerCols),
     ...data.documents.map((doc, index) =>
-      dataRow([String(index + 1), doc.ngay ? formatDate(doc.ngay) : '—', doc.loaiTaiLieu || '—', doc.tieuDe], centerCols),
+      dataRow(
+        [String(index + 1), doc.ngay ? formatDate(doc.ngay) : '—', doc.loaiTaiLieu || '—', doc.tieuDe, doc.ghiChu || '—'],
+        centerCols,
+      ),
     ),
   ]
 

@@ -870,6 +870,7 @@ function StudentDocumentsSection({ data }: { data: ReportData }) {
                 <th className="px-3 py-2">Ngày</th>
                 <th className="px-3 py-2">Loại tài liệu</th>
                 <th className="px-3 py-2">Tiêu đề</th>
+                <th className="px-3 py-2">Mô tả nội dung</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -879,6 +880,7 @@ function StudentDocumentsSection({ data }: { data: ReportData }) {
                   <td className="px-3 py-2 text-slate-700">{doc.ngay ? formatDateCompact(doc.ngay) : '—'}</td>
                   <td className="px-3 py-2 text-slate-600">{doc.loaiTaiLieu || '—'}</td>
                   <td className="px-3 py-2 font-semibold text-slate-900">{doc.tieuDe}</td>
+                  <td className="px-3 py-2 text-slate-600">{doc.ghiChu || '—'}</td>
                 </tr>
               ))}
             </tbody>
